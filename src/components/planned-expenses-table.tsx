@@ -249,65 +249,36 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>{t("organizations.planned.col.planned_date")}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !form.planned_date && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.planned_date
-                            ? format(form.planned_date, "PPP")
-                            : t("organizations.planned.pick_date")}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={form.planned_date}
-                          onSelect={(d) =>
-                            setForm((f) => ({ ...f, planned_date: d }))
-                          }
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="p_kind">
-                      {t("organizations.budget.col.kind")}
-                    </Label>
-                    <Select
-                      value={form.kind}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          kind: v as "income" | "expense",
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="p_kind">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="income">
-                          {t("organizations.budget.kind.income")}
-                        </SelectItem>
-                        <SelectItem value="expense">
-                          {t("organizations.budget.kind.expense")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label>{t("organizations.planned.col.planned_date")}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !form.planned_date && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.planned_date
+                          ? format(form.planned_date, "PPP")
+                          : t("organizations.planned.pick_date")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={form.planned_date}
+                        onSelect={(d) =>
+                          setForm((f) => ({ ...f, planned_date: d }))
+                        }
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
