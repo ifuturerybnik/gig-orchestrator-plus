@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/organizations/$orgId")({
 
 function OrganizationDetailPage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
@@ -151,7 +151,7 @@ function OrganizationDetailPage() {
   const addressLine = [
     org.address_street,
     [org.address_postal_code, org.address_city].filter(Boolean).join(" "),
-    countryName(org.address_country, t("lang.label") === "Język" ? "pl" : "en"),
+    countryName(org.address_country, i18n.language || "pl"),
   ]
     .filter(Boolean)
     .join(", ");
