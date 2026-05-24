@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CountrySelect } from "@/components/country-select";
 import { countryName } from "@/lib/countries";
+import { MUSIC_GENRES } from "@/lib/genres";
 
 
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   cancelInvitation,
   getOrganizationDetails,
@@ -51,6 +53,7 @@ function OrganizationDetailPage() {
     address_city: "",
     address_postal_code: "",
     address_country: "",
+    genres: [] as string[],
   });
   const [inviteEmail, setInviteEmail] = useState("");
 
@@ -128,9 +131,18 @@ function OrganizationDetailPage() {
       address_city: org.address_city ?? "",
       address_postal_code: org.address_postal_code ?? "",
       address_country: org.address_country ?? "",
+      genres: Array.isArray(org.genres) ? [...org.genres] : [],
     });
     setEditing(true);
   };
+
+  const toggleGenre = (g: string) =>
+    setForm((f) => ({
+      ...f,
+      genres: f.genres.includes(g)
+        ? f.genres.filter((x) => x !== g)
+        : [...f.genres, g],
+    }));
 
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
