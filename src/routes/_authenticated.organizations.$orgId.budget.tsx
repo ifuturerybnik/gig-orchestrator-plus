@@ -204,6 +204,9 @@ function OrganizationBudgetPage() {
 
   return (
     <div className="space-y-6">
+      <p className="text-lg font-bold text-foreground">
+        {t("organizations.budget.intro")}
+      </p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
