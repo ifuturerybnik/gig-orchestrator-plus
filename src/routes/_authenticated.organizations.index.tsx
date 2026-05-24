@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 
-export const Route = createFileRoute("/_authenticated/organizations")({
+export const Route = createFileRoute("/_authenticated/organizations/")({
   component: OrganizationsListPage,
 });
 
