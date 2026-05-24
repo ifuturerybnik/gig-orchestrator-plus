@@ -237,7 +237,8 @@ export default
         "description": "Opis wpływu",
         "kind": "Rodzaj",
         "amount_gross": "Kwota brutto",
-        "completed": "Zrealizowano"
+        "completed": "Zrealizowano",
+        "completed_by": "zaznaczył(a) {{name}}"
 
       },
       "kind": {

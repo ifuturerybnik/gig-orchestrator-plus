@@ -236,7 +236,8 @@ export default
         "description": "Description",
         "kind": "Kind",
         "amount_gross": "Gross amount",
-        "completed": "Completed"
+        "completed": "Completed",
+        "completed_by": "marked by {{name}}"
 
       },
       "kind": {
