@@ -288,7 +288,21 @@ function OrganizationBudgetPage() {
                     }
                   />
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="completed"
+                    checked={form.completed}
+                    onCheckedChange={(v) =>
+                      setForm((f) => ({ ...f, completed: Boolean(v) }))
+                    }
+                  />
+                  <Label htmlFor="completed" className="cursor-pointer">
+                    {t("organizations.budget.col.completed")}
+                  </Label>
+                </div>
               </div>
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -319,20 +333,23 @@ function OrganizationBudgetPage() {
               <TableHead className="text-right">
                 {t("organizations.budget.col.amount_gross")}
               </TableHead>
+              <TableHead className="text-center">
+                {t("organizations.budget.col.completed")}
+              </TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {budgetQuery.isLoading && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
             )}
             {!budgetQuery.isLoading && entries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
 
                   <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -345,21 +362,32 @@ function OrganizationBudgetPage() {
                 </TableCell>
               </TableRow>
             )}
+
             {visibleEntries.map((e) => {
               const author = [e.author?.first_name, e.author?.last_name]
                 .filter(Boolean)
                 .join(" ")
                 .trim();
               const isIncome = e.kind === "income";
+              const completed =
+                (e as { completed?: boolean }).completed !== false;
+              const rowClass = cn(
+                !completed && "text-rose-600 dark:text-rose-400",
+              );
               return (
-                <TableRow key={e.id}>
+                <TableRow key={e.id} className={rowClass}>
                   <TableCell className="whitespace-nowrap">
                     {new Date(e.entry_date).toLocaleDateString(i18n.language)}
                   </TableCell>
                   <TableCell className="text-sm">
                     {author || t("organizations.members.no_name")}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  <TableCell
+                    className={cn(
+                      "text-sm whitespace-nowrap",
+                      completed && "text-muted-foreground",
+                    )}
+                  >
                     {(e as { category?: string | null }).category || "—"}
                   </TableCell>
                   <TableCell className="max-w-[300px] whitespace-pre-wrap text-sm">
@@ -370,9 +398,11 @@ function OrganizationBudgetPage() {
                     <span
                       className={
                         "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium " +
-                        (isIncome
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400")
+                        (!completed
+                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                          : isIncome
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400")
                       }
                     >
                       {isIncome ? (
@@ -386,16 +416,30 @@ function OrganizationBudgetPage() {
                   <TableCell className="text-right whitespace-nowrap font-medium">
                     <span
                       className={
-                        isIncome
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-600 dark:text-rose-400"
+                        !completed
+                          ? "text-rose-600 dark:text-rose-400"
+                          : isIncome
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400"
                       }
                     >
                       {isIncome ? "+" : "−"}
                       {formatAmount(e.amount_gross, e.currency, i18n.language)}
                     </span>
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Checkbox
+                      checked={completed}
+                      onCheckedChange={(v) =>
+                        toggleMutation.mutate({
+                          entryId: e.id,
+                          completed: Boolean(v),
+                        })
+                      }
+                    />
+                  </TableCell>
                   <TableCell className="text-right">
+
                     <Button
                       variant="ghost"
                       size="icon"
