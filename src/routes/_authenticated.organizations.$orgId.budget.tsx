@@ -486,8 +486,9 @@ function OrganizationBudgetPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell />
+                    <TableCell colSpan={2} />
                   </TableRow>
+
                 );
               })}
             </TableFooter>
