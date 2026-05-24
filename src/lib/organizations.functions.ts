@@ -223,6 +223,12 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_postal_code: optionalText(20),
         address_country: optionalText(120),
         genres: z.array(GenreEnum).max(20).optional(),
+        currency: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-Z]{3}$/)
+          .optional(),
       })
       .parse(input),
   )
@@ -238,6 +244,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_postal_code: data.address_postal_code,
         address_country: data.address_country,
         ...(data.genres !== undefined ? { genres: data.genres } : {}),
+        ...(data.currency !== undefined ? { currency: data.currency } : {}),
       })
       .eq("id", data.organizationId);
     if (error) throw new Error(error.message);
