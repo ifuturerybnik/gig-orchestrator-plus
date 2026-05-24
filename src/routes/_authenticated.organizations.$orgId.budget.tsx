@@ -483,6 +483,170 @@ function OrganizationBudgetPage() {
         </Dialog>
       </div>
 
+      {/* ===== Filtry ===== */}
+      <div className="rounded-md border border-border bg-card p-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.date")}
+            </Label>
+            <Select
+              value={dateFilter}
+              onValueChange={(v) => setDateFilter(v as typeof dateFilter)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.date_all")}
+                </SelectItem>
+                <SelectItem value="this_month">
+                  {t("organizations.budget.filters.date_this_month")}
+                </SelectItem>
+                <SelectItem value="prev_month">
+                  {t("organizations.budget.filters.date_prev_month")}
+                </SelectItem>
+                <SelectItem value="this_year">
+                  {t("organizations.budget.filters.date_this_year")}
+                </SelectItem>
+                <SelectItem value="prev_year">
+                  {t("organizations.budget.filters.date_prev_year")}
+                </SelectItem>
+                <SelectItem value="custom">
+                  {t("organizations.budget.filters.date_custom")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {dateFilter === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "mt-1 w-full justify-start text-left font-normal",
+                      !customRange?.from && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customRange?.from ? (
+                      customRange.to ? (
+                        <>
+                          {format(customRange.from, "dd.MM.yyyy")} —{" "}
+                          {format(customRange.to, "dd.MM.yyyy")}
+                        </>
+                      ) : (
+                        format(customRange.from, "dd.MM.yyyy")
+                      )
+                    ) : (
+                      t("organizations.budget.filters.pick_range")
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={customRange}
+                    onSelect={setCustomRange}
+                    numberOfMonths={2}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.author")}
+            </Label>
+            <Select value={authorFilter} onValueChange={setAuthorFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.author_all")}
+                </SelectItem>
+                {authorOptions.map(([id, name]) => (
+                  <SelectItem key={id} value={id}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.category")}
+            </Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.category_all")}
+                </SelectItem>
+                {categoryOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.completed")}
+            </Label>
+            <Select
+              value={completedFilter}
+              onValueChange={(v) =>
+                setCompletedFilter(v as typeof completedFilter)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.completed_all")}
+                </SelectItem>
+                <SelectItem value="yes">
+                  {t("organizations.budget.filters.completed_yes")}
+                </SelectItem>
+                <SelectItem value="no">
+                  {t("organizations.budget.filters.completed_no")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col justify-end gap-1">
+            <span className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.results", {
+                count: filteredEntries.length,
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              disabled={!filtersActive}
+            >
+              <X className="mr-1 h-4 w-4" />
+              {t("organizations.budget.filters.clear")}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-md border border-border bg-card">
         <div className={expanded ? "max-h-[640px] overflow-auto" : undefined}>
         <Table>
