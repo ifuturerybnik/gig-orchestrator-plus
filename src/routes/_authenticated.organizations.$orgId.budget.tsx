@@ -251,6 +251,7 @@ function OrganizationBudgetPage() {
                     value={form.category}
                     onChange={(v) => setForm((f) => ({ ...f, category: v }))}
                     existing={entries.map((e) => e.category)}
+                    storageKey={orgId}
                   />
                 </div>
 
