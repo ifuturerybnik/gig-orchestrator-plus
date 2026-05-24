@@ -218,6 +218,7 @@ export default
     },
     "budget": {
       "title": "Budget",
+      "intro": "Plan your expenses and budget.",
       "subtitle": "Track this organization's income and expenses.",
       "add": "Add entry",
       "added": "Entry added",
