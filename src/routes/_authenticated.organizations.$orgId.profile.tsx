@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CountrySelect } from "@/components/country-select";
+import { CurrencySelect } from "@/components/currency-select";
 import { MUSIC_GENRES } from "@/lib/genres";
+import { currencyForCountry } from "@/lib/currencies";
 import {
   getOrganizationDetails,
   updateOrganization,
