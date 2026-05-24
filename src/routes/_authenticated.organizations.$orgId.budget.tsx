@@ -884,7 +884,7 @@ function OrganizationBudgetPage() {
               ) : (
                 <>
                   <ChevronDown className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.expand", { count: entries.length - INITIAL_LIMIT })}
+                  {t("organizations.budget.expand", { count: filteredEntries.length - INITIAL_LIMIT })}
                 </>
               )}
             </Button>
