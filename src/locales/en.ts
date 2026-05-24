@@ -238,8 +238,11 @@ export default
         "amount_gross": "Gross amount",
         "completed": "Completed",
         "completed_by": "marked by {{name}}"
-
       },
+      "confirm_complete_title": "Mark as completed?",
+      "confirm_complete_description": "This action cannot be undone. Do you confirm marking it as completed?",
+      "confirm_complete_yes": "Yes, mark",
+      "confirm_complete_cancel": "Cancel",
       "kind": {
         "income": "Income",
         "expense": "Expense"
