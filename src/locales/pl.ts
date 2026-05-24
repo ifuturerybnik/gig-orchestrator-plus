@@ -175,6 +175,10 @@ export default
         "title": "Adres siedziby / bazy",
         "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
         "benefit": "💡 Uzupełnienie adresu organizacji pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy z bazy oraz inne kwestie logistyczne (noclegi, koszty przejazdów, bookowanie ekipy)."
+      },
+      "genres": {
+        "title": "Gatunki muzyczne",
+        "help": "Wybierz wszystkie gatunki, w których gra zespół. Możesz zmienić w dowolnym momencie."
       }
     },
 
