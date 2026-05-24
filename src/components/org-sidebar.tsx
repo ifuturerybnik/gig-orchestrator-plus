@@ -117,7 +117,17 @@ export function OrgSidebar({
                     >
                       <Link to={item.to} className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
-                        <span>{t(item.labelKey)}</span>
+                        <span className="flex-1">{t(item.labelKey)}</span>
+                        {item.to === `${base}/budget` && pendingExpenseCount > 0 && (
+                          <span
+                            aria-label={t("organizations.sidebar.pending_expenses", {
+                              count: pendingExpenseCount,
+                            })}
+                            className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:right-1 group-data-[collapsible=icon]:top-1 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:min-w-[16px] group-data-[collapsible=icon]:text-[10px]"
+                          >
+                            {pendingExpenseCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
