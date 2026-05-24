@@ -60,6 +60,8 @@ import {
   setPlannedExpenseCompleted,
 } from "@/lib/organizations.functions";
 import { formatAmount } from "@/lib/currencies";
+import { CategoryInput } from "@/components/category-input";
+
 
 interface Props {
   organizationId: string;
@@ -76,10 +78,12 @@ type PlannedEntry = {
   kind: "income" | "expense";
   amount_gross: number;
   currency: string;
+  category?: string | null;
   completed: boolean;
   created_by: string;
   author?: { first_name?: string | null; last_name?: string | null } | null;
 };
+
 
 export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const { t, i18n } = useTranslation();
@@ -106,12 +110,15 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
     kind: "income" | "expense";
     planned_date: Date | undefined;
     amount_gross: string;
+    category: string;
   }>({
     description: "",
     kind: "expense",
     planned_date: undefined,
     amount_gross: "",
+    category: "",
   });
+
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -123,6 +130,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
           planned_date: format(form.planned_date as Date, "yyyy-MM-dd"),
           amount_gross: Number(form.amount_gross.replace(",", ".")),
           currency,
+          category: form.category.trim() || undefined,
         },
       }),
     onSuccess: () => {
@@ -133,11 +141,13 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
         kind: "expense",
         planned_date: undefined,
         amount_gross: "",
+        category: "",
       });
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const toggleMutation = useMutation({
     mutationFn: (v: { entryId: string; completed: boolean }) =>
@@ -164,10 +174,12 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
           kind: entry.kind,
           amount_gross: entry.amount_gross,
           currency: entry.currency,
+          category: entry.category ?? undefined,
         },
       });
       await deleteFn({ data: { entryId: entry.id } });
     },
+
     onSuccess: () => {
       toast.success(t("organizations.planned.moved"));
       queryClient.invalidateQueries({ queryKey });
