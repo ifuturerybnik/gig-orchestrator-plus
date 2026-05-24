@@ -218,9 +218,26 @@ export default
     },
     "budget": {
       "title": "Budget",
-      "subtitle": "Track this organization's revenue, expenses and settlements.",
-      "empty": "No budget data yet. The budget management module is coming here soon.",
-      "coming_soon": "Coming soon"
+      "subtitle": "Track this organization's income and expenses.",
+      "add": "Add entry",
+      "added": "Entry added",
+      "deleted": "Entry deleted",
+      "delete_confirm": "Delete this budget entry?",
+      "invalid_amount": "Invalid amount",
+      "empty_list": "No budget entries yet. Add your first income or expense.",
+      "summary": "Summary",
+      "currency_used": "Organization currency: {{currency}}. Change it in team Profile to use another.",
+      "col": {
+        "date": "Date",
+        "author": "Added by",
+        "description": "Description",
+        "kind": "Kind",
+        "amount_gross": "Gross amount"
+      },
+      "kind": {
+        "income": "Income",
+        "expense": "Expense"
+      }
     },
 
     "messages": {
