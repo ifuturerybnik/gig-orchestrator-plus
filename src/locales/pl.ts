@@ -239,8 +239,11 @@ export default
         "amount_gross": "Kwota brutto",
         "completed": "Zrealizowano",
         "completed_by": "zaznaczył(a) {{name}}"
-
       },
+      "confirm_complete_title": "Oznaczyć jako zrealizowane?",
+      "confirm_complete_description": "Tej operacji nie można cofnąć. Czy potwierdzasz oznaczenie jako zrealizowane?",
+      "confirm_complete_yes": "Tak, oznacz",
+      "confirm_complete_cancel": "Anuluj",
       "kind": {
         "income": "Zasilenie",
         "expense": "Wydatek"
@@ -276,7 +279,7 @@ export default
       "collapse": "Zwiń listę",
       "pick_date": "Wybierz datę",
       "move_title": "Przenieść do budżetu?",
-      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?",
+      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Tej operacji nie można cofnąć. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?",
       "move_yes": "Tak, przenieś",
       "move_no": "Nie, tylko oznacz",
       "moved": "Przeniesiono do budżetu",

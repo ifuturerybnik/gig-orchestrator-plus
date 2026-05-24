@@ -30,6 +30,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -84,6 +94,7 @@ function OrganizationBudgetPage() {
 
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
+  const [completeCandidate, setCompleteCandidate] = useState<string | null>(null);
   const [form, setForm] = useState({
     entry_date: new Date().toISOString().slice(0, 10),
     description: "",
@@ -480,14 +491,12 @@ function OrganizationBudgetPage() {
                         aria-label={t("organizations.budget.col.completed")}
                         className="h-5 w-5"
                         checked={completed}
-                        disabled={toggleMutation.isPending}
+                        disabled={completed || toggleMutation.isPending}
                         onClick={(event) => event.stopPropagation()}
-                        onCheckedChange={(v) =>
-                          toggleMutation.mutate({
-                            entryId: e.id,
-                            completed: Boolean(v),
-                          })
-                        }
+                        onCheckedChange={(v) => {
+                          if (completed) return;
+                          if (Boolean(v)) setCompleteCandidate(e.id);
+                        }}
                       />
                       {completed && completedAt && (
                         <span className="text-[10px] leading-tight text-muted-foreground">
@@ -591,6 +600,42 @@ function OrganizationBudgetPage() {
       </div>
 
       <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
+
+      <AlertDialog
+        open={completeCandidate !== null}
+        onOpenChange={(o) => {
+          if (!o) setCompleteCandidate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("organizations.budget.confirm_complete_title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("organizations.budget.confirm_complete_description")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t("organizations.budget.confirm_complete_cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (completeCandidate) {
+                  toggleMutation.mutate({
+                    entryId: completeCandidate,
+                    completed: true,
+                  });
+                }
+                setCompleteCandidate(null);
+              }}
+            >
+              {t("organizations.budget.confirm_complete_yes")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
