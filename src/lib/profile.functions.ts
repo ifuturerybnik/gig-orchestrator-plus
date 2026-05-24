@@ -32,6 +32,19 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v && v.length > 0 ? v : null));
 
+const USER_KIND = z.enum([
+  "team_manager",
+  "musician",
+  "sound_engineer",
+  "lighting_engineer",
+  "visual_engineer",
+  "driver",
+  "stage_technician",
+  "stage_company_owner",
+  "event_company_owner",
+  "concert_organizer",
+]);
+
 export const updateMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -40,6 +53,7 @@ export const updateMyProfile = createServerFn({ method: "POST" })
         first_name: z.string().trim().min(1).max(120),
         last_name: z.string().trim().min(1).max(120),
         phone: optionalText(40),
+        user_kinds: z.array(USER_KIND).max(20),
         address_street: optionalText(200),
         address_city: optionalText(120),
         address_postal_code: optionalText(20),
@@ -55,6 +69,7 @@ export const updateMyProfile = createServerFn({ method: "POST" })
         first_name: data.first_name,
         last_name: data.last_name,
         phone: data.phone,
+        user_kinds: data.user_kinds,
         address_street: data.address_street,
         address_city: data.address_city,
         address_postal_code: data.address_postal_code,
@@ -64,3 +79,4 @@ export const updateMyProfile = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
