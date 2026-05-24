@@ -400,6 +400,28 @@ function OrganizationBudgetPage() {
             </TableFooter>
           )}
         </Table>
+        </div>
+        {hasMore && (
+          <div className="flex justify-center border-t border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.collapse")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.expand", { count: entries.length - INITIAL_LIMIT })}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
