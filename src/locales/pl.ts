@@ -244,7 +244,7 @@ export default
     },
     "planned": {
       "title": "Przyszłe wydatki",
-      "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz „Zrealizowano", aby wykluczyć z podsumowania.",
+      "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz \"Zrealizowano\", aby wykluczyć z podsumowania.",
       "add": "Dodaj pozycję",
       "added": "Pozycja dodana",
       "deleted": "Pozycja usunięta",
