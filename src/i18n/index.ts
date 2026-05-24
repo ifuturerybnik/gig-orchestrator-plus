@@ -8,25 +8,31 @@ import en from "../locales/en";
 export const SUPPORTED_LANGUAGES = ["pl", "en"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
+const isBrowser = typeof window !== "undefined";
+
 if (!i18n.isInitialized) {
-  i18n
-    .use(LanguageDetector)
-    .use(initReactI18next)
-    .init({
-      resources: {
-        pl: { translation: pl },
-        en: { translation: en },
-      },
-      fallbackLng: "pl",
-      supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
-      interpolation: { escapeValue: false },
-      detection: {
-        order: ["localStorage", "navigator"],
-        lookupLocalStorage: "concertivo-lang",
-        caches: ["localStorage"],
-      },
-      react: { useSuspense: false },
-    });
+  if (isBrowser) {
+    i18n.use(LanguageDetector);
+  }
+  i18n.use(initReactI18next).init({
+    resources: {
+      pl: { translation: pl },
+      en: { translation: en },
+    },
+    // Force "pl" during SSR so the markup matches what the client renders
+    // before LanguageDetector kicks in. The detector still runs on the
+    // client and switches the language after mount if needed.
+    lng: isBrowser ? undefined : "pl",
+    fallbackLng: "pl",
+    supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
+    interpolation: { escapeValue: false },
+    detection: {
+      order: ["localStorage", "navigator"],
+      lookupLocalStorage: "concertivo-lang",
+      caches: ["localStorage"],
+    },
+    react: { useSuspense: false },
+  });
 }
 
 export default i18n;
