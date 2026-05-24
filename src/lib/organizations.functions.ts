@@ -120,6 +120,9 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
     return { invitation: invite };
   });
 
+const ORG_COLUMNS =
+  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country";
+
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -130,9 +133,7 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
 
     const { data: org, error: orgErr } = await supabase
       .from("organizations")
-      .select(
-        "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason",
-      )
+      .select(ORG_COLUMNS)
       .eq("id", data.organizationId)
       .maybeSingle();
     if (orgErr) throw new Error(orgErr.message);
@@ -199,6 +200,14 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
     };
   });
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
+
 export const updateOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -206,7 +215,11 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .object({
         organizationId: z.string().uuid(),
         name: z.string().trim().min(2).max(120),
-        description: z.string().trim().max(2000).optional(),
+        description: optionalText(2000),
+        address_street: optionalText(200),
+        address_city: optionalText(120),
+        address_postal_code: optionalText(20),
+        address_country: optionalText(120),
       })
       .parse(input),
   )
@@ -216,12 +229,17 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .from("organizations")
       .update({
         name: data.name,
-        description: data.description ?? null,
+        description: data.description,
+        address_street: data.address_street,
+        address_city: data.address_city,
+        address_postal_code: data.address_postal_code,
+        address_country: data.address_country,
       })
       .eq("id", data.organizationId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const removeOrganizationMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
