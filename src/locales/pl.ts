@@ -239,8 +239,11 @@ export default
         "amount_gross": "Kwota brutto",
         "completed": "Zrealizowano",
         "completed_by": "zaznaczył(a) {{name}}"
-
       },
+      "confirm_complete_title": "Oznaczyć jako zrealizowane?",
+      "confirm_complete_description": "Tej operacji nie można cofnąć. Czy potwierdzasz oznaczenie jako zrealizowane?",
+      "confirm_complete_yes": "Tak, oznacz",
+      "confirm_complete_cancel": "Anuluj",
       "kind": {
         "income": "Zasilenie",
         "expense": "Wydatek"
