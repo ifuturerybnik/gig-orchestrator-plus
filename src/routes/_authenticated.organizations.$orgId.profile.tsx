@@ -47,6 +47,7 @@ function OrganizationProfilePage() {
     address_postal_code: "",
     address_country: "",
     genres: [] as string[],
+    currency: "PLN",
   });
   const [initialized, setInitialized] = useState(false);
 
