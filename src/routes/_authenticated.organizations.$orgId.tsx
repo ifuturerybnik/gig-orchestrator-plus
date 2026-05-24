@@ -40,14 +40,20 @@ function OrganizationDetailPage() {
   });
 
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    address_street: "",
+    address_city: "",
+    address_postal_code: "",
+    address_country: "",
+  });
   const [inviteEmail, setInviteEmail] = useState("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const updateMutation = useMutation({
-    mutationFn: (input: { name: string; description?: string }) =>
+    mutationFn: (input: typeof form) =>
       updateFn({ data: { organizationId: orgId, ...input } }),
     onSuccess: () => {
       toast.success(t("organizations.detail.saved"));
@@ -57,6 +63,7 @@ function OrganizationDetailPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const inviteMutation = useMutation({
     mutationFn: (email: string) =>
