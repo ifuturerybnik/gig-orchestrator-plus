@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,8 +6,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   CalendarIcon,
-  ChevronDown,
-  ChevronUp,
   Plus,
   Trash2,
   TrendingDown,
@@ -106,7 +104,9 @@ function OrganizationBudgetPage() {
 
   const orgCurrency = detailsQuery.data?.organization.currency ?? "PLN";
 
-  const [expanded, setExpanded] = useState(false);
+  const PAGE_SIZE = 100;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [completeCandidate, setCompleteCandidate] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -312,13 +312,31 @@ function OrganizationBudgetPage() {
     setCompletedFilter("all");
   };
 
-  const INITIAL_LIMIT = 10;
-  const hasMore = filteredEntries.length > INITIAL_LIMIT;
-  const visibleEntries = expanded
-    ? filteredEntries
-    : filteredEntries.slice(0, INITIAL_LIMIT);
+  // Reset infinite-scroll window when filters change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter]);
 
-  // Podsumowanie per waluta — tylko zrealizowane pozycje (z aktywnego filtra).
+  const visibleEntries = filteredEntries.slice(0, visibleCount);
+  const hasMore = filteredEntries.length > visibleEntries.length;
+
+  // Auto-load next page when sentinel becomes visible
+  useEffect(() => {
+    if (!hasMore) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((c) => c + PAGE_SIZE);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, filteredEntries.length]);
+
   const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
     .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
@@ -648,8 +666,8 @@ function OrganizationBudgetPage() {
       </div>
 
       <div className="rounded-md border border-border bg-card">
-        <div className={expanded ? "max-h-[640px] overflow-auto" : undefined}>
         <Table>
+
           <TableHeader>
             <TableRow>
               <TableHead>{t("organizations.budget.col.date")}</TableHead>
@@ -868,28 +886,17 @@ function OrganizationBudgetPage() {
             </TableFooter>
           )}
         </Table>
-        </div>
         {hasMore && (
-          <div className="flex justify-center border-t border-border p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.collapse")}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.expand", { count: filteredEntries.length - INITIAL_LIMIT })}
-                </>
-              )}
-            </Button>
+          <div
+            ref={loadMoreRef}
+            className="flex justify-center border-t border-border p-3 text-xs text-muted-foreground"
+          >
+            {t("organizations.budget.loading_more", {
+              remaining: filteredEntries.length - visibleEntries.length,
+            })}
           </div>
         )}
+
       </div>
 
       <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
