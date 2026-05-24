@@ -8,7 +8,10 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/phone-input";
+import { CountrySelect } from "@/components/country-select";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
+
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
