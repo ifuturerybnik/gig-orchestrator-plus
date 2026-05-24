@@ -123,7 +123,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres";
+  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres, currency";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -223,6 +223,12 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_postal_code: optionalText(20),
         address_country: optionalText(120),
         genres: z.array(GenreEnum).max(20).optional(),
+        currency: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-Z]{3}$/)
+          .optional(),
       })
       .parse(input),
   )
@@ -238,6 +244,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_postal_code: data.address_postal_code,
         address_country: data.address_country,
         ...(data.genres !== undefined ? { genres: data.genres } : {}),
+        ...(data.currency !== undefined ? { currency: data.currency } : {}),
       })
       .eq("id", data.organizationId);
     if (error) throw new Error(error.message);
@@ -271,6 +278,106 @@ export const cancelInvitation = createServerFn({ method: "POST" })
       .from("organization_invitations")
       .update({ status: "cancelled" })
       .eq("id", data.invitationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================================
+// BUDGET
+// ============================================================================
+
+const BudgetKind = z.enum(["income", "expense"]);
+
+export const listBudgetEntries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: entries, error } = await supabase
+      .from("organization_budget_entries")
+      .select(
+        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, created_at",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const userIds = Array.from(
+      new Set((entries ?? []).map((e) => e.created_by)),
+    );
+    const { data: profiles } = userIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds)
+      : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }> };
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [p.id, p] as const),
+    );
+
+    return {
+      entries: (entries ?? []).map((e) => ({
+        ...e,
+        amount_gross: Number(e.amount_gross),
+        author: profileMap.get(e.created_by) ?? null,
+      })),
+    };
+  });
+
+export const createBudgetEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        entry_date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        description: z.string().trim().min(1).max(500),
+        kind: BudgetKind,
+        amount_gross: z.number().nonnegative().max(99999999.99),
+        currency: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-Z]{3}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: entry, error } = await supabase
+      .from("organization_budget_entries")
+      .insert({
+        organization_id: data.organizationId,
+        created_by: userId,
+        entry_date: data.entry_date ?? new Date().toISOString().slice(0, 10),
+        description: data.description,
+        kind: data.kind,
+        amount_gross: data.amount_gross,
+        currency: data.currency,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { entry };
+  });
+
+export const deleteBudgetEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ entryId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_budget_entries")
+      .delete()
+      .eq("id", data.entryId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
