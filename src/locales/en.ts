@@ -103,7 +103,7 @@ export default
       "have_account": "Already have an account?",
       "login_link": "Sign in",
       "check_email": "Check your inbox — we've sent an activation link.",
-      "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security". An extra code from your app significantly improves account security."
+      "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security”. An extra code from your app significantly improves account security."
     },
     "reset": {
       "title": "Reset password",

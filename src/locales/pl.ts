@@ -126,7 +126,7 @@ export default
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
       "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny.",
-      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo". Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych."
+      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych."
     },
     "reset": {
       "title": "Reset hasła",
