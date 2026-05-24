@@ -279,7 +279,7 @@ export default
       "collapse": "Zwiń listę",
       "pick_date": "Wybierz datę",
       "move_title": "Przenieść do budżetu?",
-      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?",
+      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Tej operacji nie można cofnąć. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?",
       "move_yes": "Tak, przenieś",
       "move_no": "Nie, tylko oznacz",
       "moved": "Przeniesiono do budżetu",
