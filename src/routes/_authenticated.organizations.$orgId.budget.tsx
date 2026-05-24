@@ -43,6 +43,8 @@ import {
 } from "@/lib/organizations.functions";
 import { formatAmount } from "@/lib/currencies";
 import { PlannedExpensesTable } from "@/components/planned-expenses-table";
+import { CategoryInput } from "@/components/category-input";
+
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/budget",
@@ -80,7 +82,9 @@ function OrganizationBudgetPage() {
     description: "",
     kind: "income" as "income" | "expense",
     amount_gross: "",
+    category: "",
   });
+
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -92,6 +96,7 @@ function OrganizationBudgetPage() {
           kind: form.kind,
           amount_gross: Number(form.amount_gross.replace(",", ".")),
           currency: orgCurrency,
+          category: form.category.trim() || undefined,
         },
       }),
     onSuccess: () => {
@@ -102,9 +107,11 @@ function OrganizationBudgetPage() {
         description: "",
         kind: "income",
         amount_gross: "",
+        category: "",
       });
       queryClient.invalidateQueries({ queryKey: budgetKey });
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
