@@ -196,12 +196,27 @@ export default
       "disco_dance": "Disco / Dance",
       "other": "Other"
     },
+    "sidebar": {
+      "section": "Navigation",
+      "overview": "Overview",
+      "profile": "Profile",
+      "members": "Members",
+      "events": "Concerts",
+      "back_to_list": "← All organizations"
+    },
+    "events": {
+      "title": "Concerts",
+      "subtitle": "Plan and manage this organization's concerts.",
+      "empty": "No concerts scheduled yet. The concert management module is coming here soon.",
+      "coming_soon": "Coming soon"
+    },
 
     "messages": {
       "created": "Organization submitted. An admin will review it.",
       "approved": "Organization approved.",
       "rejected": "Organization rejected."
     }
+
   },
   "admin": {
     "approvals": {
