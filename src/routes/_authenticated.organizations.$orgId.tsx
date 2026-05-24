@@ -8,6 +8,10 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CountrySelect } from "@/components/country-select";
+import { countryName } from "@/lib/countries";
+
+
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/organizations/$orgId")({
 
 function OrganizationDetailPage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
@@ -147,10 +151,11 @@ function OrganizationDetailPage() {
   const addressLine = [
     org.address_street,
     [org.address_postal_code, org.address_city].filter(Boolean).join(" "),
-    org.address_country,
+    countryName(org.address_country, i18n.language || "pl"),
   ]
     .filter(Boolean)
     .join(", ");
+
 
   return (
     <Shell>
@@ -245,8 +250,13 @@ function OrganizationDetailPage() {
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="address_country">{t("address.country")}</Label>
-                <Input id="address_country" maxLength={120} value={form.address_country} onChange={updateField("address_country")} />
+                <CountrySelect
+                  id="address_country"
+                  value={form.address_country}
+                  onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
+                />
               </div>
+
             </div>
           </section>
 

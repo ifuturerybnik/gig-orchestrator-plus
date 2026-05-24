@@ -8,7 +8,10 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/phone-input";
+import { CountrySelect } from "@/components/country-select";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
+
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -91,8 +94,14 @@ function ProfilePage() {
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="phone">{t("auth.register.phone")}</Label>
-                  <Input id="phone" maxLength={40} value={form.phone} onChange={update("phone")} />
+                  <PhoneInput
+                    id="phone"
+                    value={form.phone}
+                    onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+                    defaultCountry={form.address_country}
+                  />
                 </div>
+
               </div>
             </section>
 
@@ -119,8 +128,13 @@ function ProfilePage() {
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address_country">{t("address.country")}</Label>
-                  <Input id="address_country" maxLength={120} value={form.address_country} onChange={update("address_country")} />
+                  <CountrySelect
+                    id="address_country"
+                    value={form.address_country}
+                    onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
+                  />
                 </div>
+
               </div>
             </section>
 
