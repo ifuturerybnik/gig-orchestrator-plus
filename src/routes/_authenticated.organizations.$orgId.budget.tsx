@@ -666,9 +666,8 @@ function OrganizationBudgetPage() {
       </div>
 
       <div className="rounded-md border border-border bg-card">
-        <div className="max-h-[640px] overflow-auto">
-
         <Table>
+
           <TableHeader>
             <TableRow>
               <TableHead>{t("organizations.budget.col.date")}</TableHead>
