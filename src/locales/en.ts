@@ -175,7 +175,48 @@ export default
         "title": "Headquarters / base address",
         "optional": "Optional — you can fill this in at any time.",
         "benefit": "💡 Providing the organization's address lets the system automatically optimize tour routes, plan travel from your base and handle logistics (accommodation, travel costs, crew booking)."
+      },
+      "genres": {
+        "title": "Music genres",
+        "help": "Pick all genres the band plays. You can change them anytime."
       }
+    },
+    "genres": {
+      "pop": "Pop",
+      "rock": "Rock",
+      "pop_rock": "Pop-rock",
+      "rock_alternative": "Alternative rock",
+      "indie": "Indie",
+      "metal": "Metal",
+      "punk": "Punk",
+      "hard_rock": "Hard rock",
+      "hip_hop": "Hip-hop",
+      "rap": "Rap",
+      "rnb": "R&B",
+      "soul": "Soul",
+      "funk": "Funk",
+      "disco": "Disco",
+      "dance": "Dance",
+      "electronic": "Electronic",
+      "house": "House",
+      "techno": "Techno",
+      "trance": "Trance",
+      "drum_and_bass": "Drum and bass",
+      "ambient": "Ambient",
+      "jazz": "Jazz",
+      "blues": "Blues",
+      "reggae": "Reggae",
+      "ska": "Ska",
+      "country": "Country",
+      "folk": "Folk",
+      "world": "World music",
+      "latin": "Latin",
+      "classical": "Classical",
+      "acoustic": "Acoustic",
+      "cover": "Cover band",
+      "wedding": "Wedding",
+      "experimental": "Experimental",
+      "other": "Other"
     },
 
     "messages": {
