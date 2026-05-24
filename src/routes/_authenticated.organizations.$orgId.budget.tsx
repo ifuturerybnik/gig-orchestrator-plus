@@ -127,6 +127,9 @@ function OrganizationBudgetPage() {
   };
 
   const entries = budgetQuery.data?.entries ?? [];
+  const INITIAL_LIMIT = 10;
+  const hasMore = entries.length > INITIAL_LIMIT;
+  const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
   // Podsumowanie per waluta (na wypadek mieszanych wpisów historycznych).
   const totals = entries.reduce<
