@@ -219,6 +219,7 @@ export default
     },
     "budget": {
       "title": "Budżet",
+      "intro": "Planuj swoje wydatki oraz budżet.",
       "subtitle": "Śledź wpływy i wydatki tej organizacji.",
       "add": "Dodaj pozycję",
       "added": "Pozycja dodana",
