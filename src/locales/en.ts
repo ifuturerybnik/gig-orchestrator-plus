@@ -202,12 +202,19 @@ export default
       "profile": "Profile",
       "members": "Members",
       "events": "Concerts",
+      "budget": "Budget",
       "back_to_list": "← All organizations"
     },
     "events": {
       "title": "Concerts",
       "subtitle": "Plan and manage this organization's concerts.",
       "empty": "No concerts scheduled yet. The concert management module is coming here soon.",
+      "coming_soon": "Coming soon"
+    },
+    "budget": {
+      "title": "Budget",
+      "subtitle": "Track this organization's revenue, expenses and settlements.",
+      "empty": "No budget data yet. The budget management module is coming here soon.",
       "coming_soon": "Coming soon"
     },
 
