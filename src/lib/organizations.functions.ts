@@ -298,12 +298,13 @@ export const listBudgetEntries = createServerFn({ method: "GET" })
     const { data: entries, error } = await supabase
       .from("organization_budget_entries")
       .select(
-        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, created_at",
+        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, category, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
 
     const userIds = Array.from(
       new Set((entries ?? []).map((e) => e.created_by)),
@@ -345,6 +346,12 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
           .trim()
           .toUpperCase()
           .regex(/^[A-Z]{3}$/),
+        category: z
+          .string()
+          .trim()
+          .max(80)
+          .optional()
+          .transform((v) => (v && v.length > 0 ? v : null)),
       })
       .parse(input),
   )
@@ -360,12 +367,14 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
         kind: data.kind,
         amount_gross: data.amount_gross,
         currency: data.currency,
+        category: data.category ?? null,
       })
       .select()
       .single();
     if (error) throw new Error(error.message);
     return { entry };
   });
+
 
 export const deleteBudgetEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -396,12 +405,13 @@ export const listPlannedExpenses = createServerFn({ method: "GET" })
     const { data: entries, error } = await supabase
       .from("organization_planned_expenses")
       .select(
-        "id, organization_id, created_by, entry_date, description, kind, planned_date, amount_gross, currency, completed, created_at",
+        "id, organization_id, created_by, entry_date, description, kind, planned_date, amount_gross, currency, category, completed, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("planned_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
 
     const userIds = Array.from(
       new Set((entries ?? []).map((e) => e.created_by)),
@@ -440,6 +450,12 @@ export const createPlannedExpense = createServerFn({ method: "POST" })
           .trim()
           .toUpperCase()
           .regex(/^[A-Z]{3}$/),
+        category: z
+          .string()
+          .trim()
+          .max(80)
+          .optional()
+          .transform((v) => (v && v.length > 0 ? v : null)),
       })
       .parse(input),
   )
@@ -456,6 +472,7 @@ export const createPlannedExpense = createServerFn({ method: "POST" })
         planned_date: data.planned_date,
         amount_gross: data.amount_gross,
         currency: data.currency,
+        category: data.category ?? null,
         completed: false,
       })
       .select()
@@ -463,6 +480,7 @@ export const createPlannedExpense = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { entry };
   });
+
 
 export const setPlannedExpenseCompleted = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
