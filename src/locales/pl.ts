@@ -233,6 +233,7 @@ export default
       "col": {
         "date": "Data",
         "author": "Wpisał",
+        "category": "Kategoria",
         "description": "Opis wpływu",
         "kind": "Rodzaj",
         "amount_gross": "Kwota brutto"
@@ -240,8 +241,25 @@ export default
       "kind": {
         "income": "Zasilenie",
         "expense": "Wydatek"
+      },
+      "categories": {
+        "placeholder": "Wybierz lub wpisz…",
+        "fee": "Honorarium",
+        "transport": "Transport",
+        "accommodation": "Nocleg",
+        "meals": "Wyżywienie",
+        "equipment": "Sprzęt",
+        "rental": "Wynajem",
+        "marketing": "Marketing",
+        "venue": "Sala / lokalizacja",
+        "catering": "Catering",
+        "ticket_sales": "Sprzedaż biletów",
+        "sponsorship": "Sponsoring",
+        "merch": "Merch",
+        "other": "Inne"
       }
     },
+
     "planned": {
       "title": "Przyszłe wydatki",
       "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz \"Zrealizowano\", aby wykluczyć z podsumowania.",
@@ -262,11 +280,13 @@ export default
       "col": {
         "date": "Data",
         "author": "Wpisał",
+        "category": "Kategoria",
         "description": "Opis wydatku",
         "planned_date": "Przewidywana data",
         "amount_gross": "Kwota brutto",
         "completed": "Zrealizowano"
       }
+
     },
 
     "messages": {
