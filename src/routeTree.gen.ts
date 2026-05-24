@@ -20,6 +20,7 @@ import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_authenticated.organizations.new'
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
+import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -79,6 +80,12 @@ const AuthenticatedAdminApprovalsRoute =
     path: '/admin/approvals',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdIndexRoute =
+  AuthenticatedOrganizationsOrgIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,9 +95,10 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
-  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
+  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
+  '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,9 +108,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
-  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
+  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,9 +122,10 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
-  '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
+  '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/_authenticated/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
+  '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId'
     | '/organizations/new'
     | '/organizations/'
+    | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,9 +150,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/admin/approvals'
-    | '/organizations/$orgId'
     | '/organizations/new'
     | '/organizations'
+    | '/organizations/$orgId'
   id:
     | '__root__'
     | '/'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId'
     | '/_authenticated/organizations/new'
     | '/_authenticated/organizations/'
+    | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -245,14 +256,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminApprovalsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/organizations/$orgId/': {
+      id: '/_authenticated/organizations/$orgId/'
+      path: '/'
+      fullPath: '/organizations/$orgId/'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
   }
 }
+
+interface AuthenticatedOrganizationsOrgIdRouteChildren {
+  AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
+}
+
+const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOrgIdRouteChildren =
+  {
+    AuthenticatedOrganizationsOrgIdIndexRoute:
+      AuthenticatedOrganizationsOrgIdIndexRoute,
+  }
+
+const AuthenticatedOrganizationsOrgIdRouteWithChildren =
+  AuthenticatedOrganizationsOrgIdRoute._addFileChildren(
+    AuthenticatedOrganizationsOrgIdRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
-  AuthenticatedOrganizationsOrgIdRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+  AuthenticatedOrganizationsOrgIdRoute: typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   AuthenticatedOrganizationsNewRoute: typeof AuthenticatedOrganizationsNewRoute
   AuthenticatedOrganizationsIndexRoute: typeof AuthenticatedOrganizationsIndexRoute
 }
@@ -261,7 +294,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
-  AuthenticatedOrganizationsOrgIdRoute: AuthenticatedOrganizationsOrgIdRoute,
+  AuthenticatedOrganizationsOrgIdRoute:
+    AuthenticatedOrganizationsOrgIdRouteWithChildren,
   AuthenticatedOrganizationsNewRoute: AuthenticatedOrganizationsNewRoute,
   AuthenticatedOrganizationsIndexRoute: AuthenticatedOrganizationsIndexRoute,
 }
@@ -280,3 +314,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
