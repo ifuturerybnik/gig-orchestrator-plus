@@ -1,0 +1,198 @@
+import { useState, type FormEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  cancelInvitation,
+  getOrganizationDetails,
+  inviteUserToOrganization,
+  removeOrganizationMember,
+} from "@/lib/organizations.functions";
+
+export const Route = createFileRoute(
+  "/_authenticated/organizations/$orgId/members",
+)({
+  component: OrganizationMembersPage,
+});
+
+function OrganizationMembersPage() {
+  const { orgId } = Route.useParams();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const fetchDetails = useServerFn(getOrganizationDetails);
+  const inviteFn = useServerFn(inviteUserToOrganization);
+  const removeFn = useServerFn(removeOrganizationMember);
+  const cancelFn = useServerFn(cancelInvitation);
+
+  const queryKey = ["organization", orgId];
+  const detailsQuery = useQuery({
+    queryKey,
+    queryFn: () => fetchDetails({ data: { organizationId: orgId } }),
+  });
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+
+  const inviteMutation = useMutation({
+    mutationFn: (email: string) =>
+      inviteFn({ data: { organizationId: orgId, email } }),
+    onSuccess: () => {
+      toast.success(t("organizations.members.invitation_sent"));
+      setInviteEmail("");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (memberId: string) => removeFn({ data: { memberId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.members.member_removed"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (invitationId: string) => cancelFn({ data: { invitationId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.members.invitation_cancelled"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (detailsQuery.isLoading) {
+    return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
+  }
+
+  if (detailsQuery.isError || !detailsQuery.data) {
+    return (
+      <p className="text-sm text-destructive">
+        {detailsQuery.error instanceof Error
+          ? detailsQuery.error.message
+          : t("common.error")}
+      </p>
+    );
+  }
+
+  const { members, invitations, canManage } = detailsQuery.data;
+
+  const handleInvite = (e: FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    inviteMutation.mutate(inviteEmail);
+  };
+
+  return (
+    <div className="space-y-10">
+      <section>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {t("organizations.members.title")}
+        </h1>
+        <ul className="mt-4 space-y-2">
+          {members.map((m) => {
+            const fullName = [m.profile?.first_name, m.profile?.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+            return (
+              <li
+                key={m.id}
+                className="flex items-center justify-between rounded-md border border-border bg-card p-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {fullName || t("organizations.members.no_name")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      `organizations.members.${m.role === "owner" ? "owner" : "member"}`,
+                    )}
+                  </p>
+                </div>
+                {canManage && m.role !== "owner" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm(t("organizations.members.remove_confirm"))) {
+                        removeMutation.mutate(m.id);
+                      }
+                    }}
+                    disabled={removeMutation.isPending}
+                  >
+                    {t("organizations.members.remove")}
+                  </Button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {canManage && (
+        <section>
+          <h2 className="text-xl font-semibold text-foreground">
+            {t("organizations.members.pending_invitations")}
+          </h2>
+
+          <form onSubmit={handleInvite} className="mt-3 flex gap-2">
+            <Input
+              type="email"
+              placeholder={t("organizations.members.email_placeholder")}
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+            />
+            <Button type="submit" disabled={inviteMutation.isPending}>
+              {t("organizations.members.invite")}
+            </Button>
+          </form>
+
+          {invitations.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {invitations.map((inv) => (
+                <li
+                  key={inv.id}
+                  className="flex items-center justify-between rounded-md border border-border bg-card p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {inv.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("organizations.members.expires")}:{" "}
+                      {new Date(inv.expires_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          t("organizations.members.cancel_invitation_confirm"),
+                        )
+                      ) {
+                        cancelMutation.mutate(inv.id);
+                      }
+                    }}
+                    disabled={cancelMutation.isPending}
+                  >
+                    {t("organizations.members.cancel_invitation")}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
