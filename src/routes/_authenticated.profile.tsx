@@ -202,6 +202,11 @@ function ProfilePage() {
           </form>
         )}
 
+        <div className="mt-12 space-y-8">
+          <SecuritySection />
+        </div>
+
+
         <section className="mt-12">
           <h2 className="text-xl font-semibold text-foreground">{t("profile.my_orgs.title")}</h2>
           {orgsQuery.isLoading ? (
