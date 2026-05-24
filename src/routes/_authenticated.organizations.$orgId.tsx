@@ -149,10 +149,11 @@ function OrganizationDetailPage() {
   const addressLine = [
     org.address_street,
     [org.address_postal_code, org.address_city].filter(Boolean).join(" "),
-    org.address_country,
+    countryName(org.address_country, t("lang.label") === "Język" ? "pl" : "en"),
   ]
     .filter(Boolean)
     .join(", ");
+
 
   return (
     <Shell>
