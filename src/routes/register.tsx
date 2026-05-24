@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PhoneInput } from "@/components/phone-input";
+
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -147,7 +149,8 @@ function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">{t("auth.register.phone")}</Label>
-              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <PhoneInput id="phone" value={phone} onChange={setPhone} />
+
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setStep(1)}>
