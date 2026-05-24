@@ -10,8 +10,6 @@ import {
   ChevronUp,
   Plus,
   Trash2,
-  TrendingDown,
-  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +33,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -52,6 +60,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  createBudgetEntry,
   createPlannedExpense,
   deletePlannedExpense,
   listPlannedExpenses,
@@ -66,6 +75,19 @@ interface Props {
 
 const INITIAL_LIMIT = 10;
 
+type PlannedEntry = {
+  id: string;
+  entry_date: string;
+  planned_date: string;
+  description: string;
+  kind: "income" | "expense";
+  amount_gross: number;
+  currency: string;
+  completed: boolean;
+  created_by: string;
+  author?: { first_name?: string | null; last_name?: string | null } | null;
+};
+
 export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -74,8 +96,10 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const createFn = useServerFn(createPlannedExpense);
   const toggleFn = useServerFn(setPlannedExpenseCompleted);
   const deleteFn = useServerFn(deletePlannedExpense);
+  const createBudgetFn = useServerFn(createBudgetEntry);
 
   const queryKey = ["organization-planned", organizationId];
+  const budgetKey = ["organization-budget", organizationId];
   const query = useQuery({
     queryKey,
     queryFn: () => fetchEntries({ data: { organizationId } }),
@@ -83,6 +107,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
 
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
+  const [moveCandidate, setMoveCandidate] = useState<PlannedEntry | null>(null);
   const [form, setForm] = useState<{
     description: string;
     kind: "income" | "expense";
@@ -137,6 +162,31 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const moveMutation = useMutation({
+    mutationFn: async (entry: PlannedEntry) => {
+      await createBudgetFn({
+        data: {
+          organizationId,
+          description: entry.description,
+          kind: entry.kind,
+          amount_gross: entry.amount_gross,
+          currency: entry.currency,
+        },
+      });
+      await deleteFn({ data: { entryId: entry.id } });
+    },
+    onSuccess: () => {
+      toast.success(t("organizations.planned.moved"));
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: budgetKey });
+      setMoveCandidate(null);
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      setMoveCandidate(null);
+    },
+  });
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const n = Number(form.amount_gross.replace(",", "."));
@@ -151,16 +201,23 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
     createMutation.mutate();
   };
 
-  const entries = query.data?.entries ?? [];
+  const handleToggle = (entry: PlannedEntry, checked: boolean) => {
+    if (checked && !entry.completed) {
+      setMoveCandidate(entry);
+      return;
+    }
+    toggleMutation.mutate({ entryId: entry.id, completed: checked });
+  };
+
+  const entries = (query.data?.entries ?? []) as PlannedEntry[];
   const hasMore = entries.length > INITIAL_LIMIT;
   const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
-  // Podsumowanie tylko z niezrealizowanych pozycji.
   const totals = entries
     .filter((e) => !e.completed)
     .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
       if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
-      acc[e.currency][e.kind as "income" | "expense"] += e.amount_gross;
+      acc[e.currency][e.kind] += e.amount_gross;
       return acc;
     }, {});
 
@@ -227,7 +284,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
 
                   <div className="space-y-2">
                     <Label htmlFor="p_kind">
-                      {t("organizations.planned.col.kind")}
+                      {t("organizations.budget.col.kind")}
                     </Label>
                     <Select
                       value={form.kind}
@@ -314,7 +371,6 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                 <TableHead>
                   {t("organizations.planned.col.description")}
                 </TableHead>
-                <TableHead>{t("organizations.planned.col.kind")}</TableHead>
                 <TableHead>
                   {t("organizations.planned.col.planned_date")}
                 </TableHead>
@@ -331,7 +387,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
               {query.isLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="text-center text-muted-foreground"
                   >
                     {t("common.loading")}
@@ -340,7 +396,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
               )}
               {!query.isLoading && entries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <Wallet className="h-5 w-5" />
@@ -385,24 +441,6 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     >
                       {e.description}
                     </TableCell>
-                    <TableCell>
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
-                          isIncome
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-                          completed && "line-through",
-                        )}
-                      >
-                        {isIncome ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        {t(`organizations.budget.kind.${e.kind}`)}
-                      </span>
-                    </TableCell>
                     <TableCell
                       className={cn(
                         "whitespace-nowrap text-sm",
@@ -433,12 +471,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     <TableCell className="text-center">
                       <Checkbox
                         checked={completed}
-                        onCheckedChange={(v) =>
-                          toggleMutation.mutate({
-                            entryId: e.id,
-                            completed: Boolean(v),
-                          })
-                        }
+                        onCheckedChange={(v) => handleToggle(e, Boolean(v))}
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -464,7 +497,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                   const balance = t2.income - t2.expense;
                   return (
                     <TableRow key={cur}>
-                      <TableCell colSpan={5} className="font-semibold">
+                      <TableCell colSpan={4} className="font-semibold">
                         {t("organizations.planned.summary")} ({cur})
                       </TableCell>
                       <TableCell className="text-right font-semibold">
@@ -519,6 +552,47 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={moveCandidate !== null}
+        onOpenChange={(o) => {
+          if (!o) setMoveCandidate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("organizations.planned.move_title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("organizations.planned.move_description")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                if (moveCandidate) {
+                  toggleMutation.mutate({
+                    entryId: moveCandidate.id,
+                    completed: true,
+                  });
+                }
+                setMoveCandidate(null);
+              }}
+            >
+              {t("organizations.planned.move_no")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (moveCandidate) moveMutation.mutate(moveCandidate);
+              }}
+              disabled={moveMutation.isPending}
+            >
+              {t("organizations.planned.move_yes")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
