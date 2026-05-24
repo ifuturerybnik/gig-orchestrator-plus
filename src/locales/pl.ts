@@ -209,7 +209,8 @@ export default
       "members": "Członkowie",
       "events": "Koncerty",
       "budget": "Budżet",
-      "back_to_list": "← Wszystkie organizacje"
+      "back_to_list": "← Wszystkie organizacje",
+      "pending_expenses": "Niezrealizowane wydatki: {{count}}"
     },
     "events": {
       "title": "Koncerty",
