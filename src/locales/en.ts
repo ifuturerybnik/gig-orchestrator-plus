@@ -235,7 +235,9 @@ export default
         "category": "Category",
         "description": "Description",
         "kind": "Kind",
-        "amount_gross": "Gross amount"
+        "amount_gross": "Gross amount",
+        "completed": "Completed"
+
       },
       "kind": {
         "income": "Income",

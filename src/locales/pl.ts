@@ -236,7 +236,9 @@ export default
         "category": "Kategoria",
         "description": "Opis wpływu",
         "kind": "Rodzaj",
-        "amount_gross": "Kwota brutto"
+        "amount_gross": "Kwota brutto",
+        "completed": "Zrealizowano"
+
       },
       "kind": {
         "income": "Zasilenie",
