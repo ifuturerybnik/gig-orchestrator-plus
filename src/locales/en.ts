@@ -249,7 +249,7 @@ export default
         "expense": "Expense"
       },
       "categories": {
-        "placeholder": "Pick or type…",
+        "placeholder": "Pick a category…",
         "fee": "Fee",
         "transport": "Transport",
         "accommodation": "Accommodation",
@@ -262,7 +262,31 @@ export default
         "ticket_sales": "Ticket sales",
         "sponsorship": "Sponsorship",
         "merch": "Merch",
-        "other": "Other"
+        "music_videos": "Music videos",
+        "other": "Other",
+        "other_custom": "Other (type a new one)…",
+        "custom_placeholder": "Type category name"
+      },
+      "filters": {
+        "title": "Filters",
+        "date": "Date",
+        "date_all": "All dates",
+        "date_this_month": "This month",
+        "date_prev_month": "Previous month",
+        "date_this_year": "This year",
+        "date_prev_year": "Previous year",
+        "date_custom": "Custom range",
+        "author": "Added by",
+        "author_all": "Everyone",
+        "category": "Category",
+        "category_all": "All categories",
+        "completed": "Completed",
+        "completed_all": "All",
+        "completed_yes": "Completed only",
+        "completed_no": "Pending only",
+        "clear": "Clear filters",
+        "pick_range": "Pick range",
+        "results": "Matching entries: {{count}}"
       }
     },
 
