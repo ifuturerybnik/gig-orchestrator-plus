@@ -253,11 +253,15 @@ export default
       "expand": "Show more ({{count}})",
       "collapse": "Collapse list",
       "pick_date": "Pick a date",
+      "move_title": "Move to budget?",
+      "move_description": "You marked this entry as completed. Move it to the \"Budget\" table and include it in the summary?",
+      "move_yes": "Yes, move",
+      "move_no": "No, just mark",
+      "moved": "Moved to budget",
       "col": {
         "date": "Date",
         "author": "Added by",
         "description": "Description",
-        "kind": "Kind",
         "planned_date": "Planned date",
         "amount_gross": "Gross amount",
         "completed": "Completed"
