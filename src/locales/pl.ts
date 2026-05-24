@@ -25,12 +25,21 @@ export default
     "subtitle": "Zarządzaj swoimi danymi osobistymi i adresem.",
     "basic": "Dane podstawowe",
     "saved": "Profil zapisany",
+    "kinds": {
+      "title": "Kim jestem",
+      "help": "Wybierz wszystkie role, które Cię opisują. Możesz je zmieniać w dowolnym momencie."
+    },
     "address": {
       "title": "Adres",
       "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
       "benefit_user": "💡 Uzupełnienie adresu pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy oraz inne kwestie logistyczne (noclegi, koszty przejazdów)."
+    },
+    "my_orgs": {
+      "title": "Moje organizacje",
+      "empty": "Nie jesteś jeszcze przypisany do żadnej organizacji."
     }
   },
+
 
   "lang": {
     "label": "Język",

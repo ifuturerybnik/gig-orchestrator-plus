@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,30 +8,52 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { PhoneInput } from "@/components/phone-input";
 import { CountrySelect } from "@/components/country-select";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
-
+import { listMyOrganizations } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
+
+const USER_KINDS = [
+  "team_manager",
+  "musician",
+  "sound_engineer",
+  "lighting_engineer",
+  "visual_engineer",
+  "driver",
+  "stage_technician",
+  "stage_company_owner",
+  "event_company_owner",
+  "concert_organizer",
+] as const;
+type UserKind = (typeof USER_KINDS)[number];
 
 function ProfilePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fetchProfile = useServerFn(getMyProfile);
   const updateFn = useServerFn(updateMyProfile);
+  const fetchOrgs = useServerFn(listMyOrganizations);
 
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => fetchProfile(),
+  });
+  const orgsQuery = useQuery({
+    queryKey: ["my-organizations"],
+    queryFn: () => fetchOrgs(),
   });
 
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
     phone: "",
+    user_kinds: [] as UserKind[],
     address_street: "",
     address_city: "",
     address_postal_code: "",
@@ -45,6 +67,7 @@ function ProfilePage() {
         first_name: p.first_name ?? "",
         last_name: p.last_name ?? "",
         phone: p.phone ?? "",
+        user_kinds: ((p.user_kinds ?? []) as UserKind[]),
         address_street: p.address_street ?? "",
         address_city: p.address_city ?? "",
         address_postal_code: p.address_postal_code ?? "",
@@ -69,6 +92,16 @@ function ProfilePage() {
 
   const update = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const toggleKind = (kind: UserKind) =>
+    setForm((f) => ({
+      ...f,
+      user_kinds: f.user_kinds.includes(kind)
+        ? f.user_kinds.filter((k) => k !== kind)
+        : [...f.user_kinds, kind],
+    }));
+
+  const orgs = orgsQuery.data?.organizations ?? [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,7 +134,32 @@ function ProfilePage() {
                     defaultCountry={form.address_country}
                   />
                 </div>
+              </div>
+            </section>
 
+            <section className="space-y-4 rounded-md border border-border bg-card p-4">
+              <div>
+                <h2 className="text-lg font-semibold">{t("profile.kinds.title")}</h2>
+                <p className="text-sm text-muted-foreground">{t("profile.kinds.help")}</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {USER_KINDS.map((kind) => {
+                  const id = `kind-${kind}`;
+                  return (
+                    <label
+                      key={kind}
+                      htmlFor={id}
+                      className="flex items-center gap-2 rounded-md border border-border p-2 hover:bg-accent"
+                    >
+                      <Checkbox
+                        id={id}
+                        checked={form.user_kinds.includes(kind)}
+                        onCheckedChange={() => toggleKind(kind)}
+                      />
+                      <span className="text-sm">{t(`user_kinds.${kind}`)}</span>
+                    </label>
+                  );
+                })}
               </div>
             </section>
 
@@ -134,7 +192,6 @@ function ProfilePage() {
                     onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
                   />
                 </div>
-
               </div>
             </section>
 
@@ -143,6 +200,45 @@ function ProfilePage() {
             </Button>
           </form>
         )}
+
+        <section className="mt-12">
+          <h2 className="text-xl font-semibold text-foreground">{t("profile.my_orgs.title")}</h2>
+          {orgsQuery.isLoading ? (
+            <p className="mt-3 text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : orgs.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">{t("profile.my_orgs.empty")}</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {orgs.map((org) => (
+                <li key={org.id}>
+                  <Link
+                    to="/organizations/$orgId"
+                    params={{ orgId: org.id }}
+                    className="flex items-center justify-between rounded-md border border-border bg-card p-3 hover:bg-accent"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{org.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t(`organizations.type.${org.type}`)}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        org.status === "approved"
+                          ? "default"
+                          : org.status === "pending"
+                            ? "secondary"
+                            : "destructive"
+                      }
+                    >
+                      {t(`organizations.status.${org.status}`)}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </div>
   );
