@@ -62,6 +62,7 @@ function OrganizationProfilePage() {
         address_postal_code: org.address_postal_code ?? "",
         address_country: org.address_country ?? "",
         genres: Array.isArray(org.genres) ? [...org.genres] : [],
+        currency: org.currency ?? currencyForCountry(org.address_country),
       });
       setInitialized(true);
     }
