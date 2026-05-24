@@ -292,6 +292,7 @@ function OrganizationBudgetPage() {
             <TableRow>
               <TableHead>{t("organizations.budget.col.date")}</TableHead>
               <TableHead>{t("organizations.budget.col.author")}</TableHead>
+              <TableHead>{t("organizations.budget.col.category")}</TableHead>
               <TableHead>{t("organizations.budget.col.description")}</TableHead>
               <TableHead>{t("organizations.budget.col.kind")}</TableHead>
               <TableHead className="text-right">
@@ -303,14 +304,15 @@ function OrganizationBudgetPage() {
           <TableBody>
             {budgetQuery.isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
             )}
             {!budgetQuery.isLoading && entries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
+
                   <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Wallet className="h-5 w-5" />
@@ -336,9 +338,13 @@ function OrganizationBudgetPage() {
                   <TableCell className="text-sm">
                     {author || t("organizations.members.no_name")}
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {(e as { category?: string | null }).category || "—"}
+                  </TableCell>
                   <TableCell className="max-w-[300px] whitespace-pre-wrap text-sm">
                     {e.description}
                   </TableCell>
+
                   <TableCell>
                     <span
                       className={
@@ -391,8 +397,9 @@ function OrganizationBudgetPage() {
                 const balance = t2.income - t2.expense;
                 return (
                   <TableRow key={cur}>
-                    <TableCell colSpan={4} className="font-semibold">
+                    <TableCell colSpan={5} className="font-semibold">
                       {t("organizations.budget.summary")} ({cur})
+
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       <div className="flex flex-col items-end gap-0.5 text-xs">
