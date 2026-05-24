@@ -298,12 +298,13 @@ export const listBudgetEntries = createServerFn({ method: "GET" })
     const { data: entries, error } = await supabase
       .from("organization_budget_entries")
       .select(
-        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, category, created_at",
+        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, category, completed, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
 
 
     const userIds = Array.from(
@@ -352,6 +353,7 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
           .max(80)
           .optional()
           .transform((v) => (v && v.length > 0 ? v : null)),
+        completed: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -368,12 +370,34 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
         amount_gross: data.amount_gross,
         currency: data.currency,
         category: data.category ?? null,
+        completed: data.completed ?? true,
       })
       .select()
       .single();
     if (error) throw new Error(error.message);
     return { entry };
   });
+
+export const setBudgetEntryCompleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        entryId: z.string().uuid(),
+        completed: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_budget_entries")
+      .update({ completed: data.completed })
+      .eq("id", data.entryId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 
 export const deleteBudgetEntry = createServerFn({ method: "POST" })
