@@ -227,6 +227,8 @@ export default
       "empty_list": "No budget entries yet. Add your first income or expense.",
       "summary": "Summary",
       "currency_used": "Organization currency: {{currency}}. Change it in team Profile to use another.",
+      "expand": "Show more ({{count}})",
+      "collapse": "Collapse list",
       "col": {
         "date": "Date",
         "author": "Added by",
