@@ -278,7 +278,7 @@ export default
       "collapse": "Collapse list",
       "pick_date": "Pick a date",
       "move_title": "Move to budget?",
-      "move_description": "You marked this entry as completed. Move it to the \"Budget\" table and include it in the summary?",
+      "move_description": "You marked this entry as completed. This action cannot be undone. Move it to the \"Budget\" table and include it in the summary?",
       "move_yes": "Yes, move",
       "move_no": "No, just mark",
       "moved": "Moved to budget",
