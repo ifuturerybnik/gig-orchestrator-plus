@@ -123,7 +123,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres";
+  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres, currency";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
