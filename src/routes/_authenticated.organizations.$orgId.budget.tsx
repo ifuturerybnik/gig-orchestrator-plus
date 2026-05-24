@@ -455,7 +455,11 @@ function OrganizationBudgetPage() {
                   <TableCell className="text-center align-top">
                     <div className="flex flex-col items-center gap-0.5">
                       <Checkbox
+                        aria-label={t("organizations.budget.col.completed")}
+                        className="h-5 w-5"
                         checked={completed}
+                        disabled={toggleMutation.isPending}
+                        onClick={(event) => event.stopPropagation()}
                         onCheckedChange={(v) =>
                           toggleMutation.mutate({
                             entryId: e.id,
