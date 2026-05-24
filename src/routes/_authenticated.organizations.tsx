@@ -39,27 +39,30 @@ function OrganizationsListPage() {
         ) : (
           <ul className="mt-6 space-y-3">
             {data!.organizations.map((org) => (
-              <li
-                key={org.id}
-                className="flex items-center justify-between rounded-md border border-border bg-card p-4"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{org.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t(`organizations.type.${org.type}`)}
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    org.status === "approved"
-                      ? "default"
-                      : org.status === "pending"
-                        ? "secondary"
-                        : "destructive"
-                  }
+              <li key={org.id}>
+                <Link
+                  to="/organizations/$orgId"
+                  params={{ orgId: org.id }}
+                  className="flex items-center justify-between rounded-md border border-border bg-card p-4 transition-colors hover:bg-accent"
                 >
-                  {t(`organizations.status.${org.status}`)}
-                </Badge>
+                  <div>
+                    <p className="font-medium text-foreground">{org.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(`organizations.type.${org.type}`)}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      org.status === "approved"
+                        ? "default"
+                        : org.status === "pending"
+                          ? "secondary"
+                          : "destructive"
+                    }
+                  >
+                    {t(`organizations.status.${org.status}`)}
+                  </Badge>
+                </Link>
               </li>
             ))}
           </ul>
