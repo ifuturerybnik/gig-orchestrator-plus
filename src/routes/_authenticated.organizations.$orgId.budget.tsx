@@ -94,6 +94,7 @@ function OrganizationBudgetPage() {
 
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
+  const [completeCandidate, setCompleteCandidate] = useState<string | null>(null);
   const [form, setForm] = useState({
     entry_date: new Date().toISOString().slice(0, 10),
     description: "",
