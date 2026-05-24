@@ -27,7 +27,7 @@ export default
     "saved": "Profile saved",
     "kinds": {
       "title": "Who I am",
-      "help": "Pick all the roles that describe you. You can change them anytime."
+      "help": "Pick all the roles that describe you. You can change them anytime. Marking incorrect options will cause errors in the organization."
     },
     "address": {
       "title": "Address",
