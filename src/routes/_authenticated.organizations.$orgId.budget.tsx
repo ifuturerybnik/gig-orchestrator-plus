@@ -312,13 +312,31 @@ function OrganizationBudgetPage() {
     setCompletedFilter("all");
   };
 
-  const INITIAL_LIMIT = 10;
-  const hasMore = filteredEntries.length > INITIAL_LIMIT;
-  const visibleEntries = expanded
-    ? filteredEntries
-    : filteredEntries.slice(0, INITIAL_LIMIT);
+  // Reset infinite-scroll window when filters change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter]);
 
-  // Podsumowanie per waluta — tylko zrealizowane pozycje (z aktywnego filtra).
+  const visibleEntries = filteredEntries.slice(0, visibleCount);
+  const hasMore = filteredEntries.length > visibleEntries.length;
+
+  // Auto-load next page when sentinel becomes visible
+  useEffect(() => {
+    if (!hasMore) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((c) => c + PAGE_SIZE);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, filteredEntries.length]);
+
   const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
     .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
