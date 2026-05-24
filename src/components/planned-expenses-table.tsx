@@ -508,7 +508,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                           aria-label={t("organizations.planned.col.completed")}
                           className="h-5 w-5"
                           checked={completed}
-                          disabled={toggleMutation.isPending}
+                          disabled={completed || toggleMutation.isPending}
                           onClick={(event) => event.stopPropagation()}
                           onCheckedChange={(v) => handleToggle(e, Boolean(v))}
                         />
