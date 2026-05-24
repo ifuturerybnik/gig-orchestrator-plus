@@ -231,6 +231,7 @@ export default
       "currency_used": "Waluta organizacji: {{currency}}. Zmień ją w Profilu zespołu, aby używać innej.",
       "expand": "Pokaż więcej ({{count}})",
       "collapse": "Zwiń listę",
+      "loading_more": "Wczytywanie kolejnych wpisów… (pozostało {{remaining}})",
       "col": {
         "date": "Data",
         "author": "Wpisał",
