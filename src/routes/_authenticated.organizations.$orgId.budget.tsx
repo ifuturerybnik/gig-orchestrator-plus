@@ -600,6 +600,42 @@ function OrganizationBudgetPage() {
       </div>
 
       <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
+
+      <AlertDialog
+        open={completeCandidate !== null}
+        onOpenChange={(o) => {
+          if (!o) setCompleteCandidate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("organizations.budget.confirm_complete_title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("organizations.budget.confirm_complete_description")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t("organizations.budget.confirm_complete_cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (completeCandidate) {
+                  toggleMutation.mutate({
+                    entryId: completeCandidate,
+                    completed: true,
+                  });
+                }
+                setCompleteCandidate(null);
+              }}
+            >
+              {t("organizations.budget.confirm_complete_yes")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
