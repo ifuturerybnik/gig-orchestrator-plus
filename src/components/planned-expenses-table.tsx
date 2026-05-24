@@ -235,7 +235,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
               {t("organizations.planned.add")}
             </Button>
