@@ -123,7 +123,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres, currency";
+  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -229,6 +229,25 @@ export const updateOrganization = createServerFn({ method: "POST" })
           .toUpperCase()
           .regex(/^[A-Z]{3}$/)
           .optional(),
+        legal_name: optionalText(200),
+        tax_id: optionalText(40),
+        registration_number: optionalText(40),
+        court_register_number: optionalText(40),
+        bank_account: optionalText(60),
+        bank_name: optionalText(120),
+        signatory_name: optionalText(200),
+        signatory_position: optionalText(120),
+        contact_email: z
+          .string()
+          .trim()
+          .max(255)
+          .optional()
+          .transform((v) => (v && v.length > 0 ? v : null))
+          .refine((v) => v === null || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v ?? ""), {
+            message: "Invalid email",
+          }),
+        contact_phone: optionalText(40),
+        website: optionalText(255),
       })
       .parse(input),
   )
@@ -245,6 +264,17 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_country: data.address_country,
         ...(data.genres !== undefined ? { genres: data.genres } : {}),
         ...(data.currency !== undefined ? { currency: data.currency } : {}),
+        legal_name: data.legal_name,
+        tax_id: data.tax_id,
+        registration_number: data.registration_number,
+        court_register_number: data.court_register_number,
+        bank_account: data.bank_account,
+        bank_name: data.bank_name,
+        signatory_name: data.signatory_name,
+        signatory_position: data.signatory_position,
+        contact_email: data.contact_email,
+        contact_phone: data.contact_phone,
+        website: data.website,
       })
       .eq("id", data.organizationId);
     if (error) throw new Error(error.message);
