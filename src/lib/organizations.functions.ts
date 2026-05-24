@@ -298,17 +298,19 @@ export const listBudgetEntries = createServerFn({ method: "GET" })
     const { data: entries, error } = await supabase
       .from("organization_budget_entries")
       .select(
-        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, category, completed, created_at",
+        "id, organization_id, created_by, entry_date, description, kind, amount_gross, currency, category, completed, completed_by, completed_at, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
-
-
     const userIds = Array.from(
-      new Set((entries ?? []).map((e) => e.created_by)),
+      new Set(
+        (entries ?? []).flatMap((e) =>
+          [e.created_by, e.completed_by].filter(Boolean) as string[],
+        ),
+      ),
     );
     const { data: profiles } = userIds.length
       ? await supabaseAdmin
@@ -325,6 +327,7 @@ export const listBudgetEntries = createServerFn({ method: "GET" })
         ...e,
         amount_gross: Number(e.amount_gross),
         author: profileMap.get(e.created_by) ?? null,
+        completed_author: e.completed_by ? profileMap.get(e.completed_by) ?? null : null,
       })),
     };
   });
@@ -389,10 +392,14 @@ export const setBudgetEntryCompleted = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { error } = await supabase
       .from("organization_budget_entries")
-      .update({ completed: data.completed })
+      .update({
+        completed: data.completed,
+        completed_by: data.completed ? userId : null,
+        completed_at: data.completed ? new Date().toISOString() : null,
+      })
       .eq("id", data.entryId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -429,16 +436,19 @@ export const listPlannedExpenses = createServerFn({ method: "GET" })
     const { data: entries, error } = await supabase
       .from("organization_planned_expenses")
       .select(
-        "id, organization_id, created_by, entry_date, description, kind, planned_date, amount_gross, currency, category, completed, created_at",
+        "id, organization_id, created_by, entry_date, description, kind, planned_date, amount_gross, currency, category, completed, completed_by, completed_at, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("planned_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
-
     const userIds = Array.from(
-      new Set((entries ?? []).map((e) => e.created_by)),
+      new Set(
+        (entries ?? []).flatMap((e) =>
+          [e.created_by, e.completed_by].filter(Boolean) as string[],
+        ),
+      ),
     );
     const { data: profiles } = userIds.length
       ? await supabaseAdmin
@@ -455,6 +465,7 @@ export const listPlannedExpenses = createServerFn({ method: "GET" })
         ...e,
         amount_gross: Number(e.amount_gross),
         author: profileMap.get(e.created_by) ?? null,
+        completed_author: e.completed_by ? profileMap.get(e.completed_by) ?? null : null,
       })),
     };
   });
@@ -517,10 +528,14 @@ export const setPlannedExpenseCompleted = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { error } = await supabase
       .from("organization_planned_expenses")
-      .update({ completed: data.completed })
+      .update({
+        completed: data.completed,
+        completed_by: data.completed ? userId : null,
+        completed_at: data.completed ? new Date().toISOString() : null,
+      })
       .eq("id", data.entryId);
     if (error) throw new Error(error.message);
     return { ok: true };
