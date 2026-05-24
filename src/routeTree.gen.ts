@@ -21,6 +21,9 @@ import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_aut
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
+import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
+import { Route as AuthenticatedOrganizationsOrgIdEventsRouteImport } from './routes/_authenticated.organizations.$orgId.events'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -86,6 +89,24 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdProfileRoute =
+  AuthenticatedOrganizationsOrgIdProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
+const AuthenticatedOrganizationsOrgIdMembersRoute =
+  AuthenticatedOrganizationsOrgIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
+const AuthenticatedOrganizationsOrgIdEventsRoute =
+  AuthenticatedOrganizationsOrgIdEventsRouteImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,6 +119,9 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
+  '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
+  '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +134,9 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
+  '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
+  '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
@@ -125,6 +152,9 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/_authenticated/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
+  '/_authenticated/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
+  '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +170,9 @@ export interface FileRouteTypes {
     | '/organizations/$orgId'
     | '/organizations/new'
     | '/organizations/'
+    | '/organizations/$orgId/events'
+    | '/organizations/$orgId/members'
+    | '/organizations/$orgId/profile'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -152,6 +185,9 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/organizations/new'
     | '/organizations'
+    | '/organizations/$orgId/events'
+    | '/organizations/$orgId/members'
+    | '/organizations/$orgId/profile'
     | '/organizations/$orgId'
   id:
     | '__root__'
@@ -166,6 +202,9 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId'
     | '/_authenticated/organizations/new'
     | '/_authenticated/organizations/'
+    | '/_authenticated/organizations/$orgId/events'
+    | '/_authenticated/organizations/$orgId/members'
+    | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
@@ -263,15 +302,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/profile': {
+      id: '/_authenticated/organizations/$orgId/profile'
+      path: '/profile'
+      fullPath: '/organizations/$orgId/profile'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdProfileRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/_authenticated/organizations/$orgId/members': {
+      id: '/_authenticated/organizations/$orgId/members'
+      path: '/members'
+      fullPath: '/organizations/$orgId/members'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdMembersRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/_authenticated/organizations/$orgId/events': {
+      id: '/_authenticated/organizations/$orgId/events'
+      path: '/events'
+      fullPath: '/organizations/$orgId/events'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdEventsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
   }
 }
 
 interface AuthenticatedOrganizationsOrgIdRouteChildren {
+  AuthenticatedOrganizationsOrgIdEventsRoute: typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
+  AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
   AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 
 const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOrgIdRouteChildren =
   {
+    AuthenticatedOrganizationsOrgIdEventsRoute:
+      AuthenticatedOrganizationsOrgIdEventsRoute,
+    AuthenticatedOrganizationsOrgIdMembersRoute:
+      AuthenticatedOrganizationsOrgIdMembersRoute,
+    AuthenticatedOrganizationsOrgIdProfileRoute:
+      AuthenticatedOrganizationsOrgIdProfileRoute,
     AuthenticatedOrganizationsOrgIdIndexRoute:
       AuthenticatedOrganizationsOrgIdIndexRoute,
   }
@@ -314,13 +383,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
