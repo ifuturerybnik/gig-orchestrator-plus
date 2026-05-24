@@ -393,7 +393,15 @@ export const setBudgetEntryCompleted = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
+    const { data: entry, error: readError } = await supabase
+      .from("organization_budget_entries")
+      .select("id")
+      .eq("id", data.entryId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!entry) throw new Error("Forbidden");
+
+    const { error } = await supabaseAdmin
       .from("organization_budget_entries")
       .update({
         completed: data.completed,
@@ -529,7 +537,15 @@ export const setPlannedExpenseCompleted = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
+    const { data: entry, error: readError } = await supabase
+      .from("organization_planned_expenses")
+      .select("id")
+      .eq("id", data.entryId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!entry) throw new Error("Forbidden");
+
+    const { error } = await supabaseAdmin
       .from("organization_planned_expenses")
       .update({
         completed: data.completed,
