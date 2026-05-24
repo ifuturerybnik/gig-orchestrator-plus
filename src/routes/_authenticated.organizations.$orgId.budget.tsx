@@ -222,6 +222,18 @@ function OrganizationBudgetPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="category">
+                    {t("organizations.budget.col.category")}
+                  </Label>
+                  <CategoryInput
+                    id="category"
+                    value={form.category}
+                    onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+                    existing={entries.map((e) => e.category)}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="description">
                     {t("organizations.budget.col.description")}
                   </Label>
@@ -236,6 +248,7 @@ function OrganizationBudgetPage() {
                     }
                   />
                 </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="amount_gross">
