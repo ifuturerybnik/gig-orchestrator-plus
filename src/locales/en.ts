@@ -1,3 +1,4 @@
+export default 
 {
   "app": {
     "name": "Concertivo",
@@ -140,3 +141,4 @@
     }
   }
 }
+ as const;
