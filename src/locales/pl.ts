@@ -197,12 +197,27 @@ export default
       "other": "Inne"
     },
 
+    "sidebar": {
+      "section": "Nawigacja",
+      "overview": "Przegląd",
+      "profile": "Profil",
+      "members": "Członkowie",
+      "events": "Koncerty",
+      "back_to_list": "← Wszystkie organizacje"
+    },
+    "events": {
+      "title": "Koncerty",
+      "subtitle": "Planuj i zarządzaj koncertami tej organizacji.",
+      "empty": "Brak zaplanowanych koncertów. Moduł zarządzania koncertami pojawi się tutaj wkrótce.",
+      "coming_soon": "Wkrótce"
+    },
 
     "messages": {
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
       "approved": "Organizacja zatwierdzona.",
       "rejected": "Organizacja odrzucona."
     }
+
   },
   "admin": {
     "approvals": {
