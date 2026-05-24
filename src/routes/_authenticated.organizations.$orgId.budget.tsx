@@ -141,8 +141,12 @@ function OrganizationBudgetPage() {
       toggleFn({ data: v }),
     onMutate: async (v) => {
       await queryClient.cancelQueries({ queryKey: budgetKey });
-      const previous = queryClient.getQueryData<{ entries: typeof entries }>(budgetKey);
-      queryClient.setQueryData<{ entries: typeof entries }>(budgetKey, (old) =>
+      const previous = queryClient.getQueryData<{
+        entries: Array<{ id: string; completed?: boolean }>;
+      }>(budgetKey);
+      queryClient.setQueryData<{
+        entries: Array<{ id: string; completed?: boolean }>;
+      }>(budgetKey, (old) =>
         old
           ? {
               ...old,
