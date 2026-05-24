@@ -155,8 +155,26 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const toggleMutation = useMutation({
     mutationFn: (v: { entryId: string; completed: boolean }) =>
       toggleFn({ data: v }),
+    onMutate: async (v) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<{ entries: PlannedEntry[] }>(queryKey);
+      queryClient.setQueryData<{ entries: PlannedEntry[] }>(queryKey, (old) =>
+        old
+          ? {
+              ...old,
+              entries: old.entries.map((entry) =>
+                entry.id === v.entryId ? { ...entry, completed: v.completed } : entry,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, _v, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      toast.error(e.message);
+    },
   });
 
   const deleteMutation = useMutation({
