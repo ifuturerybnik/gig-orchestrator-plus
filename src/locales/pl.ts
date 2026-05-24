@@ -242,6 +242,28 @@ export default
         "expense": "Wydatek"
       }
     },
+    "planned": {
+      "title": "Przyszłe wydatki",
+      "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz „Zrealizowano", aby wykluczyć z podsumowania.",
+      "add": "Dodaj pozycję",
+      "added": "Pozycja dodana",
+      "deleted": "Pozycja usunięta",
+      "delete_confirm": "Usunąć tę pozycję?",
+      "empty_list": "Brak zaplanowanych pozycji.",
+      "summary": "Podsumowanie (niezrealizowane)",
+      "expand": "Pokaż więcej ({{count}})",
+      "collapse": "Zwiń listę",
+      "pick_date": "Wybierz datę",
+      "col": {
+        "date": "Data",
+        "author": "Wpisał",
+        "description": "Opis wydatku",
+        "kind": "Rodzaj",
+        "planned_date": "Przewidywana data",
+        "amount_gross": "Kwota brutto",
+        "completed": "Zrealizowano"
+      }
+    },
 
     "messages": {
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
