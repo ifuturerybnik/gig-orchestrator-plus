@@ -208,7 +208,8 @@ export default
       "members": "Members",
       "events": "Concerts",
       "budget": "Budget",
-      "back_to_list": "← All organizations"
+      "back_to_list": "← All organizations",
+      "pending_expenses": "Pending expenses: {{count}}"
     },
     "events": {
       "title": "Concerts",
