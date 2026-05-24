@@ -179,6 +179,11 @@ export default
       "genres": {
         "title": "Gatunki muzyczne",
         "help": "Wybierz wszystkie gatunki, w których gra zespół. Możesz zmienić w dowolnym momencie."
+      },
+      "currency": {
+        "title": "Waluta",
+        "label": "Waluta domyślna",
+        "help": "Waluta używana w module budżetu. Domyślnie ustawiana wg kraju adresu — możesz ją zmienić."
       }
     },
     "genres": {
