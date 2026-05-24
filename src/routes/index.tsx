@@ -1,26 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: LandingPage,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function LandingPage() {
+  const { t } = useTranslation();
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="mx-auto max-w-4xl px-4 py-24 text-center">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          {t("landing.hero.title")}
+        </h1>
+        <p className="mt-6 text-lg text-muted-foreground">{t("landing.hero.subtitle")}</p>
+        <div className="mt-10 flex items-center justify-center gap-3">
+          <Link to="/register">
+            <Button size="lg">{t("landing.hero.cta_primary")}</Button>
+          </Link>
+          <Link to="/login">
+            <Button size="lg" variant="outline">
+              {t("landing.hero.cta_secondary")}
+            </Button>
+          </Link>
+        </div>
+      </main>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
