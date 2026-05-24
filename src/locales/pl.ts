@@ -39,6 +39,29 @@ export default
       "empty": "Nie jesteś jeszcze przypisany do żadnej organizacji."
     }
   },
+  "security": {
+    "password": {
+      "title": "Zmiana hasła",
+      "new": "Nowe hasło",
+      "confirm": "Powtórz nowe hasło",
+      "change": "Zmień hasło",
+      "changed": "Hasło zostało zmienione"
+    },
+    "mfa": {
+      "title": "Weryfikacja dwuetapowa (2FA)",
+      "help": "Dodatkowe zabezpieczenie konta — przy logowaniu poprosimy o jednorazowy kod z aplikacji uwierzytelniającej (Google Authenticator, Authy, 1Password itp.).",
+      "enable": "Włącz 2FA",
+      "disable": "Wyłącz 2FA",
+      "disable_confirm": "Czy na pewno wyłączyć weryfikację dwuetapową?",
+      "enabled": "Weryfikacja dwuetapowa włączona",
+      "disabled": "Weryfikacja dwuetapowa wyłączona",
+      "enabled_state": "✓ Weryfikacja dwuetapowa jest aktywna",
+      "scan_help": "Zeskanuj poniższy kod QR w aplikacji uwierzytelniającej, a następnie wpisz wygenerowany 6-cyfrowy kod.",
+      "secret_label": "Klucz (wpisz ręcznie jeśli nie możesz zeskanować)",
+      "code_label": "6-cyfrowy kod z aplikacji",
+      "verify": "Zweryfikuj i włącz"
+    }
+  },
 
 
   "lang": {
@@ -78,7 +101,14 @@ export default
       "submit": "Zaloguj",
       "forgot": "Nie pamiętasz hasła?",
       "no_account": "Nie masz konta?",
-      "register_link": "Załóż konto"
+      "register_link": "Załóż konto",
+      "remember_device": "Pamiętaj to urządzenie przez 30 dni"
+    },
+    "mfa": {
+      "prompt": "Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej, aby dokończyć logowanie.",
+      "code": "Kod weryfikacyjny",
+      "verify": "Zweryfikuj",
+      "invalid_code": "Nieprawidłowy kod"
     },
     "register": {
       "title": "Załóż konto",
@@ -95,7 +125,8 @@ export default
       "submit": "Załóż konto",
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
-      "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny."
+      "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny.",
+      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych."
     },
     "reset": {
       "title": "Reset hasła",

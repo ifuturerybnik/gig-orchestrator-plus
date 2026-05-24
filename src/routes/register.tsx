@@ -133,6 +133,9 @@ function RegisterPage() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
               />
             </div>
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+              {t("auth.register.mfa_recommendation")}
+            </div>
             <Button type="submit" className="w-full">
               {t("common.next")}
             </Button>
