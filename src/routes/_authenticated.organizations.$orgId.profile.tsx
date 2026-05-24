@@ -200,9 +200,34 @@ function OrganizationProfilePage() {
             <CountrySelect
               id="address_country"
               value={form.address_country}
-              onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
+              onChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  address_country: v,
+                  currency: currencyForCountry(v),
+                }))
+              }
             />
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-md border border-border bg-card p-4">
+        <div>
+          <h2 className="text-lg font-semibold">
+            {t("organizations.detail.currency.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("organizations.detail.currency.help")}
+          </p>
+        </div>
+        <div className="max-w-sm space-y-2">
+          <Label htmlFor="currency">{t("organizations.detail.currency.label")}</Label>
+          <CurrencySelect
+            id="currency"
+            value={form.currency}
+            onChange={(v) => setForm((f) => ({ ...f, currency: v }))}
+          />
         </div>
       </section>
 
