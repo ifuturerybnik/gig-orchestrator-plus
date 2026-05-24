@@ -202,12 +202,124 @@ function OrganizationBudgetPage() {
   };
 
   const entries = budgetQuery.data?.entries ?? [];
-  const INITIAL_LIMIT = 10;
-  const hasMore = entries.length > INITIAL_LIMIT;
-  const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
-  // Podsumowanie per waluta — tylko zrealizowane pozycje.
-  const totals = entries
+  // ===== Filtry =====
+  type DateFilter =
+    | "all"
+    | "this_month"
+    | "prev_month"
+    | "this_year"
+    | "prev_year"
+    | "custom";
+  type CompletedFilter = "all" | "yes" | "no";
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [completedFilter, setCompletedFilter] = useState<CompletedFilter>("all");
+
+  const dateRange = useMemo<{ from: Date; to: Date } | null>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const startOfDay = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    const endOfDay = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    switch (dateFilter) {
+      case "this_month":
+        return { from: new Date(y, m, 1), to: endOfDay(new Date(y, m + 1, 0)) };
+      case "prev_month":
+        return { from: new Date(y, m - 1, 1), to: endOfDay(new Date(y, m, 0)) };
+      case "this_year":
+        return { from: new Date(y, 0, 1), to: endOfDay(new Date(y, 11, 31)) };
+      case "prev_year":
+        return { from: new Date(y - 1, 0, 1), to: endOfDay(new Date(y - 1, 11, 31)) };
+      case "custom":
+        if (customRange?.from) {
+          return {
+            from: startOfDay(customRange.from),
+            to: endOfDay(customRange.to ?? customRange.from),
+          };
+        }
+        return null;
+      case "all":
+      default:
+        return null;
+    }
+  }, [dateFilter, customRange]);
+
+  const authorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of entries) {
+      const cb = (e as { created_by?: string }).created_by;
+      if (!cb) continue;
+      if (!map.has(cb)) {
+        const name = [e.author?.first_name, e.author?.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        map.set(cb, name || t("organizations.members.no_name"));
+      }
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [entries, t]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) {
+      const c = (e as { category?: string | null }).category;
+      if (c && c.trim()) set.add(c.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((e) => {
+      if (dateRange) {
+        const d = new Date(e.entry_date);
+        if (d < dateRange.from || d > dateRange.to) return false;
+      }
+      if (
+        authorFilter !== "all" &&
+        (e as { created_by?: string }).created_by !== authorFilter
+      )
+        return false;
+      if (categoryFilter !== "all") {
+        const c = ((e as { category?: string | null }).category ?? "").trim();
+        if (c !== categoryFilter) return false;
+      }
+      if (completedFilter !== "all") {
+        const completed = (e as { completed?: boolean }).completed !== false;
+        if (completedFilter === "yes" && !completed) return false;
+        if (completedFilter === "no" && completed) return false;
+      }
+      return true;
+    });
+  }, [entries, dateRange, authorFilter, categoryFilter, completedFilter]);
+
+  const filtersActive =
+    dateFilter !== "all" ||
+    authorFilter !== "all" ||
+    categoryFilter !== "all" ||
+    completedFilter !== "all";
+
+  const clearFilters = () => {
+    setDateFilter("all");
+    setCustomRange(undefined);
+    setAuthorFilter("all");
+    setCategoryFilter("all");
+    setCompletedFilter("all");
+  };
+
+  const INITIAL_LIMIT = 10;
+  const hasMore = filteredEntries.length > INITIAL_LIMIT;
+  const visibleEntries = expanded
+    ? filteredEntries
+    : filteredEntries.slice(0, INITIAL_LIMIT);
+
+  // Podsumowanie per waluta — tylko zrealizowane pozycje (z aktywnego filtra).
+  const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
     .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
       if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
