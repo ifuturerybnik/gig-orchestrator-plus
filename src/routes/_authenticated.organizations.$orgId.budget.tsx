@@ -6,8 +6,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   CalendarIcon,
-  ChevronDown,
-  ChevronUp,
   Plus,
   Trash2,
   TrendingDown,
