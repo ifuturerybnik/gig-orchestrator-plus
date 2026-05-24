@@ -241,6 +241,28 @@ export default
         "expense": "Expense"
       }
     },
+    "planned": {
+      "title": "Upcoming expenses",
+      "subtitle": "Planned income and expenses. Mark \"Completed\" to exclude from the summary.",
+      "add": "Add entry",
+      "added": "Entry added",
+      "deleted": "Entry deleted",
+      "delete_confirm": "Delete this entry?",
+      "empty_list": "No planned entries yet.",
+      "summary": "Summary (pending only)",
+      "expand": "Show more ({{count}})",
+      "collapse": "Collapse list",
+      "pick_date": "Pick a date",
+      "col": {
+        "date": "Date",
+        "author": "Added by",
+        "description": "Description",
+        "kind": "Kind",
+        "planned_date": "Planned date",
+        "amount_gross": "Gross amount",
+        "completed": "Completed"
+      }
+    },
 
     "messages": {
       "created": "Organization submitted. An admin will review it.",

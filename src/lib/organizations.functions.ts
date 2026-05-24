@@ -381,3 +381,120 @@ export const deleteBudgetEntry = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ============================================================================
+// PLANNED EXPENSES (przyszłe wydatki / wpływy)
+// ============================================================================
+
+export const listPlannedExpenses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: entries, error } = await supabase
+      .from("organization_planned_expenses")
+      .select(
+        "id, organization_id, created_by, entry_date, description, kind, planned_date, amount_gross, currency, completed, created_at",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("planned_date", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const userIds = Array.from(
+      new Set((entries ?? []).map((e) => e.created_by)),
+    );
+    const { data: profiles } = userIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds)
+      : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }> };
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [p.id, p] as const),
+    );
+
+    return {
+      entries: (entries ?? []).map((e) => ({
+        ...e,
+        amount_gross: Number(e.amount_gross),
+        author: profileMap.get(e.created_by) ?? null,
+      })),
+    };
+  });
+
+export const createPlannedExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        description: z.string().trim().min(1).max(500),
+        kind: BudgetKind,
+        planned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        amount_gross: z.number().nonnegative().max(99999999.99),
+        currency: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-Z]{3}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: entry, error } = await supabase
+      .from("organization_planned_expenses")
+      .insert({
+        organization_id: data.organizationId,
+        created_by: userId,
+        entry_date: new Date().toISOString().slice(0, 10),
+        description: data.description,
+        kind: data.kind,
+        planned_date: data.planned_date,
+        amount_gross: data.amount_gross,
+        currency: data.currency,
+        completed: false,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { entry };
+  });
+
+export const setPlannedExpenseCompleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        entryId: z.string().uuid(),
+        completed: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_planned_expenses")
+      .update({ completed: data.completed })
+      .eq("id", data.entryId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deletePlannedExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ entryId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_planned_expenses")
+      .delete()
+      .eq("id", data.entryId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
