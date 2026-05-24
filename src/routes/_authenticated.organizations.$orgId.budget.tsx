@@ -131,7 +131,7 @@ function OrganizationBudgetPage() {
     Record<string, { income: number; expense: number }>
   >((acc, e) => {
     if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
-    acc[e.currency][e.kind] += e.amount_gross;
+    acc[e.currency][e.kind as "income" | "expense"] += e.amount_gross;
     return acc;
   }, {});
 
