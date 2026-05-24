@@ -452,16 +452,37 @@ function OrganizationBudgetPage() {
                       {formatAmount(e.amount_gross, e.currency, i18n.language)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={completed}
-                      onCheckedChange={(v) =>
-                        toggleMutation.mutate({
-                          entryId: e.id,
-                          completed: Boolean(v),
-                        })
-                      }
-                    />
+                  <TableCell className="text-center align-top">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Checkbox
+                        checked={completed}
+                        onCheckedChange={(v) =>
+                          toggleMutation.mutate({
+                            entryId: e.id,
+                            completed: Boolean(v),
+                          })
+                        }
+                      />
+                      {completed && completedAt && (
+                        <span className="text-[10px] leading-tight text-muted-foreground">
+                          {completedAuthorName && (
+                            <>
+                              {t("organizations.budget.col.completed_by", {
+                                name: completedAuthorName,
+                              })}
+                              <br />
+                            </>
+                          )}
+                          {new Date(completedAt).toLocaleString(i18n.language, {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
 
