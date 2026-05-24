@@ -78,7 +78,14 @@ export default
       "submit": "Sign in",
       "forgot": "Forgot your password?",
       "no_account": "No account yet?",
-      "register_link": "Create one"
+      "register_link": "Create one",
+      "remember_device": "Remember this device for 30 days"
+    },
+    "mfa": {
+      "prompt": "Enter the 6-digit code from your authenticator app to finish signing in.",
+      "code": "Verification code",
+      "verify": "Verify",
+      "invalid_code": "Invalid code"
     },
     "register": {
       "title": "Create your account",
@@ -95,7 +102,8 @@ export default
       "submit": "Create account",
       "have_account": "Already have an account?",
       "login_link": "Sign in",
-      "check_email": "Check your inbox — we've sent an activation link."
+      "check_email": "Check your inbox — we've sent an activation link.",
+      "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security". An extra code from your app significantly improves account security."
     },
     "reset": {
       "title": "Reset password",
