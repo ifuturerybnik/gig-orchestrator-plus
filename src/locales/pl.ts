@@ -250,7 +250,7 @@ export default
         "expense": "Wydatek"
       },
       "categories": {
-        "placeholder": "Wybierz lub wpisz…",
+        "placeholder": "Wybierz kategorię…",
         "fee": "Honorarium",
         "transport": "Transport",
         "accommodation": "Nocleg",
@@ -263,7 +263,31 @@ export default
         "ticket_sales": "Sprzedaż biletów",
         "sponsorship": "Sponsoring",
         "merch": "Merch",
-        "other": "Inne"
+        "music_videos": "Teledyski",
+        "other": "Inne",
+        "other_custom": "Inne (wpisz własną)…",
+        "custom_placeholder": "Wpisz nazwę kategorii"
+      },
+      "filters": {
+        "title": "Filtry",
+        "date": "Data",
+        "date_all": "Wszystkie daty",
+        "date_this_month": "Ten miesiąc",
+        "date_prev_month": "Poprzedni miesiąc",
+        "date_this_year": "Ten rok",
+        "date_prev_year": "Poprzedni rok",
+        "date_custom": "Własny zakres",
+        "author": "Wpisał",
+        "author_all": "Wszyscy",
+        "category": "Kategoria",
+        "category_all": "Wszystkie kategorie",
+        "completed": "Zrealizowano",
+        "completed_all": "Wszystkie",
+        "completed_yes": "Tylko zrealizowane",
+        "completed_no": "Tylko niezrealizowane",
+        "clear": "Wyczyść filtry",
+        "pick_range": "Wybierz zakres",
+        "results": "Pasujące pozycje: {{count}}"
       }
     },
 
