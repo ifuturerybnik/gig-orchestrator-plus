@@ -6,6 +6,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   CalendarIcon,
+  ChevronDown,
+  ChevronUp,
   Plus,
   Trash2,
   TrendingDown,
@@ -104,7 +106,9 @@ function OrganizationBudgetPage() {
 
   const orgCurrency = detailsQuery.data?.organization.currency ?? "PLN";
 
+  const COLLAPSED_LIMIT = 10;
   const PAGE_SIZE = 100;
+  const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -312,15 +316,18 @@ function OrganizationBudgetPage() {
     setCompletedFilter("all");
   };
 
-  // Reset infinite-scroll window when filters change
+  // Reset infinite-scroll window when filters change or collapsed
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter]);
+  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter, expanded]);
 
-  const visibleEntries = filteredEntries.slice(0, visibleCount);
-  const hasMore = filteredEntries.length > visibleEntries.length;
+  const visibleEntries = expanded
+    ? filteredEntries.slice(0, visibleCount)
+    : filteredEntries.slice(0, COLLAPSED_LIMIT);
+  const canExpand = filteredEntries.length > COLLAPSED_LIMIT;
+  const hasMore = expanded && filteredEntries.length > visibleEntries.length;
 
-  // Auto-load next page when sentinel becomes visible
+  // Auto-load next page when sentinel becomes visible (only when expanded)
   useEffect(() => {
     if (!hasMore) return;
     const node = loadMoreRef.current;
@@ -336,6 +343,7 @@ function OrganizationBudgetPage() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMore, filteredEntries.length]);
+
 
   const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
@@ -894,6 +902,29 @@ function OrganizationBudgetPage() {
             {t("organizations.budget.loading_more", {
               remaining: filteredEntries.length - visibleEntries.length,
             })}
+          </div>
+        )}
+        {canExpand && (
+          <div className="flex justify-center border-t border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.collapse")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.expand", {
+                    count: filteredEntries.length - COLLAPSED_LIMIT,
+                  })}
+                </>
+              )}
+            </Button>
           </div>
         )}
 
