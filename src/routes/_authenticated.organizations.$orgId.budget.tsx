@@ -251,6 +251,7 @@ function OrganizationBudgetPage() {
                     value={form.category}
                     onChange={(v) => setForm((f) => ({ ...f, category: v }))}
                     existing={entries.map((e) => e.category)}
+                    storageKey={orgId}
                   />
                 </div>
 
@@ -371,13 +372,37 @@ function OrganizationBudgetPage() {
               const isIncome = e.kind === "income";
               const completed =
                 (e as { completed?: boolean }).completed !== false;
+              const completedAt = (e as { completed_at?: string | null }).completed_at;
+              const completedAuthor = (e as {
+                completed_author?: { first_name?: string | null; last_name?: string | null } | null;
+              }).completed_author;
+              const completedAuthorName = [
+                completedAuthor?.first_name,
+                completedAuthor?.last_name,
+              ]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+              const createdAt = (e as { created_at?: string | null }).created_at;
               const rowClass = cn(
                 !completed && "text-rose-600 dark:text-rose-400",
               );
               return (
                 <TableRow key={e.id} className={rowClass}>
                   <TableCell className="whitespace-nowrap">
-                    {new Date(e.entry_date).toLocaleDateString(i18n.language)}
+                    <div className="flex flex-col leading-tight">
+                      <span>
+                        {new Date(e.entry_date).toLocaleDateString(i18n.language)}
+                      </span>
+                      {createdAt && (
+                        <span className="text-[11px] text-muted-foreground">
+                          {new Date(createdAt).toLocaleTimeString(i18n.language, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm">
                     {author || t("organizations.members.no_name")}
@@ -427,16 +452,37 @@ function OrganizationBudgetPage() {
                       {formatAmount(e.amount_gross, e.currency, i18n.language)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={completed}
-                      onCheckedChange={(v) =>
-                        toggleMutation.mutate({
-                          entryId: e.id,
-                          completed: Boolean(v),
-                        })
-                      }
-                    />
+                  <TableCell className="text-center align-top">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Checkbox
+                        checked={completed}
+                        onCheckedChange={(v) =>
+                          toggleMutation.mutate({
+                            entryId: e.id,
+                            completed: Boolean(v),
+                          })
+                        }
+                      />
+                      {completed && completedAt && (
+                        <span className="text-[10px] leading-tight text-muted-foreground">
+                          {completedAuthorName && (
+                            <>
+                              {t("organizations.budget.col.completed_by", {
+                                name: completedAuthorName,
+                              })}
+                              <br />
+                            </>
+                          )}
+                          {new Date(completedAt).toLocaleString(i18n.language, {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
 

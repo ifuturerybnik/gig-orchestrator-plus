@@ -80,8 +80,11 @@ type PlannedEntry = {
   currency: string;
   category?: string | null;
   completed: boolean;
+  completed_at?: string | null;
+  created_at?: string | null;
   created_by: string;
   author?: { first_name?: string | null; last_name?: string | null } | null;
+  completed_author?: { first_name?: string | null; last_name?: string | null } | null;
 };
 
 
@@ -295,6 +298,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     value={form.category}
                     onChange={(v) => setForm((f) => ({ ...f, category: v }))}
                     existing={entries.map((e) => e.category)}
+                    storageKey={organizationId}
                   />
                 </div>
 
@@ -414,11 +418,23 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                   >
                     <TableCell
                       className={cn(
-                        "whitespace-nowrap",
+                        "whitespace-nowrap align-top",
                         completed && "line-through",
                       )}
                     >
-                      {new Date(e.entry_date).toLocaleDateString(i18n.language)}
+                      <div className="flex flex-col leading-tight">
+                        <span>
+                          {new Date(e.entry_date).toLocaleDateString(i18n.language)}
+                        </span>
+                        {e.created_at && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(e.created_at).toLocaleTimeString(i18n.language, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell
                       className={cn("text-sm", completed && "line-through")}
@@ -469,11 +485,39 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                         {formatAmount(e.amount_gross, e.currency, i18n.language)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={completed}
-                        onCheckedChange={(v) => handleToggle(e, Boolean(v))}
-                      />
+                    <TableCell className="text-center align-top">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Checkbox
+                          checked={completed}
+                          onCheckedChange={(v) => handleToggle(e, Boolean(v))}
+                        />
+                        {completed && e.completed_at && (
+                          <span className="text-[10px] leading-tight text-muted-foreground">
+                            {(() => {
+                              const n = [
+                                e.completed_author?.first_name,
+                                e.completed_author?.last_name,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")
+                                .trim();
+                              return n ? (
+                                <>
+                                  {t("organizations.budget.col.completed_by", { name: n })}
+                                  <br />
+                                </>
+                              ) : null;
+                            })()}
+                            {new Date(e.completed_at).toLocaleString(i18n.language, {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
