@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Trash2, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,6 +72,7 @@ function OrganizationBudgetPage() {
 
   const orgCurrency = detailsQuery.data?.organization.currency ?? "PLN";
 
+  const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     entry_date: new Date().toISOString().slice(0, 10),
@@ -125,6 +127,9 @@ function OrganizationBudgetPage() {
   };
 
   const entries = budgetQuery.data?.entries ?? [];
+  const INITIAL_LIMIT = 10;
+  const hasMore = entries.length > INITIAL_LIMIT;
+  const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
   // Podsumowanie per waluta (na wypadek mieszanych wpisów historycznych).
   const totals = entries.reduce<
@@ -260,6 +265,7 @@ function OrganizationBudgetPage() {
       </div>
 
       <div className="rounded-md border border-border bg-card">
+        <div className={expanded ? "max-h-[640px] overflow-auto" : undefined}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -295,7 +301,7 @@ function OrganizationBudgetPage() {
                 </TableCell>
               </TableRow>
             )}
-            {entries.map((e) => {
+            {visibleEntries.map((e) => {
               const author = [e.author?.first_name, e.author?.last_name]
                 .filter(Boolean)
                 .join(" ")
@@ -394,6 +400,28 @@ function OrganizationBudgetPage() {
             </TableFooter>
           )}
         </Table>
+        </div>
+        {hasMore && (
+          <div className="flex justify-center border-t border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.collapse")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.expand", { count: entries.length - INITIAL_LIMIT })}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

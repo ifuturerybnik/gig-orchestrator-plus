@@ -228,6 +228,8 @@ export default
       "empty_list": "Brak pozycji budżetowych. Dodaj pierwszy wpływ lub wydatek.",
       "summary": "Podsumowanie",
       "currency_used": "Waluta organizacji: {{currency}}. Zmień ją w Profilu zespołu, aby używać innej.",
+      "expand": "Pokaż więcej ({{count}})",
+      "collapse": "Zwiń listę",
       "col": {
         "date": "Data",
         "author": "Wpisał",
