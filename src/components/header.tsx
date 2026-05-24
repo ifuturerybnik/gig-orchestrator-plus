@@ -30,7 +30,11 @@ export function Header() {
               <Link to="/organizations" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.organizations")}
               </Link>
+              <Link to="/profile" className="text-sm text-muted-foreground hover:text-foreground">
+                {t("nav.profile")}
+              </Link>
               <LanguageSwitcher />
+
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 {t("nav.logout")}
               </Button>
