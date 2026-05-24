@@ -203,12 +203,19 @@ export default
       "profile": "Profil",
       "members": "Członkowie",
       "events": "Koncerty",
+      "budget": "Budżet",
       "back_to_list": "← Wszystkie organizacje"
     },
     "events": {
       "title": "Koncerty",
       "subtitle": "Planuj i zarządzaj koncertami tej organizacji.",
       "empty": "Brak zaplanowanych koncertów. Moduł zarządzania koncertami pojawi się tutaj wkrótce.",
+      "coming_soon": "Wkrótce"
+    },
+    "budget": {
+      "title": "Budżet",
+      "subtitle": "Śledź przychody, koszty i rozliczenia tej organizacji.",
+      "empty": "Brak danych budżetowych. Moduł zarządzania budżetem pojawi się tutaj wkrótce.",
       "coming_soon": "Wkrótce"
     },
 
