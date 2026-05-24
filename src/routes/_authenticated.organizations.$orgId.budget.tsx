@@ -316,15 +316,18 @@ function OrganizationBudgetPage() {
     setCompletedFilter("all");
   };
 
-  // Reset infinite-scroll window when filters change
+  // Reset infinite-scroll window when filters change or collapsed
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter]);
+  }, [dateFilter, customRange, authorFilter, categoryFilter, completedFilter, expanded]);
 
-  const visibleEntries = filteredEntries.slice(0, visibleCount);
-  const hasMore = filteredEntries.length > visibleEntries.length;
+  const visibleEntries = expanded
+    ? filteredEntries.slice(0, visibleCount)
+    : filteredEntries.slice(0, COLLAPSED_LIMIT);
+  const canExpand = filteredEntries.length > COLLAPSED_LIMIT;
+  const hasMore = expanded && filteredEntries.length > visibleEntries.length;
 
-  // Auto-load next page when sentinel becomes visible
+  // Auto-load next page when sentinel becomes visible (only when expanded)
   useEffect(() => {
     if (!hasMore) return;
     const node = loadMoreRef.current;
@@ -340,6 +343,7 @@ function OrganizationBudgetPage() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMore, filteredEntries.length]);
+
 
   const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
