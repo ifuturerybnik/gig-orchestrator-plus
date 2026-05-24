@@ -272,6 +272,32 @@ function OrganizationDetailPage() {
             </div>
           </section>
 
+          {org.type === "band" && (
+            <section className="space-y-4 rounded-md border border-border bg-card p-4">
+              <div>
+                <h2 className="text-lg font-semibold">{t("organizations.detail.genres.title")}</h2>
+                <p className="text-sm text-muted-foreground">{t("organizations.detail.genres.help")}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {MUSIC_GENRES.map((g) => {
+                  const checked = form.genres.includes(g);
+                  return (
+                    <label
+                      key={g}
+                      className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-2 text-sm hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleGenre(g)}
+                      />
+                      <span>{t(`organizations.genres.${g}`)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           <div className="flex gap-2">
             <Button type="submit" disabled={updateMutation.isPending}>
               {t("organizations.detail.save")}
@@ -287,6 +313,20 @@ function OrganizationDetailPage() {
             <p className="mt-6 whitespace-pre-wrap text-sm text-foreground">
               {org.description}
             </p>
+          )}
+          {org.type === "band" && Array.isArray(org.genres) && org.genres.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-foreground">
+                {t("organizations.detail.genres.title")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {org.genres.map((g: string) => (
+                  <Badge key={g} variant="secondary">
+                    {t(`organizations.genres.${g}`, { defaultValue: g })}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           )}
           {addressLine && (
             <p className="mt-4 text-sm text-muted-foreground">
