@@ -230,6 +230,7 @@ export default
       "currency_used": "Organization currency: {{currency}}. Change it in team Profile to use another.",
       "expand": "Show more ({{count}})",
       "collapse": "Collapse list",
+      "loading_more": "Loading more entries… ({{remaining}} remaining)",
       "col": {
         "date": "Date",
         "author": "Added by",
