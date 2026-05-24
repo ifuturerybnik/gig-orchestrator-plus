@@ -904,6 +904,29 @@ function OrganizationBudgetPage() {
             })}
           </div>
         )}
+        {canExpand && (
+          <div className="flex justify-center border-t border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.collapse")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  {t("organizations.budget.expand", {
+                    count: filteredEntries.length - COLLAPSED_LIMIT,
+                  })}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
       </div>
 
