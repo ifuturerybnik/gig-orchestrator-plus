@@ -32,37 +32,36 @@ function OrganizationLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <SidebarProvider>
-        <div className="flex w-full flex-1">
-          <OrgSidebar orgId={orgId} orgName={orgName} />
-          <SidebarInset>
-            <div className="flex h-12 items-center gap-2 border-b border-border bg-background px-4">
-              <SidebarTrigger />
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-medium text-foreground">
-                  {orgName}
-                </span>
-                {org && (
-                  <Badge
-                    variant={
-                      org.status === "approved"
-                        ? "default"
-                        : org.status === "pending"
-                          ? "secondary"
-                          : "destructive"
-                    }
-                  >
-                    {t(`organizations.status.${org.status}`)}
-                  </Badge>
-                )}
-              </div>
+      <SidebarProvider className="flex-1 min-h-0">
+        <OrgSidebar orgId={orgId} orgName={orgName} />
+        <SidebarInset>
+          <div className="flex h-12 items-center gap-2 border-b border-border bg-background px-4">
+            <SidebarTrigger />
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-medium text-foreground">
+                {orgName}
+              </span>
+              {org && (
+                <Badge
+                  variant={
+                    org.status === "approved"
+                      ? "default"
+                      : org.status === "pending"
+                        ? "secondary"
+                        : "destructive"
+                  }
+                >
+                  {t(`organizations.status.${org.status}`)}
+                </Badge>
+              )}
             </div>
-            <main className="mx-auto w-full max-w-4xl px-4 py-8">
-              <Outlet />
-            </main>
-          </SidebarInset>
-        </div>
+          </div>
+          <main className="mx-auto w-full max-w-4xl px-4 py-8">
+            <Outlet />
+          </main>
+        </SidebarInset>
       </SidebarProvider>
     </div>
   );
 }
+
