@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedOrganizationsRouteImport } from './routes/_authenticated.organizations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_authenticated.organizations.new'
+import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -60,6 +61,12 @@ const AuthenticatedOrganizationsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedOrganizationsRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdRoute =
+  AuthenticatedOrganizationsOrgIdRouteImport.update({
+    id: '/$orgId',
+    path: '/$orgId',
+    getParentRoute: () => AuthenticatedOrganizationsRoute,
+  } as any)
 const AuthenticatedAdminApprovalsRoute =
   AuthenticatedAdminApprovalsRouteImport.update({
     id: '/admin/approvals',
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/organizations': typeof AuthenticatedOrganizationsRouteWithChildren
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/organizations': typeof AuthenticatedOrganizationsRouteWithChildren
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
 }
 export interface FileRoutesById {
@@ -97,6 +106,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/organizations': typeof AuthenticatedOrganizationsRouteWithChildren
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRoute
   '/_authenticated/organizations/new': typeof AuthenticatedOrganizationsNewRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organizations'
     | '/admin/approvals'
+    | '/organizations/$orgId'
     | '/organizations/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organizations'
     | '/admin/approvals'
+    | '/organizations/$orgId'
     | '/organizations/new'
   id:
     | '__root__'
@@ -130,6 +142,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/organizations'
     | '/_authenticated/admin/approvals'
+    | '/_authenticated/organizations/$orgId'
     | '/_authenticated/organizations/new'
   fileRoutesById: FileRoutesById
 }
@@ -199,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsNewRouteImport
       parentRoute: typeof AuthenticatedOrganizationsRoute
     }
+    '/_authenticated/organizations/$orgId': {
+      id: '/_authenticated/organizations/$orgId'
+      path: '/$orgId'
+      fullPath: '/organizations/$orgId'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/admin/approvals'
@@ -210,11 +230,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedOrganizationsRouteChildren {
+  AuthenticatedOrganizationsOrgIdRoute: typeof AuthenticatedOrganizationsOrgIdRoute
   AuthenticatedOrganizationsNewRoute: typeof AuthenticatedOrganizationsNewRoute
 }
 
 const AuthenticatedOrganizationsRouteChildren: AuthenticatedOrganizationsRouteChildren =
   {
+    AuthenticatedOrganizationsOrgIdRoute: AuthenticatedOrganizationsOrgIdRoute,
     AuthenticatedOrganizationsNewRoute: AuthenticatedOrganizationsNewRoute,
   }
 

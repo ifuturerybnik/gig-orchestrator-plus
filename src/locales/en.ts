@@ -124,7 +124,24 @@ export default
       "invite": "Invite",
       "email_placeholder": "email@example.com",
       "invitation_sent": "Invitation sent",
-      "pending_invitations": "Pending invitations"
+      "pending_invitations": "Pending invitations",
+      "owner": "Owner",
+      "member": "Member",
+      "remove": "Remove",
+      "remove_confirm": "Remove this member from the organization?",
+      "cancel_invitation": "Cancel",
+      "cancel_invitation_confirm": "Cancel this invitation?",
+      "invitation_cancelled": "Invitation cancelled",
+      "member_removed": "Member removed",
+      "no_name": "(no name)",
+      "expires": "Expires"
+    },
+    "detail": {
+      "back": "← Back to list",
+      "edit": "Edit organization",
+      "save": "Save changes",
+      "saved": "Changes saved",
+      "rejection_reason": "Rejection reason"
     },
     "messages": {
       "created": "Organization submitted. An admin will review it.",

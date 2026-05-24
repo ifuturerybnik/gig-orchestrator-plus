@@ -124,7 +124,24 @@ export default
       "invite": "Zaproś",
       "email_placeholder": "email@example.com",
       "invitation_sent": "Wysłano zaproszenie",
-      "pending_invitations": "Zaproszenia oczekujące"
+      "pending_invitations": "Zaproszenia oczekujące",
+      "owner": "Właściciel",
+      "member": "Członek",
+      "remove": "Usuń",
+      "remove_confirm": "Usunąć tego członka z organizacji?",
+      "cancel_invitation": "Anuluj",
+      "cancel_invitation_confirm": "Anulować to zaproszenie?",
+      "invitation_cancelled": "Zaproszenie anulowane",
+      "member_removed": "Członek usunięty",
+      "no_name": "(bez imienia)",
+      "expires": "Ważne do"
+    },
+    "detail": {
+      "back": "← Wróć do listy",
+      "edit": "Edytuj organizację",
+      "save": "Zapisz zmiany",
+      "saved": "Zapisano zmiany",
+      "rejection_reason": "Powód odrzucenia"
     },
     "messages": {
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
