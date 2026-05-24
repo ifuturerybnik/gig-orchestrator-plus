@@ -424,6 +424,8 @@ function OrganizationBudgetPage() {
           </div>
         )}
       </div>
+
+      <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
     </div>
   );
 }
