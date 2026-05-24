@@ -1,16 +1,30 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Plus, Trash2, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  X,
+} from "lucide-react";
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 import {
@@ -188,12 +202,124 @@ function OrganizationBudgetPage() {
   };
 
   const entries = budgetQuery.data?.entries ?? [];
-  const INITIAL_LIMIT = 10;
-  const hasMore = entries.length > INITIAL_LIMIT;
-  const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
-  // Podsumowanie per waluta — tylko zrealizowane pozycje.
-  const totals = entries
+  // ===== Filtry =====
+  type DateFilter =
+    | "all"
+    | "this_month"
+    | "prev_month"
+    | "this_year"
+    | "prev_year"
+    | "custom";
+  type CompletedFilter = "all" | "yes" | "no";
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [completedFilter, setCompletedFilter] = useState<CompletedFilter>("all");
+
+  const dateRange = useMemo<{ from: Date; to: Date } | null>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const startOfDay = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    const endOfDay = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    switch (dateFilter) {
+      case "this_month":
+        return { from: new Date(y, m, 1), to: endOfDay(new Date(y, m + 1, 0)) };
+      case "prev_month":
+        return { from: new Date(y, m - 1, 1), to: endOfDay(new Date(y, m, 0)) };
+      case "this_year":
+        return { from: new Date(y, 0, 1), to: endOfDay(new Date(y, 11, 31)) };
+      case "prev_year":
+        return { from: new Date(y - 1, 0, 1), to: endOfDay(new Date(y - 1, 11, 31)) };
+      case "custom":
+        if (customRange?.from) {
+          return {
+            from: startOfDay(customRange.from),
+            to: endOfDay(customRange.to ?? customRange.from),
+          };
+        }
+        return null;
+      case "all":
+      default:
+        return null;
+    }
+  }, [dateFilter, customRange]);
+
+  const authorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of entries) {
+      const cb = (e as { created_by?: string }).created_by;
+      if (!cb) continue;
+      if (!map.has(cb)) {
+        const name = [e.author?.first_name, e.author?.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        map.set(cb, name || t("organizations.members.no_name"));
+      }
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [entries, t]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) {
+      const c = (e as { category?: string | null }).category;
+      if (c && c.trim()) set.add(c.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((e) => {
+      if (dateRange) {
+        const d = new Date(e.entry_date);
+        if (d < dateRange.from || d > dateRange.to) return false;
+      }
+      if (
+        authorFilter !== "all" &&
+        (e as { created_by?: string }).created_by !== authorFilter
+      )
+        return false;
+      if (categoryFilter !== "all") {
+        const c = ((e as { category?: string | null }).category ?? "").trim();
+        if (c !== categoryFilter) return false;
+      }
+      if (completedFilter !== "all") {
+        const completed = (e as { completed?: boolean }).completed !== false;
+        if (completedFilter === "yes" && !completed) return false;
+        if (completedFilter === "no" && completed) return false;
+      }
+      return true;
+    });
+  }, [entries, dateRange, authorFilter, categoryFilter, completedFilter]);
+
+  const filtersActive =
+    dateFilter !== "all" ||
+    authorFilter !== "all" ||
+    categoryFilter !== "all" ||
+    completedFilter !== "all";
+
+  const clearFilters = () => {
+    setDateFilter("all");
+    setCustomRange(undefined);
+    setAuthorFilter("all");
+    setCategoryFilter("all");
+    setCompletedFilter("all");
+  };
+
+  const INITIAL_LIMIT = 10;
+  const hasMore = filteredEntries.length > INITIAL_LIMIT;
+  const visibleEntries = expanded
+    ? filteredEntries
+    : filteredEntries.slice(0, INITIAL_LIMIT);
+
+  // Podsumowanie per waluta — tylko zrealizowane pozycje (z aktywnego filtra).
+  const totals = filteredEntries
     .filter((e) => (e as { completed?: boolean }).completed !== false)
     .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
       if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
@@ -355,6 +481,170 @@ function OrganizationBudgetPage() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* ===== Filtry ===== */}
+      <div className="rounded-md border border-border bg-card p-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.date")}
+            </Label>
+            <Select
+              value={dateFilter}
+              onValueChange={(v) => setDateFilter(v as typeof dateFilter)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.date_all")}
+                </SelectItem>
+                <SelectItem value="this_month">
+                  {t("organizations.budget.filters.date_this_month")}
+                </SelectItem>
+                <SelectItem value="prev_month">
+                  {t("organizations.budget.filters.date_prev_month")}
+                </SelectItem>
+                <SelectItem value="this_year">
+                  {t("organizations.budget.filters.date_this_year")}
+                </SelectItem>
+                <SelectItem value="prev_year">
+                  {t("organizations.budget.filters.date_prev_year")}
+                </SelectItem>
+                <SelectItem value="custom">
+                  {t("organizations.budget.filters.date_custom")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {dateFilter === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "mt-1 w-full justify-start text-left font-normal",
+                      !customRange?.from && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customRange?.from ? (
+                      customRange.to ? (
+                        <>
+                          {format(customRange.from, "dd.MM.yyyy")} —{" "}
+                          {format(customRange.to, "dd.MM.yyyy")}
+                        </>
+                      ) : (
+                        format(customRange.from, "dd.MM.yyyy")
+                      )
+                    ) : (
+                      t("organizations.budget.filters.pick_range")
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={customRange}
+                    onSelect={setCustomRange}
+                    numberOfMonths={2}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.author")}
+            </Label>
+            <Select value={authorFilter} onValueChange={setAuthorFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.author_all")}
+                </SelectItem>
+                {authorOptions.map(([id, name]) => (
+                  <SelectItem key={id} value={id}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.category")}
+            </Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.category_all")}
+                </SelectItem>
+                {categoryOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.completed")}
+            </Label>
+            <Select
+              value={completedFilter}
+              onValueChange={(v) =>
+                setCompletedFilter(v as typeof completedFilter)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("organizations.budget.filters.completed_all")}
+                </SelectItem>
+                <SelectItem value="yes">
+                  {t("organizations.budget.filters.completed_yes")}
+                </SelectItem>
+                <SelectItem value="no">
+                  {t("organizations.budget.filters.completed_no")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col justify-end gap-1">
+            <span className="text-xs text-muted-foreground">
+              {t("organizations.budget.filters.results", {
+                count: filteredEntries.length,
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              disabled={!filtersActive}
+            >
+              <X className="mr-1 h-4 w-4" />
+              {t("organizations.budget.filters.clear")}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-md border border-border bg-card">
@@ -540,7 +830,7 @@ function OrganizationBudgetPage() {
               );
             })}
           </TableBody>
-          {entries.length > 0 && (
+          {filteredEntries.length > 0 && Object.keys(totals).length > 0 && (
             <TableFooter>
               {Object.entries(totals).map(([cur, t2]) => {
                 const balance = t2.income - t2.expense;
@@ -594,7 +884,7 @@ function OrganizationBudgetPage() {
               ) : (
                 <>
                   <ChevronDown className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.expand", { count: entries.length - INITIAL_LIMIT })}
+                  {t("organizations.budget.expand", { count: filteredEntries.length - INITIAL_LIMIT })}
                 </>
               )}
             </Button>
