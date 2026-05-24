@@ -491,14 +491,12 @@ function OrganizationBudgetPage() {
                         aria-label={t("organizations.budget.col.completed")}
                         className="h-5 w-5"
                         checked={completed}
-                        disabled={toggleMutation.isPending}
+                        disabled={completed || toggleMutation.isPending}
                         onClick={(event) => event.stopPropagation()}
-                        onCheckedChange={(v) =>
-                          toggleMutation.mutate({
-                            entryId: e.id,
-                            completed: Boolean(v),
-                          })
-                        }
+                        onCheckedChange={(v) => {
+                          if (completed) return;
+                          if (Boolean(v)) setCompleteCandidate(e.id);
+                        }}
                       />
                       {completed && completedAt && (
                         <span className="text-[10px] leading-tight text-muted-foreground">
