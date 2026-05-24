@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CountrySelect } from "@/components/country-select";
+import { CurrencySelect } from "@/components/currency-select";
 import { MUSIC_GENRES } from "@/lib/genres";
+import { currencyForCountry } from "@/lib/currencies";
 import {
   getOrganizationDetails,
   updateOrganization,
@@ -45,6 +47,7 @@ function OrganizationProfilePage() {
     address_postal_code: "",
     address_country: "",
     genres: [] as string[],
+    currency: "PLN",
   });
   const [initialized, setInitialized] = useState(false);
 
@@ -59,6 +62,7 @@ function OrganizationProfilePage() {
         address_postal_code: org.address_postal_code ?? "",
         address_country: org.address_country ?? "",
         genres: Array.isArray(org.genres) ? [...org.genres] : [],
+        currency: org.currency ?? currencyForCountry(org.address_country),
       });
       setInitialized(true);
     }
@@ -196,9 +200,34 @@ function OrganizationProfilePage() {
             <CountrySelect
               id="address_country"
               value={form.address_country}
-              onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
+              onChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  address_country: v,
+                  currency: currencyForCountry(v),
+                }))
+              }
             />
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-md border border-border bg-card p-4">
+        <div>
+          <h2 className="text-lg font-semibold">
+            {t("organizations.detail.currency.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("organizations.detail.currency.help")}
+          </p>
+        </div>
+        <div className="max-w-sm space-y-2">
+          <Label htmlFor="currency">{t("organizations.detail.currency.label")}</Label>
+          <CurrencySelect
+            id="currency"
+            value={form.currency}
+            onChange={(v) => setForm((f) => ({ ...f, currency: v }))}
+          />
         </div>
       </section>
 
