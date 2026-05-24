@@ -25,12 +25,21 @@ export default
     "subtitle": "Manage your personal info and address.",
     "basic": "Basic info",
     "saved": "Profile saved",
+    "kinds": {
+      "title": "Who I am",
+      "help": "Pick all the roles that describe you. You can change them anytime."
+    },
     "address": {
       "title": "Address",
       "optional": "Optional — you can fill this in at any time.",
       "benefit_user": "💡 Providing your address lets the system automatically optimize tour routes, plan travel and handle logistics (accommodation, travel costs)."
+    },
+    "my_orgs": {
+      "title": "My organizations",
+      "empty": "You're not assigned to any organization yet."
     }
   },
+
 
   "lang": {
     "label": "Language",
