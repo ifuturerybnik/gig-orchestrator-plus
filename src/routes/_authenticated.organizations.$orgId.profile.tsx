@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CountrySelect } from "@/components/country-select";
 import { CurrencySelect } from "@/components/currency-select";
+import { PhoneInput } from "@/components/phone-input";
 import { MUSIC_GENRES } from "@/lib/genres";
 import { currencyForCountry } from "@/lib/currencies";
 import {
@@ -46,31 +47,64 @@ function OrganizationProfilePage() {
     address_city: "",
     address_postal_code: "",
     address_country: "",
-    genres: [] as string[],
+    genre: "" as string, // SINGLE genre now
     currency: "PLN",
+    legal_name: "",
+    tax_id: "",
+    registration_number: "",
+    court_register_number: "",
+    bank_account: "",
+    bank_name: "",
+    signatory_name: "",
+    signatory_position: "",
+    contact_email: "",
+    contact_phone: "",
+    website: "",
   });
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (!initialized && detailsQuery.data) {
-      const org = detailsQuery.data.organization;
+      const org = detailsQuery.data.organization as Record<string, unknown>;
+      const genresArr = Array.isArray(org.genres) ? (org.genres as string[]) : [];
       setForm({
-        name: org.name,
-        description: org.description ?? "",
-        address_street: org.address_street ?? "",
-        address_city: org.address_city ?? "",
-        address_postal_code: org.address_postal_code ?? "",
-        address_country: org.address_country ?? "",
-        genres: Array.isArray(org.genres) ? [...org.genres] : [],
-        currency: org.currency ?? currencyForCountry(org.address_country),
+        name: String(org.name ?? ""),
+        description: String(org.description ?? ""),
+        address_street: String(org.address_street ?? ""),
+        address_city: String(org.address_city ?? ""),
+        address_postal_code: String(org.address_postal_code ?? ""),
+        address_country: String(org.address_country ?? ""),
+        genre: genresArr[0] ?? "",
+        currency:
+          (org.currency as string | null) ??
+          currencyForCountry(org.address_country as string | null),
+        legal_name: String(org.legal_name ?? ""),
+        tax_id: String(org.tax_id ?? ""),
+        registration_number: String(org.registration_number ?? ""),
+        court_register_number: String(org.court_register_number ?? ""),
+        bank_account: String(org.bank_account ?? ""),
+        bank_name: String(org.bank_name ?? ""),
+        signatory_name: String(org.signatory_name ?? ""),
+        signatory_position: String(org.signatory_position ?? ""),
+        contact_email: String(org.contact_email ?? ""),
+        contact_phone: String(org.contact_phone ?? ""),
+        website: String(org.website ?? ""),
       });
       setInitialized(true);
     }
   }, [detailsQuery.data, initialized]);
 
   const updateMutation = useMutation({
-    mutationFn: (input: typeof form) =>
-      updateFn({ data: { organizationId: orgId, ...input } }),
+    mutationFn: (input: typeof form) => {
+      const { genre, ...rest } = input;
+      return updateFn({
+        data: {
+          organizationId: orgId,
+          ...rest,
+          genres: genre ? [genre] : [],
+        },
+      });
+    },
     onSuccess: () => {
       toast.success(t("organizations.detail.saved"));
       queryClient.invalidateQueries({ queryKey });
@@ -105,14 +139,6 @@ function OrganizationProfilePage() {
       </p>
     );
   }
-
-  const toggleGenre = (g: string) =>
-    setForm((f) => ({
-      ...f,
-      genres: f.genres.includes(g)
-        ? f.genres.filter((x) => x !== g)
-        : [...f.genres, g],
-    }));
 
   const updateField =
     (key: keyof typeof form) =>
@@ -215,6 +241,147 @@ function OrganizationProfilePage() {
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <div>
           <h2 className="text-lg font-semibold">
+            {t("organizations.detail.company.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("organizations.detail.company.help")}
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="legal_name">
+              {t("organizations.detail.company.legal_name")}
+            </Label>
+            <Input
+              id="legal_name"
+              maxLength={200}
+              value={form.legal_name}
+              onChange={updateField("legal_name")}
+              placeholder={t("organizations.detail.company.legal_name_placeholder")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tax_id">
+              {t("organizations.detail.company.tax_id")}
+            </Label>
+            <Input
+              id="tax_id"
+              maxLength={40}
+              value={form.tax_id}
+              onChange={updateField("tax_id")}
+              placeholder="PL1234567890"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registration_number">
+              {t("organizations.detail.company.registration_number")}
+            </Label>
+            <Input
+              id="registration_number"
+              maxLength={40}
+              value={form.registration_number}
+              onChange={updateField("registration_number")}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="court_register_number">
+              {t("organizations.detail.company.court_register_number")}
+            </Label>
+            <Input
+              id="court_register_number"
+              maxLength={40}
+              value={form.court_register_number}
+              onChange={updateField("court_register_number")}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="bank_account">
+              {t("organizations.detail.company.bank_account")}
+            </Label>
+            <Input
+              id="bank_account"
+              maxLength={60}
+              value={form.bank_account}
+              onChange={updateField("bank_account")}
+              placeholder="PL00 0000 0000 0000 0000 0000 0000"
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="bank_name">
+              {t("organizations.detail.company.bank_name")}
+            </Label>
+            <Input
+              id="bank_name"
+              maxLength={120}
+              value={form.bank_name}
+              onChange={updateField("bank_name")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="signatory_name">
+              {t("organizations.detail.company.signatory_name")}
+            </Label>
+            <Input
+              id="signatory_name"
+              maxLength={200}
+              value={form.signatory_name}
+              onChange={updateField("signatory_name")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="signatory_position">
+              {t("organizations.detail.company.signatory_position")}
+            </Label>
+            <Input
+              id="signatory_position"
+              maxLength={120}
+              value={form.signatory_position}
+              onChange={updateField("signatory_position")}
+              placeholder={t("organizations.detail.company.signatory_position_placeholder")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact_email">
+              {t("organizations.detail.company.contact_email")}
+            </Label>
+            <Input
+              id="contact_email"
+              type="email"
+              maxLength={255}
+              value={form.contact_email}
+              onChange={updateField("contact_email")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact_phone">
+              {t("organizations.detail.company.contact_phone")}
+            </Label>
+            <PhoneInput
+              id="contact_phone"
+              value={form.contact_phone}
+              onChange={(v) => setForm((f) => ({ ...f, contact_phone: v }))}
+              defaultCountry={form.address_country}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="website">
+              {t("organizations.detail.company.website")}
+            </Label>
+            <Input
+              id="website"
+              type="url"
+              maxLength={255}
+              value={form.website}
+              onChange={updateField("website")}
+              placeholder="https://"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-md border border-border bg-card p-4">
+        <div>
+          <h2 className="text-lg font-semibold">
             {t("organizations.detail.currency.title")}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -238,26 +405,25 @@ function OrganizationProfilePage() {
               {t("organizations.detail.genres.title")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {t("organizations.detail.genres.help")}
+              {t("organizations.detail.genres.help_single")}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {MUSIC_GENRES.map((g) => {
-              const checked = form.genres.includes(g);
-              return (
-                <label
-                  key={g}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-2 text-sm hover:bg-muted/50"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggleGenre(g)}
-                  />
-                  <span>{t(`organizations.genres.${g}`)}</span>
-                </label>
-              );
-            })}
-          </div>
+          <RadioGroup
+            value={form.genre}
+            onValueChange={(v) => setForm((f) => ({ ...f, genre: v }))}
+            className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+          >
+            {MUSIC_GENRES.map((g) => (
+              <label
+                key={g}
+                htmlFor={`genre-${g}`}
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-2 text-sm hover:bg-muted/50"
+              >
+                <RadioGroupItem id={`genre-${g}`} value={g} />
+                <span>{t(`organizations.genres.${g}`)}</span>
+              </label>
+            ))}
+          </RadioGroup>
         </section>
       )}
 
