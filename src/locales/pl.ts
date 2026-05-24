@@ -219,9 +219,26 @@ export default
     },
     "budget": {
       "title": "Budżet",
-      "subtitle": "Śledź przychody, koszty i rozliczenia tej organizacji.",
-      "empty": "Brak danych budżetowych. Moduł zarządzania budżetem pojawi się tutaj wkrótce.",
-      "coming_soon": "Wkrótce"
+      "subtitle": "Śledź wpływy i wydatki tej organizacji.",
+      "add": "Dodaj pozycję",
+      "added": "Pozycja dodana",
+      "deleted": "Pozycja usunięta",
+      "delete_confirm": "Usunąć tę pozycję budżetową?",
+      "invalid_amount": "Nieprawidłowa kwota",
+      "empty_list": "Brak pozycji budżetowych. Dodaj pierwszy wpływ lub wydatek.",
+      "summary": "Podsumowanie",
+      "currency_used": "Waluta organizacji: {{currency}}. Zmień ją w Profilu zespołu, aby używać innej.",
+      "col": {
+        "date": "Data",
+        "author": "Wpisał",
+        "description": "Opis wpływu",
+        "kind": "Rodzaj",
+        "amount_gross": "Kwota brutto"
+      },
+      "kind": {
+        "income": "Zasilenie",
+        "expense": "Wydatek"
+      }
     },
 
     "messages": {
