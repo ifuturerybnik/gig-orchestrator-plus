@@ -185,13 +185,31 @@ export default
         "benefit": "💡 Providing the organization's address lets the system automatically optimize tour routes, plan travel from your base and handle logistics (accommodation, travel costs, crew booking)."
       },
       "genres": {
-        "title": "Music genres",
-        "help": "Pick all genres the band plays. You can change them anytime."
+        "title": "Music genre",
+        "help": "Pick all genres the band plays. You can change them anytime.",
+        "help_single": "Pick the main genre that best describes the band. You can change it anytime."
       },
       "currency": {
         "title": "Currency",
         "label": "Default currency",
         "help": "Currency used in the budget module. Defaults to your address country — you can change it."
+      },
+      "company": {
+        "title": "Company details (for contracts)",
+        "help": "Used when generating concert contracts, invoices and other documents. All fields are optional — fill in the ones you actually use.",
+        "legal_name": "Full legal name",
+        "legal_name_placeholder": "e.g. ACME Music Ltd.",
+        "tax_id": "Tax ID / VAT ID",
+        "registration_number": "Registration number",
+        "court_register_number": "Court register no. (KRS / Companies House)",
+        "bank_account": "Bank account (IBAN)",
+        "bank_name": "Bank name",
+        "signatory_name": "Authorized signatory",
+        "signatory_position": "Signatory position",
+        "signatory_position_placeholder": "e.g. CEO",
+        "contact_email": "Contact email",
+        "contact_phone": "Contact phone",
+        "website": "Website"
       }
     },
     "genres": {
