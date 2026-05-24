@@ -179,6 +179,11 @@ export default
       "genres": {
         "title": "Music genres",
         "help": "Pick all genres the band plays. You can change them anytime."
+      },
+      "currency": {
+        "title": "Currency",
+        "label": "Default currency",
+        "help": "Currency used in the budget module. Defaults to your address country — you can change it."
       }
     },
     "genres": {
