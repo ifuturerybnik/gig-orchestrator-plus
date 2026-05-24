@@ -35,6 +35,18 @@ export function OrgSidebar({
     select: (s) => s.location.pathname,
   });
 
+  const fetchEntries = useServerFn(listBudgetEntries);
+  const budgetQuery = useQuery({
+    queryKey: ["organization-budget", orgId],
+    queryFn: () => fetchEntries({ data: { organizationId: orgId } }),
+  });
+  const pendingExpenseCount =
+    budgetQuery.data?.entries.filter(
+      (e) =>
+        e.kind === "expense" &&
+        (e as { completed?: boolean }).completed === false,
+    ).length ?? 0;
+
   const base = `/organizations/${orgId}`;
   const items: Item[] = [
     {
