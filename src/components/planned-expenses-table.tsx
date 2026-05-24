@@ -60,6 +60,8 @@ import {
   setPlannedExpenseCompleted,
 } from "@/lib/organizations.functions";
 import { formatAmount } from "@/lib/currencies";
+import { CategoryInput } from "@/components/category-input";
+
 
 interface Props {
   organizationId: string;
@@ -76,10 +78,12 @@ type PlannedEntry = {
   kind: "income" | "expense";
   amount_gross: number;
   currency: string;
+  category?: string | null;
   completed: boolean;
   created_by: string;
   author?: { first_name?: string | null; last_name?: string | null } | null;
 };
+
 
 export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const { t, i18n } = useTranslation();
@@ -106,12 +110,15 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
     kind: "income" | "expense";
     planned_date: Date | undefined;
     amount_gross: string;
+    category: string;
   }>({
     description: "",
     kind: "expense",
     planned_date: undefined,
     amount_gross: "",
+    category: "",
   });
+
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -123,6 +130,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
           planned_date: format(form.planned_date as Date, "yyyy-MM-dd"),
           amount_gross: Number(form.amount_gross.replace(",", ".")),
           currency,
+          category: form.category.trim() || undefined,
         },
       }),
     onSuccess: () => {
@@ -133,11 +141,13 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
         kind: "expense",
         planned_date: undefined,
         amount_gross: "",
+        category: "",
       });
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const toggleMutation = useMutation({
     mutationFn: (v: { entryId: string; completed: boolean }) =>
@@ -164,10 +174,12 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
           kind: entry.kind,
           amount_gross: entry.amount_gross,
           currency: entry.currency,
+          category: entry.category ?? undefined,
         },
       });
       await deleteFn({ data: { entryId: entry.id } });
     },
+
     onSuccess: () => {
       toast.success(t("organizations.planned.moved"));
       queryClient.invalidateQueries({ queryKey });
@@ -275,6 +287,18 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="p_category">
+                    {t("organizations.budget.col.category")}
+                  </Label>
+                  <CategoryInput
+                    id="p_category"
+                    value={form.category}
+                    onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+                    existing={entries.map((e) => e.category)}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="p_description">
                     {t("organizations.planned.col.description")}
                   </Label>
@@ -289,6 +313,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     }
                   />
                 </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="p_amount">
@@ -332,6 +357,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
               <TableRow>
                 <TableHead>{t("organizations.planned.col.date")}</TableHead>
                 <TableHead>{t("organizations.planned.col.author")}</TableHead>
+                <TableHead>{t("organizations.budget.col.category")}</TableHead>
                 <TableHead>
                   {t("organizations.planned.col.description")}
                 </TableHead>
@@ -346,12 +372,13 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                 </TableHead>
                 <TableHead className="w-[60px]" />
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {query.isLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center text-muted-foreground"
                   >
                     {t("common.loading")}
@@ -360,7 +387,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
               )}
               {!query.isLoading && entries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <Wallet className="h-5 w-5" />
@@ -372,6 +399,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                   </TableCell>
                 </TableRow>
               )}
+
               {visibleEntries.map((e) => {
                 const author = [e.author?.first_name, e.author?.last_name]
                   .filter(Boolean)
@@ -399,12 +427,21 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     </TableCell>
                     <TableCell
                       className={cn(
+                        "text-sm text-muted-foreground whitespace-nowrap",
+                        completed && "line-through",
+                      )}
+                    >
+                      {e.category || "—"}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
                         "max-w-[260px] whitespace-pre-wrap text-sm",
                         completed && "line-through",
                       )}
                     >
                       {e.description}
                     </TableCell>
+
                     <TableCell
                       className={cn(
                         "whitespace-nowrap text-sm",
@@ -461,8 +498,9 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                   const balance = t2.income - t2.expense;
                   return (
                     <TableRow key={cur}>
-                      <TableCell colSpan={4} className="font-semibold">
+                      <TableCell colSpan={5} className="font-semibold">
                         {t("organizations.planned.summary")} ({cur})
+
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         <div className="flex flex-col items-end gap-0.5 text-xs">

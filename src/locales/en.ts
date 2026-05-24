@@ -232,6 +232,7 @@ export default
       "col": {
         "date": "Date",
         "author": "Added by",
+        "category": "Category",
         "description": "Description",
         "kind": "Kind",
         "amount_gross": "Gross amount"
@@ -239,8 +240,25 @@ export default
       "kind": {
         "income": "Income",
         "expense": "Expense"
+      },
+      "categories": {
+        "placeholder": "Pick or type…",
+        "fee": "Fee",
+        "transport": "Transport",
+        "accommodation": "Accommodation",
+        "meals": "Meals",
+        "equipment": "Equipment",
+        "rental": "Rental",
+        "marketing": "Marketing",
+        "venue": "Venue",
+        "catering": "Catering",
+        "ticket_sales": "Ticket sales",
+        "sponsorship": "Sponsorship",
+        "merch": "Merch",
+        "other": "Other"
       }
     },
+
     "planned": {
       "title": "Upcoming expenses",
       "subtitle": "Planned income and expenses. Mark \"Completed\" to exclude from the summary.",
@@ -261,11 +279,13 @@ export default
       "col": {
         "date": "Date",
         "author": "Added by",
+        "category": "Category",
         "description": "Description",
         "planned_date": "Planned date",
         "amount_gross": "Gross amount",
         "completed": "Completed"
       }
+
     },
 
     "messages": {
