@@ -265,6 +265,7 @@ function OrganizationBudgetPage() {
       </div>
 
       <div className="rounded-md border border-border bg-card">
+        <div className={expanded ? "max-h-[640px] overflow-auto" : undefined}>
         <Table>
           <TableHeader>
             <TableRow>
