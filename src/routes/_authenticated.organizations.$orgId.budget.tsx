@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+
 import {
   Dialog,
   DialogContent,
@@ -40,7 +43,9 @@ import {
   deleteBudgetEntry,
   getOrganizationDetails,
   listBudgetEntries,
+  setBudgetEntryCompleted,
 } from "@/lib/organizations.functions";
+
 import { formatAmount } from "@/lib/currencies";
 import { PlannedExpensesTable } from "@/components/planned-expenses-table";
 import { CategoryInput } from "@/components/category-input";
