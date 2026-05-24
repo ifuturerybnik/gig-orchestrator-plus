@@ -228,11 +228,10 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
   };
 
   const handleToggle = (entry: PlannedEntry, checked: boolean) => {
-    if (checked && !entry.completed) {
+    if (entry.completed) return;
+    if (checked) {
       setMoveCandidate(entry);
-      return;
     }
-    toggleMutation.mutate({ entryId: entry.id, completed: checked });
   };
 
   const entries = (query.data?.entries ?? []) as PlannedEntry[];
