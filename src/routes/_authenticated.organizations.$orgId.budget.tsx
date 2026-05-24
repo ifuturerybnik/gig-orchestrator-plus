@@ -66,6 +66,8 @@ function OrganizationBudgetPage() {
   const fetchEntries = useServerFn(listBudgetEntries);
   const createFn = useServerFn(createBudgetEntry);
   const deleteFn = useServerFn(deleteBudgetEntry);
+  const toggleFn = useServerFn(setBudgetEntryCompleted);
+
 
   const detailsQuery = useQuery({
     queryKey: ["organization", orgId],
@@ -88,7 +90,9 @@ function OrganizationBudgetPage() {
     kind: "income" as "income" | "expense",
     amount_gross: "",
     category: "",
+    completed: true,
   });
+
 
 
   const createMutation = useMutation({
@@ -102,6 +106,7 @@ function OrganizationBudgetPage() {
           amount_gross: Number(form.amount_gross.replace(",", ".")),
           currency: orgCurrency,
           category: form.category.trim() || undefined,
+          completed: form.completed,
         },
       }),
     onSuccess: () => {
@@ -113,9 +118,11 @@ function OrganizationBudgetPage() {
         kind: "income",
         amount_gross: "",
         category: "",
+        completed: true,
       });
       queryClient.invalidateQueries({ queryKey: budgetKey });
     },
+
 
     onError: (e: Error) => toast.error(e.message),
   });
@@ -128,6 +135,14 @@ function OrganizationBudgetPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const toggleMutation = useMutation({
+    mutationFn: (v: { entryId: string; completed: boolean }) =>
+      toggleFn({ data: v }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetKey }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -144,14 +159,15 @@ function OrganizationBudgetPage() {
   const hasMore = entries.length > INITIAL_LIMIT;
   const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_LIMIT);
 
-  // Podsumowanie per waluta (na wypadek mieszanych wpisów historycznych).
-  const totals = entries.reduce<
-    Record<string, { income: number; expense: number }>
-  >((acc, e) => {
-    if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
-    acc[e.currency][e.kind as "income" | "expense"] += e.amount_gross;
-    return acc;
-  }, {});
+  // Podsumowanie per waluta — tylko zrealizowane pozycje.
+  const totals = entries
+    .filter((e) => (e as { completed?: boolean }).completed !== false)
+    .reduce<Record<string, { income: number; expense: number }>>((acc, e) => {
+      if (!acc[e.currency]) acc[e.currency] = { income: 0, expense: 0 };
+      acc[e.currency][e.kind as "income" | "expense"] += e.amount_gross;
+      return acc;
+    }, {});
+
 
   return (
     <div className="space-y-6">
