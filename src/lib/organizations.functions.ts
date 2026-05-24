@@ -147,7 +147,7 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
 
     const userIds = (members ?? []).map((m) => m.user_id);
     const { data: profiles } = userIds.length
-      ? await supabase
+      ? await supabaseAdmin
           .from("profiles")
           .select("id, first_name, last_name")
           .in("id", userIds)
