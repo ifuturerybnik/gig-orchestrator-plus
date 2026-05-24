@@ -139,8 +139,30 @@ function OrganizationBudgetPage() {
   const toggleMutation = useMutation({
     mutationFn: (v: { entryId: string; completed: boolean }) =>
       toggleFn({ data: v }),
+    onMutate: async (v) => {
+      await queryClient.cancelQueries({ queryKey: budgetKey });
+      const previous = queryClient.getQueryData<{
+        entries: Array<{ id: string; completed?: boolean }>;
+      }>(budgetKey);
+      queryClient.setQueryData<{
+        entries: Array<{ id: string; completed?: boolean }>;
+      }>(budgetKey, (old) =>
+        old
+          ? {
+              ...old,
+              entries: old.entries.map((entry) =>
+                entry.id === v.entryId ? { ...entry, completed: v.completed } : entry,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetKey }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, _v, context) => {
+      if (context?.previous) queryClient.setQueryData(budgetKey, context.previous);
+      toast.error(e.message);
+    },
   });
 
 
@@ -455,7 +477,11 @@ function OrganizationBudgetPage() {
                   <TableCell className="text-center align-top">
                     <div className="flex flex-col items-center gap-0.5">
                       <Checkbox
+                        aria-label={t("organizations.budget.col.completed")}
+                        className="h-5 w-5"
                         checked={completed}
+                        disabled={toggleMutation.isPending}
+                        onClick={(event) => event.stopPropagation()}
                         onCheckedChange={(v) =>
                           toggleMutation.mutate({
                             entryId: e.id,

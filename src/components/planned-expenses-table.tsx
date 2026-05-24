@@ -155,8 +155,26 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
   const toggleMutation = useMutation({
     mutationFn: (v: { entryId: string; completed: boolean }) =>
       toggleFn({ data: v }),
+    onMutate: async (v) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<{ entries: PlannedEntry[] }>(queryKey);
+      queryClient.setQueryData<{ entries: PlannedEntry[] }>(queryKey, (old) =>
+        old
+          ? {
+              ...old,
+              entries: old.entries.map((entry) =>
+                entry.id === v.entryId ? { ...entry, completed: v.completed } : entry,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, _v, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      toast.error(e.message);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -488,7 +506,11 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                     <TableCell className="text-center align-top">
                       <div className="flex flex-col items-center gap-0.5">
                         <Checkbox
+                          aria-label={t("organizations.planned.col.completed")}
+                          className="h-5 w-5"
                           checked={completed}
+                          disabled={toggleMutation.isPending}
+                          onClick={(event) => event.stopPropagation()}
                           onCheckedChange={(v) => handleToggle(e, Boolean(v))}
                         />
                         {completed && e.completed_at && (
