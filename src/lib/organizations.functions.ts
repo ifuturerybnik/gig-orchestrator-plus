@@ -1,0 +1,120 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const OrgType = z.enum(["band", "stage_company", "event_company"]);
+
+export const createOrganization = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        type: OrgType,
+        name: z.string().trim().min(2).max(120),
+        description: z.string().trim().max(2000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: org, error } = await supabase
+      .from("organizations")
+      .insert({
+        type: data.type,
+        name: data.name,
+        description: data.description ?? null,
+        created_by: userId,
+        status: "pending",
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { organization: org };
+  });
+
+export const listMyOrganizations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("id, type, name, status, description, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { organizations: data ?? [] };
+  });
+
+export const listPendingOrganizations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    // RLS: only admins see everything; sanity-check via user_roles too.
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roles ?? []).some((r) =>
+      r.role === "super_admin" || r.role === "admin_staff",
+    );
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("id, type, name, description, created_at, created_by")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { organizations: data ?? [] };
+  });
+
+export const setOrganizationStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        status: z.enum(["approved", "rejected"]),
+        rejectionReason: z.string().trim().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        status: data.status,
+        approved_by: userId,
+        approved_at: new Date().toISOString(),
+        rejection_reason: data.status === "rejected" ? data.rejectionReason ?? null : null,
+      })
+      .eq("id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const inviteUserToOrganization = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        email: z.string().trim().toLowerCase().email().max(255),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: invite, error } = await supabase
+      .from("organization_invitations")
+      .insert({
+        organization_id: data.organizationId,
+        email: data.email,
+        invited_by: userId,
+      })
+      .select("id, email, token, expires_at")
+      .single();
+    if (error) throw new Error(error.message);
+    // TODO: wysyłka maila z linkiem zapraszającym (osobny moduł).
+    return { invitation: invite };
+  });
