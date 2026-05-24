@@ -40,14 +40,20 @@ function OrganizationDetailPage() {
   });
 
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    address_street: "",
+    address_city: "",
+    address_postal_code: "",
+    address_country: "",
+  });
   const [inviteEmail, setInviteEmail] = useState("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const updateMutation = useMutation({
-    mutationFn: (input: { name: string; description?: string }) =>
+    mutationFn: (input: typeof form) =>
       updateFn({ data: { organizationId: orgId, ...input } }),
     onSuccess: () => {
       toast.success(t("organizations.detail.saved"));
@@ -57,6 +63,7 @@ function OrganizationDetailPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const inviteMutation = useMutation({
     mutationFn: (email: string) =>
@@ -110,14 +117,20 @@ function OrganizationDetailPage() {
   const { organization: org, members, invitations, canManage } = detailsQuery.data;
 
   const startEdit = () => {
-    setName(org.name);
-    setDescription(org.description ?? "");
+    setForm({
+      name: org.name,
+      description: org.description ?? "",
+      address_street: org.address_street ?? "",
+      address_city: org.address_city ?? "",
+      address_postal_code: org.address_postal_code ?? "",
+      address_country: org.address_country ?? "",
+    });
     setEditing(true);
   };
 
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate({ name, description: description || undefined });
+    updateMutation.mutate(form);
   };
 
   const handleInvite = (e: FormEvent) => {
@@ -125,6 +138,19 @@ function OrganizationDetailPage() {
     if (!inviteEmail) return;
     inviteMutation.mutate(inviteEmail);
   };
+
+  const updateField =
+    (key: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const addressLine = [
+    org.address_street,
+    [org.address_postal_code, org.address_city].filter(Boolean).join(" "),
+    org.address_country,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Shell>
@@ -170,28 +196,60 @@ function OrganizationDetailPage() {
       )}
 
       {editing ? (
-        <form onSubmit={handleSave} className="mt-6 space-y-4 rounded-md border border-border bg-card p-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t("organizations.form.name")}</Label>
-            <Input
-              id="name"
-              required
-              minLength={2}
-              maxLength={120}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="desc">{t("organizations.form.description")}</Label>
-            <Textarea
-              id="desc"
-              rows={4}
-              maxLength={2000}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSave} className="mt-6 space-y-6">
+          <section className="space-y-4 rounded-md border border-border bg-card p-4">
+            <h2 className="text-lg font-semibold">{t("organizations.detail.basic")}</h2>
+            <div className="space-y-2">
+              <Label htmlFor="name">{t("organizations.form.name")}</Label>
+              <Input
+                id="name"
+                required
+                minLength={2}
+                maxLength={120}
+                value={form.name}
+                onChange={updateField("name")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="desc">{t("organizations.form.description")}</Label>
+              <Textarea
+                id="desc"
+                rows={4}
+                maxLength={2000}
+                value={form.description}
+                onChange={updateField("description")}
+              />
+            </div>
+          </section>
+
+          <section className="space-y-4 rounded-md border border-border bg-card p-4">
+            <div>
+              <h2 className="text-lg font-semibold">{t("organizations.detail.address.title")}</h2>
+              <p className="text-sm text-muted-foreground">{t("organizations.detail.address.optional")}</p>
+            </div>
+            <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+              {t("organizations.detail.address.benefit")}
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="address_street">{t("address.street")}</Label>
+                <Input id="address_street" maxLength={200} value={form.address_street} onChange={updateField("address_street")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_postal_code">{t("address.postal_code")}</Label>
+                <Input id="address_postal_code" maxLength={20} value={form.address_postal_code} onChange={updateField("address_postal_code")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_city">{t("address.city")}</Label>
+                <Input id="address_city" maxLength={120} value={form.address_city} onChange={updateField("address_city")} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="address_country">{t("address.country")}</Label>
+                <Input id="address_country" maxLength={120} value={form.address_country} onChange={updateField("address_country")} />
+              </div>
+            </div>
+          </section>
+
           <div className="flex gap-2">
             <Button type="submit" disabled={updateMutation.isPending}>
               {t("organizations.detail.save")}
@@ -202,12 +260,21 @@ function OrganizationDetailPage() {
           </div>
         </form>
       ) : (
-        org.description && (
-          <p className="mt-6 whitespace-pre-wrap text-sm text-foreground">
-            {org.description}
-          </p>
-        )
+        <>
+          {org.description && (
+            <p className="mt-6 whitespace-pre-wrap text-sm text-foreground">
+              {org.description}
+            </p>
+          )}
+          {addressLine && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              <strong>{t("organizations.detail.address.title")}:</strong> {addressLine}
+            </p>
+          )}
+        </>
       )}
+
+
 
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-foreground">
