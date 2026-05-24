@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { PhoneInput } from "@/components/phone-input";
 import { CountrySelect } from "@/components/country-select";
+import { SecuritySection } from "@/components/security-section";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 
