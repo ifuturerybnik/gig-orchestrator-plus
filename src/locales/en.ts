@@ -140,5 +140,4 @@ export default
       "created_at": "Submitted at:"
     }
   }
-}
- as const;
+} as const;
