@@ -118,3 +118,136 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
     // TODO: wysyłka maila z linkiem zapraszającym (osobny moduł).
     return { invitation: invite };
   });
+
+export const getOrganizationDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: org, error: orgErr } = await supabase
+      .from("organizations")
+      .select(
+        "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason",
+      )
+      .eq("id", data.organizationId)
+      .maybeSingle();
+    if (orgErr) throw new Error(orgErr.message);
+    if (!org) throw new Error("Not found");
+
+    const { data: members, error: memErr } = await supabase
+      .from("organization_members")
+      .select("id, user_id, role, joined_at")
+      .eq("organization_id", data.organizationId)
+      .order("joined_at", { ascending: true });
+    if (memErr) throw new Error(memErr.message);
+
+    const userIds = (members ?? []).map((m) => m.user_id);
+    const { data: profiles } = userIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds)
+      : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }> };
+
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [p.id, p] as const),
+    );
+    const membersEnriched = (members ?? []).map((m) => ({
+      ...m,
+      profile: profileMap.get(m.user_id) ?? null,
+    }));
+
+    const me = membersEnriched.find((m) => m.user_id === userId);
+    const isOwner = me?.role === "owner";
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roles ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+
+    let invitations: Array<{
+      id: string;
+      email: string;
+      status: string;
+      expires_at: string;
+      created_at: string;
+    }> = [];
+    if (isOwner || isAdmin) {
+      const { data: invs } = await supabase
+        .from("organization_invitations")
+        .select("id, email, status, expires_at, created_at")
+        .eq("organization_id", data.organizationId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      invitations = invs ?? [];
+    }
+
+    return {
+      organization: org,
+      members: membersEnriched,
+      invitations,
+      isOwner,
+      isAdmin,
+      canManage: isOwner || isAdmin,
+    };
+  });
+
+export const updateOrganization = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        name: z.string().trim().min(2).max(120),
+        description: z.string().trim().max(2000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        name: data.name,
+        description: data.description ?? null,
+      })
+      .eq("id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removeOrganizationMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ memberId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_members")
+      .delete()
+      .eq("id", data.memberId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const cancelInvitation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ invitationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("organization_invitations")
+      .update({ status: "cancelled" })
+      .eq("id", data.invitationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
