@@ -238,8 +238,11 @@ export default
         "amount_gross": "Gross amount",
         "completed": "Completed",
         "completed_by": "marked by {{name}}"
-
       },
+      "confirm_complete_title": "Mark as completed?",
+      "confirm_complete_description": "This action cannot be undone. Do you confirm marking it as completed?",
+      "confirm_complete_yes": "Yes, mark",
+      "confirm_complete_cancel": "Cancel",
       "kind": {
         "income": "Income",
         "expense": "Expense"
@@ -275,7 +278,7 @@ export default
       "collapse": "Collapse list",
       "pick_date": "Pick a date",
       "move_title": "Move to budget?",
-      "move_description": "You marked this entry as completed. Move it to the \"Budget\" table and include it in the summary?",
+      "move_description": "You marked this entry as completed. This action cannot be undone. Move it to the \"Budget\" table and include it in the summary?",
       "move_yes": "Yes, move",
       "move_no": "No, just mark",
       "moved": "Moved to budget",

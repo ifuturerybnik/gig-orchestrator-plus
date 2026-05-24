@@ -228,11 +228,10 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
   };
 
   const handleToggle = (entry: PlannedEntry, checked: boolean) => {
-    if (checked && !entry.completed) {
+    if (entry.completed) return;
+    if (checked) {
       setMoveCandidate(entry);
-      return;
     }
-    toggleMutation.mutate({ entryId: entry.id, completed: checked });
   };
 
   const entries = (query.data?.entries ?? []) as PlannedEntry[];
@@ -509,7 +508,7 @@ export function PlannedExpensesTable({ organizationId, currency }: Props) {
                           aria-label={t("organizations.planned.col.completed")}
                           className="h-5 w-5"
                           checked={completed}
-                          disabled={toggleMutation.isPending}
+                          disabled={completed || toggleMutation.isPending}
                           onClick={(event) => event.stopPropagation()}
                           onCheckedChange={(v) => handleToggle(e, Boolean(v))}
                         />
