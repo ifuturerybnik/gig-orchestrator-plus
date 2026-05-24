@@ -886,28 +886,17 @@ function OrganizationBudgetPage() {
             </TableFooter>
           )}
         </Table>
-        </div>
         {hasMore && (
-          <div className="flex justify-center border-t border-border p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.collapse")}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  {t("organizations.budget.expand", { count: filteredEntries.length - INITIAL_LIMIT })}
-                </>
-              )}
-            </Button>
+          <div
+            ref={loadMoreRef}
+            className="flex justify-center border-t border-border p-3 text-xs text-muted-foreground"
+          >
+            {t("organizations.budget.loading_more", {
+              remaining: filteredEntries.length - visibleEntries.length,
+            })}
           </div>
         )}
+
       </div>
 
       <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
