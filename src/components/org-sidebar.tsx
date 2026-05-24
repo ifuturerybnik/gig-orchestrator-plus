@@ -1,5 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { LayoutDashboard, Users, Building2, CalendarDays, Wallet } from "lucide-react";
 import {
   Sidebar,
@@ -12,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { listBudgetEntries } from "@/lib/organizations.functions";
 
 type Item = {
   to: string;
@@ -31,6 +34,18 @@ export function OrgSidebar({
   const currentPath = useRouterState({
     select: (s) => s.location.pathname,
   });
+
+  const fetchEntries = useServerFn(listBudgetEntries);
+  const budgetQuery = useQuery({
+    queryKey: ["organization-budget", orgId],
+    queryFn: () => fetchEntries({ data: { organizationId: orgId } }),
+  });
+  const pendingExpenseCount =
+    budgetQuery.data?.entries.filter(
+      (e) =>
+        e.kind === "expense" &&
+        (e as { completed?: boolean }).completed === false,
+    ).length ?? 0;
 
   const base = `/organizations/${orgId}`;
   const items: Item[] = [
@@ -102,7 +117,17 @@ export function OrgSidebar({
                     >
                       <Link to={item.to} className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
-                        <span>{t(item.labelKey)}</span>
+                        <span className="flex-1">{t(item.labelKey)}</span>
+                        {item.to === `${base}/budget` && pendingExpenseCount > 0 && (
+                          <span
+                            aria-label={t("organizations.sidebar.pending_expenses", {
+                              count: pendingExpenseCount,
+                            })}
+                            className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:right-1 group-data-[collapsible=icon]:top-1 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:min-w-[16px] group-data-[collapsible=icon]:text-[10px]"
+                          >
+                            {pendingExpenseCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
