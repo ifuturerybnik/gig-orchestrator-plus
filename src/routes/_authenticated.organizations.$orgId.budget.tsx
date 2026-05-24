@@ -106,7 +106,9 @@ function OrganizationBudgetPage() {
 
   const orgCurrency = detailsQuery.data?.organization.currency ?? "PLN";
 
+  const COLLAPSED_LIMIT = 10;
   const PAGE_SIZE = 100;
+  const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
