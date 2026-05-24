@@ -301,7 +301,7 @@ function OrganizationBudgetPage() {
                 </TableCell>
               </TableRow>
             )}
-            {entries.map((e) => {
+            {visibleEntries.map((e) => {
               const author = [e.author?.first_name, e.author?.last_name]
                 .filter(Boolean)
                 .join(" ")
