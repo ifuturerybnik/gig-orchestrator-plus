@@ -42,6 +42,7 @@ import {
   listBudgetEntries,
 } from "@/lib/organizations.functions";
 import { formatAmount } from "@/lib/currencies";
+import { PlannedExpensesTable } from "@/components/planned-expenses-table";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/budget",
@@ -423,6 +424,8 @@ function OrganizationBudgetPage() {
           </div>
         )}
       </div>
+
+      <PlannedExpensesTable organizationId={orgId} currency={orgCurrency} />
     </div>
   );
 }
