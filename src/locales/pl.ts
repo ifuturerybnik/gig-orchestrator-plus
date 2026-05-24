@@ -7,12 +7,31 @@ export default
   "nav": {
     "dashboard": "Pulpit",
     "organizations": "Organizacje",
+    "profile": "Profil",
     "admin": "Panel administratora",
     "approvals": "Zatwierdzenia",
     "logout": "Wyloguj",
     "login": "Zaloguj",
     "register": "Załóż konto"
   },
+  "address": {
+    "street": "Ulica i numer",
+    "city": "Miasto",
+    "postal_code": "Kod pocztowy",
+    "country": "Kraj"
+  },
+  "profile": {
+    "title": "Mój profil",
+    "subtitle": "Zarządzaj swoimi danymi osobistymi i adresem.",
+    "basic": "Dane podstawowe",
+    "saved": "Profil zapisany",
+    "address": {
+      "title": "Adres",
+      "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
+      "benefit_user": "💡 Uzupełnienie adresu pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy oraz inne kwestie logistyczne (noclegi, koszty przejazdów)."
+    }
+  },
+
   "lang": {
     "label": "Język",
     "pl": "Polski",
@@ -141,8 +160,15 @@ export default
       "edit": "Edytuj organizację",
       "save": "Zapisz zmiany",
       "saved": "Zapisano zmiany",
-      "rejection_reason": "Powód odrzucenia"
+      "rejection_reason": "Powód odrzucenia",
+      "basic": "Dane podstawowe",
+      "address": {
+        "title": "Adres siedziby / bazy",
+        "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
+        "benefit": "💡 Uzupełnienie adresu organizacji pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy z bazy oraz inne kwestie logistyczne (noclegi, koszty przejazdów, bookowanie ekipy)."
+      }
     },
+
     "messages": {
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
       "approved": "Organizacja zatwierdzona.",
