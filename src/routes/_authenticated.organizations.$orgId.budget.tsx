@@ -72,6 +72,7 @@ function OrganizationBudgetPage() {
 
   const orgCurrency = detailsQuery.data?.organization.currency ?? "PLN";
 
+  const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     entry_date: new Date().toISOString().slice(0, 10),
