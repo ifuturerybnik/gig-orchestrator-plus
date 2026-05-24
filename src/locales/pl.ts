@@ -140,5 +140,4 @@ export default
       "created_at": "Data zgłoszenia:"
     }
   }
-}
- as const;
+} as const;
