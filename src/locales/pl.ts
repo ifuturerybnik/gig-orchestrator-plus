@@ -208,13 +208,31 @@ export default
         "benefit": "💡 Uzupełnienie adresu organizacji pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy z bazy oraz inne kwestie logistyczne (noclegi, koszty przejazdów, bookowanie ekipy)."
       },
       "genres": {
-        "title": "Gatunki muzyczne",
-        "help": "Wybierz wszystkie gatunki, w których gra zespół. Możesz zmienić w dowolnym momencie."
+        "title": "Gatunek muzyczny",
+        "help": "Wybierz wszystkie gatunki, w których gra zespół. Możesz zmienić w dowolnym momencie.",
+        "help_single": "Wybierz główny gatunek, który najlepiej opisuje zespół. Możesz zmienić w dowolnym momencie."
       },
       "currency": {
         "title": "Waluta",
         "label": "Waluta domyślna",
         "help": "Waluta używana w module budżetu. Domyślnie ustawiana wg kraju adresu — możesz ją zmienić."
+      },
+      "company": {
+        "title": "Dane firmowe (do umów)",
+        "help": "Te dane będą wykorzystywane przy generowaniu umów koncertowych, faktur i innych dokumentów. Wszystkie pola są opcjonalne — uzupełnij te, których faktycznie używasz.",
+        "legal_name": "Pełna nazwa prawna",
+        "legal_name_placeholder": "np. ACME Music Sp. z o.o.",
+        "tax_id": "NIP / VAT ID",
+        "registration_number": "REGON",
+        "court_register_number": "KRS",
+        "bank_account": "Numer konta bankowego (IBAN)",
+        "bank_name": "Nazwa banku",
+        "signatory_name": "Osoba reprezentująca",
+        "signatory_position": "Stanowisko reprezentanta",
+        "signatory_position_placeholder": "np. Prezes Zarządu",
+        "contact_email": "E-mail kontaktowy",
+        "contact_phone": "Telefon kontaktowy",
+        "website": "Strona WWW"
       }
     },
     "genres": {
