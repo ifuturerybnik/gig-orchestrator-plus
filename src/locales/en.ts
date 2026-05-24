@@ -7,12 +7,31 @@ export default
   "nav": {
     "dashboard": "Dashboard",
     "organizations": "Organizations",
+    "profile": "Profile",
     "admin": "Admin panel",
     "approvals": "Approvals",
     "logout": "Log out",
     "login": "Sign in",
     "register": "Sign up"
   },
+  "address": {
+    "street": "Street and number",
+    "city": "City",
+    "postal_code": "Postal code",
+    "country": "Country"
+  },
+  "profile": {
+    "title": "My profile",
+    "subtitle": "Manage your personal info and address.",
+    "basic": "Basic info",
+    "saved": "Profile saved",
+    "address": {
+      "title": "Address",
+      "optional": "Optional — you can fill this in at any time.",
+      "benefit_user": "💡 Providing your address lets the system automatically optimize tour routes, plan travel and handle logistics (accommodation, travel costs)."
+    }
+  },
+
   "lang": {
     "label": "Language",
     "pl": "Polski",
@@ -141,8 +160,15 @@ export default
       "edit": "Edit organization",
       "save": "Save changes",
       "saved": "Changes saved",
-      "rejection_reason": "Rejection reason"
+      "rejection_reason": "Rejection reason",
+      "basic": "Basic info",
+      "address": {
+        "title": "Headquarters / base address",
+        "optional": "Optional — you can fill this in at any time.",
+        "benefit": "💡 Providing the organization's address lets the system automatically optimize tour routes, plan travel from your base and handle logistics (accommodation, travel costs, crew booking)."
+      }
     },
+
     "messages": {
       "created": "Organization submitted. An admin will review it.",
       "approved": "Organization approved.",
