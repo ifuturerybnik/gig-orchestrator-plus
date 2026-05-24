@@ -8,6 +8,8 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CountrySelect } from "@/components/country-select";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -245,8 +247,13 @@ function OrganizationDetailPage() {
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="address_country">{t("address.country")}</Label>
-                <Input id="address_country" maxLength={120} value={form.address_country} onChange={updateField("address_country")} />
+                <CountrySelect
+                  id="address_country"
+                  value={form.address_country}
+                  onChange={(v) => setForm((f) => ({ ...f, address_country: v }))}
+                />
               </div>
+
             </div>
           </section>
 
