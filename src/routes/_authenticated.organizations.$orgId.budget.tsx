@@ -830,7 +830,7 @@ function OrganizationBudgetPage() {
               );
             })}
           </TableBody>
-          {entries.length > 0 && (
+          {filteredEntries.length > 0 && Object.keys(totals).length > 0 && (
             <TableFooter>
               {Object.entries(totals).map(([cur, t2]) => {
                 const balance = t2.income - t2.expense;
