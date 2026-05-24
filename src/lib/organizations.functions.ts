@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { MUSIC_GENRES } from "@/lib/genres";
 
 const OrgType = z.enum(["band", "stage_company", "event_company"]);
+const GenreEnum = z.enum(MUSIC_GENRES as unknown as [string, ...string[]]);
 
 export const createOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -121,7 +123,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country";
+  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -220,6 +222,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_city: optionalText(120),
         address_postal_code: optionalText(20),
         address_country: optionalText(120),
+        genres: z.array(GenreEnum).max(20).optional(),
       })
       .parse(input),
   )
@@ -234,6 +237,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
         address_city: data.address_city,
         address_postal_code: data.address_postal_code,
         address_country: data.address_country,
+        ...(data.genres !== undefined ? { genres: data.genres } : {}),
       })
       .eq("id", data.organizationId);
     if (error) throw new Error(error.message);

@@ -175,8 +175,50 @@ export default
         "title": "Adres siedziby / bazy",
         "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
         "benefit": "💡 Uzupełnienie adresu organizacji pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy z bazy oraz inne kwestie logistyczne (noclegi, koszty przejazdów, bookowanie ekipy)."
+      },
+      "genres": {
+        "title": "Gatunki muzyczne",
+        "help": "Wybierz wszystkie gatunki, w których gra zespół. Możesz zmienić w dowolnym momencie."
       }
     },
+    "genres": {
+      "pop": "Pop",
+      "rock": "Rock",
+      "pop_rock": "Pop-rock",
+      "rock_alternative": "Rock alternatywny",
+      "indie": "Indie",
+      "metal": "Metal",
+      "punk": "Punk",
+      "hard_rock": "Hard rock",
+      "hip_hop": "Hip-hop",
+      "rap": "Rap",
+      "rnb": "R&B",
+      "soul": "Soul",
+      "funk": "Funk",
+      "disco": "Disco",
+      "dance": "Dance",
+      "electronic": "Elektroniczna",
+      "house": "House",
+      "techno": "Techno",
+      "trance": "Trance",
+      "drum_and_bass": "Drum and bass",
+      "ambient": "Ambient",
+      "jazz": "Jazz",
+      "blues": "Blues",
+      "reggae": "Reggae",
+      "ska": "Ska",
+      "country": "Country",
+      "folk": "Folk",
+      "world": "Muzyka świata",
+      "latin": "Latino",
+      "classical": "Klasyczna",
+      "acoustic": "Akustyczna",
+      "cover": "Cover band",
+      "wedding": "Weselna",
+      "experimental": "Eksperymentalna",
+      "other": "Inne"
+    },
+
 
     "messages": {
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
