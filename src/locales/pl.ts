@@ -27,7 +27,7 @@ export default
     "saved": "Profil zapisany",
     "kinds": {
       "title": "Kim jestem",
-      "help": "Wybierz wszystkie role, które Cię opisują. Możesz je zmieniać w dowolnym momencie."
+      "help": "Wybierz wszystkie role, które Cię opisują. Możesz je zmieniać w dowolnym momencie. Oznaczenie nieprawidłowych opcji będzie powodowało błędy w organizacji."
     },
     "address": {
       "title": "Adres",
