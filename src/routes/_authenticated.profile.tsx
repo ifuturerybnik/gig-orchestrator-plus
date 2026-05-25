@@ -22,6 +22,7 @@ import { CurrencySelect } from "@/components/currency-select";
 import { PhoneInput } from "@/components/phone-input";
 import { CountrySelect } from "@/components/country-select";
 import { SecuritySection } from "@/components/security-section";
+import { PrivacySection } from "@/components/privacy-section";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 
@@ -492,7 +493,9 @@ function ProfilePage() {
 
         <div className="mt-12 space-y-8">
           <SecuritySection />
+          <PrivacySection userEmail={profileQuery.data?.email} />
         </div>
+
 
 
         <section className="mt-12">
