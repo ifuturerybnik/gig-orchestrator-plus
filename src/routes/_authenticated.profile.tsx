@@ -68,20 +68,45 @@ function ProfilePage() {
     address_city: "",
     address_postal_code: "",
     address_country: "",
+    settlement_form: "" as "" | "employment" | "business" | "mandate_contract" | "work_contract" | "other",
+    settlement_employer_org_id: "",
+    settlement_other_description: "",
+    billing_company_name: "",
+    billing_tax_id: "",
+    billing_is_vat_payer: false,
+    billing_bank_account: "",
+    billing_pesel: "",
+    billing_tax_office: "",
+    billing_zus_title: "",
+    billing_default_rate: "",
+    billing_default_currency: "",
   });
 
   useEffect(() => {
-    const p = profileQuery.data?.profile;
+    const p = profileQuery.data?.profile as Record<string, unknown> | null | undefined;
     if (p) {
       setForm({
-        first_name: p.first_name ?? "",
-        last_name: p.last_name ?? "",
-        phone: p.phone ?? "",
+        first_name: (p.first_name as string) ?? "",
+        last_name: (p.last_name as string) ?? "",
+        phone: (p.phone as string) ?? "",
         user_kinds: ((p.user_kinds ?? []) as UserKind[]),
-        address_street: p.address_street ?? "",
-        address_city: p.address_city ?? "",
-        address_postal_code: p.address_postal_code ?? "",
-        address_country: p.address_country ?? "",
+        address_street: (p.address_street as string) ?? "",
+        address_city: (p.address_city as string) ?? "",
+        address_postal_code: (p.address_postal_code as string) ?? "",
+        address_country: (p.address_country as string) ?? "",
+        settlement_form: ((p.settlement_form as typeof form.settlement_form) ?? "") || "",
+        settlement_employer_org_id: (p.settlement_employer_org_id as string) ?? "",
+        settlement_other_description: (p.settlement_other_description as string) ?? "",
+        billing_company_name: (p.billing_company_name as string) ?? "",
+        billing_tax_id: (p.billing_tax_id as string) ?? "",
+        billing_is_vat_payer: Boolean(p.billing_is_vat_payer),
+        billing_bank_account: (p.billing_bank_account as string) ?? "",
+        billing_pesel: (p.billing_pesel as string) ?? "",
+        billing_tax_office: (p.billing_tax_office as string) ?? "",
+        billing_zus_title: (p.billing_zus_title as string) ?? "",
+        billing_default_rate:
+          p.billing_default_rate != null ? String(p.billing_default_rate) : "",
+        billing_default_currency: (p.billing_default_currency as string) ?? "",
       });
     }
   }, [profileQuery.data]);
