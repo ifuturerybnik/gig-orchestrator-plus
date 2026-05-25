@@ -1,6 +1,15 @@
 export default 
 {
   "privacy": {
+  "consent_update": {
+    "title": "We updated our documents",
+    "subtitle": "We have updated the Terms of Service or Privacy Policy. To continue using Concertivo, please accept the current versions.",
+    "accept_terms": "I accept the current",
+    "accept_privacy": "I have read the current",
+    "alternative": "If you do not accept the changes, you can delete your account from your profile at any time — your data will be permanently deleted (except for data required by law, e.g. invoices).",
+    "button": "Accept and continue",
+    "success": "Thanks! You can keep using the app."
+  },
     "title": "Data & privacy",
     "subtitle": "Under GDPR you can export a copy of your data or permanently delete your account.",
     "export": {
