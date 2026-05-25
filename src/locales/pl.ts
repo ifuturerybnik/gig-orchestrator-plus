@@ -37,6 +37,55 @@ export default
     "my_orgs": {
       "title": "Moje organizacje",
       "empty": "Nie jesteś jeszcze przypisany do żadnej organizacji."
+    },
+    "settlement": {
+      "title": "Rozliczenia",
+      "help": "Preferowana forma rozliczenia. Dane wykorzystamy do automatycznego generowania umów i faktur koncertowych.",
+      "privacy_note": "🔒 Dane wrażliwe (PESEL, NIP, numer konta) są widoczne wyłącznie dla Ciebie, właścicieli organizacji, do których należysz, oraz administratora aplikacji (i-Future). Szczegóły w Polityce prywatności.",
+      "forms": {
+        "employment": {
+          "label": "Umowa o pracę z organizacją",
+          "desc": "Jestem zatrudniony(a) bezpośrednio przez jedną z moich organizacji."
+        },
+        "business": {
+          "label": "Własna działalność gospodarcza (B2B / faktura)",
+          "desc": "Wystawiam fakturę z własnej firmy."
+        },
+        "mandate_contract": {
+          "label": "Umowa zlecenie",
+          "desc": "Rozliczam się na podstawie umowy zlecenia."
+        },
+        "work_contract": {
+          "label": "Umowa o dzieło",
+          "desc": "Rozliczam się na podstawie umowy o dzieło (np. z przeniesieniem praw autorskich, 50% KUP)."
+        },
+        "other": {
+          "label": "Inna forma",
+          "desc": "Kontrakt menedżerski lub inna forma — opisz poniżej."
+        }
+      },
+      "employer_org": "Organizacja zatrudniająca",
+      "employer_org_ph": "Wybierz organizację…",
+      "no_orgs": "Nie należysz jeszcze do żadnej organizacji. Najpierw dołącz lub zarejestruj zespół/firmę.",
+      "company_name": "Nazwa firmy",
+      "tax_id": "NIP",
+      "vat_payer": "Jestem płatnikiem VAT",
+      "bank_account": "Numer konta (IBAN)",
+      "pesel": "PESEL",
+      "tax_office": "Urząd Skarbowy",
+      "tax_office_ph": "np. Pierwszy US w Warszawie",
+      "zus_title": "Tytuł do ubezpieczeń ZUS",
+      "zus_titles": {
+        "none": "Brak / nie dotyczy",
+        "student": "Student do 26. roku życia",
+        "employed_elsewhere": "Zatrudniony(a) gdzie indziej (etat ≥ minimalna)",
+        "retired": "Emeryt / rencista",
+        "own_business": "Prowadzę własną działalność",
+        "other": "Inny"
+      },
+      "other_desc": "Opis formy rozliczenia",
+      "default_rate": "Domyślna stawka (za koncert)",
+      "default_currency": "Waluta"
     }
   },
   "security": {
