@@ -37,6 +37,55 @@ export default
     "my_orgs": {
       "title": "My organizations",
       "empty": "You're not assigned to any organization yet."
+    },
+    "settlement": {
+      "title": "Billing & settlement",
+      "help": "Preferred settlement form. We use this data to generate concert contracts and invoices.",
+      "privacy_note": "🔒 Sensitive data (PESEL, tax ID, bank account) is visible only to you, the owners of organizations you belong to, and the app administrator (i-Future). See Privacy Policy for details.",
+      "forms": {
+        "employment": {
+          "label": "Employment contract with an organization",
+          "desc": "I'm employed directly by one of my organizations."
+        },
+        "business": {
+          "label": "Own business (B2B / invoice)",
+          "desc": "I invoice from my own company."
+        },
+        "mandate_contract": {
+          "label": "Mandate contract (umowa zlecenie)",
+          "desc": "Civil-law contract for services."
+        },
+        "work_contract": {
+          "label": "Specific-task contract (umowa o dzieło)",
+          "desc": "Specific-task contract, often with copyright transfer."
+        },
+        "other": {
+          "label": "Other",
+          "desc": "Management contract or other — describe below."
+        }
+      },
+      "employer_org": "Employing organization",
+      "employer_org_ph": "Pick an organization…",
+      "no_orgs": "You don't belong to any organization yet. Join or register a band/company first.",
+      "company_name": "Company name",
+      "tax_id": "Tax ID (NIP / VAT ID)",
+      "vat_payer": "I'm a VAT payer",
+      "bank_account": "Bank account (IBAN)",
+      "pesel": "National ID (PESEL)",
+      "tax_office": "Tax office",
+      "tax_office_ph": "e.g. First Tax Office in Warsaw",
+      "zus_title": "Social-insurance status",
+      "zus_titles": {
+        "none": "None / not applicable",
+        "student": "Student under 26",
+        "employed_elsewhere": "Employed elsewhere (full-time ≥ minimum wage)",
+        "retired": "Retired / pensioner",
+        "own_business": "I run my own business",
+        "other": "Other"
+      },
+      "other_desc": "Settlement description",
+      "default_rate": "Default rate (per concert)",
+      "default_currency": "Currency"
     }
   },
 
