@@ -13,6 +13,7 @@ import "../i18n";
 import { AuthProvider } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { Footer } from "@/components/footer";
 
 function NotFoundComponent() {
   return (
@@ -106,7 +107,12 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AuthSync />
-        <Outlet />
+        <div className="flex min-h-screen flex-col">
+          <div className="flex-1">
+            <Outlet />
+          </div>
+          <Footer />
+        </div>
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
