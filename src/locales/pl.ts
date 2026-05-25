@@ -175,6 +175,10 @@ export default
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
       "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny.",
+      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych.",
+      "accept_legal_prefix": "Akceptuję",
+      "accept_legal_and": "oraz",
+      "accept_marketing": "Chcę otrzymywać informacje o nowych funkcjach, wydarzeniach i ofertach (opcjonalnie — możesz wycofać w każdej chwili)."
       "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych."
     },
     "reset": {
