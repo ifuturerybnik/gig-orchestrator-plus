@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/header";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PhoneInput } from "@/components/phone-input";
+import { recordSignupConsents } from "@/lib/consents.functions";
+import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal";
 
 
 export const Route = createFileRoute("/register")({
@@ -30,6 +33,7 @@ const USER_KINDS = [
 
 function RegisterPage() {
   const { t, i18n } = useTranslation();
+  const recordConsents = useServerFn(recordSignupConsents);
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,6 +42,8 @@ function RegisterPage() {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [kinds, setKinds] = useState<string[]>([]);
+  const [acceptLegal, setAcceptLegal] = useState(false);
+  const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -53,6 +59,10 @@ function RegisterPage() {
     }
     if (password !== passwordConfirm) {
       toast.error(t("auth.errors.passwords_mismatch"));
+      return;
+    }
+    if (!acceptLegal) {
+      toast.error(t("auth.errors.legal_required"));
       return;
     }
     setStep(2);
