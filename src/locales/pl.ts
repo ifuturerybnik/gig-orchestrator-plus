@@ -1,5 +1,26 @@
 export default 
 {
+  "privacy": {
+    "title": "Dane i prywatność",
+    "subtitle": "Zgodnie z RODO masz prawo pobrać kopię swoich danych oraz trwale usunąć konto.",
+    "export": {
+      "title": "Pobierz moje dane",
+      "help": "Otrzymasz plik JSON z profilem, zgodami, członkostwami w organizacjach i historią rozliczeń.",
+      "button": "Pobierz JSON",
+      "success": "Plik został pobrany."
+    },
+    "delete": {
+      "title": "Usuń konto",
+      "help": "Operacja nieodwracalna — usuwa profil, zgody, członkostwa i wszystkie dane osobowe.",
+      "button": "Usuń konto",
+      "confirm_title": "Czy na pewno chcesz usunąć konto?",
+      "confirm_desc": "Tej operacji nie da się cofnąć. Wszystkie Twoje dane zostaną trwale usunięte. Jeśli jesteś jedynym właścicielem organizacji, najpierw musisz przekazać własność lub usunąć organizację.",
+      "email_label": "Aby potwierdzić, wpisz swój email: {{email}}",
+      "email_mismatch": "Email nie zgadza się.",
+      "confirm_button": "Tak, usuń konto",
+      "success": "Konto zostało usunięte."
+    }
+  },
   "app": {
     "name": "Concertivo",
     "tagline": "System zarządzania koncertami i organizacjami muzycznymi"
