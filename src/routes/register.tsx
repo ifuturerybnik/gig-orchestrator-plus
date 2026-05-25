@@ -80,7 +80,7 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -94,11 +94,27 @@ function RegisterPage() {
         },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+    // Audit log zgód (RODO). Nie blokujemy rejestracji w razie błędu — logujemy.
+    if (signUpData.user?.id) {
+      try {
+        await recordConsents({
+          data: {
+            user_id: signUpData.user.id,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
+            marketing_granted: acceptMarketing,
+          },
+        });
+      } catch (consentErr) {
+        console.error("Failed to record signup consents", consentErr);
+      }
+    }
+    setLoading(false);
     setDone(true);
   };
 
@@ -146,6 +162,40 @@ function RegisterPage() {
             <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
               {t("auth.register.mfa_recommendation")}
             </div>
+            <label
+              htmlFor="accept-legal"
+              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+            >
+              <Checkbox
+                id="accept-legal"
+                checked={acceptLegal}
+                onCheckedChange={(c) => setAcceptLegal(c === true)}
+              />
+              <span>
+                {t("auth.register.accept_legal_prefix")}{" "}
+                <Link to="/terms" target="_blank" className="text-foreground underline">
+                  {t("footer.terms")}
+                </Link>{" "}
+                {t("auth.register.accept_legal_and")}{" "}
+                <Link to="/privacy" target="_blank" className="text-foreground underline">
+                  {t("footer.privacy")}
+                </Link>
+                . <span className="text-destructive">*</span>
+              </span>
+            </label>
+            <label
+              htmlFor="accept-marketing"
+              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+            >
+              <Checkbox
+                id="accept-marketing"
+                checked={acceptMarketing}
+                onCheckedChange={(c) => setAcceptMarketing(c === true)}
+              />
+              <span className="text-muted-foreground">
+                {t("auth.register.accept_marketing")}
+              </span>
+            </label>
             <Button type="submit" className="w-full">
               {t("common.next")}
             </Button>
