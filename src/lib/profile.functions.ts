@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { decryptPii, encryptPii } from "./crypto.server";
 
 const PROFILE_COLUMNS =
-  "id, first_name, last_name, phone, preferred_language, user_kinds, address_street, address_city, address_postal_code, address_country, settlement_form, settlement_employer_org_id, settlement_other_description, billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account, billing_pesel, billing_tax_office, billing_zus_title, billing_default_rate, billing_default_currency";
+  "id, first_name, last_name, phone, preferred_language, user_kinds, address_street, address_city, address_postal_code, address_country, settlement_form, settlement_employer_org_id, settlement_other_description, billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account_enc, billing_pesel_enc, billing_tax_office, billing_zus_title, billing_default_rate, billing_default_currency";
 
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -14,11 +15,24 @@ export const getMyProfile = createServerFn({ method: "GET" })
       supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
 
+    // Odszyfrowujemy PII na granicy serwer→klient — komponent dostaje plaintext.
+    const decryptedProfile = profile
+      ? {
+          ...profile,
+          billing_bank_account: decryptPii(
+            (profile as Record<string, unknown>).billing_bank_account_enc as string | null,
+          ),
+          billing_pesel: decryptPii(
+            (profile as Record<string, unknown>).billing_pesel_enc as string | null,
+          ),
+        }
+      : null;
+
     const roleList = (roles ?? []).map((r) => r.role as string);
     return {
       userId,
       email: userEmail,
-      profile: profile ?? null,
+      profile: decryptedProfile,
       roles: roleList,
       isAdmin: roleList.includes("super_admin") || roleList.includes("admin_staff"),
     };
@@ -106,8 +120,8 @@ export const updateMyProfile = createServerFn({ method: "POST" })
         billing_company_name: data.billing_company_name,
         billing_tax_id: data.billing_tax_id,
         billing_is_vat_payer: data.billing_is_vat_payer ?? null,
-        billing_bank_account: data.billing_bank_account,
-        billing_pesel: data.billing_pesel,
+        billing_bank_account_enc: encryptPii(data.billing_bank_account),
+        billing_pesel_enc: encryptPii(data.billing_pesel),
         billing_tax_office: data.billing_tax_office,
         billing_zus_title: data.billing_zus_title,
         billing_default_rate: data.billing_default_rate ?? null,
