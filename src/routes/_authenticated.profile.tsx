@@ -112,7 +112,19 @@ function ProfilePage() {
   }, [profileQuery.data]);
 
   const mutation = useMutation({
-    mutationFn: (input: typeof form) => updateFn({ data: input }),
+    mutationFn: (input: typeof form) => {
+      const rate = input.billing_default_rate.trim();
+      const payload = {
+        ...input,
+        settlement_form: input.settlement_form === "" ? null : input.settlement_form,
+        settlement_employer_org_id:
+          input.settlement_form === "employment" && input.settlement_employer_org_id
+            ? input.settlement_employer_org_id
+            : null,
+        billing_default_rate: rate === "" ? null : Number(rate),
+      };
+      return updateFn({ data: payload });
+    },
     onSuccess: () => {
       toast.success(t("profile.saved"));
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
