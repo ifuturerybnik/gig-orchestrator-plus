@@ -118,6 +118,12 @@ export default
     "pl": "Polski",
     "en": "English"
   },
+  "footer": {
+    "operator": "Operator: i-Future",
+    "privacy": "Polityka prywatności",
+    "terms": "Regulamin",
+    "contact": "Kontakt"
+  },
   "common": {
     "loading": "Ładowanie…",
     "save": "Zapisz",
@@ -175,7 +181,10 @@ export default
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
       "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny.",
-      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych."
+      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych.",
+      "accept_legal_prefix": "Akceptuję",
+      "accept_legal_and": "oraz",
+      "accept_marketing": "Chcę otrzymywać informacje o nowych funkcjach, wydarzeniach i ofertach (opcjonalnie — możesz wycofać w każdej chwili)."
     },
     "reset": {
       "title": "Reset hasła",
@@ -191,7 +200,8 @@ export default
       "passwords_mismatch": "Hasła nie są takie same",
       "weak_password": "Hasło musi mieć minimum 8 znaków",
       "invalid_credentials": "Nieprawidłowy email lub hasło",
-      "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę"
+      "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę",
+      "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności."
     }
   },
   "user_kinds": {

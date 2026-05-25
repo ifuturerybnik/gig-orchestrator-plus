@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/header";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PhoneInput } from "@/components/phone-input";
+import { recordSignupConsents } from "@/lib/consents.functions";
+import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal";
 
 
 export const Route = createFileRoute("/register")({
@@ -30,6 +33,7 @@ const USER_KINDS = [
 
 function RegisterPage() {
   const { t, i18n } = useTranslation();
+  const recordConsents = useServerFn(recordSignupConsents);
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,6 +42,8 @@ function RegisterPage() {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [kinds, setKinds] = useState<string[]>([]);
+  const [acceptLegal, setAcceptLegal] = useState(false);
+  const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -55,6 +61,10 @@ function RegisterPage() {
       toast.error(t("auth.errors.passwords_mismatch"));
       return;
     }
+    if (!acceptLegal) {
+      toast.error(t("auth.errors.legal_required"));
+      return;
+    }
     setStep(2);
   };
 
@@ -70,7 +80,7 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -84,11 +94,27 @@ function RegisterPage() {
         },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+    // Audit log zgód (RODO). Nie blokujemy rejestracji w razie błędu — logujemy.
+    if (signUpData.user?.id) {
+      try {
+        await recordConsents({
+          data: {
+            user_id: signUpData.user.id,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
+            marketing_granted: acceptMarketing,
+          },
+        });
+      } catch (consentErr) {
+        console.error("Failed to record signup consents", consentErr);
+      }
+    }
+    setLoading(false);
     setDone(true);
   };
 
@@ -136,6 +162,40 @@ function RegisterPage() {
             <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
               {t("auth.register.mfa_recommendation")}
             </div>
+            <label
+              htmlFor="accept-legal"
+              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+            >
+              <Checkbox
+                id="accept-legal"
+                checked={acceptLegal}
+                onCheckedChange={(c) => setAcceptLegal(c === true)}
+              />
+              <span>
+                {t("auth.register.accept_legal_prefix")}{" "}
+                <Link to="/terms" target="_blank" className="text-foreground underline">
+                  {t("footer.terms")}
+                </Link>{" "}
+                {t("auth.register.accept_legal_and")}{" "}
+                <Link to="/privacy" target="_blank" className="text-foreground underline">
+                  {t("footer.privacy")}
+                </Link>
+                . <span className="text-destructive">*</span>
+              </span>
+            </label>
+            <label
+              htmlFor="accept-marketing"
+              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+            >
+              <Checkbox
+                id="accept-marketing"
+                checked={acceptMarketing}
+                onCheckedChange={(c) => setAcceptMarketing(c === true)}
+              />
+              <span className="text-muted-foreground">
+                {t("auth.register.accept_marketing")}
+              </span>
+            </label>
             <Button type="submit" className="w-full">
               {t("common.next")}
             </Button>
