@@ -89,3 +89,92 @@ export const recordSignupConsents = createServerFn({ method: "POST" })
 
     return { ok: true, skipped: false as const };
   });
+
+/**
+ * RODO + UŚUDE: sprawdza czy zalogowany user zaakceptował aktualne wersje
+ * Regulaminu i Polityki prywatności. Wywoływane na każdym wejściu do strefy
+ * zalogowanej; jeśli zwraca `needsAcceptance: true` — UI pokazuje modal.
+ */
+export const getMyConsentStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+
+    const { data, error } = await supabaseAdmin
+      .from("user_consents")
+      .select("consent_type, version, granted, created_at")
+      .eq("user_id", userId)
+      .in("consent_type", ["terms", "privacy"])
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    // Najnowsza zgoda per typ
+    const latest = new Map<string, { version: string; granted: boolean }>();
+    for (const row of data ?? []) {
+      const type = row.consent_type as string;
+      if (!latest.has(type)) {
+        latest.set(type, {
+          version: row.version as string,
+          granted: row.granted as boolean,
+        });
+      }
+    }
+
+    const termsOk =
+      latest.get("terms")?.version === TERMS_VERSION && latest.get("terms")?.granted === true;
+    const privacyOk =
+      latest.get("privacy")?.version === PRIVACY_VERSION &&
+      latest.get("privacy")?.granted === true;
+
+    return {
+      needsAcceptance: !termsOk || !privacyOk,
+      missing: {
+        terms: !termsOk,
+        privacy: !privacyOk,
+      },
+      currentVersions: {
+        terms: TERMS_VERSION,
+        privacy: PRIVACY_VERSION,
+      },
+    };
+  });
+
+/**
+ * Zapisuje akceptację aktualnych wersji Regulaminu i Polityki przez
+ * zalogowanego użytkownika (po zmianie wersji dokumentów).
+ */
+export const acceptCurrentConsents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+
+    const ip =
+      getRequestHeader("cf-connecting-ip") ??
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const userAgent = getRequestHeader("user-agent") ?? null;
+
+    const rows = [
+      {
+        user_id: userId,
+        consent_type: "terms",
+        version: TERMS_VERSION,
+        granted: true,
+        ip_address: ip,
+        user_agent: userAgent,
+      },
+      {
+        user_id: userId,
+        consent_type: "privacy",
+        version: PRIVACY_VERSION,
+        granted: true,
+        ip_address: ip,
+        user_agent: userAgent,
+      },
+    ];
+
+    const { error } = await supabaseAdmin.from("user_consents").insert(rows);
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });
