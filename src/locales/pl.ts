@@ -62,7 +62,7 @@ export default
     "settlement": {
       "title": "Rozliczenia",
       "help": "Preferowana forma rozliczenia. Dane wykorzystamy do automatycznego generowania umów i faktur koncertowych.",
-      "privacy_note": "🔒 Dane wrażliwe (PESEL, NIP, numer konta) są widoczne wyłącznie dla Ciebie, właścicieli organizacji, do których należysz, oraz administratora aplikacji (i-Future). Szczegóły w Polityce prywatności.",
+      "privacy_note": "🔒 Dane wrażliwe (PESEL, NIP, numer konta) są widoczne wyłącznie dla Ciebie, właścicieli organizacji, do których należysz, oraz administratora aplikacji Concertivo. Twoje dane wrażliwe są szyfrowane algorytmem AES-256-GCM (klucz przechowywany poza bazą danych). Szczegóły w Polityce prywatności.",
       "forms": {
         "employment": {
           "label": "Umowa o pracę z organizacją",
