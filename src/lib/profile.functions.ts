@@ -3,12 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const PROFILE_COLUMNS =
-  "id, first_name, last_name, phone, preferred_language, user_kinds, " +
-  "address_street, address_city, address_postal_code, address_country, " +
-  "settlement_form, settlement_employer_org_id, settlement_other_description, " +
-  "billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account, " +
-  "billing_pesel, billing_tax_office, billing_zus_title, " +
-  "billing_default_rate, billing_default_currency";
+  "id, first_name, last_name, phone, preferred_language, user_kinds, address_street, address_city, address_postal_code, address_country, settlement_form, settlement_employer_org_id, settlement_other_description, billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account, billing_pesel, billing_tax_office, billing_zus_title, billing_default_rate, billing_default_currency";
 
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
