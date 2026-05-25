@@ -21,6 +21,15 @@ export default
       "success": "Konto zostało usunięte."
     }
   },
+  "consent_update": {
+    "title": "Zaktualizowaliśmy nasze dokumenty",
+    "subtitle": "Wprowadziliśmy zmiany w Regulaminie lub Polityce prywatności. Aby kontynuować korzystanie z Concertivo, prosimy o akceptację aktualnych wersji.",
+    "accept_terms": "Akceptuję aktualny",
+    "accept_privacy": "Zapoznałem/am się z aktualną",
+    "alternative": "Jeśli nie akceptujesz zmian, możesz w każdej chwili usunąć konto w panelu profilu — Twoje dane zostaną trwale usunięte (z zastrzeżeniem danych wymaganych prawem, np. faktur).",
+    "button": "Akceptuję i kontynuuję",
+    "success": "Dziękujemy! Możesz dalej korzystać z aplikacji."
+  },
   "app": {
     "name": "Concertivo",
     "tagline": "System zarządzania koncertami i organizacjami muzycznymi"

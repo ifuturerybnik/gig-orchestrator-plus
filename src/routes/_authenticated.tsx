@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { ConsentGate } from "@/components/consent-gate";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthGate,
@@ -17,5 +18,9 @@ function AuthGate() {
   if (!user) {
     return <Navigate to="/login" />;
   }
-  return <Outlet />;
+  return (
+    <ConsentGate>
+      <Outlet />
+    </ConsentGate>
+  );
 }
