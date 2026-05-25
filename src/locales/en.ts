@@ -95,6 +95,12 @@ export default
     "pl": "Polski",
     "en": "English"
   },
+  "footer": {
+    "operator": "Operator: i-Future",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact"
+  },
   "common": {
     "loading": "Loading…",
     "save": "Save",
@@ -152,7 +158,10 @@ export default
       "have_account": "Already have an account?",
       "login_link": "Sign in",
       "check_email": "Check your inbox — we've sent an activation link.",
-      "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security”. An extra code from your app significantly improves account security."
+      "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security”. An extra code from your app significantly improves account security.",
+      "accept_legal_prefix": "I accept the",
+      "accept_legal_and": "and the",
+      "accept_marketing": "I'd like to receive product updates, event news and offers (optional — you can opt out anytime)."
     },
     "reset": {
       "title": "Reset password",
@@ -168,7 +177,8 @@ export default
       "passwords_mismatch": "Passwords don't match",
       "weak_password": "Password must be at least 8 characters",
       "invalid_credentials": "Invalid email or password",
-      "select_at_least_one_kind": "Select at least one role"
+      "select_at_least_one_kind": "Select at least one role",
+      "legal_required": "You must accept the Terms and Privacy Policy to continue."
     }
   },
   "user_kinds": {
