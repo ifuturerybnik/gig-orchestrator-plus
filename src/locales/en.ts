@@ -62,7 +62,7 @@ export default
     "settlement": {
       "title": "Billing & settlement",
       "help": "Preferred settlement form. We use this data to generate concert contracts and invoices.",
-      "privacy_note": "🔒 Sensitive data (PESEL, tax ID, bank account) is visible only to you, the owners of organizations you belong to, and the app administrator (i-Future). See Privacy Policy for details.",
+      "privacy_note": "🔒 Sensitive data (PESEL, tax ID, bank account) is visible only to you, the owners of organizations you belong to, and the Concertivo app administrator. Your sensitive data is encrypted with AES-256-GCM (key stored outside the database). See Privacy Policy for details.",
       "forms": {
         "employment": {
           "label": "Employment contract with an organization",
