@@ -1,5 +1,26 @@
 export default 
 {
+  "privacy": {
+    "title": "Data & privacy",
+    "subtitle": "Under GDPR you can export a copy of your data or permanently delete your account.",
+    "export": {
+      "title": "Export my data",
+      "help": "You'll receive a JSON file with your profile, consents, organization memberships and settlement history.",
+      "button": "Download JSON",
+      "success": "File downloaded."
+    },
+    "delete": {
+      "title": "Delete account",
+      "help": "Irreversible — deletes profile, consents, memberships and all personal data.",
+      "button": "Delete account",
+      "confirm_title": "Delete your account?",
+      "confirm_desc": "This cannot be undone. All your data will be permanently removed. If you are the sole owner of an organization, you must first transfer ownership or delete the organization.",
+      "email_label": "To confirm, type your email: {{email}}",
+      "email_mismatch": "Email does not match.",
+      "confirm_button": "Yes, delete my account",
+      "success": "Account deleted."
+    }
+  },
   "app": {
     "name": "Concertivo",
     "tagline": "Concert and music organization management system"
