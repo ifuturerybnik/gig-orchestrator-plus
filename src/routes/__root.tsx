@@ -75,10 +75,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  // Plausible Analytics — bez cookies, hostowane w EU, zgodne z RODO bez baneru cookie.
+  // Skrypt liczy tylko ruch z domeny skonfigurowanej w panelu plausible.io,
+  // więc bezpiecznie ładujemy go również w preview/dev (Plausible go zignoruje).
   return (
     <html lang="pl">
       <head>
         <HeadContent />
+        <script
+          defer
+          data-domain="concertivo.eu"
+          src="https://plausible.io/js/script.js"
+        />
       </head>
       <body>
         {children}

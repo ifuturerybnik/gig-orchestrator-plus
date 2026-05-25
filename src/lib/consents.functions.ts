@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { TERMS_VERSION, PRIVACY_VERSION } from "./legal";
 
 /**
  * Zapisuje zgody akceptowane przy rejestracji.
