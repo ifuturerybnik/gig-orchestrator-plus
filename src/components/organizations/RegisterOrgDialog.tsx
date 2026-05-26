@@ -369,14 +369,86 @@ export function RegisterOrgDialog({
                   <Label htmlFor="org-legal-name">
                     {t("organizations.dialog.legal_name")} *
                   </Label>
-                  <Input
-                    id="org-legal-name"
-                    value={legalName}
-                    onChange={(e) => setLegalName(e.target.value)}
-                    maxLength={200}
-                    required={showCompany}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="org-legal-name"
+                      value={legalName}
+                      onChange={(e) => setLegalName(e.target.value)}
+                      onBlur={() => {
+                        if (!nip && legalName.trim().length >= 2) void runSearch();
+                      }}
+                      maxLength={200}
+                      required={showCompany}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void runSearch()}
+                      disabled={searching}
+                    >
+                      {t("organizations.dialog.dedup_search_btn")}
+                    </Button>
+                  </div>
                 </div>
+
+                {matches !== null && (
+                  <div className="sm:col-span-2 space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                    {matches.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        {t("organizations.dialog.dedup_no_match")}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          {t("organizations.dialog.dedup_title")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("organizations.dialog.dedup_subtitle")}
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {matches.map((m) => {
+                            const nipExact =
+                              !!nip && m.tax_id === normalizeNip(nip);
+                            return (
+                              <li
+                                key={m.id}
+                                className="flex flex-wrap items-start justify-between gap-2 rounded border border-border bg-background p-2"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-foreground">
+                                    {m.name}
+                                    {nipExact && (
+                                      <span className="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] uppercase text-amber-700 dark:text-amber-300">
+                                        {t("organizations.dialog.dedup_match_nip")}
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {m.legal_name && m.legal_name !== m.name
+                                      ? `${m.legal_name} · `
+                                      : ""}
+                                    {m.tax_id ? `NIP ${m.tax_id} · ` : ""}
+                                    {m.address_city ?? ""}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => void handleClaim(m.id)}
+                                  disabled={claimingId === m.id}
+                                >
+                                  {t("organizations.dialog.dedup_claim")}
+                                </Button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="org-postal">{t("address.postal_code")}</Label>
                   <Input
