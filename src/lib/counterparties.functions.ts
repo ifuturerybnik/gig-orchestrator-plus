@@ -160,18 +160,22 @@ export const decideJoinRequest = createServerFn({ method: "POST" })
     }
 
     if (data.decision === "approved") {
-      // Dodaj członkostwo (idempotentnie)
-      const { error: memErr } = await supabaseAdmin
+      const { data: existing } = await supabaseAdmin
         .from("organization_members")
-        .upsert(
-          {
+        .select("user_id")
+        .eq("organization_id", req.organization_id)
+        .eq("user_id", req.user_id)
+        .maybeSingle();
+      if (!existing) {
+        const { error: memErr } = await supabaseAdmin
+          .from("organization_members")
+          .insert({
             organization_id: req.organization_id,
             user_id: req.user_id,
             role: "member",
-          },
-          { onConflict: "organization_id,user_id" },
-        );
-      if (memErr) throw new Error(memErr.message);
+          });
+        if (memErr) throw new Error(memErr.message);
+      }
     }
 
     const { error: updErr } = await supabase
