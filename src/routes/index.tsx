@@ -11,28 +11,33 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   const { t } = useTranslation();
   return (
-    <div
-      className="min-h-screen w-full bg-background bg-contain bg-top bg-no-repeat"
-      style={{ backgroundImage: `url(${heroBg})` }}
-    >
-      <Header />
-      <main className="mx-auto max-w-4xl px-4 py-24 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          {t("landing.hero.title")}
-        </h1>
-        <p className="mt-6 text-lg text-muted-foreground">{t("landing.hero.subtitle")}</p>
-        <div className="mt-10 flex items-center justify-center gap-3">
-          <Link to="/register">
-            <Button size="lg">{t("landing.hero.cta_primary")}</Button>
-          </Link>
-          <Link to="/login">
-            <Button size="lg" variant="outline">
-              {t("landing.hero.cta_secondary")}
-            </Button>
-          </Link>
-        </div>
-      </main>
+    <div className="min-h-screen bg-background">
+      <div
+        className="relative w-full bg-cover bg-center bg-no-repeat aspect-[16/9]"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      >
+        <Header />
+        <main className="absolute inset-0 flex">
+          <div className="ml-auto w-1/2 flex flex-col justify-center px-6 sm:px-10 text-right">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {t("landing.hero.title")}
+            </h1>
+            <p className="mt-3 text-sm sm:text-base text-muted-foreground">
+              {t("landing.hero.subtitle")}
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Link to="/register">
+                <Button size="lg">{t("landing.hero.cta_primary")}</Button>
+              </Link>
+              <Link to="/login">
+                <Button size="lg" variant="outline">
+                  {t("landing.hero.cta_secondary")}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
 
-  );
 }
