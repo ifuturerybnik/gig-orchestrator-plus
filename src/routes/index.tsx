@@ -29,7 +29,7 @@ function LandingPage() {
         </div>
         <main className="absolute inset-x-0 top-1/2 bottom-0 flex items-start justify-center px-4">
           <div className="mt-4 max-w-2xl w-full rounded-xl bg-white/70 backdrop-blur-sm px-6 sm:px-10 py-6 text-center shadow-lg">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-4xl">
               {t("landing.hero.title")}
             </h1>
             <p className="mt-3 text-sm sm:text-base text-muted-foreground">
