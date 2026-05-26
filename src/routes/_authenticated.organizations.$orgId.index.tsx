@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { countryName } from "@/lib/countries";
 import { getOrganizationDetails } from "@/lib/organizations.functions";
+import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 
 export const Route = createFileRoute("/_authenticated/organizations/$orgId/")({
   component: OrganizationOverviewPage,

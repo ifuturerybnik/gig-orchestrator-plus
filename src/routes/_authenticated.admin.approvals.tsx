@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { getMyProfile } from "@/lib/profile.functions";
+import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 import {
   listPendingOrganizations,
   setOrganizationStatus,
