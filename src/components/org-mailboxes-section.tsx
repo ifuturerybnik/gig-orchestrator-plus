@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,12 +15,6 @@ import {
 } from "@/lib/email-skrzynki.functions";
 import { getOrganizationDetails } from "@/lib/organizations.functions";
 import { Trash2, RefreshCw, Plus } from "lucide-react";
-
-export const Route = createFileRoute(
-  "/_authenticated/organizations/$orgId/skrzynki",
-)({
-  component: OrgSkrzynkiPage,
-});
 
 type FormState = {
   nazwa: string;
@@ -53,8 +46,7 @@ const empty: FormState = {
   smtp_use_ssl: true,
 };
 
-function OrgSkrzynkiPage() {
-  const { orgId } = Route.useParams();
+export function OrgMailboxesSection({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
 
@@ -135,18 +127,16 @@ function OrgSkrzynkiPage() {
   const skrzynki = listQuery.data?.skrzynki ?? [];
 
   return (
-    <div className="space-y-8">
+    <section className="space-y-4 rounded-md border border-border bg-card p-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            {t("skrzynki.title")}
-          </h1>
+          <h2 className="text-lg font-semibold">{t("skrzynki.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("skrzynki.subtitle")}
           </p>
         </div>
         {isOwner && !open && (
-          <Button onClick={() => setOpen(true)}>
+          <Button type="button" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" /> {t("skrzynki.add")}
           </Button>
         )}
@@ -155,7 +145,7 @@ function OrgSkrzynkiPage() {
       {open && isOwner && (
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-lg border border-border bg-card p-4"
+          className="space-y-4 rounded-lg border border-border bg-background p-4"
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("skrzynki.form.nazwa")}>
@@ -295,7 +285,7 @@ function OrgSkrzynkiPage() {
           {skrzynki.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between rounded-md border border-border bg-card p-3"
+              className="flex items-center justify-between rounded-md border border-border bg-background p-3"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
@@ -313,6 +303,7 @@ function OrgSkrzynkiPage() {
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => syncMutation.mutate(s.id)}
@@ -323,6 +314,7 @@ function OrgSkrzynkiPage() {
                 </Button>
                 {isOwner && (
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => {
@@ -341,7 +333,7 @@ function OrgSkrzynkiPage() {
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
 
