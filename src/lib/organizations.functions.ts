@@ -35,6 +35,7 @@ export const createOrganization = createServerFn({ method: "POST" })
         address_city: optStr(120),
         address_street: optStr(200),
         address_building_no: optStr(40),
+        is_shared: z.boolean().optional(),
       })
       .parse(input),
   )
