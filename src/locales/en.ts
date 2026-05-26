@@ -37,6 +37,7 @@ export default
   "nav": {
     "dashboard": "Dashboard",
     "organizations": "Organizations",
+    "contacts": "Contacts",
     "profile": "Profile",
     "admin": "Admin panel",
     "approvals": "Approvals",
