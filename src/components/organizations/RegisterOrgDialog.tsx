@@ -512,6 +512,25 @@ export function RegisterOrgDialog({
             />
           </section>
 
+          {/* is_shared */}
+          <section className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={isShared}
+                onCheckedChange={(c) => setIsShared(c === true)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">
+                  {t("organizations.dialog.is_shared_label")}
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t("organizations.dialog.is_shared_help")}
+                </span>
+              </span>
+            </label>
+          </section>
+
           <DialogFooter>
             <Button
               type="button"
