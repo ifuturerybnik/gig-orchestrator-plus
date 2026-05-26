@@ -43,6 +43,10 @@ import {
 import { MUSIC_GENRES, type MusicGenre } from "@/lib/genres";
 import { normalizeNip, looksLikeValidNip } from "@/lib/nip";
 import { createOrganization } from "@/lib/organizations.functions";
+import {
+  searchSharedOrganizations,
+  requestJoinOrganization,
+} from "@/lib/counterparties.functions";
 
 interface Props {
   open: boolean;
@@ -61,12 +65,27 @@ export function RegisterOrgDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const createFn = useServerFn(createOrganization);
+  const searchFn = useServerFn(searchSharedOrganizations);
+  const joinFn = useServerFn(requestJoinOrganization);
 
   const [types, setTypes] = useState<OrgType[]>([]);
   const [name, setName] = useState("");
   const [artistKind, setArtistKind] = useState<ArtistKind | "">("");
   const [genre, setGenre] = useState<MusicGenre | "">("");
   const [description, setDescription] = useState("");
+  const [isShared, setIsShared] = useState(true);
+
+  type Match = {
+    id: string;
+    name: string;
+    types: string[] | null;
+    tax_id: string | null;
+    legal_name: string | null;
+    address_city: string | null;
+  };
+  const [matches, setMatches] = useState<Match[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   // Dane firmy
   const [country, setCountry] = useState(defaultCountry);
@@ -96,6 +115,8 @@ export function RegisterOrgDialog({
       setCity("");
       setStreet("");
       setBuildingNo("");
+      setIsShared(true);
+      setMatches(null);
     }
   }, [open, defaultCountry]);
 
@@ -122,6 +143,7 @@ export function RegisterOrgDialog({
           address_city: showCompany ? (city || undefined) : undefined,
           address_street: showCompany ? (street || undefined) : undefined,
           address_building_no: showCompany ? (buildingNo || undefined) : undefined,
+          is_shared: isShared,
         },
       });
     },
@@ -151,6 +173,44 @@ export function RegisterOrgDialog({
     if (!canSubmit) return;
     mutation.mutate();
   };
+
+  const runSearch = async () => {
+    const nipNorm = nip ? normalizeNip(nip) : "";
+    const queryName = (showArtist ? name : legalName).trim();
+    if (!nipNorm && queryName.length < 2) {
+      setMatches([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await searchFn({
+        data: {
+          nip: nipNorm || undefined,
+          name: queryName.length >= 2 ? queryName : undefined,
+        },
+      });
+      setMatches(res.matches as Match[]);
+    } catch (err) {
+      toast.error((err as Error).message);
+      setMatches([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleClaim = async (orgId: string) => {
+    setClaimingId(orgId);
+    try {
+      await joinFn({ data: { organizationId: orgId } });
+      toast.success(t("organizations.dialog.dedup_claim_sent"));
+      onOpenChange(false);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,6 +260,11 @@ export function RegisterOrgDialog({
                   maxLength={200}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onBlur={() => {
+                    if (showArtist && !showCompany && name.trim().length >= 2) {
+                      void runSearch();
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -273,7 +338,10 @@ export function RegisterOrgDialog({
                       id="org-nip"
                       value={nip}
                       onChange={(e) => setNip(e.target.value)}
-                      onBlur={() => setNip((v) => normalizeNip(v))}
+                      onBlur={() => {
+                        setNip((v) => normalizeNip(v));
+                        if (nip && looksLikeValidNip(normalizeNip(nip))) void runSearch();
+                      }}
                       placeholder="1234567890"
                       maxLength={20}
                     />
@@ -306,14 +374,86 @@ export function RegisterOrgDialog({
                   <Label htmlFor="org-legal-name">
                     {t("organizations.dialog.legal_name")} *
                   </Label>
-                  <Input
-                    id="org-legal-name"
-                    value={legalName}
-                    onChange={(e) => setLegalName(e.target.value)}
-                    maxLength={200}
-                    required={showCompany}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="org-legal-name"
+                      value={legalName}
+                      onChange={(e) => setLegalName(e.target.value)}
+                      onBlur={() => {
+                        if (!nip && legalName.trim().length >= 2) void runSearch();
+                      }}
+                      maxLength={200}
+                      required={showCompany}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void runSearch()}
+                      disabled={searching}
+                    >
+                      {t("organizations.dialog.dedup_search_btn")}
+                    </Button>
+                  </div>
                 </div>
+
+                {matches !== null && (
+                  <div className="sm:col-span-2 space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+                    {matches.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        {t("organizations.dialog.dedup_no_match")}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          {t("organizations.dialog.dedup_title")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("organizations.dialog.dedup_subtitle")}
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {matches.map((m) => {
+                            const nipExact =
+                              !!nip && m.tax_id === normalizeNip(nip);
+                            return (
+                              <li
+                                key={m.id}
+                                className="flex flex-wrap items-start justify-between gap-2 rounded border border-border bg-background p-2"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-foreground">
+                                    {m.name}
+                                    {nipExact && (
+                                      <span className="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] uppercase text-amber-700 dark:text-amber-300">
+                                        {t("organizations.dialog.dedup_match_nip")}
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {m.legal_name && m.legal_name !== m.name
+                                      ? `${m.legal_name} · `
+                                      : ""}
+                                    {m.tax_id ? `NIP ${m.tax_id} · ` : ""}
+                                    {m.address_city ?? ""}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => void handleClaim(m.id)}
+                                  disabled={claimingId === m.id}
+                                >
+                                  {t("organizations.dialog.dedup_claim")}
+                                </Button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="org-postal">{t("address.postal_code")}</Label>
                   <Input
@@ -370,6 +510,25 @@ export function RegisterOrgDialog({
               rows={4}
               maxLength={2000}
             />
+          </section>
+
+          {/* is_shared */}
+          <section className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={isShared}
+                onCheckedChange={(c) => setIsShared(c === true)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">
+                  {t("organizations.dialog.is_shared_label")}
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t("organizations.dialog.is_shared_help")}
+                </span>
+              </span>
+            </label>
           </section>
 
           <DialogFooter>

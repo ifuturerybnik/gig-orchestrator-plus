@@ -328,7 +328,17 @@ export default
       "building_no": "Number",
       "description": "Description (optional)",
       "choose": "Choose…",
-      "created": "Organization submitted for approval."
+      "created": "Organization submitted for approval.",
+      "is_shared_label": "Also register in the counterparties directory (visible to other users)",
+      "is_shared_help": "Other users will be able to find your organization when adding counterparties. You can opt out — the organization will stay private.",
+      "dedup_title": "Found similar registered counterparties in the directory",
+      "dedup_subtitle": "If any of them matches yours — pick it instead of creating a duplicate.",
+      "dedup_search_btn": "Search counterparties",
+      "dedup_match_nip": "Identical tax ID",
+      "dedup_claim": "This is my organization — request to join",
+      "dedup_claim_msg_placeholder": "Message to admin (optional)",
+      "dedup_claim_sent": "Join request sent to admin.",
+      "dedup_no_match": "No matches found."
     },
     "status": {
       "label": "Status",
@@ -568,7 +578,13 @@ export default
       "title": "Organizations awaiting approval",
       "empty": "No pending approvals.",
       "created_by": "Submitted by:",
-      "created_at": "Submitted at:"
+      "created_at": "Submitted at:",
+      "tab_orgs": "New organizations",
+      "tab_joins": "Join requests",
+      "joins_empty": "No join requests.",
+      "join_message": "Message:",
+      "join_approved": "Approved — user added as a member.",
+      "join_rejected": "Request rejected."
     }
   },
   "contacts": {
