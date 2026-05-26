@@ -174,6 +174,44 @@ export function RegisterOrgDialog({
     mutation.mutate();
   };
 
+  const runSearch = async () => {
+    const nipNorm = nip ? normalizeNip(nip) : "";
+    const queryName = (showArtist ? name : legalName).trim();
+    if (!nipNorm && queryName.length < 2) {
+      setMatches([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await searchFn({
+        data: {
+          nip: nipNorm || undefined,
+          name: queryName.length >= 2 ? queryName : undefined,
+        },
+      });
+      setMatches(res.matches as Match[]);
+    } catch (err) {
+      toast.error((err as Error).message);
+      setMatches([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleClaim = async (orgId: string) => {
+    setClaimingId(orgId);
+    try {
+      await joinFn({ data: { organizationId: orgId } });
+      toast.success(t("organizations.dialog.dedup_claim_sent"));
+      onOpenChange(false);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
