@@ -18,6 +18,7 @@ import {
   getOrganizationDetails,
   updateOrganization,
 } from "@/lib/organizations.functions";
+import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/profile",
