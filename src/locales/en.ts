@@ -578,7 +578,13 @@ export default
       "title": "Organizations awaiting approval",
       "empty": "No pending approvals.",
       "created_by": "Submitted by:",
-      "created_at": "Submitted at:"
+      "created_at": "Submitted at:",
+      "tab_orgs": "New organizations",
+      "tab_joins": "Join requests",
+      "joins_empty": "No join requests.",
+      "join_message": "Message:",
+      "join_approved": "Approved — user added as a member.",
+      "join_rejected": "Request rejected."
     }
   },
   "contacts": {
