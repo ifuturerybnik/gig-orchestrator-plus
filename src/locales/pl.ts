@@ -37,6 +37,7 @@ export default
   "nav": {
     "dashboard": "Pulpit",
     "organizations": "Organizacje",
+    "contacts": "Kontakty",
     "profile": "Profil",
     "admin": "Panel administratora",
     "approvals": "Zatwierdzenia",
@@ -547,5 +548,53 @@ export default
       "created_by": "Zgłosił:",
       "created_at": "Data zgłoszenia:"
     }
+  },
+  "contacts": {
+    "title": "Kontakty",
+    "subtitle": "Baza osób, firm i artystów. Możesz prowadzić własne, prywatne kontakty oraz wspólne z organizacjami, do których należysz.",
+    "scope": { "user": "Moje kontakty", "org": "Kontakty organizacji" },
+    "kinds": { "person": "Osoba", "company": "Firma / Instytucja", "artist": "Artysta / Zespół" },
+    "kinds_plural": { "person": "Osoby", "company": "Firmy", "artist": "Artyści" },
+    "category": {
+      "label": "Kategoria",
+      "client": "Klient", "supplier": "Dostawca", "artist": "Artysta", "partner": "Partner",
+      "venue": "Obiekt / Miejsce", "media": "Media", "other": "Inne"
+    },
+    "artist_type": {
+      "label": "Typ artysty",
+      "solo": "Solo", "band": "Zespół", "ensemble": "Ensemble / Orkiestra", "dj": "DJ"
+    },
+    "actions": {
+      "add": "Dodaj kontakt", "edit": "Edytuj", "delete": "Usuń",
+      "import_csv": "Import CSV", "back": "Wróć do listy"
+    },
+    "list": {
+      "search_placeholder": "Szukaj po nazwie...",
+      "filter_kind": "Typ", "filter_category": "Kategoria", "all": "Wszystkie",
+      "empty": "Brak kontaktów. Dodaj pierwszy, używając przycisku powyżej.",
+      "loading": "Ładowanie kontaktów..."
+    },
+    "form": {
+      "section_kind": "Typ kontaktu",
+      "section_person": "Dane osobowe",
+      "section_company": "Dane firmy",
+      "section_artist": "Dane artysty",
+      "section_contact": "Dane kontaktowe",
+      "section_address": "Adres",
+      "section_meta": "Klasyfikacja i notatki",
+      "first_name": "Imię", "last_name": "Nazwisko", "middle_name": "Drugie imię",
+      "position": "Stanowisko", "birth_date": "Data urodzenia",
+      "company_name": "Nazwa firmy", "legal_name": "Nazwa pełna / prawna",
+      "tax_id": "NIP / VAT ID", "registration_no": "KRS / REGON",
+      "artist_name": "Nazwa artysty / zespołu",
+      "genres": "Gatunki (oddzielone przecinkami)",
+      "rider_url": "Link do ridera", "tech_rider_url": "Link do rideru technicznego",
+      "email": "E-mail", "phone": "Telefon", "website": "Strona WWW",
+      "tags": "Tagi (oddzielone przecinkami)", "source": "Źródło pozyskania",
+      "preferred_language": "Preferowany język", "notes": "Notatki",
+      "save": "Zapisz kontakt", "saved": "Kontakt zapisany",
+      "delete_confirm": "Na pewno usunąć ten kontakt?"
+    },
+    "empty_orgs": "Nie należysz jeszcze do żadnej organizacji. Możesz dodawać kontakty prywatne lub utworzyć / dołączyć do organizacji."
   }
 } as const;

@@ -37,6 +37,7 @@ export default
   "nav": {
     "dashboard": "Dashboard",
     "organizations": "Organizations",
+    "contacts": "Contacts",
     "profile": "Profile",
     "admin": "Admin panel",
     "approvals": "Approvals",
@@ -523,5 +524,53 @@ export default
       "created_by": "Submitted by:",
       "created_at": "Submitted at:"
     }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Database of people, companies and artists. Keep private contacts and share lists with your organizations.",
+    "scope": { "user": "My contacts", "org": "Organization contacts" },
+    "kinds": { "person": "Person", "company": "Company / Institution", "artist": "Artist / Band" },
+    "kinds_plural": { "person": "People", "company": "Companies", "artist": "Artists" },
+    "category": {
+      "label": "Category",
+      "client": "Client", "supplier": "Supplier", "artist": "Artist", "partner": "Partner",
+      "venue": "Venue", "media": "Media", "other": "Other"
+    },
+    "artist_type": {
+      "label": "Artist type",
+      "solo": "Solo", "band": "Band", "ensemble": "Ensemble / Orchestra", "dj": "DJ"
+    },
+    "actions": {
+      "add": "Add contact", "edit": "Edit", "delete": "Delete",
+      "import_csv": "Import CSV", "back": "Back to list"
+    },
+    "list": {
+      "search_placeholder": "Search by name...",
+      "filter_kind": "Type", "filter_category": "Category", "all": "All",
+      "empty": "No contacts yet. Add the first one with the button above.",
+      "loading": "Loading contacts..."
+    },
+    "form": {
+      "section_kind": "Contact type",
+      "section_person": "Personal details",
+      "section_company": "Company details",
+      "section_artist": "Artist details",
+      "section_contact": "Contact info",
+      "section_address": "Address",
+      "section_meta": "Classification & notes",
+      "first_name": "First name", "last_name": "Last name", "middle_name": "Middle name",
+      "position": "Position", "birth_date": "Date of birth",
+      "company_name": "Company name", "legal_name": "Legal name",
+      "tax_id": "Tax ID / VAT", "registration_no": "Registration number",
+      "artist_name": "Artist / band name",
+      "genres": "Genres (comma separated)",
+      "rider_url": "Rider URL", "tech_rider_url": "Tech rider URL",
+      "email": "Email", "phone": "Phone", "website": "Website",
+      "tags": "Tags (comma separated)", "source": "Source",
+      "preferred_language": "Preferred language", "notes": "Notes",
+      "save": "Save contact", "saved": "Contact saved",
+      "delete_confirm": "Delete this contact?"
+    },
+    "empty_orgs": "You don't belong to any organization yet. You can still create private contacts or join/create an organization."
   }
 } as const;
