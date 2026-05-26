@@ -39,5 +39,6 @@ function LandingPage() {
         </main>
       </div>
     </div>
-
+  );
 }
+
