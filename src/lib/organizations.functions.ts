@@ -3,32 +3,62 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MUSIC_GENRES } from "@/lib/genres";
+import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
+import { normalizeNip } from "@/lib/nip";
 
-const OrgType = z.enum(["band", "stage_company", "event_company"]);
+const OrgTypeEnum = z.enum(ORG_TYPES as unknown as [string, ...string[]]);
+const ArtistKindEnum = z.enum(ARTIST_KINDS as unknown as [string, ...string[]]);
 const GenreEnum = z.enum(MUSIC_GENRES as unknown as [string, ...string[]]);
+
+const optStr = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
 
 export const createOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
-        type: OrgType,
-        name: z.string().trim().min(2).max(120),
-        description: z.string().trim().max(2000).optional(),
+        types: z.array(OrgTypeEnum).min(1).max(ORG_TYPES.length),
+        name: z.string().trim().min(2).max(200),
+        description: optStr(2000),
+        artist_kind: ArtistKindEnum.optional().nullable(),
+        genres: z.array(GenreEnum).max(1).optional(),
+        legal_name: optStr(200),
+        tax_id: optStr(40),
+        address_country: optStr(120),
+        address_postal_code: optStr(20),
+        address_city: optStr(120),
+        address_street: optStr(200),
+        address_building_no: optStr(40),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const insertPayload: Record<string, unknown> = {
+      types: data.types,
+      name: data.name,
+      description: data.description,
+      artist_kind: data.artist_kind ?? null,
+      genres: data.genres ?? [],
+      legal_name: data.legal_name,
+      tax_id: data.tax_id ? normalizeNip(data.tax_id) : null,
+      address_country: data.address_country,
+      address_postal_code: data.address_postal_code,
+      address_city: data.address_city,
+      address_street: data.address_street,
+      address_building_no: data.address_building_no,
+      created_by: userId,
+      status: "pending",
+    };
     const { data: org, error } = await supabase
       .from("organizations")
-      .insert({
-        type: data.type,
-        name: data.name,
-        description: data.description ?? null,
-        created_by: userId,
-        status: "pending",
-      })
+      .insert(insertPayload)
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -41,7 +71,7 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("organizations")
-      .select("id, type, name, status, description, created_at")
+      .select("id, types, artist_kind, name, status, description, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { organizations: data ?? [] };
@@ -63,7 +93,7 @@ export const listPendingOrganizations = createServerFn({ method: "GET" })
 
     const { data, error } = await supabase
       .from("organizations")
-      .select("id, type, name, description, created_at, created_by")
+      .select("id, types, artist_kind, name, description, created_at, created_by")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -123,7 +153,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, type, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website";
+  "id, types, artist_kind, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_building_no, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website, is_shared";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
