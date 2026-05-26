@@ -602,7 +602,13 @@ export default
       "title": "Organizacje oczekujące na zatwierdzenie",
       "empty": "Brak zgłoszeń do zatwierdzenia.",
       "created_by": "Zgłosił:",
-      "created_at": "Data zgłoszenia:"
+      "created_at": "Data zgłoszenia:",
+      "tab_orgs": "Nowe organizacje",
+      "tab_joins": "Prośby o dołączenie",
+      "joins_empty": "Brak próśb o dołączenie.",
+      "join_message": "Wiadomość:",
+      "join_approved": "Zaakceptowano — użytkownik dodany jako członek.",
+      "join_rejected": "Prośba odrzucona."
     }
   },
   "contacts": {
