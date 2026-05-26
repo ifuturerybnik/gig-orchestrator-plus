@@ -1,110 +1,86 @@
+## Kontekst — co przejrzałem w CRM Hub
 
-# Plan startowy projektu Concertivo
+CRM Hub używa **innego stosu** (Vite + react-router-dom, single-tenant), Concertivo to **TanStack Start + org-scoped routing**. Port nie może być 1:1 — trzeba przepisać warstwę routingu i pozycjonować moduły globalnie pod organizacją.
 
-## Założenia ogólne
+**Skala kodu do portu:**
+- `src/pages/Mail.tsx` — 904 linie (lista folderów, lista maili, podgląd, akcje)
+- `src/pages/Autokorespondencja.tsx` — 231 linii (lista kampanii + statystyki)
+- `src/pages/AutokorespondencjaSzczegoly.tsx` — szczegóły kampanii
+- `src/components/mail/` — ComposeDialog, SzablonyManager, SzablonPicker, LinkiSledzaceDialog, LinkiSledzaceQuickButton, ZwrotyDialog
+- `src/components/autokorespondencja/` — AutokorespondencjaWizardDialog (~1300 linii), AutokorFiltersStep, ListaRezygnacjiDialog, ListaOdbiciaDialog, leadFilterMatching
+- `src/components/ui/wysiwyg-editor.tsx` — ~527 linii, Tiptap (StarterKit + 12 rozszerzeń)
+- Hooki: `useSkrzynki`, `useWiadomosci`, `useAutokorespondencje`, `useUpsertAutokorespondencja`, `useReplaceWarianty`, `useAutokorWiadomosci`, helpery `useLeadyByEmails`/`useKlienciByEmails`/`useDostawcyByEmails`
 
-- **Workspace**: projekt zakładasz w UI Lovable, wybierając workspace "CRM Hub" (po mojej stronie nie ma akcji).
-- **Hosting**: development na Lovable + GitHub sync od pierwszego dnia. Stack (TanStack Start) działa na Node 20+, więc migracja na Hostinger VPS = `git pull` + `bun install` + `bun run build` + uruchomienie pod PM2/systemd za nginx.
-- **Baza danych**: **wyłącznie zewnętrzny Supabase**, który już posiadasz. Lovable Cloud pozostaje wyłączone — zapiszę to jako twardą regułę w pamięci projektu, żeby nigdy nie próbować provisionować nowego Supabase.
-- **Domena z Aftermarket**: podłączymy ją do Lovable po pierwszym publish (Project Settings → Domains → Connect Domain, rekordy A 185.158.133.1 + TXT `_lovable`). Przy migracji na Hostinger zmienisz DNS na IP VPS.
+## Etap 0 — Globalny edytor WYSIWYG (FUNDAMENT, pierwszy do zrobienia)
 
-## Krok 1: Konfiguracja połączenia z zewnętrznym Supabase
+Przed czymkolwiek innym, bo używa go i Compose, i Wizard autokorespondencji, i szablony.
 
-Dodam do projektu secrety (poproszę Cię o wartości przez bezpieczny formularz):
+1. Instaluję pakiety Tiptap: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-{underline,link,color,font-family,highlight,text-align,text-style,table,table-cell,table-header,table-row}`, `dompurify`, `@types/dompurify`.
+2. Tworzę `src/components/ui/wysiwyg-editor.tsx` — port 1:1 z CRM Hub (toolbar, sanitizacja DOMPurify, wstawianie obrazków, linki, tabele, podpowiedzi, props `hideHeadings`, `placeholder`, `value`, `onChange`).
+3. Dodaję wpis w `mem://design/wysiwyg-editor` + linijka w `mem://index.md` Core: „**Każdy edytor tekstu sformatowanego = `WysiwygEditor` z `@/components/ui/wysiwyg-editor`. Nie pisać własnych edytorów ani nie używać raw `contentEditable`/`<textarea>` tam, gdzie potrzebne formatowanie.**"
 
-- `VITE_SUPABASE_URL` — publiczny URL Twojego projektu Supabase
-- `VITE_SUPABASE_PUBLISHABLE_KEY` — anon/publishable key
-- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — te same wartości, ale dla runtime serwera
-- `SUPABASE_SERVICE_ROLE_KEY` — service role (tylko serwer, nigdy w bundlerze klienta)
+## Etap 1 — Wspólny moduł „Korespondencja" (globalny, org-scoped)
 
-Stworzę trzy klienty zgodnie z konwencją TanStack Start:
-- `src/integrations/supabase/client.ts` — przeglądarka (publishable key, sesja użytkownika)
-- `src/integrations/supabase/auth-middleware.ts` — middleware do server functions
-- `src/integrations/supabase/client.server.ts` — admin (service role, tylko po stronie serwera)
+Tworzę nowe trasy pod istniejącym layoutem organizacji:
 
-## Krok 2: Schemat bazy danych (migracje SQL po Twojej stronie Supabase)
-
-Przygotuję pliki migracji SQL, które Ty wykonasz w panelu Supabase (Lovable nie zarządza zewnętrznym Supabase automatycznie). Tabele:
-
-- `profiles` — dane użytkownika, FK do `auth.users`, kolumna `user_kind[]` (wielokrotny wybór tożsamości)
-- `user_kinds` (enum/słownik): `team_manager`, `musician`, `sound_engineer`, `lighting_engineer`, `visual_engineer`, `driver`, `stage_technician`, `stage_company_owner`, `event_company_owner`, `concert_organizer`
-- `app_role` (enum): `super_admin`, `admin_staff`, `user`
-- `user_roles` — globalne role systemowe (admin i jego pracownicy), osobna tabela żeby uniknąć rekurencji RLS
-- `organizations` — zespoły muzyczne / firmy estradowe / firmy eventowe, `type`, `name`, `status` (`pending` / `approved` / `rejected`), `created_by`, `approved_by`, `approved_at`
-- `organization_members` — łączenie użytkowników z organizacjami + rola w organizacji (`owner`, `member`)
-- `organization_invitations` — zaproszenia mailowe, `email`, `token`, `expires_at`, `status`
-
-Plus funkcje SECURITY DEFINER:
-- `public.has_role(_user_id, _role)`
-- `public.is_member_of(_user_id, _org_id)`
-- `public.is_owner_of(_user_id, _org_id)`
-
-RLS włączone na wszystkich tabelach z politykami opartymi na powyższych funkcjach (nigdy nie zapytaniami do tej samej tabeli).
-
-## Krok 3: Autentykacja i rejestracja
-
-- Email/hasło + Google (przez broker Lovable). Reset hasła z dedykowaną stroną `/reset-password`.
-- Flow rejestracji wieloetapowy:
-  1. Email + hasło
-  2. Imię, nazwisko, telefon
-  3. Wybór jednej lub wielu tożsamości z listy `user_kinds`
-  4. Po potwierdzeniu maila → dashboard z opcją "Zarejestruj zespół/firmę"
-- Trigger SQL `on_auth_user_created` automatycznie tworzy rekord w `profiles`.
-- Strona `/admin/approvals` widoczna tylko dla `super_admin` i `admin_staff` — lista organizacji ze statusem `pending`, przyciski Zatwierdź/Odrzuć.
-- Po zatwierdzeniu organizacji jej `owner` widzi przycisk "Zaproś użytkownika" (formularz z emailem, generuje token, wysyła mail).
-
-## Krok 4: Internacjonalizacja (i18n)
-
-- Biblioteki: `i18next`, `react-i18next`, `i18next-browser-languagedetector`.
-- Struktura: `src/locales/pl/common.json`, `src/locales/en/common.json` (per moduł: `common`, `auth`, `organizations`, `admin`...).
-- Auto-detect z `navigator.language` → fallback `pl`. Wybór języka w nagłówku zapisuje preferencję w `localStorage` i w `profiles.preferred_language`.
-- Wszystkie napisy w UI od początku przez `t('key')` — żadnych hardkodowanych stringów. Dodanie nowego języka = dorzucenie folderu `src/locales/<lang>/`.
-
-## Krok 5: Architektura routingu (TanStack Start)
-
-```
-src/routes/
-  __root.tsx           — shell, providers (QueryClient, i18n)
-  index.tsx            — landing publiczny (PL/EN)
-  login.tsx
-  register.tsx
-  reset-password.tsx
-  _authenticated.tsx                       — gate auth
-    dashboard.tsx
-    organizations.index.tsx                — moje organizacje
-    organizations.new.tsx                  — rejestracja zespołu/firmy
-    organizations.$orgId.tsx               — szczegóły, członkowie, zaproszenia
-    _admin.tsx                             — gate role admin
-      admin.approvals.tsx
-      admin.users.tsx
-      admin.organizations.tsx
+```text
+src/routes/_authenticated.organizations.$orgId.korespondencja.tsx           (layout + redirect → poczta)
+src/routes/_authenticated.organizations.$orgId.korespondencja.poczta.tsx
+src/routes/_authenticated.organizations.$orgId.korespondencja.autokorespondencja.tsx
+src/routes/_authenticated.organizations.$orgId.korespondencja.autokorespondencja.$kampaniaId.tsx
 ```
 
-## Krok 6: Design system
+Dodaję pozycje w `org-sidebar.tsx`: grupa „Korespondencja" → „Poczta" + „Autokorespondencja" (zgodnie z CRM Hub AppSidebar). Wszystkie napisy przez i18next (klucze `correspondence.*`).
 
-Minimalny, neutralny start — tokeny w `src/styles.css` (kolory `oklch`, typografia, radius). Bez angażowania `design--create_directions` na tym etapie, bo to przede wszystkim setup. Konkretne kierunki wizualne zaproponuję w osobnym kroku, gdy będziemy budować pierwsze widoki.
+Reguła pamięci: `mem://features/correspondence-module` — moduł jest globalny, w każdej organizacji (firmy eventowe, estradowe itd.) używamy tych samych komponentów; nowe typy organizacji tylko podpinają sidebar.
 
-## Krok 7: GitHub sync + pierwszy publish
+## Etap 2 — Migracje DB (do ręcznego wykonania w Supabase)
 
-- Po zbudowaniu szkieletu poproszę Cię o podłączenie GitHub (Plus → GitHub → Connect project), żeby repo było żywe od początku.
-- Pierwszy publish na `*.lovable.app`, potem podpięcie domeny z Aftermarket.
+Tworzę pliki w `supabase/migrations/` (numerowane po ostatniej):
 
----
+- `0015_email_zalaczniki.sql` — załączniki maili + bucket `email-attachments` (jeśli brak)
+- `0016_email_szablony.sql` — szablony wiadomości (org-scoped, RLS po membership)
+- `0017_email_stopki.sql` — stopki użytkownika
+- `0018_email_linki_sledzace.sql` — śledzenie kliknięć linków
+- `0019_autokorespondencje.sql` — kampanie (status: draft/scheduled/running/paused/done/cancelled)
+- `0020_autokorespondencje_warianty.sql` — warianty A/B treści
+- `0021_autokorespondencje_wiadomosci.sql` — kolejka wysyłki per odbiorca
+- `0022_autokorespondencje_lista_rezygnacji.sql` — unsubscribes (per-org)
+- `0023_autokorespondencje_lista_odbicia.sql` — bounces (per-org)
+- `0024_autokor_pixel.sql` — endpoint/tabela pikseli tracking
 
-## Szczegóły techniczne (dla mnie / do referencji)
+Wszystko z RLS po `org_members`, kolumny `organization_id`, `created_by`. Daję Ci listę do wklejenia w Supabase Studio (tak jak wcześniej z `0014_email_wiadomosci.sql`).
 
-- Nie używamy Lovable Cloud ani `supabase--enable`. Wszystkie operacje DB idą do zewnętrznego Supabase — schemat tworzysz Ty wykonując dostarczone migracje SQL.
-- Server functions (`createServerFn`) zamiast Supabase Edge Functions dla logiki aplikacji. Edge Functions tylko do webhooków, gdy zajdzie potrzeba.
-- Wymagana globalna `attachSupabaseAuth` w `src/start.ts` (middleware dopinający Bearer token do każdego wywołania server fn).
-- `onAuthStateChange` raz w `__root.tsx` → `router.invalidate()` + `queryClient.invalidateQueries()` przy każdej zmianie sesji.
-- Pamięć projektu (`mem://index.md`) dostanie regułę: "Use external Supabase only. Never enable Lovable Cloud. Credentials in secrets: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY."
+## Etap 3 — Port komponentów
 
-## Co dostarczam w pierwszej iteracji (po akceptacji planu)
+Adaptacje względem CRM Hub:
+- `react-router-dom` → `@tanstack/react-router` (`useNavigate`, `Link`, `useParams`)
+- Wszystkie zapytania scope'owane do `organizationId` z params route'a
+- Hooki przeniesione do `src/hooks/` z prefixem `useOrg*` lub po prostu `useSkrzynki(orgId)`
+- Wszystkie napisy → `t('correspondence.poczta.*')` etc.
+- Komponenty mailowe → `src/components/correspondence/mail/`
+- Komponenty autokorespondencji → `src/components/correspondence/autokorespondencja/`
+- Hooki integracji CRM (`useLeadyByEmails`, `useKlienciByEmails`, `useDostawcyByEmails`) — **w Concertivo nie ma jeszcze tabel leady/klienci/dostawcy**. Robię stub: zwracają puste mapy, z TODO na podpięcie kiedy moduł CRM powstanie. To nie blokuje wysyłki/odbioru.
 
-1. Setup secretów (poproszę o wartości z Twojego Supabase).
-2. Klienty Supabase + middleware auth + i18n bootstrap.
-3. Plik SQL z całym schematem + RLS + funkcjami + triggerami — do uruchomienia w Twoim panelu Supabase.
-4. Routing: landing, login, register (multi-step), reset hasła, dashboard, rejestracja organizacji, panel adminowy do zatwierdzania, zaproszenia mailowe.
-5. Memory rule dot. zewnętrznego Supabase.
+## Etap 4 — Backend wysyłki (server functions)
 
-Kolejne moduły (kalendarz koncertów, riderzy, kontrakty, rozliczenia, CRM klientów, ekipa techniczna) dorzucamy iteracyjnie — w osobnych zleceniach, każdy jako mały, spójny krok.
+W CRM Hub wysyłka idzie przez Supabase Edge Function `send-mail` + proxy IMAP/SMTP. W Concertivo:
+- Odbiór już działa (proxy `mail-proxy-concertivo` + tabele email_skrzynki/email_wiadomosci) ✅
+- Wysyłka: dodaję `createServerFn` `sendEmail` w `src/lib/email.functions.ts` — proxy do tego samego `mail-proxy-concertivo` (endpoint `/send`)
+- Autokorespondencja dispatcher: `createServerFn` `runAutokorTick` + endpoint `src/routes/api/public/autokor/tick.ts` (HMAC-secured) wywoływany przez pg_cron co 1 min
+
+## Etap 5 — Reguły pamięci (kończąc)
+
+Aktualizuję `mem://index.md` Core + tworzę:
+- `mem://design/wysiwyg-editor` — zawsze ten komponent
+- `mem://features/correspondence-module` — moduł globalny, ten sam dla każdego typu organizacji
+- `mem://features/autokorespondencja` — schemat kampanii/wariantów/dispatchera
+
+## Co MUSZĘ wiedzieć od Ciebie zanim ruszę
+
+1. **Zakres pierwszego kroku**: czy mam zrobić wszystko w jednym podejściu (długi commit, dużo migracji), czy podzielić na podejścia (najpierw WYSIWYG + Poczta, potem Autokorespondencja)?
+2. **Brakujące dane CRM** (leady/klienci/dostawcy): potwierdzasz, że na razie autokorespondencja ma listę odbiorców tylko jako **CSV upload + ręczna lista** (bez integracji z bazą kontaktów), a integracja z kontaktami doleci jak powstanie moduł CRM organizacji?
+3. **Wysyłka SMTP**: czy mam dopisać endpoint `/send` w proxy `mail-proxy-concertivo` (analogicznie do `/sync`), czy proxy już to umie i tylko nie używamy?
+4. **Tracking pixel/unsubscribe**: pixel + link rezygnacji muszą być publicznym URL-em. OK z `https://project--05f60994-...lovable.app/api/public/autokor/...` jako bazą, czy chcesz na docelowej domenie?
+
+Po odpowiedziach ruszam od Etapu 0 (WYSIWYG + reguła w pamięci) — to bezpieczny krok bez zależności od backendu.
