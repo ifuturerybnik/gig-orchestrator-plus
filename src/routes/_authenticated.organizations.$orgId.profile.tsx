@@ -444,5 +444,7 @@ function OrganizationProfilePage() {
         </Button>
       </div>
     </form>
+    <OrgMailboxesSection orgId={orgId} />
+    </div>
   );
 }
