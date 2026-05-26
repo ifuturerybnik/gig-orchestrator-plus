@@ -69,10 +69,12 @@ const TBL = 'email_stopki' as never;
 const TBL_POLA = 'email_stopki_pola' as never;
 const STORAGE_BUCKET = 'stopki-grafiki';
 
-async function fetchStopkiWithPola(query: ReturnType<typeof supabase.from>): Promise<EmailStopkaPelna[]> {
+async function fetchStopkiWithPola(
+  query: PromiseLike<{ data: unknown; error: { message: string } | null }>
+): Promise<EmailStopkaPelna[]> {
   const { data: stopki, error } = await query;
   if (error) throw new Error(error.message);
-  const arr = (stopki as unknown as EmailStopka[]) || [];
+  const arr = (stopki as EmailStopka[] | null) || [];
   if (arr.length === 0) return [];
   const ids = arr.map(s => s.id);
   const { data: polaData, error: polaErr } = await supabase
