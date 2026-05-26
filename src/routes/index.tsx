@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import heroBg from "@/assets/landing-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -16,25 +16,25 @@ function LandingPage() {
         className="relative w-full bg-cover bg-center bg-no-repeat aspect-[16/9]"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <Header />
-        <main className="absolute inset-0 flex">
-          <div className="ml-auto w-1/2 flex flex-col justify-center px-6 sm:px-10 text-right">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+          <LanguageSwitcher />
+          <Link to="/login">
+            <Button variant="ghost" size="sm">
+              {t("nav.login")}
+            </Button>
+          </Link>
+          <Link to="/register">
+            <Button size="sm">{t("nav.register")}</Button>
+          </Link>
+        </div>
+        <main className="absolute inset-x-0 top-1/2 bottom-0 flex items-start justify-center px-4">
+          <div className="mt-4 max-w-2xl w-full rounded-xl bg-white/70 backdrop-blur-sm px-6 sm:px-10 py-6 text-center shadow-lg">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               {t("landing.hero.title")}
             </h1>
             <p className="mt-3 text-sm sm:text-base text-muted-foreground">
               {t("landing.hero.subtitle")}
             </p>
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <Link to="/register">
-                <Button size="lg">{t("landing.hero.cta_primary")}</Button>
-              </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline">
-                  {t("landing.hero.cta_secondary")}
-                </Button>
-              </Link>
-            </div>
           </div>
         </main>
       </div>
