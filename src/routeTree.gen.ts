@@ -23,6 +23,7 @@ import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_aut
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as AuthenticatedOrganizationsOrgIdSkrzynkiRouteImport } from './routes/_authenticated.organizations.$orgId.skrzynki'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
 import { Route as AuthenticatedOrganizationsOrgIdEventsRouteImport } from './routes/_authenticated.organizations.$orgId.events'
@@ -102,6 +103,12 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdSkrzynkiRoute =
+  AuthenticatedOrganizationsOrgIdSkrzynkiRouteImport.update({
+    id: '/skrzynki',
+    path: '/skrzynki',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdProfileRoute =
   AuthenticatedOrganizationsOrgIdProfileRouteImport.update({
     id: '/profile',
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/organizations/$orgId/skrzynki': typeof AuthenticatedOrganizationsOrgIdSkrzynkiRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -162,6 +170,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/organizations/$orgId/skrzynki': typeof AuthenticatedOrganizationsOrgIdSkrzynkiRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/_authenticated/organizations/$orgId/skrzynki': typeof AuthenticatedOrganizationsOrgIdSkrzynkiRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
+    | '/organizations/$orgId/skrzynki'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
+    | '/organizations/$orgId/skrzynki'
     | '/organizations/$orgId'
   id:
     | '__root__'
@@ -242,6 +254,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/events'
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
+    | '/_authenticated/organizations/$orgId/skrzynki'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/skrzynki': {
+      id: '/_authenticated/organizations/$orgId/skrzynki'
+      path: '/skrzynki'
+      fullPath: '/organizations/$orgId/skrzynki'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdSkrzynkiRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/profile': {
       id: '/_authenticated/organizations/$orgId/profile'
       path: '/profile'
@@ -391,6 +411,7 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdEventsRoute: typeof AuthenticatedOrganizationsOrgIdEventsRoute
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
   AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  AuthenticatedOrganizationsOrgIdSkrzynkiRoute: typeof AuthenticatedOrganizationsOrgIdSkrzynkiRoute
   AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 
@@ -404,6 +425,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
       AuthenticatedOrganizationsOrgIdMembersRoute,
     AuthenticatedOrganizationsOrgIdProfileRoute:
       AuthenticatedOrganizationsOrgIdProfileRoute,
+    AuthenticatedOrganizationsOrgIdSkrzynkiRoute:
+      AuthenticatedOrganizationsOrgIdSkrzynkiRoute,
     AuthenticatedOrganizationsOrgIdIndexRoute:
       AuthenticatedOrganizationsOrgIdIndexRoute,
   }
@@ -448,13 +471,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
