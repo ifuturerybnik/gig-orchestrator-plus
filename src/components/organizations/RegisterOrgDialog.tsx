@@ -43,6 +43,10 @@ import {
 import { MUSIC_GENRES, type MusicGenre } from "@/lib/genres";
 import { normalizeNip, looksLikeValidNip } from "@/lib/nip";
 import { createOrganization } from "@/lib/organizations.functions";
+import {
+  searchSharedOrganizations,
+  requestJoinOrganization,
+} from "@/lib/counterparties.functions";
 
 interface Props {
   open: boolean;
