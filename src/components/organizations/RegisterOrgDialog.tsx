@@ -333,7 +333,10 @@ export function RegisterOrgDialog({
                       id="org-nip"
                       value={nip}
                       onChange={(e) => setNip(e.target.value)}
-                      onBlur={() => setNip((v) => normalizeNip(v))}
+                      onBlur={() => {
+                        setNip((v) => normalizeNip(v));
+                        if (nip && looksLikeValidNip(normalizeNip(nip))) void runSearch();
+                      }}
                       placeholder="1234567890"
                       maxLength={20}
                     />
