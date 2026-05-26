@@ -323,6 +323,7 @@ export default
       "members": "Members",
       "events": "Concerts",
       "budget": "Budget",
+      "skrzynki": "Mailboxes",
       "back_to_list": "← All organizations",
       "pending_expenses": "Pending expenses: {{count}}"
     },
@@ -442,6 +443,28 @@ export default
       "rejected": "Organization rejected."
     }
 
+  },
+  "skrzynki": {
+    "title": "Organization mailboxes",
+    "subtitle": "Shared IMAP/SMTP mailboxes — sending and sync via our mail proxy. Passwords are encrypted.",
+    "add": "Add mailbox",
+    "save": "Save",
+    "created": "Mailbox added",
+    "deleted": "Mailbox deleted",
+    "delete_confirm": "Delete this mailbox? This action cannot be undone.",
+    "empty": "No mailboxes yet. Only the organization owner can add them.",
+    "sync": "Sync",
+    "sync_started": "Sync started",
+    "form": {
+      "nazwa": "Internal name",
+      "nazwa_placeholder": "e.g. Office, Booking",
+      "email": "Email address",
+      "host": "Host",
+      "port": "Port",
+      "login": "Login",
+      "password": "Password",
+      "ssl": "SSL/TLS"
+    }
   },
   "admin": {
     "approvals": {
