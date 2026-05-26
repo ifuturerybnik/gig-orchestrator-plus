@@ -19,8 +19,8 @@ export function Header() {
   return (
     <header className="border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="font-semibold text-foreground">
-          {t("app.name")}
+        <Link to="/" className="flex items-center">
+          <img src={logoUrl} alt={t("app.name")} className="h-8 w-auto" />
         </Link>
         <nav className="flex items-center gap-4">
           {user ? (
