@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 import {
   Select,
   SelectContent,
@@ -521,7 +522,7 @@ function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium text-foreground">{org.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t(`organizations.type.${org.type}`)}
+                        <OrgTypesText types={(org as { types?: string[] | null }).types} />
                       </p>
                     </div>
                     <Badge

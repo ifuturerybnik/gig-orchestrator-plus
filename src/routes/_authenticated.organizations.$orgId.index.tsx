@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { countryName } from "@/lib/countries";
 import { getOrganizationDetails } from "@/lib/organizations.functions";
+import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 
 export const Route = createFileRoute("/_authenticated/organizations/$orgId/")({
   component: OrganizationOverviewPage,
@@ -51,7 +52,7 @@ function OrganizationOverviewPage() {
         <div>
           <h1 className="text-3xl font-semibold text-foreground">{org.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t(`organizations.type.${org.type}`)}
+            <OrgTypesText types={org.types as string[] | null} />
           </p>
         </div>
         {canManage && (
@@ -79,7 +80,7 @@ function OrganizationOverviewPage() {
         </p>
       )}
 
-      {org.type === "band" && Array.isArray(org.genres) && org.genres.length > 0 && (
+      {Array.isArray(org.types) && (org.types as string[]).includes("artist") && Array.isArray(org.genres) && org.genres.length > 0 && (
         <div>
           <p className="text-sm font-medium text-foreground">
             {t("organizations.detail.genres.title")}
