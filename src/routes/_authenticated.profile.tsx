@@ -521,7 +521,7 @@ function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium text-foreground">{org.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t(`organizations.type.${org.type}`)}
+                        <OrgTypesText types={(org as { types?: string[] | null }).types} />
                       </p>
                     </div>
                     <Badge
