@@ -1,86 +1,174 @@
-## Kontekst — co przejrzałem w CRM Hub
+# Moduł Kontakty — Plan
 
-CRM Hub używa **innego stosu** (Vite + react-router-dom, single-tenant), Concertivo to **TanStack Start + org-scoped routing**. Port nie może być 1:1 — trzeba przepisać warstwę routingu i pozycjonować moduły globalnie pod organizacją.
+Fundament CRM dla całego systemu. Po nim wracamy do Poczty (kontakty zasilą autouzupełnianie adresatów i historię korespondencji per kontakt).
 
-**Skala kodu do portu:**
-- `src/pages/Mail.tsx` — 904 linie (lista folderów, lista maili, podgląd, akcje)
-- `src/pages/Autokorespondencja.tsx` — 231 linii (lista kampanii + statystyki)
-- `src/pages/AutokorespondencjaSzczegoly.tsx` — szczegóły kampanii
-- `src/components/mail/` — ComposeDialog, SzablonyManager, SzablonPicker, LinkiSledzaceDialog, LinkiSledzaceQuickButton, ZwrotyDialog
-- `src/components/autokorespondencja/` — AutokorespondencjaWizardDialog (~1300 linii), AutokorFiltersStep, ListaRezygnacjiDialog, ListaOdbiciaDialog, leadFilterMatching
-- `src/components/ui/wysiwyg-editor.tsx` — ~527 linii, Tiptap (StarterKit + 12 rozszerzeń)
-- Hooki: `useSkrzynki`, `useWiadomosci`, `useAutokorespondencje`, `useUpsertAutokorespondencja`, `useReplaceWarianty`, `useAutokorWiadomosci`, helpery `useLeadyByEmails`/`useKlienciByEmails`/`useDostawcyByEmails`
+## 1. Architektura danych
 
-## Etap 0 — Globalny edytor WYSIWYG (FUNDAMENT, pierwszy do zrobienia)
+### Migracja `0016_contacts.sql`
 
-Przed czymkolwiek innym, bo używa go i Compose, i Wizard autokorespondencji, i szablony.
+**Enumy:**
+- `contact_kind`: `'person' | 'company' | 'artist'`
+- `contact_scope`: `'user' | 'org'`
+- `contact_category`: `'client' | 'supplier' | 'artist' | 'partner' | 'venue' | 'media' | 'other'`
 
-1. Instaluję pakiety Tiptap: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-{underline,link,color,font-family,highlight,text-align,text-style,table,table-cell,table-header,table-row}`, `dompurify`, `@types/dompurify`.
-2. Tworzę `src/components/ui/wysiwyg-editor.tsx` — port 1:1 z CRM Hub (toolbar, sanitizacja DOMPurify, wstawianie obrazków, linki, tabele, podpowiedzi, props `hideHeadings`, `placeholder`, `value`, `onChange`).
-3. Dodaję wpis w `mem://design/wysiwyg-editor` + linijka w `mem://index.md` Core: „**Każdy edytor tekstu sformatowanego = `WysiwygEditor` z `@/components/ui/wysiwyg-editor`. Nie pisać własnych edytorów ani nie używać raw `contentEditable`/`<textarea>` tam, gdzie potrzebne formatowanie.**"
+**Tabela `contacts` (wspólna dla wszystkich typów):**
 
-## Etap 1 — Wspólny moduł „Korespondencja" (globalny, org-scoped)
+| kolumna | typ | uwagi |
+|---|---|---|
+| `id` | uuid PK | |
+| `scope` | contact_scope | `user` = prywatny, `org` = współdzielony |
+| `owner_user_id` | uuid → auth.users | NOT NULL gdy scope=user |
+| `org_id` | uuid → organizations | NOT NULL gdy scope=org |
+| `kind` | contact_kind | person / company / artist |
+| `category` | contact_category | nullable |
+| **wspólne** | | |
+| `display_name` | text NOT NULL | computed dla person, name dla company/artist |
+| `email` | text | główny |
+| `phone` | text | E.164 (PhoneInput) |
+| `website` | text | |
+| `country_code` | text | ISO-3166 alpha-2 (CountrySelect) |
+| `address_line1`, `address_line2`, `city`, `postal_code`, `region` | text | |
+| `notes` | jsonb | Tiptap JSON (WysiwygEditor) |
+| `tags` | text[] | swobodne tagi |
+| `source` | text | źródło pozyskania |
+| `preferred_language` | text | pl/en/... |
+| `assigned_to_user_id` | uuid → auth.users | opiekun (tylko scope=org) |
+| `custom_fields` | jsonb | per organizacja, klucz→wartość |
+| **person-only** | | |
+| `first_name`, `last_name`, `middle_name` | text | |
+| `position` | text | stanowisko |
+| `company_contact_id` | uuid → contacts(id) | powiązana firma (FK self) |
+| `birth_date` | date | |
+| `social` | jsonb | `{facebook, instagram, linkedin, x, tiktok, youtube}` |
+| **company-only** | | |
+| `legal_name` | text | |
+| `tax_id` | text | NIP/VAT |
+| `registration_no` | text | KRS/REGON |
+| **artist-only** | | |
+| `artist_type` | text | `'solo' | 'band' | 'ensemble' | 'dj'` |
+| `genres` | text[] | |
+| `rider_url` | text | |
+| `tech_rider_url` | text | |
+| `created_at`, `updated_at`, `created_by` | timestamptz / uuid | |
 
-Tworzę nowe trasy pod istniejącym layoutem organizacji:
+**CHECK constraints:** scope spójny z owner/org; pola person-only NULL gdy kind≠person itd.
 
-```text
-src/routes/_authenticated.organizations.$orgId.korespondencja.tsx           (layout + redirect → poczta)
-src/routes/_authenticated.organizations.$orgId.korespondencja.poczta.tsx
-src/routes/_authenticated.organizations.$orgId.korespondencja.autokorespondencja.tsx
-src/routes/_authenticated.organizations.$orgId.korespondencja.autokorespondencja.$kampaniaId.tsx
-```
+**Tabela `contact_members`** (członkowie zespołu / artyści w bandzie):
+- `id`, `band_contact_id → contacts(id)`, `person_contact_id → contacts(id)`, `role` (np. "wokal"), `is_leader bool`
 
-Dodaję pozycje w `org-sidebar.tsx`: grupa „Korespondencja" → „Poczta" + „Autokorespondencja" (zgodnie z CRM Hub AppSidebar). Wszystkie napisy przez i18next (klucze `correspondence.*`).
+**Tabela `contact_activity`** (historia kontaktu — telefony, spotkania, notatki; e-maile podepną się z modułu Poczta przez `related_contact_id`):
+- `id`, `contact_id`, `kind` (`'call' | 'meeting' | 'note' | 'task'`), `subject`, `body_json` (Tiptap), `occurred_at`, `created_by`, `created_at`
 
-Reguła pamięci: `mem://features/correspondence-module` — moduł jest globalny, w każdej organizacji (firmy eventowe, estradowe itd.) używamy tych samych komponentów; nowe typy organizacji tylko podpinają sidebar.
+**Custom fields definition** `contact_custom_field_defs`:
+- `id`, `org_id`, `kind` (dla którego typu), `key`, `label_i18n` jsonb, `field_type` (`text|number|date|select|bool`), `options` jsonb, `position int`
 
-## Etap 2 — Migracje DB (do ręcznego wykonania w Supabase)
+**Indeksy:** `(scope, owner_user_id)`, `(scope, org_id)`, `(org_id, kind)`, GIN na `tags`, GIN na `display_name gin_trgm_ops` (search).
 
-Tworzę pliki w `supabase/migrations/` (numerowane po ostatniej):
+**RLS:**
+- scope=user: tylko owner widzi/edytuje
+- scope=org: członkowie organizacji widzą; edytuje członek z rolą ≥ member (zgodnie z istniejącym `has_org_role`)
+- `contact_activity`/`contact_members` dziedziczą po contact
 
-- `0015_email_zalaczniki.sql` — załączniki maili + bucket `email-attachments` (jeśli brak)
-- `0016_email_szablony.sql` — szablony wiadomości (org-scoped, RLS po membership)
-- `0017_email_stopki.sql` — stopki użytkownika
-- `0018_email_linki_sledzace.sql` — śledzenie kliknięć linków
-- `0019_autokorespondencje.sql` — kampanie (status: draft/scheduled/running/paused/done/cancelled)
-- `0020_autokorespondencje_warianty.sql` — warianty A/B treści
-- `0021_autokorespondencje_wiadomosci.sql` — kolejka wysyłki per odbiorca
-- `0022_autokorespondencje_lista_rezygnacji.sql` — unsubscribes (per-org)
-- `0023_autokorespondencje_lista_odbicia.sql` — bounces (per-org)
-- `0024_autokor_pixel.sql` — endpoint/tabela pikseli tracking
+**GRANT:** `SELECT, INSERT, UPDATE, DELETE` dla `authenticated`, `ALL` dla `service_role`.
 
-Wszystko z RLS po `org_members`, kolumny `organization_id`, `created_by`. Daję Ci listę do wklejenia w Supabase Studio (tak jak wcześniej z `0014_email_wiadomosci.sql`).
+## 2. Frontend — struktura
 
-## Etap 3 — Port komponentów
+### Hooks (`src/hooks/`)
+- `useContacts({ scope, orgId, kind?, search?, category? })` — lista z paginacją
+- `useContact(id)` — szczegóły + members + recent activity
+- `useUpsertContact()`, `useDeleteContact()`
+- `useContactCustomFields(orgId, kind)`
+- `useContactActivity(contactId)`, `useAddActivity()`
 
-Adaptacje względem CRM Hub:
-- `react-router-dom` → `@tanstack/react-router` (`useNavigate`, `Link`, `useParams`)
-- Wszystkie zapytania scope'owane do `organizationId` z params route'a
-- Hooki przeniesione do `src/hooks/` z prefixem `useOrg*` lub po prostu `useSkrzynki(orgId)`
-- Wszystkie napisy → `t('correspondence.poczta.*')` etc.
-- Komponenty mailowe → `src/components/correspondence/mail/`
-- Komponenty autokorespondencji → `src/components/correspondence/autokorespondencja/`
-- Hooki integracji CRM (`useLeadyByEmails`, `useKlienciByEmails`, `useDostawcyByEmails`) — **w Concertivo nie ma jeszcze tabel leady/klienci/dostawcy**. Robię stub: zwracają puste mapy, z TODO na podpięcie kiedy moduł CRM powstanie. To nie blokuje wysyłki/odbioru.
+### Komponenty (`src/components/contacts/`)
+- `ContactsList.tsx` — tabela z search/filtry (kind, category, tag, scope toggle), sortowanie, paginacja, bulk actions
+- `ContactForm.tsx` — formularz uniwersalny, sekcje warunkowe per `kind`; używa `PhoneInput`, `CountrySelect`, `WysiwygEditor`, tag input, custom fields renderer
+- `ContactCard.tsx` — widok karty (overview + tabs: Dane / Powiązania / Aktywność / Korespondencja[placeholder] / Custom fields)
+- `ContactPicker.tsx` — autouzupełnianie (przyda się Poczcie i innym modułom)
+- `BandMembersEditor.tsx` — dla artystów typu band
+- `CompanyPeoplePicker.tsx` — dla person → linkowanie do company
+- `ContactActivityTimeline.tsx` + `AddActivityDialog.tsx`
+- `CustomFieldsManager.tsx` — definicje pól per organizacja (tylko admin/owner)
 
-## Etap 4 — Backend wysyłki (server functions)
+### CSV Import (`src/components/contacts/import/`)
+- `CsvImportWizard.tsx` — 4 kroki:
+  1. Upload (drag-drop, parse przez `papaparse`)
+  2. Wybór scope + kind + (org)
+  3. Mapowanie kolumn CSV → pola kontaktu (auto-detekcja po nazwach: email, phone, name, company...)
+  4. Preview + dedup po email (skip / update / create) + import (server fn batch insert z walidacją Zod)
+- Server fn `importContacts.functions.ts` — bulk insert z transakcją, raport (utworzone/zaktualizowane/pominięte/błędne)
 
-W CRM Hub wysyłka idzie przez Supabase Edge Function `send-mail` + proxy IMAP/SMTP. W Concertivo:
-- Odbiór już działa (proxy `mail-proxy-concertivo` + tabele email_skrzynki/email_wiadomosci) ✅
-- Wysyłka: dodaję `createServerFn` `sendEmail` w `src/lib/email.functions.ts` — proxy do tego samego `mail-proxy-concertivo` (endpoint `/send`)
-- Autokorespondencja dispatcher: `createServerFn` `runAutokorTick` + endpoint `src/routes/api/public/autokor/tick.ts` (HMAC-secured) wywoływany przez pg_cron co 1 min
+### Routes (TanStack file-based)
+- `_authenticated.contacts.tsx` — layout (sidebar: Moje / [każda organizacja]) + `<Outlet />`
+- `_authenticated.contacts.index.tsx` — redirect → moje
+- `_authenticated.contacts.me.tsx` — moje kontakty
+- `_authenticated.contacts.me.$contactId.tsx` — szczegóły mojego
+- `_authenticated.contacts.org.$orgId.tsx` — kontakty organizacji
+- `_authenticated.contacts.org.$orgId.$contactId.tsx` — szczegóły
+- `_authenticated.contacts.import.tsx` — wizard CSV
 
-## Etap 5 — Reguły pamięci (kończąc)
+Wpięcie do głównej nawigacji (sidebar): nowa pozycja "Kontakty".
 
-Aktualizuję `mem://index.md` Core + tworzę:
-- `mem://design/wysiwyg-editor` — zawsze ten komponent
-- `mem://features/correspondence-module` — moduł globalny, ten sam dla każdego typu organizacji
-- `mem://features/autokorespondencja` — schemat kampanii/wariantów/dispatchera
+## 3. Server functions (`src/lib/contacts.functions.ts`)
 
-## Co MUSZĘ wiedzieć od Ciebie zanim ruszę
+Wszystkie z `requireSupabaseAuth`:
+- `listContacts({ scope, orgId?, kind?, category?, search?, tag?, page, pageSize })`
+- `getContact({ id })` — z members + ostatnie 20 aktywności
+- `upsertContact(input)` — Zod walidacja per `kind`
+- `deleteContact({ id })`
+- `addContactMember(...)`, `removeContactMember(...)`
+- `addActivity(...)`, `listActivity(...)`
+- `listCustomFieldDefs({ orgId, kind })`, `upsertCustomFieldDef(...)`, `deleteCustomFieldDef(...)`
+- `importContactsCsv({ scope, orgId?, kind, rows[] })` — batch z dedup
 
-1. **Zakres pierwszego kroku**: czy mam zrobić wszystko w jednym podejściu (długi commit, dużo migracji), czy podzielić na podejścia (najpierw WYSIWYG + Poczta, potem Autokorespondencja)?
-2. **Brakujące dane CRM** (leady/klienci/dostawcy): potwierdzasz, że na razie autokorespondencja ma listę odbiorców tylko jako **CSV upload + ręczna lista** (bez integracji z bazą kontaktów), a integracja z kontaktami doleci jak powstanie moduł CRM organizacji?
-3. **Wysyłka SMTP**: czy mam dopisać endpoint `/send` w proxy `mail-proxy-concertivo` (analogicznie do `/sync`), czy proxy już to umie i tylko nie używamy?
-4. **Tracking pixel/unsubscribe**: pixel + link rezygnacji muszą być publicznym URL-em. OK z `https://project--05f60994-...lovable.app/api/public/autokor/...` jako bazą, czy chcesz na docelowej domenie?
+## 4. i18n
 
-Po odpowiedziach ruszam od Etapu 0 (WYSIWYG + reguła w pamięci) — to bezpieczny krok bez zależności od backendu.
+Nowy namespace `contacts.*` w `pl.ts` i `en.ts`:
+- typy, kategorie, etykiety pól, komunikaty importu, akcje, puste stany
+
+## 5. Memory updates
+
+Po wdrożeniu — nowa memory `mem://features/contacts-module`:
+- Hybryda scope (jak stopki)
+- 3 typy w jednej tabeli + CHECK
+- Custom fields per org+kind
+- ContactPicker do reużycia w Poczcie, eventach, fakturach
+- Link person→company; band_members dla artystów
+
+## 6. Etapy realizacji
+
+**Tura 1 — DB + szkielet listy:**
+1. Migracja `0016_contacts.sql` (enumy, tabele, RLS, GRANT, indeksy)
+2. Hooks bazowe + server fn `listContacts`, `getContact`, `upsertContact`, `deleteContact`
+3. Route + `ContactsList` (sidebar scope, search, filtry) + przycisk "Dodaj"
+4. `ContactForm` dla wszystkich 3 typów (warunkowe sekcje)
+5. i18n
+→ test: dodanie kontaktu osoby/firmy/artysty w scope user i org
+
+**Tura 2 — Powiązania + custom fields:**
+6. `ContactCard` z tabami
+7. Person ↔ Company linkowanie
+8. Band members editor
+9. CustomFieldsManager + renderer w formularzu
+
+**Tura 3 — Aktywność + Import:**
+10. `ContactActivityTimeline` + dodawanie wpisów
+11. `ContactPicker` (do podpięcia później w Poczcie)
+12. CSV Import Wizard + server fn batch
+13. Memory + dokumentacja
+
+**Po Turze 3** — wracamy do Poczty (Compose z autouzupełnianiem z kontaktów, threading z `related_contact_id`).
+
+## 7. Uwagi techniczne
+
+- `display_name` ustawiany triggerem DB dla `kind=person` (concat first+last) lub trzymany jako stored generated column — dla person+company ułatwia search/sort jednym indeksem.
+- `pg_trgm` extension (jeśli jeszcze nie włączone) — dla fuzzy search po display_name; jeśli nie chcemy zależności, zostajemy przy `ilike`.
+- CSV parser w przeglądarce (`papaparse` — lekki, ~45KB). Sam import wykonuje server fn po stronie serwera (walidacja + bulk insert).
+- Dla artystów z plikami rider — uploadujemy do istniejącego bucketa albo nowego `contact-files` (do decyzji w Turze 2).
+
+---
+
+**Decyzje do potwierdzenia przed startem Tury 1:**
+1. `pg_trgm` (fuzzy search) — włączamy? (potrzebne dla "zaczyna się od" / literówki w autouzupełnianiu Poczty). Jeśli nie — `ilike '%x%'` wystarczy na początek.
+2. `display_name` jako trigger czy generated column? (proponuję trigger — łatwiej obsłużyć NULL middle_name).
+3. Robimy Turę 1 całą za jednym zamachem (migracja + lista + formularz), czy dzielimy na mikrokroki z testem po każdym?
