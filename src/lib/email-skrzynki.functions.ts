@@ -211,9 +211,9 @@ export const syncSkrzynka = createServerFn({ method: "POST" })
       throw new Error("Forbidden");
     }
 
-    const result = await callMailProxy("sync", {
+    const result = await callMailProxy<Record<string, unknown>>("sync", {
       skrzynka_id: data.skrzynkaId,
       folder: data.folder ?? null,
     });
-    return { result };
+    return { ok: true, result };
   });
