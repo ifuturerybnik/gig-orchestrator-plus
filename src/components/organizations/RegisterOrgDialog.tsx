@@ -115,6 +115,8 @@ export function RegisterOrgDialog({
       setCity("");
       setStreet("");
       setBuildingNo("");
+      setIsShared(true);
+      setMatches(null);
     }
   }, [open, defaultCountry]);
 
