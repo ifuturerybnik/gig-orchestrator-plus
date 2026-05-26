@@ -37,6 +37,7 @@ export default
   "nav": {
     "dashboard": "Pulpit",
     "organizations": "Organizacje",
+    "contacts": "Kontakty",
     "profile": "Profil",
     "admin": "Panel administratora",
     "approvals": "Zatwierdzenia",
