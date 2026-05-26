@@ -66,11 +66,6 @@ export function OrgSidebar({
       icon: Wallet,
     },
     {
-      to: `${base}/skrzynki`,
-      labelKey: "organizations.sidebar.skrzynki",
-      icon: Mail,
-    },
-    {
       to: `${base}/profile`,
       labelKey: "organizations.sidebar.profile",
       icon: Building2,
