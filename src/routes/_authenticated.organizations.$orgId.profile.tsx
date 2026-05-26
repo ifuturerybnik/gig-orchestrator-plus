@@ -19,6 +19,7 @@ import {
   updateOrganization,
 } from "@/lib/organizations.functions";
 import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
+import { StopkiManager } from "@/components/email/StopkiManager";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/profile",
@@ -445,6 +446,7 @@ function OrganizationProfilePage() {
       </div>
     </form>
     <OrgMailboxesSection orgId={orgId} />
+    <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
     </div>
   );
 }
