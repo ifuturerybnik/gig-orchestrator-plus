@@ -54,6 +54,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       address_city: data.address_city,
       address_street: data.address_street,
       address_building_no: data.address_building_no,
+      is_shared: data.is_shared ?? true,
       created_by: userId,
       status: "pending",
     };
