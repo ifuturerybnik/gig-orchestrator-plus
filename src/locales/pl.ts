@@ -351,7 +351,17 @@ export default
       "building_no": "Numer",
       "description": "Opis (opcjonalnie)",
       "choose": "Wybierz…",
-      "created": "Organizacja zgłoszona do zatwierdzenia."
+      "created": "Organizacja zgłoszona do zatwierdzenia.",
+      "is_shared_label": "Zarejestruj również w bazie kontrahentów (widoczna dla innych użytkowników)",
+      "is_shared_help": "Inni użytkownicy będą mogli znaleźć Twoją organizację podczas dodawania kontrahentów. Możesz to wyłączyć — wtedy organizacja pozostanie prywatna.",
+      "dedup_title": "Znalazłem podobnych, zarejestrowanych kontrahentów w bazie",
+      "dedup_subtitle": "Jeśli któryś z nich odpowiada Twoim preferencjom — wybierz go zamiast tworzyć duplikat.",
+      "dedup_search_btn": "Szukaj w bazie kontrahentów",
+      "dedup_match_nip": "Identyczny NIP",
+      "dedup_claim": "To moja organizacja — poproś o dołączenie",
+      "dedup_claim_msg_placeholder": "Wiadomość do administratora (opcjonalnie)",
+      "dedup_claim_sent": "Prośba o dołączenie wysłana do administratora.",
+      "dedup_no_match": "Brak dopasowań w bazie."
     },
     "status": {
       "label": "Status",
