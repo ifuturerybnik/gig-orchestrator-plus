@@ -1,0 +1,25 @@
+version: "3.8"
+
+# Druga instancja mail-proxy — dla projektu Concertivo.
+# Dzieli sieć dockerową `mail-proxy_proxy-net` z instancją CRM Hub.
+# Caddy z /opt/mail-proxy/ routuje mail.concertivo.eu na ten kontener.
+
+services:
+  proxy:
+    build: .
+    container_name: mail-proxy-concertivo
+    restart: unless-stopped
+    env_file:
+      - .env
+    # Tylko nasłuch lokalny na 3001 (do debugowania z VPS) — Caddy idzie po sieci dockerowej
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    # Reużywamy sieci utworzonej przez /opt/mail-proxy/docker-compose.yml
+    # (CRM Hub). Caddy z tamtej instancji musi widzieć ten kontener po nazwie.
+    external: true
+    name: mail-proxy_proxy-net
