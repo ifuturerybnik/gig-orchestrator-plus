@@ -65,12 +65,27 @@ export function RegisterOrgDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const createFn = useServerFn(createOrganization);
+  const searchFn = useServerFn(searchSharedOrganizations);
+  const joinFn = useServerFn(requestJoinOrganization);
 
   const [types, setTypes] = useState<OrgType[]>([]);
   const [name, setName] = useState("");
   const [artistKind, setArtistKind] = useState<ArtistKind | "">("");
   const [genre, setGenre] = useState<MusicGenre | "">("");
   const [description, setDescription] = useState("");
+  const [isShared, setIsShared] = useState(true);
+
+  type Match = {
+    id: string;
+    name: string;
+    types: string[] | null;
+    tax_id: string | null;
+    legal_name: string | null;
+    address_city: string | null;
+  };
+  const [matches, setMatches] = useState<Match[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   // Dane firmy
   const [country, setCountry] = useState(defaultCountry);
