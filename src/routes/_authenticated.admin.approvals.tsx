@@ -84,7 +84,7 @@ function AdminApprovalsPage() {
                   <div>
                     <p className="font-medium text-foreground">{org.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t(`organizations.type.${org.type}`)}
+                      <OrgTypesText types={org.types as string[] | null} />
                     </p>
                     {org.description && (
                       <p className="mt-2 text-sm text-foreground">{org.description}</p>
