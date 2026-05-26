@@ -347,6 +347,7 @@ export default
       "members": "Członkowie",
       "events": "Koncerty",
       "budget": "Budżet",
+      "skrzynki": "Skrzynki pocztowe",
       "back_to_list": "← Wszystkie organizacje",
       "pending_expenses": "Niezrealizowane wydatki: {{count}}"
     },
@@ -466,6 +467,28 @@ export default
       "rejected": "Organizacja odrzucona."
     }
 
+  },
+  "skrzynki": {
+    "title": "Skrzynki pocztowe organizacji",
+    "subtitle": "Współdzielone skrzynki IMAP/SMTP — wysyłka i synchronizacja przez nasze proxy mailowe. Hasła są szyfrowane.",
+    "add": "Dodaj skrzynkę",
+    "save": "Zapisz",
+    "created": "Skrzynka dodana",
+    "deleted": "Skrzynka usunięta",
+    "delete_confirm": "Usunąć tę skrzynkę? Tej operacji nie da się cofnąć.",
+    "empty": "Brak skrzynek. Tylko właściciel organizacji może je dodawać.",
+    "sync": "Synchronizuj",
+    "sync_started": "Synchronizacja uruchomiona",
+    "form": {
+      "nazwa": "Nazwa wewnętrzna",
+      "nazwa_placeholder": "np. Sekretariat, Booking",
+      "email": "Adres email",
+      "host": "Host",
+      "port": "Port",
+      "login": "Login",
+      "password": "Hasło",
+      "ssl": "SSL/TLS"
+    }
   },
   "admin": {
     "approvals": {
