@@ -401,7 +401,7 @@ function OrganizationProfilePage() {
         </div>
       </section>
 
-      {org.type === "band" && (
+      {Array.isArray(org.types) && (org.types as string[]).includes("artist") && (
         <section className="space-y-4 rounded-md border border-border bg-card p-4">
           <div>
             <h2 className="text-lg font-semibold">

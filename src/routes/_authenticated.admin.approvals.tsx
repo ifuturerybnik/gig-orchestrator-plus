@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { getMyProfile } from "@/lib/profile.functions";
+import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 import {
   listPendingOrganizations,
   setOrganizationStatus,
@@ -84,7 +85,7 @@ function AdminApprovalsPage() {
                   <div>
                     <p className="font-medium text-foreground">{org.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t(`organizations.type.${org.type}`)}
+                      <OrgTypesText types={org.types as string[] | null} />
                     </p>
                     {org.description && (
                       <p className="mt-2 text-sm text-foreground">{org.description}</p>
