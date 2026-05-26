@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
+import logoUrl from "@/assets/logo.png";
 
 export function Header() {
   const { t } = useTranslation();
@@ -18,8 +19,8 @@ export function Header() {
   return (
     <header className="border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="font-semibold text-foreground">
-          {t("app.name")}
+        <Link to="/" className="flex items-center">
+          <img src={logoUrl} alt={t("app.name")} className="h-8 w-auto" />
         </Link>
         <nav className="flex items-center gap-4">
           {user ? (
