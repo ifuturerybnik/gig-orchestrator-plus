@@ -152,6 +152,7 @@ function OrganizationProfilePage() {
   };
 
   return (
+    <div className="space-y-6">
     <form onSubmit={handleSave} className="space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">
         {t("organizations.sidebar.profile")}
