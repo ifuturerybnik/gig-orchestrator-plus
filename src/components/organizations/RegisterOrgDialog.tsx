@@ -260,6 +260,11 @@ export function RegisterOrgDialog({
                   maxLength={200}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onBlur={() => {
+                    if (showArtist && !showCompany && name.trim().length >= 2) {
+                      void runSearch();
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
