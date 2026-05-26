@@ -143,6 +143,7 @@ export function RegisterOrgDialog({
           address_city: showCompany ? (city || undefined) : undefined,
           address_street: showCompany ? (street || undefined) : undefined,
           address_building_no: showCompany ? (buildingNo || undefined) : undefined,
+          is_shared: isShared,
         },
       });
     },
