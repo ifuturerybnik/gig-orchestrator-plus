@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LayoutDashboard, Users, Building2, CalendarDays, Wallet, Mail } from "lucide-react";
+import { LayoutDashboard, Users, Building2, CalendarDays, Wallet } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -64,11 +64,6 @@ export function OrgSidebar({
       to: `${base}/budget`,
       labelKey: "organizations.sidebar.budget",
       icon: Wallet,
-    },
-    {
-      to: `${base}/skrzynki`,
-      labelKey: "organizations.sidebar.skrzynki",
-      icon: Mail,
     },
     {
       to: `${base}/profile`,

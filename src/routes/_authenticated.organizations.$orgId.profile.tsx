@@ -18,6 +18,7 @@ import {
   getOrganizationDetails,
   updateOrganization,
 } from "@/lib/organizations.functions";
+import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/profile",
@@ -151,6 +152,7 @@ function OrganizationProfilePage() {
   };
 
   return (
+    <div className="space-y-6">
     <form onSubmit={handleSave} className="space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">
         {t("organizations.sidebar.profile")}
@@ -442,5 +444,7 @@ function OrganizationProfilePage() {
         </Button>
       </div>
     </form>
+    <OrgMailboxesSection orgId={orgId} />
+    </div>
   );
 }
