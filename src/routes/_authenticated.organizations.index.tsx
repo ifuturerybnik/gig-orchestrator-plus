@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "@tanstack/react-router";
-import { listMyOrganizations } from "@/lib/organizations.functions";
+import { listMyOrganizations, deleteOrganization } from "@/lib/organizations.functions";
 import {
   listMyCounterparties,
   removeCounterpartyLink,
@@ -35,6 +35,7 @@ function OrganizationsListPage() {
   const fetchOrgs = useServerFn(listMyOrganizations);
   const fetchCounterparties = useServerFn(listMyCounterparties);
   const removeFn = useServerFn(removeCounterpartyLink);
+  const deleteOrgFn = useServerFn(deleteOrganization);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-organizations"],
@@ -56,6 +57,18 @@ function OrganizationsListPage() {
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
   });
+
+  const deleteOrgMutation = useMutation({
+    mutationFn: (organizationId: string) =>
+      deleteOrgFn({ data: { organizationId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deleted"));
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+  });
+
+  const isAdmin = data?.isAdmin ?? false;
 
   const counterparties = cpData?.counterparties ?? [];
 
@@ -100,11 +113,14 @@ function OrganizationsListPage() {
         ) : (
           <ul className="mt-6 space-y-3">
             {data!.organizations.map((org) => (
-              <li key={org.id}>
+              <li
+                key={org.id}
+                className="flex items-stretch rounded-md border border-border bg-card transition-colors hover:bg-accent"
+              >
                 <Link
                   to="/organizations/$orgId"
                   params={{ orgId: org.id }}
-                  className="flex items-center justify-between rounded-md border border-border bg-card p-4 transition-colors hover:bg-accent"
+                  className="flex flex-1 items-center justify-between p-4"
                 >
                   <div>
                     <p className="font-medium text-foreground">{org.name}</p>
@@ -124,6 +140,30 @@ function OrganizationsListPage() {
                     {t(`organizations.status.${org.status}`)}
                   </Badge>
                 </Link>
+                {isAdmin && (
+                  <div className="flex items-center pr-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (
+                          window.confirm(
+                            t("organizations.delete_confirm", { name: org.name }),
+                          )
+                        ) {
+                          deleteOrgMutation.mutate(org.id);
+                        }
+                      }}
+                      disabled={deleteOrgMutation.isPending}
+                      aria-label={t("organizations.delete")}
+                      title={t("organizations.delete")}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
