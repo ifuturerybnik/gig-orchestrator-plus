@@ -8,6 +8,14 @@ import { toast } from "sonner";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -77,7 +85,7 @@ function OrganizationsListPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="mx-auto max-w-4xl px-4 py-12">
+      <main className="mx-auto max-w-6xl px-4 py-12">
         {/* === MOJE ORGANIZACJE === */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -211,53 +219,99 @@ function OrganizationsListPage() {
             {t("organizations.counterparties.empty")}
           </p>
         ) : (
-          <ul className="mt-6 space-y-3">
-            {counterparties.map((cp) =>
-              cp.organization ? (
-                <li
-                  key={cp.link_id}
-                  className="flex items-center justify-between rounded-md border border-border bg-card transition-colors hover:bg-accent"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setCpDetailsLinkId(cp.link_id)}
-                    className="flex min-w-0 flex-1 items-center p-4 text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground truncate">
-                        {cp.organization.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        <OrgTypesText
-                          types={cp.organization.types as string[] | null}
-                        />
-                        {cp.organization.tax_id ? ` · NIP: ${cp.organization.tax_id}` : ""}
-                        {cp.organization.address_city
-                          ? ` · ${cp.organization.address_city}`
-                          : ""}
-                      </p>
-                    </div>
-                  </button>
-                  <div className="pr-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(t("organizations.counterparties.remove_confirm"))) {
-                          removeMutation.mutate(cp.link_id);
-                        }
-                      }}
-                      disabled={removeMutation.isPending}
-                      aria-label={t("organizations.counterparties.remove")}
+          <div className="mt-6 overflow-x-auto rounded-md border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">
+                    {t("organizations.counterparties.table.name")}
+                  </TableHead>
+                  <TableHead className="min-w-[160px]">
+                    {t("organizations.counterparties.table.types")}
+                  </TableHead>
+                  <TableHead className="min-w-[120px]">
+                    {t("organizations.counterparties.table.tax_id")}
+                  </TableHead>
+                  <TableHead className="min-w-[240px]">
+                    {t("organizations.counterparties.table.address")}
+                  </TableHead>
+                  <TableHead className="min-w-[110px]">
+                    {t("organizations.counterparties.table.source")}
+                  </TableHead>
+                  <TableHead className="w-[60px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {counterparties.map((cp) => {
+                  if (!cp.organization) return null;
+                  const o = cp.organization;
+                  const addr = [
+                    [o.address_postal_code, o.address_city]
+                      .filter(Boolean)
+                      .join(" "),
+                    [o.address_street, o.address_building_no]
+                      .filter(Boolean)
+                      .join(" "),
+                    o.address_country,
+                  ]
+                    .filter((s) => s && s.length > 0)
+                    .join(" · ");
+                  return (
+                    <TableRow
+                      key={cp.link_id}
+                      className="cursor-pointer"
+                      onClick={() => setCpDetailsLinkId(cp.link_id)}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </li>
-              ) : null,
-            )}
-          </ul>
+                      <TableCell className="font-medium text-foreground">
+                        {o.name}
+                        {o.legal_name && o.legal_name !== o.name && (
+                          <div className="text-xs text-muted-foreground">
+                            {o.legal_name}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        <OrgTypesText types={o.types as string[] | null} />
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {o.tax_id ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {addr || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={o.is_shared ? "default" : "secondary"}>
+                          {o.is_shared
+                            ? t("organizations.counterparties.table.source_shared")
+                            : t("organizations.counterparties.table.source_private")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              window.confirm(
+                                t("organizations.counterparties.remove_confirm"),
+                              )
+                            ) {
+                              removeMutation.mutate(cp.link_id);
+                            }
+                          }}
+                          disabled={removeMutation.isPending}
+                          aria-label={t("organizations.counterparties.remove")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </main>
 
