@@ -743,10 +743,21 @@ export default
       "add": "Add contact", "edit": "Edit", "delete": "Delete", "back": "Back to list"
     },
     "list": {
-      "search_placeholder": "Search by first or last name...",
+      "search_placeholder": "Search by first name, last name, email, phone…",
       "all": "All",
       "empty": "No contacts yet. Add the first one with the button above.",
-      "loading": "Loading contacts..."
+      "no_results": "No contacts match the current filters.",
+      "loading": "Loading contacts...",
+      "filters": "Filters",
+      "filter_country": "Country",
+      "filter_city": "City",
+      "filter_city_placeholder": "Type city…",
+      "filter_region": "Voivodeship",
+      "filter_classification": "Classification",
+      "filter_all_countries": "All countries",
+      "filter_all_regions": "All voivodeships",
+      "filter_all_classifications": "All classifications",
+      "filters_clear": "Clear filters"
     },
     "form": {
       "section_person": "Personal details",

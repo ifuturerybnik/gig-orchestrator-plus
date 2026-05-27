@@ -767,10 +767,21 @@ export default
       "add": "Dodaj kontakt", "edit": "Edytuj", "delete": "Usuń", "back": "Wróć do listy"
     },
     "list": {
-      "search_placeholder": "Szukaj po imieniu i nazwisku...",
+      "search_placeholder": "Szukaj po imieniu, nazwisku, e-mailu, telefonie…",
       "all": "Wszystkie",
       "empty": "Brak kontaktów. Dodaj pierwszy, używając przycisku powyżej.",
-      "loading": "Ładowanie kontaktów..."
+      "no_results": "Brak kontaktów spełniających filtry.",
+      "loading": "Ładowanie kontaktów...",
+      "filters": "Filtry",
+      "filter_country": "Kraj",
+      "filter_city": "Miejscowość",
+      "filter_city_placeholder": "Wpisz miejscowość…",
+      "filter_region": "Województwo",
+      "filter_classification": "Klasyfikacja",
+      "filter_all_countries": "Wszystkie kraje",
+      "filter_all_regions": "Wszystkie województwa",
+      "filter_all_classifications": "Wszystkie klasyfikacje",
+      "filters_clear": "Wyczyść filtry"
     },
     "form": {
       "section_person": "Dane osobowe",
