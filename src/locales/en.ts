@@ -808,6 +808,30 @@ export default
       "paramedic": "Paramedic",
       "driver": "Driver"
     },
+    "links": {
+      "cp_section_title": "Linked contacts",
+      "cp_section_help": "People from Contacts linked to this counterparty.",
+      "cp_section_help_pending": "These contacts will be linked once the counterparty is created.",
+      "contact_section_title": "Linked counterparties",
+      "contact_section_help": "Counterparties this person is associated with.",
+      "add_contact_btn": "Add contact",
+      "link_contact_btn": "Link to contact",
+      "link_cp_btn": "Link to counterparty",
+      "empty_contacts": "No linked contacts.",
+      "empty_counterparties": "No linked counterparties.",
+      "linked": "Linked.",
+      "unlinked": "Link removed.",
+      "already_linked": "Already linked.",
+      "unlink": "Remove link",
+      "pending_badge": "Pending",
+      "save_first_hint": "Save the contact first to link it with a counterparty.",
+      "picker_title": "Pick a contact",
+      "picker_search": "Search by name…",
+      "picker_empty": "No contacts available.",
+      "cp_picker_title": "Pick a counterparty",
+      "cp_picker_search": "Search by name…",
+      "cp_picker_empty": "No counterparties available."
+    },
     "empty_orgs": "You don't belong to any organization yet. You can still create private contacts or join/create an organization."
   }
 } as const;
