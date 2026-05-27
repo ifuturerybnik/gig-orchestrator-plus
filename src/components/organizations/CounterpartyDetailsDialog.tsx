@@ -120,27 +120,36 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   };
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      updateFn({
-        data: {
-          linkId: linkId!,
-          name: name.trim(),
-          types,
-          description: description.trim() || undefined,
-          artist_kind: showArtist && artistKind ? (artistKind as ArtistKind) : null,
-          genres: showGenre && genre ? [genre as MusicGenre] : undefined,
-          tax_id: showCompany && nip ? normalizeNip(nip) : undefined,
-          address_country: showCompany ? country : undefined,
-          address_postal_code: showCompany ? postal || undefined : undefined,
-          address_city: showCompany ? city || undefined : undefined,
-          address_street: showCompany ? street || undefined : undefined,
-          address_building_no: showCompany ? buildingNo || undefined : undefined,
-        },
-      }),
+    mutationFn: async () => {
+      if (canEdit) {
+        await updateFn({
+          data: {
+            linkId: linkId!,
+            name: name.trim(),
+            types,
+            description: description.trim() || undefined,
+            artist_kind: showArtist && artistKind ? (artistKind as ArtistKind) : null,
+            genres: showGenre && genre ? [genre as MusicGenre] : undefined,
+            tax_id: showCompany && nip ? normalizeNip(nip) : undefined,
+            address_country: showCompany ? country : undefined,
+            address_postal_code: showCompany ? postal || undefined : undefined,
+            address_city: showCompany ? city || undefined : undefined,
+            address_street: showCompany ? street || undefined : undefined,
+            address_building_no: showCompany ? buildingNo || undefined : undefined,
+          },
+        });
+      }
+      if (orgIdForShares && shareOrgIds !== null) {
+        await setSharesFn({
+          data: { counterpartyOrgId: orgIdForShares, orgIds: shareOrgIds },
+        });
+      }
+    },
     onSuccess: () => {
       toast.success(t("organizations.counterparties.details.saved"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       queryClient.invalidateQueries({ queryKey: ["counterparty-details", linkId] });
+      queryClient.invalidateQueries({ queryKey: ["counterparty-org-shares", orgIdForShares] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
