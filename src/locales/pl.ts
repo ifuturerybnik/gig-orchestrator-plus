@@ -261,7 +261,7 @@ export default
       "submit": "Załóż konto",
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
-      "check_email": "Sprawdź email — wysłaliśmy link aktywacyjny.",
+      "check_email": "Wysłaliśmy link aktywacyjny od Concertivo. Sprawdź swoją pocztę e-mail. Jeśli nie widzisz wiadomości w folderze głównym, sprawdź w innych folderach oraz w SPAM.",
       "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji „Profil → Bezpieczeństwo”. Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych.",
       "accept_legal_prefix": "Akceptuję",
       "accept_legal_and": "oraz",
