@@ -1,15 +1,25 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
+import { getMyProfile } from "@/lib/profile.functions";
 import logoUrl from "@/assets/logo.png";
 
 export function Header() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
+  const fetchProfile = useServerFn(getMyProfile);
+  const profileQuery = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: () => fetchProfile(),
+    enabled: !!user,
+  });
+  const isAdmin = profileQuery.data?.isAdmin === true;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
