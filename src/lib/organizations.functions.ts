@@ -87,13 +87,10 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
         .select("id, types, artist_kind, name, status, description, created_at")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      return { organizations: data ?? [] };
+      return { organizations: data ?? [], isAdmin: true };
     }
 
     // Zwykły user: tylko org, których jest członkiem LUB twórcą.
-    // (RLS pozwala też widzieć wszystkie is_shared+approved — to potrzebne
-    //  dla wyszukiwarki kontrahentów, ale na liście „Moje organizacje" musimy
-    //  filtrować jawnie.)
     const { data: memberships, error: memErr } = await supabase
       .from("organization_members")
       .select("organization_id")
@@ -113,8 +110,38 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return {
       organizations: (data ?? []).map(({ created_by: _cb, ...rest }) => rest),
+      isAdmin: false,
     };
   });
+
+/**
+ * Usunięcie organizacji — tylko administrator aplikacji.
+ * Używa supabaseAdmin, więc omija RLS (i wykonuje kaskadowe DELETE wg FK).
+ */
+export const deleteOrganization = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roles ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { error } = await supabaseAdmin
+      .from("organizations")
+      .delete()
+      .eq("id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 
 export const listPendingOrganizations = createServerFn({ method: "GET" })

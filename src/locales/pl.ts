@@ -304,6 +304,9 @@ export default
     "title_help_aria": "Pomoc — Moje organizacje",
     "new": "Zarejestruj swoją organizację",
     "empty": "Nie masz jeszcze żadnej organizacji. Zarejestruj zespół lub firmę.",
+    "delete": "Usuń organizację",
+    "delete_confirm": "Usunąć organizację \"{{name}}\"? Tej operacji nie można cofnąć — usunięte zostaną też powiązane dane.",
+    "deleted": "Organizacja usunięta.",
     "type": {
       "label": "Typ organizacji",
       "artist": "Artysta / Zespół",

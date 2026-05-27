@@ -281,6 +281,9 @@ export default
     "title_help_aria": "Help — My organizations",
     "new": "Register your organization",
     "empty": "You don't have any organizations yet. Register a band or company.",
+    "delete": "Delete organization",
+    "delete_confirm": "Delete organization \"{{name}}\"? This cannot be undone — related data will be deleted too.",
+    "deleted": "Organization deleted.",
     "type": {
       "label": "Organization type",
       "artist": "Artist / Band",
