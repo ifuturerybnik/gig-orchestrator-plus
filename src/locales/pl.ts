@@ -160,6 +160,7 @@ export default
     "save": "Zapisz",
     "saving": "Zapisywanie…",
     "cancel": "Anuluj",
+    "close": "Zamknij",
     "submit": "Wyślij",
     "back": "Wstecz",
     "next": "Dalej",
@@ -375,6 +376,14 @@ export default
       "remove": "Usuń",
       "remove_confirm": "Usunąć tego kontrahenta z Twojej listy?",
       "removed": "Kontrahent usunięty z listy.",
+      "details": {
+        "view_title": "Dane kontrahenta",
+        "view_subtitle": "Ten kontrahent jest zarejestrowany w bazie współdzielonej — dane są tylko do odczytu.",
+        "edit_title": "Edycja kontrahenta",
+        "edit_subtitle": "Twój prywatny wpis — zmiany widzisz tylko Ty.",
+        "readonly_hint": "Aby zmienić dane zarejestrowanego kontrahenta, skontaktuj się z administratorem aplikacji.",
+        "saved": "Zapisano zmiany."
+      },
       "dialog": {
         "title": "Dodaj kontrahenta",
         "subtitle": "Wpisz nazwę firmy. Sprawdzimy, czy nie ma jej już w bazie zarejestrowanych kontrahentów.",
