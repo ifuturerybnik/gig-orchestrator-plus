@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { Plus, X, Building2 } from 'lucide-react';
 import {
   type Contact, type ContactScope, useUpsertContact,
 } from '@/hooks/useContacts';
@@ -9,19 +12,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PhoneInput } from '@/components/phone-input';
 import { CountrySelect } from '@/components/country-select';
+import { CounterpartyPicker } from '@/components/pickers/CounterpartyPicker';
 import {
   CONTACT_CLASSIFICATIONS, PL_VOIVODESHIPS,
   type ContactClassification,
 } from '@/lib/contactClassifications';
+import {
+  linkContactToCounterparty,
+  listLinkedCounterpartiesForContact,
+  unlinkContactCounterparty,
+} from '@/lib/contact-counterparty-links.functions';
 
 interface Props {
   scope: ContactScope;
   initial?: Contact | null;
   onSaved: (c: Contact) => void;
   onCancel?: () => void;
+  /** Ukryj sekcję powiązanych kontrahentów (np. gdy formularz jest osadzony w dialogu kontrahenta). */
+  hideLinksSection?: boolean;
 }
 
 function readNotesText(notes: unknown): string {
@@ -34,7 +46,7 @@ function readNotesText(notes: unknown): string {
   return '';
 }
 
-export function ContactForm({ scope, initial, onSaved, onCancel }: Props) {
+export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSection }: Props) {
   const { t } = useTranslation();
   const upsert = useUpsertContact();
 
@@ -104,6 +116,8 @@ export function ContactForm({ scope, initial, onSaved, onCancel }: Props) {
       setSubmitting(false);
     }
   };
+
+  const showLinks = !hideLinksSection && scope.kind === 'user' && !!initial?.id;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -206,6 +220,17 @@ export function ContactForm({ scope, initial, onSaved, onCancel }: Props) {
         </div>
       </section>
 
+      {/* Powiązani kontrahenci */}
+      {!hideLinksSection && (
+        showLinks ? (
+          <ContactCounterpartiesSection contactId={initial!.id} />
+        ) : scope.kind === 'user' && (
+          <section className="rounded-md border border-dashed border-border p-3">
+            <p className="text-xs text-muted-foreground">{t('contacts.links.save_first_hint')}</p>
+          </section>
+        )
+      )}
+
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
@@ -217,5 +242,86 @@ export function ContactForm({ scope, initial, onSaved, onCancel }: Props) {
         </Button>
       </div>
     </form>
+  );
+}
+
+function ContactCounterpartiesSection({ contactId }: { contactId: string }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const listFn = useServerFn(listLinkedCounterpartiesForContact);
+  const linkFn = useServerFn(linkContactToCounterparty);
+  const unlinkFn = useServerFn(unlinkContactCounterparty);
+
+  const { data } = useQuery({
+    queryKey: ['contact-linked-counterparties', contactId],
+    queryFn: () => listFn({ data: { contactId } }),
+  });
+
+  const items = data?.items ?? [];
+  const excludeIds = items.map(i => i.organization?.id).filter(Boolean) as string[];
+
+  const linkM = useMutation({
+    mutationFn: (orgId: string) =>
+      linkFn({ data: { contactId, counterpartyOrgId: orgId } }),
+    onSuccess: (r) => {
+      if (r.alreadyLinked) toast.info(t('contacts.links.already_linked'));
+      else toast.success(t('contacts.links.linked'));
+      qc.invalidateQueries({ queryKey: ['contact-linked-counterparties', contactId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const unlinkM = useMutation({
+    mutationFn: (linkId: string) => unlinkFn({ data: { linkId } }),
+    onSuccess: () => {
+      toast.success(t('contacts.links.unlinked'));
+      qc.invalidateQueries({ queryKey: ['contact-linked-counterparties', contactId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  return (
+    <section className="space-y-3 rounded-md border border-border bg-card p-4">
+      <h3 className="text-sm font-semibold">{t('contacts.links.contact_section_title')}</h3>
+      <p className="text-xs text-muted-foreground">{t('contacts.links.contact_section_help')}</p>
+      <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+        <Plus className="h-4 w-4" />
+        {t('contacts.links.link_cp_btn')}
+      </Button>
+
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{t('contacts.links.empty_counterparties')}</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map(it => (
+            <li key={it.linkId} className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm">
+              <span className="inline-flex items-center gap-2 min-w-0">
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate">{it.organization?.name ?? '—'}</span>
+                {it.organization?.is_shared && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {t('organizations.counterparties.table.source_shared')}
+                  </Badge>
+                )}
+              </span>
+              <Button type="button" size="icon" variant="ghost" className="h-6 w-6"
+                onClick={() => unlinkM.mutate(it.linkId)}
+                aria-label={t('contacts.links.unlink')}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <CounterpartyPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        excludeIds={excludeIds}
+        onPick={(o) => linkM.mutate(o.id)}
+      />
+    </section>
   );
 }
