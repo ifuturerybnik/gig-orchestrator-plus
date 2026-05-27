@@ -143,18 +143,10 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <Checkbox
-                checked={remember}
-                onCheckedChange={(v) => setRemember(v === true)}
-              />
-              <span>{t("auth.login.remember_device")}</span>
-            </label>
             <Button type="submit" className="w-full" disabled={loading}>
               {t("auth.login.submit")}
             </Button>
-          </form>
-        )}
+
 
         <div className="mt-4 flex items-center justify-between text-sm">
           <Link to="/reset-password" className="text-muted-foreground hover:text-foreground">
