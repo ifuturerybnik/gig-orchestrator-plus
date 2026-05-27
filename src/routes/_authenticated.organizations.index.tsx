@@ -46,6 +46,7 @@ function OrganizationsListPage() {
   const fetchCounterparties = useServerFn(listMyCounterparties);
   const removeFn = useServerFn(removeCounterpartyLink);
   const deleteOrgFn = useServerFn(deleteOrganization);
+  const fetchCcLinks = useServerFn(listMyContactCounterpartyLinks);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-organizations"],
@@ -55,6 +56,13 @@ function OrganizationsListPage() {
     queryKey: ["my-counterparties"],
     queryFn: () => fetchCounterparties(),
   });
+  const { data: ccLinksData } = useQuery({
+    queryKey: ["my-contact-counterparty-links"],
+    queryFn: () => fetchCcLinks(),
+  });
+  const linkedCounterpartyIds = new Set(
+    (ccLinksData?.items ?? []).map((l) => l.counterparty_org_id),
+  );
 
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
