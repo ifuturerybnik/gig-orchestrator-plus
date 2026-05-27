@@ -40,6 +40,7 @@ import {
   getCounterpartyDetails,
   updateMyCounterparty,
 } from "@/lib/counterparty-links.functions";
+import { LinkedContactsSection } from "@/components/pickers/LinkedContactsSection";
 
 interface Props {
   linkId: string | null;
@@ -343,6 +344,10 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
               <p className="text-xs text-muted-foreground">
                 {t("organizations.counterparties.details.readonly_hint")}
               </p>
+            )}
+
+            {data?.organization?.id && (
+              <LinkedContactsSection counterpartyOrgId={data.organization.id} />
             )}
           </div>
         )}
