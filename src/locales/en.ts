@@ -238,7 +238,7 @@ export default
       "submit": "Create account",
       "have_account": "Already have an account?",
       "login_link": "Sign in",
-      "check_email": "Check your inbox — we've sent an activation link.",
+      "check_email": "We've sent an activation link from Concertivo. Please check your inbox. If you don't see it in your main folder, check other folders and your SPAM folder.",
       "mfa_recommendation": "🔒 We recommend enabling two-factor authentication (2FA) after creating your account — under „Profile → Security”. An extra code from your app significantly improves account security.",
       "accept_legal_prefix": "I accept the",
       "accept_legal_and": "and the",
