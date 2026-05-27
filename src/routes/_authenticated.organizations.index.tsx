@@ -296,24 +296,35 @@ function OrganizationsListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (
-                              window.confirm(
-                                t("organizations.counterparties.remove_confirm"),
-                              )
-                            ) {
-                              removeMutation.mutate(cp.link_id);
-                            }
-                          }}
-                          disabled={removeMutation.isPending}
-                          aria-label={t("organizations.counterparties.remove")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {linkedCounterpartyIds.has(o.id) && (
+                            <span
+                              className="inline-flex items-center text-muted-foreground"
+                              title={t("organizations.counterparties.has_linked_contacts")}
+                              aria-label={t("organizations.counterparties.has_linked_contacts")}
+                            >
+                              <User className="h-4 w-4" />
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  t("organizations.counterparties.remove_confirm"),
+                                )
+                              ) {
+                                removeMutation.mutate(cp.link_id);
+                              }
+                            }}
+                            disabled={removeMutation.isPending}
+                            aria-label={t("organizations.counterparties.remove")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
