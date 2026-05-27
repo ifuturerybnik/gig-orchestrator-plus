@@ -376,6 +376,7 @@ export default
       "remove": "Usuń",
       "remove_confirm": "Usunąć tego kontrahenta z Twojej listy?",
       "removed": "Kontrahent usunięty z listy.",
+      "has_linked_contacts": "Powiązany z kontaktem",
       "table": {
         "name": "Nazwa",
         "types": "Typ organizacji",
