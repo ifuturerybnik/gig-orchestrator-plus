@@ -134,10 +134,25 @@ export function AddCounterpartyDialog({
     staleTime: 30_000,
   });
 
+  const linkContactFn = useServerFn(linkContactToCounterparty);
+
+  const flushPendingContacts = async (orgId: string) => {
+    for (const c of pendingContacts) {
+      try {
+        await linkContactFn({ data: { contactId: c.id, counterpartyOrgId: orgId } });
+      } catch (e) {
+        toast.error(
+          `${c.display_name}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
       addFn({ data: { counterpartyOrgId } }),
-    onSuccess: () => {
+    onSuccess: async (_r, counterpartyOrgId) => {
+      await flushPendingContacts(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
