@@ -44,6 +44,11 @@ import {
   addCounterpartyLink,
   createCounterpartyDraft,
 } from "@/lib/counterparty-links.functions";
+import { linkContactToCounterparty } from "@/lib/contact-counterparty-links.functions";
+import {
+  LinkedContactsSection,
+  type PendingContact,
+} from "@/components/pickers/LinkedContactsSection";
 
 interface Props {
   open: boolean;
