@@ -859,5 +859,9 @@ export default
       "cp_picker_empty": "Brak kontrahentów do powiązania."
     },
     "empty_orgs": "Nie należysz jeszcze do żadnej organizacji. Możesz dodawać kontakty prywatne lub utworzyć / dołączyć do organizacji."
+  },
+  "sharing": {
+    "my_orgs_title": "Moje organizacje",
+    "my_orgs_help": "Zaznacz organizacje, w których ten wpis ma być też widoczny. Odznacz, jeśli ma pozostać wyłącznie prywatny."
   }
 } as const;
