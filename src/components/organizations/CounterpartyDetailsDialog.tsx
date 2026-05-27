@@ -376,6 +376,15 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
             {data?.organization?.id && (
               <LinkedContactsSection counterpartyOrgId={data.organization.id} />
             )}
+
+            {orgIdForShares && (
+              <MyOrgsShareSection
+                selectedOrgIds={shareOrgIds}
+                onChange={setShareOrgIds}
+                initialSelected={sharesData?.orgIds ?? null}
+                defaultAllChecked={false}
+              />
+            )}
           </div>
         )}
 
@@ -383,14 +392,12 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? t("common.close") : t("common.cancel")}
           </Button>
-          {!readOnly && (
-            <Button
-              onClick={() => saveMutation.mutate()}
-              disabled={!canSubmit || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? t("common.saving") : t("common.save")}
-            </Button>
-          )}
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={!canSubmit || saveMutation.isPending}
+          >
+            {saveMutation.isPending ? t("common.saving") : t("common.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
