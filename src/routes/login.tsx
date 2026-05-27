@@ -146,6 +146,9 @@ function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {t("auth.login.submit")}
             </Button>
+          </form>
+        )}
+
 
 
         <div className="mt-4 flex items-center justify-between text-sm">
