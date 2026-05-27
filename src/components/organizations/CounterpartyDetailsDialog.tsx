@@ -40,7 +40,12 @@ import {
   getCounterpartyDetails,
   updateMyCounterparty,
 } from "@/lib/counterparty-links.functions";
+import {
+  getCounterpartyOrgShares,
+  setCounterpartyOrgShares,
+} from "@/lib/org-sharing.functions";
 import { LinkedContactsSection } from "@/components/pickers/LinkedContactsSection";
+import { MyOrgsShareSection } from "@/components/pickers/MyOrgsShareSection";
 
 interface Props {
   linkId: string | null;
