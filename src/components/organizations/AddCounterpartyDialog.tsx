@@ -45,10 +45,12 @@ import {
   createCounterpartyDraft,
 } from "@/lib/counterparty-links.functions";
 import { linkContactToCounterparty } from "@/lib/contact-counterparty-links.functions";
+import { setCounterpartyOrgShares } from "@/lib/org-sharing.functions";
 import {
   LinkedContactsSection,
   type PendingContact,
 } from "@/components/pickers/LinkedContactsSection";
+import { MyOrgsShareSection } from "@/components/pickers/MyOrgsShareSection";
 
 interface Props {
   open: boolean;
@@ -99,6 +101,7 @@ export function AddCounterpartyDialog({
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
   const [pendingContacts, setPendingContacts] = useState<PendingContact[]>([]);
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -116,6 +119,7 @@ export function AddCounterpartyDialog({
       setStreet("");
       setBuildingNo("");
       setPendingContacts([]);
+      setShareOrgIds(null);
     }
   }, [open, initialCountry]);
 
@@ -136,6 +140,8 @@ export function AddCounterpartyDialog({
 
   const linkContactFn = useServerFn(linkContactToCounterparty);
 
+  const setSharesFn = useServerFn(setCounterpartyOrgShares);
+
   const flushPendingContacts = async (orgId: string) => {
     for (const c of pendingContacts) {
       try {
@@ -148,11 +154,21 @@ export function AddCounterpartyDialog({
     }
   };
 
+  const flushOrgShares = async (orgId: string) => {
+    if (shareOrgIds === null) return;
+    try {
+      await setSharesFn({ data: { counterpartyOrgId: orgId, orgIds: shareOrgIds } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
       addFn({ data: { counterpartyOrgId } }),
     onSuccess: async (_r, counterpartyOrgId) => {
       await flushPendingContacts(counterpartyOrgId);
+      await flushOrgShares(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
@@ -197,6 +213,7 @@ export function AddCounterpartyDialog({
       }),
     onSuccess: async (r) => {
       await flushPendingContacts(r.organizationId);
+      await flushOrgShares(r.organizationId);
       toast.success(t("organizations.counterparties.dialog.submitted_for_review"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
@@ -281,6 +298,13 @@ export function AddCounterpartyDialog({
                   </div>
                 )}
               </div>
+            )}
+
+            {canSearch && hasMatches && (
+              <MyOrgsShareSection
+                selectedOrgIds={shareOrgIds}
+                onChange={setShareOrgIds}
+              />
             )}
           </>
         )}
@@ -479,6 +503,11 @@ export function AddCounterpartyDialog({
             <LinkedContactsSection
               pending={pendingContacts}
               onPendingChange={setPendingContacts}
+            />
+
+            <MyOrgsShareSection
+              selectedOrgIds={shareOrgIds}
+              onChange={setShareOrgIds}
             />
 
             <p className="text-xs text-muted-foreground">

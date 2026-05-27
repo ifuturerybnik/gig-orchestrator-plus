@@ -26,6 +26,11 @@ import {
   listLinkedCounterpartiesForContact,
   unlinkContactCounterparty,
 } from '@/lib/contact-counterparty-links.functions';
+import {
+  getContactOrgShares,
+  setContactOrgShares,
+} from '@/lib/org-sharing.functions';
+import { MyOrgsShareSection } from '@/components/pickers/MyOrgsShareSection';
 
 interface Props {
   scope: ContactScope;
@@ -49,6 +54,8 @@ function readNotesText(notes: unknown): string {
 export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSection }: Props) {
   const { t } = useTranslation();
   const upsert = useUpsertContact();
+  const getSharesFn = useServerFn(getContactOrgShares);
+  const setSharesFn = useServerFn(setContactOrgShares);
 
   const [firstName, setFirstName] = useState(initial?.first_name ?? '');
   const [lastName, setLastName] = useState(initial?.last_name ?? '');
@@ -67,6 +74,13 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
   );
   const [notes, setNotes] = useState(readNotesText(initial?.notes));
   const [submitting, setSubmitting] = useState(false);
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
+
+  const { data: sharesData } = useQuery({
+    queryKey: ['contact-org-shares', initial?.id ?? null],
+    queryFn: () => getSharesFn({ data: { contactId: initial!.id } }),
+    enabled: scope.kind === 'user' && !!initial?.id,
+  });
 
   const toggleClassification = (c: ContactClassification) => {
     setClassifications(prev =>
@@ -108,6 +122,13 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
         tags: classifications,
         notes: notes.trim() ? { text: notes.trim() } : null,
       });
+      if (scope.kind === 'user' && shareOrgIds !== null) {
+        try {
+          await setSharesFn({ data: { contactId: saved.id, orgIds: shareOrgIds } });
+        } catch (e) {
+          toast.error((e as Error).message);
+        }
+      }
       toast.success(t('contacts.form.saved'));
       onSaved(saved);
     } catch (e) {
@@ -229,6 +250,15 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
             <p className="text-xs text-muted-foreground">{t('contacts.links.save_first_hint')}</p>
           </section>
         )
+      )}
+
+      {scope.kind === 'user' && (
+        <MyOrgsShareSection
+          selectedOrgIds={shareOrgIds}
+          onChange={setShareOrgIds}
+          initialSelected={initial?.id ? (sharesData?.orgIds ?? null) : null}
+          defaultAllChecked={!initial?.id}
+        />
       )}
 
       <div className="flex justify-end gap-2 border-t border-border pt-4">
