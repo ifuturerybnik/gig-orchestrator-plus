@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, Mail, Phone, Building2, User, Music } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Mail, Phone, MapPin, User } from 'lucide-react';
 import {
   useContacts, useDeleteContact,
-  type Contact, type ContactKind, type ContactCategory, type ContactScope,
+  type Contact, type ContactScope,
 } from '@/hooks/useContacts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -18,34 +17,21 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ContactForm } from './ContactForm';
+import { CONTACT_CLASSIFICATIONS } from '@/lib/contactClassifications';
 
 interface Props { scope: ContactScope; }
-
-const KINDS: ContactKind[] = ['person','company','artist'];
-const CATS: ContactCategory[] = ['client','supplier','artist','partner','venue','media','other'];
-
-const KIND_ICON: Record<ContactKind, React.ReactNode> = {
-  person: <User className="h-4 w-4" />,
-  company: <Building2 className="h-4 w-4" />,
-  artist: <Music className="h-4 w-4" />,
-};
 
 export function ContactsList({ scope }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [kind, setKind] = useState<ContactKind | 'all'>('all');
-  const [category, setCategory] = useState<ContactCategory | 'all'>('all');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [toDelete, setToDelete] = useState<Contact | null>(null);
 
-  const { data, isLoading } = useContacts({
-    scope,
-    kind: kind === 'all' ? undefined : kind,
-    category: category === 'all' ? undefined : category,
-    search,
-  });
+  const { data, isLoading } = useContacts({ scope, kind: 'person', search });
   const del = useDeleteContact();
+
+  const persons = useMemo(() => (data ?? []), [data]);
 
   const openAdd = () => { setEditing(null); setOpen(true); };
   const openEdit = (c: Contact) => { setEditing(c); setOpen(true); };
@@ -64,34 +50,14 @@ export function ContactsList({ scope }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={t('contacts.list.search_placeholder')}
-              className="pl-8"
-            />
-          </div>
-          <Select value={kind} onValueChange={v => setKind(v as typeof kind)}>
-            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('contacts.list.all')}</SelectItem>
-              {KINDS.map(k => (
-                <SelectItem key={k} value={k}>{t(`contacts.kinds_plural.${k}`)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={category} onValueChange={v => setCategory(v as typeof category)}>
-            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('contacts.list.all')}</SelectItem>
-              {CATS.map(c => (
-                <SelectItem key={c} value={c}>{t(`contacts.category.${c}`)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="relative flex-1 max-w-sm">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('contacts.list.search_placeholder')}
+            className="pl-8"
+          />
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -113,53 +79,57 @@ export function ContactsList({ scope }: Props) {
 
       {isLoading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t('contacts.list.loading')}</p>
-      ) : (data ?? []).length === 0 ? (
+      ) : persons.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           {t('contacts.list.empty')}
         </p>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border bg-card">
-          {data!.map(c => (
-            <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/40">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <span className="rounded-md bg-muted p-2 text-muted-foreground">{KIND_ICON[c.kind]}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+          {persons.map(c => {
+            const classifications = (c.tags ?? []).filter(t =>
+              (CONTACT_CLASSIFICATIONS as readonly string[]).includes(t),
+            );
+            const addrParts = [
+              c.address_line1 && c.address_line2 ? `${c.address_line1} ${c.address_line2}` : c.address_line1 || c.address_line2,
+              c.postal_code,
+              c.city,
+              c.region,
+            ].filter(Boolean);
+            return (
+              <li key={c.id} className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-accent/40">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <span className="rounded-md bg-muted p-2 text-muted-foreground"><User className="h-4 w-4" /></span>
+                  <div className="min-w-0 flex-1 space-y-1">
                     <p className="truncate font-medium text-foreground">{c.display_name}</p>
-                    {c.category && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {t(`contacts.category.${c.category}`)}
-                      </Badge>
-                    )}
-                    {c.tags.slice(0, 3).map(tag => (
-                      <Badge key={tag} variant="outline" className="text-[10px]">{tag}</Badge>
-                    ))}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    {c.kind === 'person' && c.position && <span>{c.position}</span>}
-                    {c.email && (
-                      <span className="inline-flex items-center gap-1">
-                        <Mail className="h-3 w-3" />{c.email}
-                      </span>
-                    )}
-                    {c.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3 w-3" />{c.phone}
-                      </span>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {c.email && <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</span>}
+                      {c.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{c.phone}</span>}
+                      {addrParts.length > 0 && (
+                        <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{addrParts.join(', ')}</span>
+                      )}
+                    </div>
+                    {classifications.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {classifications.map(cl => (
+                          <Badge key={cl} variant="secondary" className="text-[10px]">
+                            {t(`contacts.classification.${cl}`)}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button size="icon" variant="ghost" onClick={() => openEdit(c)} aria-label={t('contacts.actions.edit')}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost" onClick={() => setToDelete(c)} aria-label={t('contacts.actions.delete')}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </li>
-          ))}
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(c)} aria-label={t('contacts.actions.edit')}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => setToDelete(c)} aria-label={t('contacts.actions.delete')}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
