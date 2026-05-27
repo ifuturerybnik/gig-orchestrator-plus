@@ -284,12 +284,137 @@ function OrganizationsListPage() {
 
         {cpLoading ? (
           <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
-        ) : counterparties.length === 0 ? (
+        ) : allCounterparties.length === 0 ? (
           <p className="mt-6 rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             {t("organizations.counterparties.empty")}
           </p>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-md border border-border bg-card">
+          <>
+            <div className="mt-6 rounded-md border border-border bg-card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("organizations.counterparties.filters.title")}
+                </p>
+                {cpFiltersActive && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearCpFilters}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    {t("organizations.counterparties.filters.clear")}
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="space-y-1 xl:col-span-2">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.search_placeholder")}
+                  </Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={cpSearch}
+                      onChange={(e) => setCpSearch(e.target.value)}
+                      placeholder={t("organizations.counterparties.filters.search_placeholder")}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.type")}
+                  </Label>
+                  <Select value={cpType} onValueChange={setCpType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>
+                        {t("organizations.counterparties.filters.all_types")}
+                      </SelectItem>
+                      {ORG_TYPES.map((tp) => (
+                        <SelectItem key={tp} value={tp}>
+                          {t(`organizations.type.${tp}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.country")}
+                  </Label>
+                  <Select value={cpCountry} onValueChange={setCpCountry}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>
+                        {t("organizations.counterparties.filters.all_countries")}
+                      </SelectItem>
+                      {countries.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {(i18n.language || "pl").startsWith("pl") ? c.name_pl : c.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.city")}
+                  </Label>
+                  <Input
+                    value={cpCity}
+                    onChange={(e) => setCpCity(e.target.value)}
+                    placeholder={t("organizations.counterparties.filters.city_placeholder")}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.source")}
+                  </Label>
+                  <Select value={cpSource} onValueChange={setCpSource}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>
+                        {t("organizations.counterparties.filters.all_sources")}
+                      </SelectItem>
+                      <SelectItem value="shared">
+                        {t("organizations.counterparties.filters.source_shared")}
+                      </SelectItem>
+                      <SelectItem value="private">
+                        {t("organizations.counterparties.filters.source_private")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    {t("organizations.counterparties.filters.linked")}
+                  </Label>
+                  <Select value={cpLinked} onValueChange={setCpLinked}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>
+                        {t("organizations.counterparties.filters.all_linked")}
+                      </SelectItem>
+                      <SelectItem value="yes">
+                        {t("organizations.counterparties.filters.linked_yes")}
+                      </SelectItem>
+                      <SelectItem value="no">
+                        {t("organizations.counterparties.filters.linked_no")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {counterparties.length === 0 ? (
+              <p className="mt-4 rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                {t("organizations.counterparties.filters.no_results")}
+              </p>
+            ) : (
+          <div className="mt-4 overflow-x-auto rounded-md border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
