@@ -96,7 +96,61 @@ function OrganizationsListPage() {
 
   const isAdmin = data?.isAdmin ?? false;
 
-  const counterparties = cpData?.counterparties ?? [];
+  const allCounterparties = cpData?.counterparties ?? [];
+
+  // === FILTRY KONTRAHENTÓW ===
+  const ALL = "__all__";
+  const [cpSearch, setCpSearch] = useState("");
+  const [cpType, setCpType] = useState<string>(ALL);
+  const [cpCountry, setCpCountry] = useState<string>(ALL);
+  const [cpCity, setCpCity] = useState("");
+  const [cpSource, setCpSource] = useState<string>(ALL); // all | shared | private
+  const [cpLinked, setCpLinked] = useState<string>(ALL); // all | yes | no
+
+  const countries = useMemo(
+    () => sortedCountries(i18n.language || "pl"),
+    [i18n.language],
+  );
+
+  const counterparties = useMemo(() => {
+    const q = cpSearch.trim().toLowerCase();
+    const cityQ = cpCity.trim().toLowerCase();
+    return allCounterparties.filter((cp) => {
+      const o = cp.organization;
+      if (!o) return false;
+      if (q) {
+        const hay = [
+          o.name, o.legal_name, o.tax_id, o.address_city,
+          o.address_street, o.address_postal_code,
+          (o as { email?: string | null }).email ?? null,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (cpType !== ALL) {
+        const types = (o.types as string[] | null) ?? [];
+        if (!types.includes(cpType)) return false;
+      }
+      if (cpCountry !== ALL && (o.address_country ?? "") !== cpCountry) return false;
+      if (cityQ && !(o.address_city ?? "").toLowerCase().includes(cityQ)) return false;
+      if (cpSource === "shared" && !o.is_shared) return false;
+      if (cpSource === "private" && o.is_shared) return false;
+      if (cpLinked === "yes" && !linkedCounterpartyIds.has(o.id)) return false;
+      if (cpLinked === "no" && linkedCounterpartyIds.has(o.id)) return false;
+      return true;
+    });
+  }, [allCounterparties, cpSearch, cpType, cpCountry, cpCity, cpSource, cpLinked, linkedCounterpartyIds]);
+
+  const cpFiltersActive =
+    !!cpSearch || cpType !== ALL || cpCountry !== ALL || !!cpCity ||
+    cpSource !== ALL || cpLinked !== ALL;
+
+  const clearCpFilters = () => {
+    setCpSearch(""); setCpType(ALL); setCpCountry(ALL);
+    setCpCity(""); setCpSource(ALL); setCpLinked(ALL);
+  };
 
   return (
     <div className="min-h-screen bg-background">
