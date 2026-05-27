@@ -39,9 +39,9 @@ export const listAdministrators = createServerFn({ method: "GET" })
     if (rolesErr) throw new Error(rolesErr.message);
 
     const map = new Map<string, { user_id: string; roles: string[] }>();
-    for (const r of rolesRows ?? []) {
-      const e = map.get(r.user_id) ?? { user_id: r.user_id, roles: [] };
-      e.roles.push(r.role as string);
+    for (const r of (rolesRows ?? []) as Array<{ user_id: string; role: string }>) {
+      const e = map.get(r.user_id) ?? { user_id: r.user_id, roles: [] as string[] };
+      e.roles.push(r.role);
       map.set(r.user_id, e);
     }
     const ids = Array.from(map.keys());
