@@ -112,7 +112,18 @@ export function ContactsList({ scope }: Props) {
             return (
               <li key={c.id} className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-accent/40">
                 <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <span className="rounded-md bg-muted p-2 text-muted-foreground"><User className="h-4 w-4" /></span>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="rounded-md bg-muted p-2 text-muted-foreground"><User className="h-4 w-4" /></span>
+                    {linkedContactIds.has(c.id) && (
+                      <span
+                        className="rounded-md bg-muted p-1.5 text-muted-foreground"
+                        title={t('contacts.links.has_linked_counterparties')}
+                        aria-label={t('contacts.links.has_linked_counterparties')}
+                      >
+                        <Building2 className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="truncate font-medium text-foreground">{c.display_name}</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
