@@ -381,7 +381,9 @@ export default
         "step2_title": "Counterparty details",
         "step2_subtitle": "Fill in details for: \"{{name}}\". This is a private counterparty saved to your list.",
         "artist_name_hint": "The name \"{{name}}\" will be saved as the artist / band name.",
+        "artist_name_label": "Artist / band name",
         "company_name_hint": "The name \"{{name}}\" will be saved as the company name.",
+        "company_name_label": "Company name",
         "review_hint": "This is your private counterparty — only you (and people you later share this list with) can see it. The app administrator does not approve this entry.",
         "submitted_for_review": "Counterparty added to your list."
       }

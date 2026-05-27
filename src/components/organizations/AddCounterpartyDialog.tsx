@@ -291,11 +291,18 @@ export function AddCounterpartyDialog({
                 <h3 className="text-sm font-semibold">
                   {t("organizations.dialog.artist_section")}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t("organizations.counterparties.dialog.artist_name_hint", {
-                    name: name.trim(),
-                  })}
-                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="cp-artist-name">
+                    {t("organizations.counterparties.dialog.artist_name_label")} *
+                  </Label>
+                  <Input
+                    id="cp-artist-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={200}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="cp-artist-kind">
                     {t("organizations.dialog.artist_kind")} *
@@ -349,11 +356,18 @@ export function AddCounterpartyDialog({
                 <h3 className="text-sm font-semibold">
                   {t("organizations.dialog.company_section")}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t("organizations.counterparties.dialog.company_name_hint", {
-                    name: name.trim(),
-                  })}
-                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="cp-company-name">
+                    {t("organizations.counterparties.dialog.company_name_label")} *
+                  </Label>
+                  <Input
+                    id="cp-company-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={200}
+                  />
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="cp-country">{t("address.country")}</Label>
