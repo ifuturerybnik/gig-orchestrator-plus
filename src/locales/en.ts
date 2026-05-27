@@ -574,6 +574,27 @@ export default
     }
   },
   "admin": {
+    "title": "Administration",
+    "nav": {
+      "administrators": "Administrators",
+      "approvals": "Approvals"
+    },
+    "administrators": {
+      "title": "System administrators",
+      "subtitle": "Users with access to the admin panel.",
+      "grant_title": "Grant admin role",
+      "list_title": "Current administrators",
+      "email": "User email",
+      "role": "Role",
+      "role_super_admin": "Super admin",
+      "role_admin_staff": "Admin",
+      "grant_btn": "Grant role",
+      "revoke_btn": "Revoke \"{{role}}\"",
+      "granted": "Role granted.",
+      "revoked": "Role revoked.",
+      "empty": "No administrators.",
+      "no_name": "(no name)"
+    },
     "approvals": {
       "title": "Organizations awaiting approval",
       "empty": "No pending approvals.",
