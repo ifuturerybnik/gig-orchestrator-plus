@@ -282,7 +282,8 @@ export default
       "weak_password": "Hasło musi mieć minimum 8 znaków",
       "invalid_credentials": "Nieprawidłowy email lub hasło",
       "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę",
-      "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności."
+      "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności.",
+      "email_already_registered": "Ten adres e-mail jest już zarejestrowany. Spróbuj się zalogować lub odzyskać hasło."
     }
   },
   "user_kinds": {
