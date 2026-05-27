@@ -39,7 +39,7 @@ export default
     "organizations": "Organizacje",
     "contacts": "Kontakty",
     "profile": "Profil",
-    "admin": "Panel administratora",
+    "admin": "Administracja",
     "approvals": "Zatwierdzenia",
     "logout": "Wyloguj",
     "login": "Zaloguj",
@@ -598,6 +598,27 @@ export default
     }
   },
   "admin": {
+    "title": "Administracja",
+    "nav": {
+      "administrators": "Administratorzy",
+      "approvals": "Zatwierdzenia"
+    },
+    "administrators": {
+      "title": "Administratorzy systemu",
+      "subtitle": "Użytkownicy z dostępem do panelu administracyjnego.",
+      "grant_title": "Nadaj rolę administratora",
+      "list_title": "Aktualni administratorzy",
+      "email": "Email użytkownika",
+      "role": "Rola",
+      "role_super_admin": "Super admin",
+      "role_admin_staff": "Admin",
+      "grant_btn": "Nadaj rolę",
+      "revoke_btn": "Odbierz „{{role}}\"",
+      "granted": "Rola nadana.",
+      "revoked": "Rola odebrana.",
+      "empty": "Brak administratorów.",
+      "no_name": "(bez imienia)"
+    },
     "approvals": {
       "title": "Organizacje oczekujące na zatwierdzenie",
       "empty": "Brak zgłoszeń do zatwierdzenia.",
