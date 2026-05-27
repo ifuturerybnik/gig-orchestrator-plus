@@ -74,7 +74,8 @@ export function useContacts(params: ListContactsParams) {
       const uid = userData.user?.id;
       if (!uid) return [];
 
-      const applyFilters = <T extends { eq: (...a: unknown[]) => T; ilike: (...a: unknown[]) => T; contains: (...a: unknown[]) => T; order: (...a: unknown[]) => T; limit: (n: number) => T }>(qb: T): T => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const applyFilters = (qb: any): any => {
         let q = qb;
         if (kind) q = q.eq('kind', kind);
         if (category) q = q.eq('category', category);
@@ -85,7 +86,7 @@ export function useContacts(params: ListContactsParams) {
 
       if (scope.kind === 'user') {
         const base = supabase.from(TBL).select('*').eq('owner_user_id', uid).is('organization_id', null);
-        const { data, error } = await applyFilters(base as never);
+        const { data, error } = await applyFilters(base);
         if (error) throw new Error(error.message);
         return (data as unknown as Contact[]) || [];
       }
@@ -93,7 +94,7 @@ export function useContacts(params: ListContactsParams) {
       const orgId = scope.organizationId;
       const ownedBase = supabase.from(TBL).select('*').eq('organization_id', orgId);
       const [ownedRes, sharesRes] = await Promise.all([
-        applyFilters(ownedBase as never) as Promise<{ data: unknown[] | null; error: { message: string } | null }>,
+        applyFilters(ownedBase),
         supabase.from('contact_org_shares').select('contact_id').eq('organization_id', orgId),
       ]);
       if (ownedRes.error) throw new Error(ownedRes.error.message);
@@ -107,7 +108,7 @@ export function useContacts(params: ListContactsParams) {
       let shared: Contact[] = [];
       if (sharedIds.length > 0) {
         const sharedBase = supabase.from(TBL).select('*').in('id', sharedIds);
-        const { data: sharedRows, error: shErr } = await applyFilters(sharedBase as never);
+        const { data: sharedRows, error: shErr } = await applyFilters(sharedBase);
         if (shErr) throw new Error(shErr.message);
         shared = (sharedRows as unknown as Contact[]) || [];
       }
