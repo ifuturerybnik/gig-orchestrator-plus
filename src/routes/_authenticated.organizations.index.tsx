@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "@tanstack/react-router";
-import { listMyOrganizations } from "@/lib/organizations.functions";
+import { listMyOrganizations, deleteOrganization } from "@/lib/organizations.functions";
 import {
   listMyCounterparties,
   removeCounterpartyLink,
