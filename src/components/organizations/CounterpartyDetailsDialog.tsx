@@ -57,6 +57,8 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const queryClient = useQueryClient();
   const getFn = useServerFn(getCounterpartyDetails);
   const updateFn = useServerFn(updateMyCounterparty);
+  const getSharesFn = useServerFn(getCounterpartyOrgShares);
+  const setSharesFn = useServerFn(setCounterpartyOrgShares);
 
   const open = !!linkId;
 
@@ -64,6 +66,13 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
     queryKey: ["counterparty-details", linkId],
     queryFn: () => getFn({ data: { linkId: linkId! } }),
     enabled: open,
+  });
+
+  const orgIdForShares = data?.organization?.id ?? null;
+  const { data: sharesData } = useQuery({
+    queryKey: ["counterparty-org-shares", orgIdForShares],
+    queryFn: () => getSharesFn({ data: { counterpartyOrgId: orgIdForShares! } }),
+    enabled: !!orgIdForShares,
   });
 
   const [name, setName] = useState("");
