@@ -27,9 +27,19 @@ export const checkOrgNameAvailability = createServerFn({ method: "POST" })
       return { normalized, exact: [], similar: [] };
     }
     const limit = data.limit ?? 8;
+    const { supabase, userId } = context;
 
     const cols =
       "id, name, legal_name, tax_id, address_city, address_country, address_street, address_building_no, address_postal_code, types, name_normalized";
+
+    // Organizacje, których user jest członkiem — wykluczamy z wyników
+    const { data: myMemberships } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId);
+    const excludeIds = new Set(
+      (myMemberships ?? []).map((m) => m.organization_id as string),
+    );
 
     // Exact (po znormalizowanej nazwie)
     const { data: exactRows, error: exactErr } = await supabaseAdmin
@@ -41,32 +51,32 @@ export const checkOrgNameAvailability = createServerFn({ method: "POST" })
       .limit(limit);
     if (exactErr) throw new Error(exactErr.message);
 
-    // Similar — pg_trgm similarity > 0.55 (pomijamy exact)
-    // Używamy RPC nie mamy; robimy ilike na fragmenty + filtr.
-    // Najprostsze: ilike na tokenach 4+ znaków LUB całość.
-    const tokens = normalized.split(" ").filter((t) => t.length >= 4);
-    const orParts: string[] = [];
-    orParts.push(`name_normalized.ilike.%${normalized}%`);
+    // Similar — ilike na całej znormalizowanej nazwie + tokenach 3+ znaków
+    const tokens = normalized.split(" ").filter((t) => t.length >= 3);
+    const orParts: string[] = [`name_normalized.ilike.%${normalized}%`];
     for (const t of tokens) orParts.push(`name_normalized.ilike.%${t}%`);
 
-    let similarQuery = supabaseAdmin
+    const { data: similarRows, error: simErr } = await supabaseAdmin
       .from("organizations")
       .select(cols)
       .eq("is_shared", true)
       .eq("status", "approved")
       .neq("name_normalized", normalized)
+      .or(orParts.join(","))
       .limit(limit);
-    similarQuery = similarQuery.or(orParts.join(","));
-
-    const { data: similarRows, error: simErr } = await similarQuery;
     if (simErr) throw new Error(simErr.message);
 
     const exactIds = new Set((exactRows ?? []).map((r) => r.id));
-    const similar = (similarRows ?? []).filter((r) => !exactIds.has(r.id));
+    const filterOut = (r: { id: string }) =>
+      !excludeIds.has(r.id);
+    const exact = (exactRows ?? []).filter(filterOut);
+    const similar = (similarRows ?? [])
+      .filter((r) => !exactIds.has(r.id))
+      .filter(filterOut);
 
     return {
       normalized,
-      exact: exactRows ?? [],
+      exact,
       similar,
     };
   });
