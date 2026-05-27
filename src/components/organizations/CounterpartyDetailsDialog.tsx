@@ -345,6 +345,10 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
                 {t("organizations.counterparties.details.readonly_hint")}
               </p>
             )}
+
+            {data?.organization?.id && (
+              <LinkedContactsSection counterpartyOrgId={data.organization.id} />
+            )}
           </div>
         )}
 
