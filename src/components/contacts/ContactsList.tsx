@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, Mail, Phone, MapPin, User } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Mail, Phone, MapPin, User, Building2 } from 'lucide-react';
 import {
   useContacts, useDeleteContact,
   type Contact, type ContactScope,
@@ -18,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ContactForm } from './ContactForm';
 import { CONTACT_CLASSIFICATIONS } from '@/lib/contactClassifications';
+import { listMyContactCounterpartyLinks } from '@/lib/contact-counterparty-links.functions';
 
 interface Props { scope: ContactScope; }
 
@@ -30,6 +33,17 @@ export function ContactsList({ scope }: Props) {
 
   const { data, isLoading } = useContacts({ scope, kind: 'person', search });
   const del = useDeleteContact();
+
+  const fetchCcLinks = useServerFn(listMyContactCounterpartyLinks);
+  const { data: ccLinksData } = useQuery({
+    queryKey: ['my-contact-counterparty-links'],
+    queryFn: () => fetchCcLinks(),
+    enabled: scope.kind === 'user',
+  });
+  const linkedContactIds = useMemo(
+    () => new Set((ccLinksData?.items ?? []).map((l) => l.contact_id)),
+    [ccLinksData],
+  );
 
   const persons = useMemo(() => (data ?? []), [data]);
 
