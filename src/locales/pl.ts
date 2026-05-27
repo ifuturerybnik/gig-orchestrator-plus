@@ -393,8 +393,8 @@ export default
         "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". Po wysłaniu trafią do administratora aplikacji do zatwierdzenia.",
         "artist_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa artysty / zespołu.",
         "company_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa firmy.",
-        "review_hint": "Wszystkie wypełnione pola będą widoczne dla administratora aplikacji podczas zatwierdzania.",
-        "submitted_for_review": "Kontrahent dodany. Wysłaliśmy zgłoszenie do administratora."
+        "review_hint": "To Twój prywatny kontrahent — dane widzisz tylko Ty (i osoby, którym później udostępnisz tę listę). Administrator aplikacji nie zatwierdza tego wpisu.",
+        "submitted_for_review": "Dodano kontrahenta do Twojej listy."
       }
     },
     "status": {
