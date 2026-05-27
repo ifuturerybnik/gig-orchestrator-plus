@@ -96,7 +96,20 @@ function RegisterPage() {
     });
     if (error) {
       setLoading(false);
-      toast.error(error.message);
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        toast.error(t("auth.errors.email_already_registered"));
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+    // Supabase ze względów bezpieczeństwa NIE zwraca błędu jeśli e-mail jest już zajęty —
+    // zwraca usera z pustą tablicą identities. Wykrywamy ten przypadek ręcznie.
+    const identities = (signUpData.user as { identities?: unknown[] } | null)?.identities;
+    if (signUpData.user && Array.isArray(identities) && identities.length === 0) {
+      setLoading(false);
+      toast.error(t("auth.errors.email_already_registered"));
       return;
     }
     // Audit log zgód (RODO). Nie blokujemy rejestracji w razie błędu — logujemy.
