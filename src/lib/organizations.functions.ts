@@ -70,14 +70,52 @@ export const createOrganization = createServerFn({ method: "POST" })
 export const listMyOrganizations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+
+    // Czy admin aplikacji? Admin widzi wszystko.
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roles ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+
+    if (isAdmin) {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, types, artist_kind, name, status, description, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return { organizations: data ?? [] };
+    }
+
+    // Zwykły user: tylko org, których jest członkiem LUB twórcą.
+    // (RLS pozwala też widzieć wszystkie is_shared+approved — to potrzebne
+    //  dla wyszukiwarki kontrahentów, ale na liście „Moje organizacje" musimy
+    //  filtrować jawnie.)
+    const { data: memberships, error: memErr } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId);
+    if (memErr) throw new Error(memErr.message);
+    const memberOrgIds = (memberships ?? []).map((m) => m.organization_id);
+
     const { data, error } = await supabase
       .from("organizations")
-      .select("id, types, artist_kind, name, status, description, created_at")
+      .select("id, types, artist_kind, name, status, description, created_at, created_by")
+      .or(
+        memberOrgIds.length > 0
+          ? `created_by.eq.${userId},id.in.(${memberOrgIds.join(",")})`
+          : `created_by.eq.${userId}`,
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { organizations: data ?? [] };
+    return {
+      organizations: (data ?? []).map(({ created_by: _cb, ...rest }) => rest),
+    };
   });
+
 
 export const listPendingOrganizations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
