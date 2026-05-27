@@ -82,12 +82,23 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
     );
 
     if (isAdmin) {
+      // Admin nie powinien widzieć prywatnych kontrahentów userów na liście organizacji.
+      // Wykluczamy każdą org, do której istnieje wpis w counterparty_links.
+      const { data: allCpLinks } = await supabase
+        .from("counterparty_links")
+        .select("counterparty_org_id");
+      const cpOrgIds = new Set(
+        (allCpLinks ?? []).map((l: { counterparty_org_id: string }) => l.counterparty_org_id),
+      );
       const { data, error } = await supabase
         .from("organizations")
         .select("id, types, artist_kind, name, status, description, created_at")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      return { organizations: data ?? [], isAdmin: true };
+      return {
+        organizations: (data ?? []).filter((o) => !cpOrgIds.has(o.id)),
+        isAdmin: true,
+      };
     }
 
     // Zwykły user: tylko org, których jest członkiem LUB twórcą,
