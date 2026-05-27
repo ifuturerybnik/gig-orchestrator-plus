@@ -498,6 +498,11 @@ export function AddCounterpartyDialog({
               onPendingChange={setPendingContacts}
             />
 
+            <MyOrgsShareSection
+              selectedOrgIds={shareOrgIds}
+              onChange={setShareOrgIds}
+            />
+
             <p className="text-xs text-muted-foreground">
               {t("organizations.counterparties.dialog.review_hint")}
             </p>
