@@ -386,8 +386,15 @@ export default
         "badge_exact": "Identyczna nazwa",
         "add_btn": "Dodaj do moich kontrahentów",
         "added": "Dodano kontrahenta do Twojej listy.",
-        "continue_new": "Kontynuuj — dodaj nową organizację",
-        "continue_soon_tooltip": "Dostępne w kolejnym etapie."
+        "continue_new": "Dalej — uzupełnij dane",
+        "continue_soon_tooltip": "",
+        "exact_blocks_new": "Istnieje już zarejestrowana organizacja o tej nazwie — dodaj ją z listy zamiast tworzyć duplikat.",
+        "step2_title": "Dane kontrahenta",
+        "step2_subtitle": "Uzupełnij dane dla: „{{name}}". Po wysłaniu trafią do administratora aplikacji do zatwierdzenia.",
+        "artist_name_hint": "Nazwa „{{name}}" zostanie zapisana jako nazwa artysty / zespołu.",
+        "company_name_hint": "Nazwa „{{name}}" zostanie zapisana jako nazwa firmy.",
+        "review_hint": "Wszystkie wypełnione pola będą widoczne dla administratora aplikacji podczas zatwierdzania.",
+        "submitted_for_review": "Kontrahent dodany. Wysłaliśmy zgłoszenie do administratora."
       }
     },
     "status": {
