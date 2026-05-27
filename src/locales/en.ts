@@ -353,6 +353,7 @@ export default
       "remove": "Remove",
       "remove_confirm": "Remove this counterparty from your list?",
       "removed": "Counterparty removed from your list.",
+      "has_linked_contacts": "Linked to a contact",
       "table": {
         "name": "Name",
         "types": "Organization type",
