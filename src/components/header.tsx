@@ -47,6 +47,11 @@ export function Header() {
               <Link to="/profile" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.profile")}
               </Link>
+              {isAdmin && (
+                <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
+                  {t("nav.admin")}
+                </Link>
+              )}
               <LanguageSwitcher />
 
               <Button variant="ghost" size="sm" onClick={handleLogout}>
