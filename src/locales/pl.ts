@@ -376,6 +376,7 @@ export default
       "remove": "Usuń",
       "remove_confirm": "Usunąć tego kontrahenta z Twojej listy?",
       "removed": "Kontrahent usunięty z listy.",
+      "has_linked_contacts": "Powiązany z kontaktem",
       "table": {
         "name": "Nazwa",
         "types": "Typ organizacji",
@@ -838,6 +839,7 @@ export default
       "cp_section_help_pending": "Te kontakty zostaną powiązane po utworzeniu kontrahenta.",
       "contact_section_title": "Powiązani kontrahenci",
       "contact_section_help": "Kontrahenci, do których przypisana jest ta osoba.",
+      "has_linked_counterparties": "Powiązany z kontrahentem",
       "add_contact_btn": "Dodaj kontakt",
       "link_contact_btn": "Powiąż z kontaktem",
       "link_cp_btn": "Powiąż z kontrahentem",

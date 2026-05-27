@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { HelpCircle, Trash2 } from "lucide-react";
+import { HelpCircle, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
   listMyCounterparties,
   removeCounterpartyLink,
 } from "@/lib/counterparty-links.functions";
+import { listMyContactCounterpartyLinks } from "@/lib/contact-counterparty-links.functions";
 import { RegisterOrgDialog } from "@/components/organizations/RegisterOrgDialog";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
@@ -45,6 +46,7 @@ function OrganizationsListPage() {
   const fetchCounterparties = useServerFn(listMyCounterparties);
   const removeFn = useServerFn(removeCounterpartyLink);
   const deleteOrgFn = useServerFn(deleteOrganization);
+  const fetchCcLinks = useServerFn(listMyContactCounterpartyLinks);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-organizations"],
@@ -54,6 +56,13 @@ function OrganizationsListPage() {
     queryKey: ["my-counterparties"],
     queryFn: () => fetchCounterparties(),
   });
+  const { data: ccLinksData } = useQuery({
+    queryKey: ["my-contact-counterparty-links"],
+    queryFn: () => fetchCcLinks(),
+  });
+  const linkedCounterpartyIds = new Set(
+    (ccLinksData?.items ?? []).map((l) => l.counterparty_org_id),
+  );
 
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
@@ -287,24 +296,35 @@ function OrganizationsListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (
-                              window.confirm(
-                                t("organizations.counterparties.remove_confirm"),
-                              )
-                            ) {
-                              removeMutation.mutate(cp.link_id);
-                            }
-                          }}
-                          disabled={removeMutation.isPending}
-                          aria-label={t("organizations.counterparties.remove")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {linkedCounterpartyIds.has(o.id) && (
+                            <span
+                              className="inline-flex items-center text-muted-foreground"
+                              title={t("organizations.counterparties.has_linked_contacts")}
+                              aria-label={t("organizations.counterparties.has_linked_contacts")}
+                            >
+                              <User className="h-4 w-4" />
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  t("organizations.counterparties.remove_confirm"),
+                                )
+                              ) {
+                                removeMutation.mutate(cp.link_id);
+                              }
+                            }}
+                            disabled={removeMutation.isPending}
+                            aria-label={t("organizations.counterparties.remove")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
