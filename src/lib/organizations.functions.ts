@@ -90,13 +90,25 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
       return { organizations: data ?? [], isAdmin: true };
     }
 
-    // Zwykły user: tylko org, których jest członkiem LUB twórcą.
+    // Zwykły user: tylko org, których jest członkiem LUB twórcą,
+    // ale BEZ tych, które ma jednocześnie na liście kontrahentów
+    // (private counterparties — trigger handle_new_organization dodaje
+    //  twórcę jako 'owner', więc trzeba je wykluczyć tutaj).
     const { data: memberships, error: memErr } = await supabase
       .from("organization_members")
       .select("organization_id")
       .eq("user_id", userId);
     if (memErr) throw new Error(memErr.message);
     const memberOrgIds = (memberships ?? []).map((m) => m.organization_id);
+
+    const { data: cpLinks } = await supabase
+      .from("counterparty_links")
+      .select("counterparty_org_id")
+      .eq("owner_kind", "user")
+      .eq("owner_user_id", userId);
+    const cpOrgIds = new Set(
+      (cpLinks ?? []).map((l: { counterparty_org_id: string }) => l.counterparty_org_id),
+    );
 
     const { data, error } = await supabase
       .from("organizations")
@@ -109,7 +121,9 @@ export const listMyOrganizations = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return {
-      organizations: (data ?? []).map(({ created_by: _cb, ...rest }) => rest),
+      organizations: (data ?? [])
+        .filter((o) => !cpOrgIds.has(o.id))
+        .map(({ created_by: _cb, ...rest }) => rest),
       isAdmin: false,
     };
   });
