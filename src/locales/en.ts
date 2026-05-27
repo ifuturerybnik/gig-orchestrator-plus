@@ -815,6 +815,7 @@ export default
       "cp_section_help_pending": "These contacts will be linked once the counterparty is created.",
       "contact_section_title": "Linked counterparties",
       "contact_section_help": "Counterparties this person is associated with.",
+      "has_linked_counterparties": "Linked to a counterparty",
       "add_contact_btn": "Add contact",
       "link_contact_btn": "Link to contact",
       "link_cp_btn": "Link to counterparty",
