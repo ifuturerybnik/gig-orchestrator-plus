@@ -137,6 +137,7 @@ export default
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
+    "close": "Close",
     "submit": "Submit",
     "back": "Back",
     "next": "Next",
@@ -352,6 +353,14 @@ export default
       "remove": "Remove",
       "remove_confirm": "Remove this counterparty from your list?",
       "removed": "Counterparty removed from your list.",
+      "details": {
+        "view_title": "Counterparty details",
+        "view_subtitle": "This counterparty is in the shared directory — data is read-only.",
+        "edit_title": "Edit counterparty",
+        "edit_subtitle": "Your private entry — changes are only visible to you.",
+        "readonly_hint": "To change details of a registered counterparty, contact the application administrator.",
+        "saved": "Changes saved."
+      },
       "dialog": {
         "title": "Add counterparty",
         "subtitle": "Enter a company name. We'll check if it already exists in the registered counterparties directory.",
