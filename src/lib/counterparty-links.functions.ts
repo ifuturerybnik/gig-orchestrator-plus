@@ -378,6 +378,16 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
       .single();
     if (orgErr) throw new Error(orgErr.message);
 
+    // Trigger handle_new_organization automatycznie dodał usera jako 'owner'
+    // tej org. Dla prywatnych kontrahentów to niepożądane — kontrahent NIE
+    // jest "moją organizacją", tylko wpisem na liście kontrahentów.
+    await supabaseAdmin
+      .from("organization_members")
+      .delete()
+      .eq("organization_id", org.id)
+      .eq("user_id", userId);
+
+
     const { error: linkErr } = await supabase
       .from("counterparty_links")
       .insert({
