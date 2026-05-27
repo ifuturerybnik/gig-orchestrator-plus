@@ -45,10 +45,12 @@ import {
   createCounterpartyDraft,
 } from "@/lib/counterparty-links.functions";
 import { linkContactToCounterparty } from "@/lib/contact-counterparty-links.functions";
+import { setCounterpartyOrgShares } from "@/lib/org-sharing.functions";
 import {
   LinkedContactsSection,
   type PendingContact,
 } from "@/components/pickers/LinkedContactsSection";
+import { MyOrgsShareSection } from "@/components/pickers/MyOrgsShareSection";
 
 interface Props {
   open: boolean;
