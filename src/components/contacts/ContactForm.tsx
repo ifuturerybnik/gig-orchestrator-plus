@@ -54,6 +54,8 @@ function readNotesText(notes: unknown): string {
 export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSection }: Props) {
   const { t } = useTranslation();
   const upsert = useUpsertContact();
+  const getSharesFn = useServerFn(getContactOrgShares);
+  const setSharesFn = useServerFn(setContactOrgShares);
 
   const [firstName, setFirstName] = useState(initial?.first_name ?? '');
   const [lastName, setLastName] = useState(initial?.last_name ?? '');
@@ -72,6 +74,13 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
   );
   const [notes, setNotes] = useState(readNotesText(initial?.notes));
   const [submitting, setSubmitting] = useState(false);
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
+
+  const { data: sharesData } = useQuery({
+    queryKey: ['contact-org-shares', initial?.id ?? null],
+    queryFn: () => getSharesFn({ data: { contactId: initial!.id } }),
+    enabled: scope.kind === 'user' && !!initial?.id,
+  });
 
   const toggleClassification = (c: ContactClassification) => {
     setClassifications(prev =>
