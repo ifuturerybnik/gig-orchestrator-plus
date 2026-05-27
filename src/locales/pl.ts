@@ -376,6 +376,15 @@ export default
       "remove": "Usuń",
       "remove_confirm": "Usunąć tego kontrahenta z Twojej listy?",
       "removed": "Kontrahent usunięty z listy.",
+      "table": {
+        "name": "Nazwa",
+        "types": "Typ organizacji",
+        "tax_id": "NIP",
+        "address": "Adres",
+        "source": "Źródło",
+        "source_shared": "Zarejestrowany",
+        "source_private": "Prywatny"
+      },
       "details": {
         "view_title": "Dane kontrahenta",
         "view_subtitle": "Ten kontrahent jest zarejestrowany w bazie współdzielonej — dane są tylko do odczytu.",
