@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Navigate, Link, useRouterState } from "@tansta
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Shield, CheckSquare } from "lucide-react";
+import { Shield, CheckSquare, Bot } from "lucide-react";
 import { Header } from "@/components/header";
 import { getMyProfile } from "@/lib/profile.functions";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,12 @@ function AdminLayout() {
       to: "/admin/approvals",
       label: t("admin.nav.approvals"),
       icon: CheckSquare,
+      show: true,
+    },
+    {
+      to: "/admin/ai",
+      label: t("admin.nav.ai"),
+      icon: Bot,
       show: true,
     },
   ];
