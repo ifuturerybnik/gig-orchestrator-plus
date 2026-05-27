@@ -140,6 +140,8 @@ export function AddCounterpartyDialog({
 
   const linkContactFn = useServerFn(linkContactToCounterparty);
 
+  const setSharesFn = useServerFn(setCounterpartyOrgShares);
+
   const flushPendingContacts = async (orgId: string) => {
     for (const c of pendingContacts) {
       try {
@@ -152,11 +154,21 @@ export function AddCounterpartyDialog({
     }
   };
 
+  const flushOrgShares = async (orgId: string) => {
+    if (shareOrgIds === null) return;
+    try {
+      await setSharesFn({ data: { counterpartyOrgId: orgId, orgIds: shareOrgIds } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
       addFn({ data: { counterpartyOrgId } }),
     onSuccess: async (_r, counterpartyOrgId) => {
       await flushPendingContacts(counterpartyOrgId);
+      await flushOrgShares(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
