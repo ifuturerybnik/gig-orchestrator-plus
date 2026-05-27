@@ -119,6 +119,7 @@ export function AddCounterpartyDialog({
       setStreet("");
       setBuildingNo("");
       setPendingContacts([]);
+      setShareOrgIds(null);
     }
   }, [open, initialCountry]);
 
