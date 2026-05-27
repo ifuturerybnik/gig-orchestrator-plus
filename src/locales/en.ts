@@ -341,6 +341,32 @@ export default
       "dedup_claim_sent": "Join request sent to admin.",
       "dedup_no_match": "No matches found."
     },
+    "counterparties": {
+      "section_title": "Organizations (counterparties)",
+      "section_help": "Your private counterparty list. Pick registered organizations from the shared directory to avoid duplicates.",
+      "add_btn": "Add counterparty",
+      "empty": "No counterparties yet. Add your first one by typing a company name.",
+      "remove": "Remove",
+      "remove_confirm": "Remove this counterparty from your list?",
+      "removed": "Counterparty removed from your list.",
+      "dialog": {
+        "title": "Add counterparty",
+        "subtitle": "Enter a company name. We'll check if it already exists in the registered counterparties directory.",
+        "name_label": "Company / organization name",
+        "name_placeholder": "e.g. ŁZY Band Ltd.",
+        "name_help": "Matching ignores case, Polish characters, legal forms (Ltd, GmbH, LLC etc.) and extra spaces.",
+        "searching": "Searching the directory…",
+        "found_exact": "Found a counterparty with the same name. Check the details and add to your list instead of creating a duplicate.",
+        "found_similar": "Found similar counterparties. Check whether any is the same company.",
+        "no_matches": "Not found in the directory. In the next step you'll be able to add a new counterparty.",
+        "not_matching_hint": "None of the above matches? The full new-counterparty form will arrive in the next stage.",
+        "badge_exact": "Identical name",
+        "add_btn": "Add to my counterparties",
+        "added": "Counterparty added to your list.",
+        "continue_new": "Continue — add new organization",
+        "continue_soon_tooltip": "Available in the next stage."
+      }
+    },
     "status": {
       "label": "Status",
       "pending": "Pending approval",
