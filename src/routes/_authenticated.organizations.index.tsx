@@ -35,6 +35,7 @@ function OrganizationsListPage() {
   const fetchOrgs = useServerFn(listMyOrganizations);
   const fetchCounterparties = useServerFn(listMyCounterparties);
   const removeFn = useServerFn(removeCounterpartyLink);
+  const deleteOrgFn = useServerFn(deleteOrganization);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-organizations"],
@@ -56,6 +57,18 @@ function OrganizationsListPage() {
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
   });
+
+  const deleteOrgMutation = useMutation({
+    mutationFn: (organizationId: string) =>
+      deleteOrgFn({ data: { organizationId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deleted"));
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+  });
+
+  const isAdmin = data?.isAdmin ?? false;
 
   const counterparties = cpData?.counterparties ?? [];
 
