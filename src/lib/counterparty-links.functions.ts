@@ -164,7 +164,7 @@ export const listMyCounterparties = createServerFn({ method: "GET" })
     const { data: orgs, error: orgsErr } = await supabaseAdmin
       .from("organizations")
       .select(
-        "id, name, legal_name, tax_id, types, address_city, address_country",
+        "id, name, legal_name, tax_id, types, artist_kind, address_postal_code, address_city, address_street, address_building_no, address_country, is_shared",
       )
       .in("id", ids);
     if (orgsErr) throw new Error(orgsErr.message);
