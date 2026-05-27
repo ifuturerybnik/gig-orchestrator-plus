@@ -353,6 +353,15 @@ export default
       "remove": "Remove",
       "remove_confirm": "Remove this counterparty from your list?",
       "removed": "Counterparty removed from your list.",
+      "table": {
+        "name": "Name",
+        "types": "Organization type",
+        "tax_id": "Tax ID",
+        "address": "Address",
+        "source": "Source",
+        "source_shared": "Registered",
+        "source_private": "Private"
+      },
       "details": {
         "view_title": "Counterparty details",
         "view_subtitle": "This counterparty is in the shared directory — data is read-only.",
