@@ -122,6 +122,13 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
         tags: classifications,
         notes: notes.trim() ? { text: notes.trim() } : null,
       });
+      if (scope.kind === 'user' && shareOrgIds !== null) {
+        try {
+          await setSharesFn({ data: { contactId: saved.id, orgIds: shareOrgIds } });
+        } catch (e) {
+          toast.error((e as Error).message);
+        }
+      }
       toast.success(t('contacts.form.saved'));
       onSaved(saved);
     } catch (e) {
