@@ -1,67 +1,119 @@
 ## Cel
-Umożliwić powiązanie **osób z modułu Kontakty** z **kontrahentami** (organizacjami) w obu kierunkach:
-- W dialogu kontrahenta (Dodaj / Edytuj): przyciski **„Dodaj kontakt"** i **„Powiąż z kontaktem"**.
-- W formularzu kontaktu: przycisk **„Powiąż z kontrahentem"**.
 
-Powiązania mają być widoczne (lista powiązanych osób na kontrahencie i lista powiązanych kontrahentów na kontakcie) i odpinalne.
+Na dole dialogu **dodawania/edycji kontrahenta** oraz dialogu **dodawania/edycji kontaktu** pokazać listę „Moje organizacje" (te, w których jestem właścicielem/adminem/członkiem) z checkboxami. **Domyślnie wszystkie zaznaczone.** Po odznaczeniu danej organizacji wpis zostaje wyłącznie prywatny dla mnie.
 
-## Zakres
+## Logika (dwa różne modele danych)
 
-### 1. Baza danych – nowa migracja
-Plik: `supabase/migrations/0022_contact_counterparty_links.sql`
+### A. Kontrahenci — już mamy w schemacie
 
-Tabela `contact_counterparty_links`:
-- `id uuid pk`
-- `contact_id uuid → contacts(id) on delete cascade`
-- `counterparty_org_id uuid → organizations(id) on delete cascade`
-- `owner_kind text check ('user'|'org')` – do którego scope'u należy link (czyj jest „mój kontrahent")
-- `owner_user_id uuid null` / `owner_org_id uuid null` – analogicznie do `counterparty_links`
-- `note text null`, `created_by uuid`, `created_at timestamptz`
-- `unique (contact_id, counterparty_org_id, owner_kind, owner_user_id, owner_org_id)`
+Tabela `counterparty_links` ma kolumny `owner_kind = 'user' | 'organization'` + `owner_user_id` / `owner_org_id`. Wystarczy tworzyć **dodatkowy wpis** w `counterparty_links` per każda zaznaczona organizacja (`owner_kind = 'organization'`).
 
-`GRANT SELECT, INSERT, UPDATE, DELETE … TO authenticated`, `GRANT ALL … TO service_role`, RLS:
-- SELECT/INSERT/DELETE dla zalogowanego, gdy `owner_user_id = auth.uid()` (etap 1 – tylko user scope; org scope w przyszłości).
+To samo dla **powiązań kontakt ↔ kontrahent** (`contact_counterparty_links`) — w polityki RLS dla 'organization' już są w migracji 0022.
 
-Migracja jest do uruchomienia ręcznie w panelu Supabase (zgodnie z core memory).
+### B. Kontakty — potrzebny nowy mechanizm udostępniania
 
-### 2. Server functions – nowy plik
-`src/lib/contact-counterparty-links.functions.ts`:
-- `linkContactToCounterparty({ contactId, counterpartyOrgId })`
-- `unlinkContactFromCounterparty({ linkId })`
-- `listLinkedContactsForCounterparty({ counterpartyOrgId })` – do wyświetlania w dialogu kontrahenta
-- `listLinkedCounterpartiesForContact({ contactId })` – do wyświetlania w formularzu kontaktu
-- `listLinkableCounterparties({ search? })` – moi kontrahenci do wyboru w pickerze (z `counterparty_links` + dane org)
-- `listLinkableContacts({ search? })` – moje kontakty osobowe (z `contacts` scope=user) do wyboru w pickerze
+Tabela `contacts` jest single-owner (`owner_user_id` XOR `organization_id`). Żeby „ten sam kontakt" widoczny był też w organizacji, dodajemy nową tabelę `contact_org_shares (contact_id, organization_id)`.
 
-Wszystkie pod `requireSupabaseAuth`, scope = user (etap 1).
+To pozwala uniknąć duplikacji rekordu i utrzymać jeden „złoty" rekord kontaktu.
 
-### 3. UI – dialog kontrahenta
-W `AddCounterpartyDialog.tsx` (krok 2) i `CounterpartyDetailsDialog.tsx` dodać sekcję **„Powiązane kontakty"** z dwoma przyciskami:
-- **„Dodaj kontakt"** – otwiera zagnieżdżony Dialog z `ContactForm` (scope=user); po zapisaniu nowy kontakt jest od razu linkowany z kontrahentem.
-- **„Powiąż z kontaktem"** – otwiera `ContactPicker` (Command/Combobox z wyszukiwarką) z listą moich kontaktów; wybór → utworzenie linku.
+## Zmiany
 
-Pod przyciskami: lista już powiązanych kontaktów (badge + przycisk „odłącz").
+### 1. Migracja DB — `supabase/migrations/0023_contact_org_shares.sql`
 
-Uwaga: w `AddCounterpartyDialog` linki dla **nowego prywatnego kontrahenta** trzeba zapisać dopiero po `createCounterpartyDraft` (mamy `organizationId`). Dla „zarejestrowanego" (przycisk Add w wynikach wyszukiwania) – sekcja powiązań pojawia się po utworzeniu linku przez `addCounterpartyLink` lub w `CounterpartyDetailsDialog` po wejściu w istniejącego kontrahenta.
+```sql
+create table public.contact_org_shares (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references public.contacts(id) on delete cascade,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  created_by uuid not null references auth.users(id),
+  created_at timestamptz not null default now(),
+  unique (contact_id, organization_id)
+);
 
-### 4. UI – formularz kontaktu
-W `ContactForm.tsx` dodać sekcję **„Powiązani kontrahenci"**:
-- Przycisk **„Powiąż z kontrahentem"** – otwiera `CounterpartyPicker` (Command z listą moich kontrahentów) → tworzy link.
-- Lista powiązanych kontrahentów (badge + odłącz).
+grant select, insert, delete on public.contact_org_shares to authenticated;
+grant all on public.contact_org_shares to service_role;
 
-Sekcja aktywna tylko gdy kontakt już istnieje (`initial?.id`). Dla nowo tworzonego: pokazujemy info „zapisz najpierw, by powiązać".
+alter table public.contact_org_shares enable row level security;
 
-### 5. Wspólne komponenty
-- `src/components/pickers/ContactPicker.tsx` – Command popover z wyszukiwarką po `display_name`.
-- `src/components/pickers/CounterpartyPicker.tsx` – analogicznie po nazwie organizacji.
+-- SELECT: właściciel kontaktu lub członek org, której kontakt jest udostępniony
+create policy "shares_select" on public.contact_org_shares for select to authenticated
+using (
+  exists (select 1 from contacts c
+          where c.id = contact_id and c.owner_user_id = auth.uid())
+  or exists (select 1 from organization_members m
+             where m.organization_id = contact_org_shares.organization_id
+               and m.user_id = auth.uid())
+);
 
-### 6. i18n
-Nowe klucze w `src/locales/pl.ts` i `src/locales/en.ts` (sekcja `contacts.links.*` i `organizations.counterparties.contact_links.*`).
+-- INSERT: tylko właściciel kontaktu, do org której jest członkiem
+create policy "shares_insert" on public.contact_org_shares for insert to authenticated
+with check (
+  created_by = auth.uid()
+  and exists (select 1 from contacts c
+              where c.id = contact_id and c.owner_user_id = auth.uid())
+  and exists (select 1 from organization_members m
+              where m.organization_id = contact_org_shares.organization_id
+                and m.user_id = auth.uid())
+);
 
-## Pliki do zmian
-- **nowe**: `supabase/migrations/0022_contact_counterparty_links.sql`, `src/lib/contact-counterparty-links.functions.ts`, `src/components/pickers/ContactPicker.tsx`, `src/components/pickers/CounterpartyPicker.tsx`
-- **edycja**: `src/components/organizations/AddCounterpartyDialog.tsx`, `src/components/organizations/CounterpartyDetailsDialog.tsx`, `src/components/contacts/ContactForm.tsx`, `src/locales/pl.ts`, `src/locales/en.ts`
+-- DELETE: właściciel kontaktu
+create policy "shares_delete" on public.contact_org_shares for delete to authenticated
+using (
+  exists (select 1 from contacts c
+          where c.id = contact_id and c.owner_user_id = auth.uid())
+);
+```
 
-## Pytania przed startem
-1. Czy powiązania mają być również dostępne w **scope organizacji** (kontakty firmowe ↔ kontrahenci tej organizacji), czy na razie **tylko user scope** (moje kontakty ↔ moi kontrahenci)? Etap 1 zakładam tylko user.
-2. Czy „Dodaj kontakt" w dialogu kontrahenta zawsze tworzy kontakt w **moim** module (scope=user), nawet jeśli kontrahent jest „zarejestrowany"? Zakładam: tak.
+Aktualizacja widoczności w `useContacts` (tryb `org`): rozszerzyć zapytanie o kontakty udostępnione poprzez `contact_org_shares` (dwa zapytania + merge po stronie hooka, by uniknąć przebudowy SQL).
+
+### 2. Nowy komponent — `src/components/pickers/MyOrgsShareSection.tsx`
+
+Lista checkboxów moich organizacji (z `organization_members` gdzie `user_id = ja`). Props:
+- `selectedOrgIds: string[]`
+- `onChange(ids: string[])`
+- `title` (override etykiety)
+- `helpText`
+- `defaultAllChecked?: boolean` (domyślnie `true` — przy pierwszym załadowaniu zaznacza wszystkie)
+
+Jeśli user nie ma żadnej organizacji — sekcja się nie renderuje (cicha degradacja).
+
+### 3. Server functions — `src/lib/org-sharing.functions.ts` (nowy)
+
+- `listMyOrganizationsForSharing()` — zwraca `{ id, name }[]` org gdzie jestem członkiem
+- `setCounterpartyOrgShares({ counterpartyOrgId, orgIds })` — synchronizuje `counterparty_links` (owner_kind='organization') do dokładnego zestawu `orgIds` (insert brakujących, delete nadmiarowych — tylko dla org, których user jest członkiem i które są przez niego utworzone/zarządzane)
+- `setContactOrgShares({ contactId, orgIds })` — to samo dla `contact_org_shares`
+- `getCounterpartyOrgShares({ counterpartyOrgId })` → `string[]` org ids
+- `getContactOrgShares({ contactId })` → `string[]` org ids
+
+### 4. UI — `AddCounterpartyDialog.tsx`
+
+W kroku 2, nad/pod sekcją „Powiązane kontakty", wstawić `<MyOrgsShareSection />`. Domyślnie wszystkie zaznaczone. Po `addMutation`/`createDraft` (gdy mamy już `counterpartyOrgId`) → wywołać `setCounterpartyOrgShares({ counterpartyOrgId, orgIds })`. To samo w `CounterpartyDetailsDialog.tsx` (z prefetchem aktualnego stanu przez `getCounterpartyOrgShares`).
+
+### 5. UI — `ContactForm.tsx`
+
+Sekcja `<MyOrgsShareSection />` widoczna tylko gdy `scope.kind === 'user'`. Po `upsert.mutateAsync` → `setContactOrgShares({ contactId: saved.id, orgIds })`. W trybie edycji prefetch obecnych shares.
+
+### 6. Drobne — i18n
+
+Nowe klucze `sharing.my_orgs_title`, `sharing.my_orgs_help`, `sharing.no_orgs` w `src/locales/{pl,en}.ts`.
+
+## Pliki
+
+**Nowe**
+- `supabase/migrations/0023_contact_org_shares.sql`
+- `src/components/pickers/MyOrgsShareSection.tsx`
+- `src/lib/org-sharing.functions.ts`
+
+**Edytowane**
+- `src/components/organizations/AddCounterpartyDialog.tsx`
+- `src/components/organizations/CounterpartyDetailsDialog.tsx`
+- `src/components/contacts/ContactForm.tsx`
+- `src/hooks/useContacts.ts` (rozszerzenie listy o udostępnione)
+- `src/locales/pl.ts`, `src/locales/en.ts`
+
+## Uwagi
+
+- Migracja 0023 wymaga ręcznego uruchomienia w panelu zewnętrznego Supabase.
+- Domyślnie zaznaczone = przy nowym wpisie inicjujemy `selectedOrgIds = wszystkie moje org`. Przy edycji = `selectedOrgIds = aktualny stan z DB`.
+- Odznaczenie wszystkich = wpis pozostaje wyłącznie prywatny (`owner_kind='user'`).
+- Sekcja jest ukryta jeśli user nie ma żadnej swojej organizacji (sam siebie z `counterparty_links` nie excludujemy — przefiltruje to RLS i `listMyOrganizationsForSharing`).
