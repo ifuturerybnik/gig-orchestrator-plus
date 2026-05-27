@@ -3,6 +3,20 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeOrgName } from "@/lib/normalizeOrgName";
+import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
+import { MUSIC_GENRES } from "@/lib/genres";
+import { normalizeNip } from "@/lib/nip";
+
+const OrgTypeEnum = z.enum(ORG_TYPES as unknown as [string, ...string[]]);
+const ArtistKindEnum = z.enum(ARTIST_KINDS as unknown as [string, ...string[]]);
+const GenreEnum = z.enum(MUSIC_GENRES as unknown as [string, ...string[]]);
+const optStr = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
 
 /**
  * Sprawdza dostępność nazwy organizacji w bazie zarejestrowanych
@@ -182,3 +196,86 @@ export const removeCounterpartyLink = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Tworzy nową organizację jako kontrahenta (status = 'pending', is_shared = true)
+ * i jednocześnie dodaje link do listy kontrahentów zalogowanego usera.
+ * Administrator aplikacji widzi wszystkie pola w panelu zatwierdzeń.
+ */
+export const createCounterpartyDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().trim().min(2).max(200),
+        types: z.array(OrgTypeEnum).min(1).max(ORG_TYPES.length),
+        description: optStr(2000),
+        artist_kind: ArtistKindEnum.optional().nullable(),
+        genres: z.array(GenreEnum).max(1).optional(),
+        tax_id: optStr(40),
+        address_country: optStr(120),
+        address_postal_code: optStr(20),
+        address_city: optStr(120),
+        address_street: optStr(200),
+        address_building_no: optStr(40),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const isArtist = data.types.includes("artist");
+    const hasCompanyType = data.types.some((t) => t !== "artist");
+
+    // Deduplikacja po znormalizowanej nazwie — jeśli już istnieje zarejestrowany
+    // kontrahent o tej samej nazwie, nie tworzymy duplikatu.
+    const normalized = normalizeOrgName(data.name);
+    const { data: dupe } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("is_shared", true)
+      .eq("status", "approved")
+      .eq("name_normalized", normalized)
+      .limit(1)
+      .maybeSingle();
+    if (dupe) {
+      throw new Error(
+        "Organizacja o takiej nazwie już istnieje w bazie. Dodaj ją z listy wyników.",
+      );
+    }
+
+    const { data: org, error: orgErr } = await supabase
+      .from("organizations")
+      .insert({
+        types: data.types,
+        name: data.name,
+        description: data.description,
+        artist_kind: isArtist ? data.artist_kind ?? null : null,
+        genres: isArtist ? data.genres ?? [] : [],
+        legal_name: hasCompanyType ? data.name : null,
+        tax_id: hasCompanyType && data.tax_id ? normalizeNip(data.tax_id) : null,
+        address_country: hasCompanyType ? data.address_country : null,
+        address_postal_code: hasCompanyType ? data.address_postal_code : null,
+        address_city: hasCompanyType ? data.address_city : null,
+        address_street: hasCompanyType ? data.address_street : null,
+        address_building_no: hasCompanyType ? data.address_building_no : null,
+        is_shared: true,
+        status: "pending",
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (orgErr) throw new Error(orgErr.message);
+
+    const { error: linkErr } = await supabase
+      .from("counterparty_links")
+      .insert({
+        owner_kind: "user",
+        owner_user_id: userId,
+        counterparty_org_id: org.id,
+        created_by: userId,
+      });
+    if (linkErr) throw new Error(linkErr.message);
+
+    return { organizationId: org.id };
+  });
+

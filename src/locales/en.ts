@@ -363,8 +363,15 @@ export default
         "badge_exact": "Identical name",
         "add_btn": "Add to my counterparties",
         "added": "Counterparty added to your list.",
-        "continue_new": "Continue — add new organization",
-        "continue_soon_tooltip": "Available in the next stage."
+        "continue_new": "Next — fill in details",
+        "continue_soon_tooltip": "",
+        "exact_blocks_new": "An organization with this name is already registered — add it from the list instead of creating a duplicate.",
+        "step2_title": "Counterparty details",
+        "step2_subtitle": "Fill in details for: \"{{name}}\". After submission they go to the app administrator for approval.",
+        "artist_name_hint": "The name \"{{name}}\" will be saved as the artist / band name.",
+        "company_name_hint": "The name \"{{name}}\" will be saved as the company name.",
+        "review_hint": "All filled fields will be visible to the app administrator during approval.",
+        "submitted_for_review": "Counterparty added. Submitted to the administrator for review."
       }
     },
     "status": {
