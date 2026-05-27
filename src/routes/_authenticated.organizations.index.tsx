@@ -518,6 +518,8 @@ function OrganizationsListPage() {
               </TableBody>
             </Table>
           </div>
+            )}
+          </>
         )}
       </main>
 
