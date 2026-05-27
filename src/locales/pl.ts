@@ -376,7 +376,7 @@ export default
         "title": "Dodaj kontrahenta",
         "subtitle": "Wpisz nazwę firmy. Sprawdzimy, czy nie ma jej już w bazie zarejestrowanych kontrahentów.",
         "name_label": "Nazwa firmy / organizacji",
-        "name_placeholder": "np. Zespół ŁZY sp. z o.o.",
+        "name_placeholder": "np. Akme Events sp. z o.o.",
         "name_help": "Porównanie ignoruje wielkość liter, polskie znaki, formy prawne (sp. z o.o., S.A. itp.) i nadmiarowe spacje.",
         "searching": "Szukam w bazie kontrahentów…",
         "found_exact": "Znaleziono kontrahenta o identycznej nazwie. Sprawdź dane i dodaj do swojej listy, zamiast tworzyć duplikat.",
