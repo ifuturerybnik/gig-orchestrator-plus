@@ -252,6 +252,15 @@ export function ContactForm({ scope, initial, onSaved, onCancel, hideLinksSectio
         )
       )}
 
+      {scope.kind === 'user' && (
+        <MyOrgsShareSection
+          selectedOrgIds={shareOrgIds}
+          onChange={setShareOrgIds}
+          initialSelected={initial?.id ? (sharesData?.orgIds ?? null) : null}
+          defaultAllChecked={!initial?.id}
+        />
+      )}
+
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
