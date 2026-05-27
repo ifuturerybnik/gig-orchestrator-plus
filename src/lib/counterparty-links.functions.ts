@@ -21,7 +21,7 @@ export const checkOrgNameAvailability = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const normalized = normalizeOrgName(data.name);
     if (normalized.length < 2) {
       return { normalized, exact: [], similar: [] };
@@ -38,7 +38,7 @@ export const checkOrgNameAvailability = createServerFn({ method: "POST" })
       .select("organization_id")
       .eq("user_id", userId);
     const excludeIds = new Set(
-      (myMemberships ?? []).map((m) => m.organization_id as string),
+      (myMemberships ?? []).map((m: { organization_id: string }) => m.organization_id),
     );
 
     // Exact (po znormalizowanej nazwie)
