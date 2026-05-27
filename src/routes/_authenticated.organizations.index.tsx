@@ -216,35 +216,44 @@ function OrganizationsListPage() {
               cp.organization ? (
                 <li
                   key={cp.link_id}
-                  className="flex items-center justify-between rounded-md border border-border bg-card p-4"
+                  className="flex items-center justify-between rounded-md border border-border bg-card transition-colors hover:bg-accent"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-foreground truncate">
-                      {cp.organization.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      <OrgTypesText
-                        types={cp.organization.types as string[] | null}
-                      />
-                      {cp.organization.tax_id ? ` · NIP: ${cp.organization.tax_id}` : ""}
-                      {cp.organization.address_city
-                        ? ` · ${cp.organization.address_city}`
-                        : ""}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm(t("organizations.counterparties.remove_confirm"))) {
-                        removeMutation.mutate(cp.link_id);
-                      }
-                    }}
-                    disabled={removeMutation.isPending}
-                    aria-label={t("organizations.counterparties.remove")}
+                  <button
+                    type="button"
+                    onClick={() => setCpDetailsLinkId(cp.link_id)}
+                    className="flex min-w-0 flex-1 items-center p-4 text-left"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">
+                        {cp.organization.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        <OrgTypesText
+                          types={cp.organization.types as string[] | null}
+                        />
+                        {cp.organization.tax_id ? ` · NIP: ${cp.organization.tax_id}` : ""}
+                        {cp.organization.address_city
+                          ? ` · ${cp.organization.address_city}`
+                          : ""}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="pr-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(t("organizations.counterparties.remove_confirm"))) {
+                          removeMutation.mutate(cp.link_id);
+                        }
+                      }}
+                      disabled={removeMutation.isPending}
+                      aria-label={t("organizations.counterparties.remove")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </li>
               ) : null,
             )}
