@@ -353,7 +353,7 @@ export default
         "title": "Add counterparty",
         "subtitle": "Enter a company name. We'll check if it already exists in the registered counterparties directory.",
         "name_label": "Company / organization name",
-        "name_placeholder": "e.g. ŁZY Band Ltd.",
+        "name_placeholder": "e.g. Acme Events Ltd.",
         "name_help": "Matching ignores case, Polish characters, legal forms (Ltd, GmbH, LLC etc.) and extra spaces.",
         "searching": "Searching the directory…",
         "found_exact": "Found a counterparty with the same name. Check the details and add to your list instead of creating a duplicate.",
