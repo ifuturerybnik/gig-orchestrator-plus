@@ -192,3 +192,17 @@ export const listLinkableCounterparties = createServerFn({ method: "POST" })
     if (oErr) throw new Error(oErr.message);
     return { items: orgs ?? [] };
   });
+
+/** Wszystkie powiązania kontakt↔kontrahent zalogowanego usera — do wskaźników w listach. */
+export const listMyContactCounterpartyLinks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data, error } = await supabase
+      .from(TBL)
+      .select("contact_id, counterparty_org_id")
+      .eq("owner_kind", "user")
+      .eq("owner_user_id", userId);
+    if (error) throw new Error(error.message);
+    return { items: data ?? [] };
+  });
