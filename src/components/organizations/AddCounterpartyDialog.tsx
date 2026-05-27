@@ -476,6 +476,11 @@ export function AddCounterpartyDialog({
               />
             </section>
 
+            <LinkedContactsSection
+              pending={pendingContacts}
+              onPendingChange={setPendingContacts}
+            />
+
             <p className="text-xs text-muted-foreground">
               {t("organizations.counterparties.dialog.review_hint")}
             </p>
