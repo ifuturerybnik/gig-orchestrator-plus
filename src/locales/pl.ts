@@ -364,6 +364,32 @@ export default
       "dedup_claim_sent": "Prośba o dołączenie wysłana do administratora.",
       "dedup_no_match": "Brak dopasowań w bazie."
     },
+    "counterparties": {
+      "section_title": "Organizacje (kontrahenci)",
+      "section_help": "Twoja prywatna lista kontrahentów. Wybieraj zarejestrowane organizacje z bazy współdzielonej, żeby nie tworzyć duplikatów.",
+      "add_btn": "Dodaj kontrahenta",
+      "empty": "Nie masz jeszcze żadnych kontrahentów. Dodaj pierwszego, wpisując nazwę firmy.",
+      "remove": "Usuń",
+      "remove_confirm": "Usunąć tego kontrahenta z Twojej listy?",
+      "removed": "Kontrahent usunięty z listy.",
+      "dialog": {
+        "title": "Dodaj kontrahenta",
+        "subtitle": "Wpisz nazwę firmy. Sprawdzimy, czy nie ma jej już w bazie zarejestrowanych kontrahentów.",
+        "name_label": "Nazwa firmy / organizacji",
+        "name_placeholder": "np. Zespół ŁZY sp. z o.o.",
+        "name_help": "Porównanie ignoruje wielkość liter, polskie znaki, formy prawne (sp. z o.o., S.A. itp.) i nadmiarowe spacje.",
+        "searching": "Szukam w bazie kontrahentów…",
+        "found_exact": "Znaleziono kontrahenta o identycznej nazwie. Sprawdź dane i dodaj do swojej listy, zamiast tworzyć duplikat.",
+        "found_similar": "Znaleziono podobnych kontrahentów. Sprawdź czy któryś nie jest tą samą firmą.",
+        "no_matches": "Nie znaleziono w bazie. W kolejnym kroku będziesz mógł dodać nowego kontrahenta.",
+        "not_matching_hint": "Żaden z powyższych nie pasuje? Pełny formularz dodania nowej organizacji pojawi się w kolejnym etapie.",
+        "badge_exact": "Identyczna nazwa",
+        "add_btn": "Dodaj do moich kontrahentów",
+        "added": "Dodano kontrahenta do Twojej listy.",
+        "continue_new": "Kontynuuj — dodaj nową organizację",
+        "continue_soon_tooltip": "Dostępne w kolejnym etapie."
+      }
+    },
     "status": {
       "label": "Status",
       "pending": "Oczekuje na zatwierdzenie",
