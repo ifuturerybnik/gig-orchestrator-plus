@@ -74,8 +74,8 @@ export function useContacts(params: ListContactsParams) {
       const uid = userData.user?.id;
       if (!uid) return [];
 
-      const applyCommon = (qb: ReturnType<typeof supabase.from>) => {
-        let q = qb.select('*');
+      const applyFilters = <T extends { eq: (...a: unknown[]) => T; ilike: (...a: unknown[]) => T; contains: (...a: unknown[]) => T; order: (...a: unknown[]) => T; limit: (n: number) => T }>(qb: T): T => {
+        let q = qb;
         if (kind) q = q.eq('kind', kind);
         if (category) q = q.eq('category', category);
         if (search && search.trim()) q = q.ilike('display_name', `%${search.trim()}%`);
@@ -84,17 +84,16 @@ export function useContacts(params: ListContactsParams) {
       };
 
       if (scope.kind === 'user') {
-        const { data, error } = await applyCommon(
-          supabase.from(TBL).eq('owner_user_id', uid).is('organization_id', null) as never,
-        );
+        const base = supabase.from(TBL).select('*').eq('owner_user_id', uid).is('organization_id', null);
+        const { data, error } = await applyFilters(base as never);
         if (error) throw new Error(error.message);
         return (data as unknown as Contact[]) || [];
       }
 
-      // org scope: kontakty należące do tej org + kontakty udostępnione (contact_org_shares)
       const orgId = scope.organizationId;
+      const ownedBase = supabase.from(TBL).select('*').eq('organization_id', orgId);
       const [ownedRes, sharesRes] = await Promise.all([
-        applyCommon(supabase.from(TBL).eq('organization_id', orgId) as never),
+        applyFilters(ownedBase as never) as Promise<{ data: unknown[] | null; error: { message: string } | null }>,
         supabase.from('contact_org_shares').select('contact_id').eq('organization_id', orgId),
       ]);
       if (ownedRes.error) throw new Error(ownedRes.error.message);
@@ -107,14 +106,12 @@ export function useContacts(params: ListContactsParams) {
 
       let shared: Contact[] = [];
       if (sharedIds.length > 0) {
-        const { data: sharedRows, error: shErr } = await applyCommon(
-          supabase.from(TBL).in('id', sharedIds) as never,
-        );
+        const sharedBase = supabase.from(TBL).select('*').in('id', sharedIds);
+        const { data: sharedRows, error: shErr } = await applyFilters(sharedBase as never);
         if (shErr) throw new Error(shErr.message);
         shared = (sharedRows as unknown as Contact[]) || [];
       }
 
-      // merge unique by id
       const map = new Map<string, Contact>();
       for (const c of [...owned, ...shared]) map.set(c.id, c);
       return Array.from(map.values()).sort((a, b) =>
