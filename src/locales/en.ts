@@ -259,7 +259,8 @@ export default
       "weak_password": "Password must be at least 8 characters",
       "invalid_credentials": "Invalid email or password",
       "select_at_least_one_kind": "Select at least one role",
-      "legal_required": "You must accept the Terms and Privacy Policy to continue."
+      "legal_required": "You must accept the Terms and Privacy Policy to continue.",
+      "email_already_registered": "This email is already registered. Try to log in or reset your password."
     }
   },
   "user_kinds": {
