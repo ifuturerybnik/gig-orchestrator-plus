@@ -35,6 +35,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
       profile: decryptedProfile,
       roles: roleList,
       isAdmin: roleList.includes("super_admin") || roleList.includes("admin_staff"),
+      isSuperAdmin: roleList.includes("super_admin"),
     };
   });
 
