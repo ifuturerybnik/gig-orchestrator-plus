@@ -44,6 +44,11 @@ import {
   addCounterpartyLink,
   createCounterpartyDraft,
 } from "@/lib/counterparty-links.functions";
+import { linkContactToCounterparty } from "@/lib/contact-counterparty-links.functions";
+import {
+  LinkedContactsSection,
+  type PendingContact,
+} from "@/components/pickers/LinkedContactsSection";
 
 interface Props {
   open: boolean;
@@ -93,6 +98,7 @@ export function AddCounterpartyDialog({
   const [city, setCity] = useState("");
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
+  const [pendingContacts, setPendingContacts] = useState<PendingContact[]>([]);
 
   useEffect(() => {
     if (!open) {
@@ -109,6 +115,7 @@ export function AddCounterpartyDialog({
       setCity("");
       setStreet("");
       setBuildingNo("");
+      setPendingContacts([]);
     }
   }, [open, initialCountry]);
 
@@ -127,10 +134,25 @@ export function AddCounterpartyDialog({
     staleTime: 30_000,
   });
 
+  const linkContactFn = useServerFn(linkContactToCounterparty);
+
+  const flushPendingContacts = async (orgId: string) => {
+    for (const c of pendingContacts) {
+      try {
+        await linkContactFn({ data: { contactId: c.id, counterpartyOrgId: orgId } });
+      } catch (e) {
+        toast.error(
+          `${c.display_name}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
       addFn({ data: { counterpartyOrgId } }),
-    onSuccess: () => {
+    onSuccess: async (_r, counterpartyOrgId) => {
+      await flushPendingContacts(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
@@ -173,7 +195,8 @@ export function AddCounterpartyDialog({
           address_building_no: showCompany ? buildingNo || undefined : undefined,
         },
       }),
-    onSuccess: () => {
+    onSuccess: async (r) => {
+      await flushPendingContacts(r.organizationId);
       toast.success(t("organizations.counterparties.dialog.submitted_for_review"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
@@ -452,6 +475,11 @@ export function AddCounterpartyDialog({
                 maxLength={2000}
               />
             </section>
+
+            <LinkedContactsSection
+              pending={pendingContacts}
+              onPendingChange={setPendingContacts}
+            />
 
             <p className="text-xs text-muted-foreground">
               {t("organizations.counterparties.dialog.review_hint")}

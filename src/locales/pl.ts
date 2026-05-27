@@ -832,6 +832,30 @@ export default
       "paramedic": "Ratownik",
       "driver": "Kierowca"
     },
+    "links": {
+      "cp_section_title": "Powiązane kontakty",
+      "cp_section_help": "Osoby z modułu Kontakty powiązane z tym kontrahentem.",
+      "cp_section_help_pending": "Te kontakty zostaną powiązane po utworzeniu kontrahenta.",
+      "contact_section_title": "Powiązani kontrahenci",
+      "contact_section_help": "Kontrahenci, do których przypisana jest ta osoba.",
+      "add_contact_btn": "Dodaj kontakt",
+      "link_contact_btn": "Powiąż z kontaktem",
+      "link_cp_btn": "Powiąż z kontrahentem",
+      "empty_contacts": "Brak powiązanych kontaktów.",
+      "empty_counterparties": "Brak powiązanych kontrahentów.",
+      "linked": "Powiązano.",
+      "unlinked": "Usunięto powiązanie.",
+      "already_linked": "Już powiązane.",
+      "unlink": "Usuń powiązanie",
+      "pending_badge": "Oczekuje",
+      "save_first_hint": "Zapisz kontakt, aby móc go powiązać z kontrahentem.",
+      "picker_title": "Wybierz kontakt",
+      "picker_search": "Szukaj po imieniu i nazwisku…",
+      "picker_empty": "Brak kontaktów do powiązania.",
+      "cp_picker_title": "Wybierz kontrahenta",
+      "cp_picker_search": "Szukaj po nazwie…",
+      "cp_picker_empty": "Brak kontrahentów do powiązania."
+    },
     "empty_orgs": "Nie należysz jeszcze do żadnej organizacji. Możesz dodawać kontakty prywatne lub utworzyć / dołączyć do organizacji."
   }
 } as const;
