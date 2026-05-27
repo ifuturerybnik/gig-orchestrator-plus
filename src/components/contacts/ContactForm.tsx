@@ -1,317 +1,221 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
-  type Contact, type ContactKind, type ContactCategory, type ContactArtistType,
-  type ContactScope, useUpsertContact,
+  type Contact, type ContactScope, useUpsertContact,
 } from '@/hooks/useContacts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PhoneInput } from '@/components/phone-input';
 import { CountrySelect } from '@/components/country-select';
-import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  CONTACT_CLASSIFICATIONS, PL_VOIVODESHIPS,
+  type ContactClassification,
+} from '@/lib/contactClassifications';
 
 interface Props {
   scope: ContactScope;
   initial?: Contact | null;
-  defaultKind?: ContactKind;
   onSaved: (c: Contact) => void;
   onCancel?: () => void;
 }
 
-const CATS: ContactCategory[] = ['client','supplier','artist','partner','venue','media','other'];
-const ARTIST_TYPES: ContactArtistType[] = ['solo','band','ensemble','dj'];
-
-function parseCsv(v: string): string[] {
-  return v.split(',').map(s => s.trim()).filter(Boolean);
+function readNotesText(notes: unknown): string {
+  if (!notes) return '';
+  if (typeof notes === 'string') return notes;
+  if (typeof notes === 'object' && notes !== null && 'text' in (notes as Record<string, unknown>)) {
+    const v = (notes as Record<string, unknown>).text;
+    return typeof v === 'string' ? v : '';
+  }
+  return '';
 }
 
-export function ContactForm({ scope, initial, defaultKind = 'person', onSaved, onCancel }: Props) {
+export function ContactForm({ scope, initial, onSaved, onCancel }: Props) {
   const { t } = useTranslation();
   const upsert = useUpsertContact();
 
-  const [kind, setKind] = useState<ContactKind>(initial?.kind ?? defaultKind);
-  const [category, setCategory] = useState<ContactCategory | ''>(initial?.category ?? '');
-  // person
   const [firstName, setFirstName] = useState(initial?.first_name ?? '');
   const [lastName, setLastName] = useState(initial?.last_name ?? '');
-  const [middleName, setMiddleName] = useState(initial?.middle_name ?? '');
-  const [position, setPosition] = useState(initial?.position ?? '');
-  const [birthDate, setBirthDate] = useState(initial?.birth_date ?? '');
-  // company / artist name (we use display_name on save when not person)
-  const [name, setName] = useState(initial?.kind !== 'person' ? (initial?.display_name ?? '') : '');
-  const [legalName, setLegalName] = useState(initial?.legal_name ?? '');
-  const [taxId, setTaxId] = useState(initial?.tax_id ?? '');
-  const [regNo, setRegNo] = useState(initial?.registration_no ?? '');
-  // artist
-  const [artistType, setArtistType] = useState<ContactArtistType | ''>(initial?.artist_type ?? '');
-  const [genres, setGenres] = useState((initial?.genres ?? []).join(', '));
-  const [riderUrl, setRiderUrl] = useState(initial?.rider_url ?? '');
-  const [techRiderUrl, setTechRiderUrl] = useState(initial?.tech_rider_url ?? '');
-  // contact info
   const [email, setEmail] = useState(initial?.email ?? '');
   const [phone, setPhone] = useState(initial?.phone ?? '');
-  const [website, setWebsite] = useState(initial?.website ?? '');
-  // address
-  const [addressLine1, setAddressLine1] = useState(initial?.address_line1 ?? '');
-  const [addressLine2, setAddressLine2] = useState(initial?.address_line2 ?? '');
+  const [countryCode, setCountryCode] = useState(initial?.country_code ?? '');
   const [city, setCity] = useState(initial?.city ?? '');
   const [postalCode, setPostalCode] = useState(initial?.postal_code ?? '');
+  const [street, setStreet] = useState(initial?.address_line1 ?? '');
+  const [buildingNo, setBuildingNo] = useState(initial?.address_line2 ?? '');
   const [region, setRegion] = useState(initial?.region ?? '');
-  const [countryCode, setCountryCode] = useState(initial?.country_code ?? '');
-  // meta
-  const [tagsStr, setTagsStr] = useState((initial?.tags ?? []).join(', '));
-  const [source, setSource] = useState(initial?.source ?? '');
-  const [preferredLanguage, setPreferredLanguage] = useState(initial?.preferred_language ?? '');
-  const [notesHtml, setNotesHtml] = useState<string>(() => {
-    const n = initial?.notes as { html?: string } | null | undefined;
-    return n?.html ?? '';
-  });
+  const [classifications, setClassifications] = useState<ContactClassification[]>(
+    (initial?.tags ?? []).filter((tag): tag is ContactClassification =>
+      (CONTACT_CLASSIFICATIONS as readonly string[]).includes(tag),
+    ),
+  );
+  const [notes, setNotes] = useState(readNotesText(initial?.notes));
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { if (initial) setKind(initial.kind); }, [initial]);
+  const toggleClassification = (c: ContactClassification) => {
+    setClassifications(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c],
+    );
+  };
 
-  const handleSave = async () => {
+  const errors = useMemo(() => {
+    const e: Record<string, string> = {};
+    if (!firstName.trim()) e.firstName = t('contacts.form.errors.required');
+    if (!lastName.trim()) e.lastName = t('contacts.form.errors.required');
+    if (!email.trim() && !phone.trim()) e.contact = t('contacts.form.errors.email_or_phone');
+    if (classifications.length === 0) e.classifications = t('contacts.form.errors.classification_required');
+    return e;
+  }, [firstName, lastName, email, phone, classifications, t]);
+
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0]);
+      return;
+    }
+    setSubmitting(true);
     try {
-      const base: Record<string, unknown> = {
-        kind,
-        category: category || null,
+      const saved = await upsert.mutateAsync({
+        scope,
+        id: initial?.id,
+        kind: 'person',
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         email: email.trim() || null,
-        phone: phone || null,
-        website: website.trim() || null,
+        phone: phone.trim() || null,
         country_code: countryCode || null,
-        address_line1: addressLine1.trim() || null,
-        address_line2: addressLine2.trim() || null,
         city: city.trim() || null,
         postal_code: postalCode.trim() || null,
-        region: region.trim() || null,
-        tags: parseCsv(tagsStr),
-        source: source.trim() || null,
-        preferred_language: preferredLanguage.trim() || null,
-        notes: notesHtml ? { html: notesHtml } : null,
-      };
-      if (kind === 'person') {
-        Object.assign(base, {
-          first_name: firstName.trim() || null,
-          last_name: lastName.trim() || null,
-          middle_name: middleName.trim() || null,
-          position: position.trim() || null,
-          birth_date: birthDate || null,
-          legal_name: null, tax_id: null, registration_no: null,
-          artist_type: null, genres: null, rider_url: null, tech_rider_url: null,
-        });
-      } else if (kind === 'company') {
-        Object.assign(base, {
-          display_name: name.trim(),
-          legal_name: legalName.trim() || null,
-          tax_id: taxId.trim() || null,
-          registration_no: regNo.trim() || null,
-          first_name: null, last_name: null, middle_name: null, position: null, birth_date: null,
-          artist_type: null, genres: null, rider_url: null, tech_rider_url: null,
-        });
-      } else {
-        Object.assign(base, {
-          display_name: name.trim(),
-          artist_type: artistType || null,
-          genres: parseCsv(genres),
-          rider_url: riderUrl.trim() || null,
-          tech_rider_url: techRiderUrl.trim() || null,
-          first_name: null, last_name: null, middle_name: null, position: null, birth_date: null,
-          legal_name: null, tax_id: null, registration_no: null,
-        });
-      }
-      const saved = await upsert.mutateAsync({
-        scope, kind, ...(initial?.id ? { id: initial.id } : {}), ...base,
-      } as never);
+        address_line1: street.trim() || null,
+        address_line2: buildingNo.trim() || null,
+        region: region || null,
+        tags: classifications,
+        notes: notes.trim() ? { text: notes.trim() } : null,
+      });
       toast.success(t('contacts.form.saved'));
       onSaved(saved);
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Typ kontaktu */}
-      {!initial && (
-        <section>
-          <h3 className="mb-2 text-sm font-semibold">{t('contacts.form.section_kind')}</h3>
-          <Tabs value={kind} onValueChange={v => setKind(v as ContactKind)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="person">{t('contacts.kinds.person')}</TabsTrigger>
-              <TabsTrigger value="company">{t('contacts.kinds.company')}</TabsTrigger>
-              <TabsTrigger value="artist">{t('contacts.kinds.artist')}</TabsTrigger>
-            </TabsList>
-            <TabsContent value={kind} />
-          </Tabs>
-        </section>
-      )}
-
-      {/* Sekcja zależna od typu */}
-      {kind === 'person' && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold">{t('contacts.form.section_person')}</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label={t('contacts.form.first_name')}>
-              <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
-            </Field>
-            <Field label={t('contacts.form.middle_name')}>
-              <Input value={middleName} onChange={e => setMiddleName(e.target.value)} />
-            </Field>
-            <Field label={t('contacts.form.last_name')}>
-              <Input value={lastName} onChange={e => setLastName(e.target.value)} />
-            </Field>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('contacts.form.position')}>
-              <Input value={position} onChange={e => setPosition(e.target.value)} />
-            </Field>
-            <Field label={t('contacts.form.birth_date')}>
-              <Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-            </Field>
-          </div>
-        </section>
-      )}
-
-      {kind === 'company' && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold">{t('contacts.form.section_company')}</h3>
-          <Field label={t('contacts.form.company_name')}>
-            <Input value={name} onChange={e => setName(e.target.value)} required />
-          </Field>
-          <Field label={t('contacts.form.legal_name')}>
-            <Input value={legalName} onChange={e => setLegalName(e.target.value)} />
-          </Field>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('contacts.form.tax_id')}>
-              <Input value={taxId} onChange={e => setTaxId(e.target.value)} />
-            </Field>
-            <Field label={t('contacts.form.registration_no')}>
-              <Input value={regNo} onChange={e => setRegNo(e.target.value)} />
-            </Field>
-          </div>
-        </section>
-      )}
-
-      {kind === 'artist' && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold">{t('contacts.form.section_artist')}</h3>
-          <Field label={t('contacts.form.artist_name')}>
-            <Input value={name} onChange={e => setName(e.target.value)} required />
-          </Field>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('contacts.artist_type.label')}>
-              <Select value={artistType} onValueChange={v => setArtistType(v as ContactArtistType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ARTIST_TYPES.map(a => (
-                    <SelectItem key={a} value={a}>{t(`contacts.artist_type.${a}`)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label={t('contacts.form.genres')}>
-              <Input value={genres} onChange={e => setGenres(e.target.value)} placeholder="rock, jazz" />
-            </Field>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('contacts.form.rider_url')}>
-              <Input value={riderUrl} onChange={e => setRiderUrl(e.target.value)} />
-            </Field>
-            <Field label={t('contacts.form.tech_rider_url')}>
-              <Input value={techRiderUrl} onChange={e => setTechRiderUrl(e.target.value)} />
-            </Field>
-          </div>
-        </section>
-      )}
-
-      {/* Kontakt */}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Imię + Nazwisko */}
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold">{t('contacts.form.section_contact')}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t('contacts.form.section_person')}</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={t('contacts.form.email')}>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
-          </Field>
-          <Field label={t('contacts.form.phone')}>
-            <PhoneInput value={phone} onChange={setPhone} />
-          </Field>
+          <div className="space-y-1.5">
+            <Label htmlFor="firstName">{t('contacts.form.first_name')} *</Label>
+            <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} required maxLength={100} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="lastName">{t('contacts.form.last_name')} *</Label>
+            <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} required maxLength={100} />
+          </div>
         </div>
-        <Field label={t('contacts.form.website')}>
-          <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://" />
-        </Field>
+      </section>
+
+      {/* Dane kontaktowe */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          {t('contacts.form.section_contact')} <span className="text-xs font-normal text-muted-foreground">— {t('contacts.form.email_or_phone_hint')}</span>
+        </h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">{t('contacts.form.email')}</Label>
+            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} maxLength={255} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">{t('contacts.form.phone')}</Label>
+            <PhoneInput value={phone} onChange={setPhone} />
+          </div>
+        </div>
+        {errors.contact && <p className="text-xs text-destructive">{errors.contact}</p>}
       </section>
 
       {/* Adres */}
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold">{t('contacts.form.section_address')}</h3>
-        <Field label={t('address.street')}>
-          <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} />
-        </Field>
-        <Field label="">
-          <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="cd. adresu" />
-        </Field>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label={t('address.postal_code')}>
-            <Input value={postalCode} onChange={e => setPostalCode(e.target.value)} />
-          </Field>
-          <Field label={t('address.city')}>
-            <Input value={city} onChange={e => setCity(e.target.value)} />
-          </Field>
-          <Field label="Województwo / Region">
-            <Input value={region} onChange={e => setRegion(e.target.value)} />
-          </Field>
-        </div>
-        <Field label={t('address.country')}>
-          <CountrySelect value={countryCode} onChange={setCountryCode} />
-        </Field>
-      </section>
-
-      {/* Meta */}
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold">{t('contacts.form.section_meta')}</h3>
+        <h3 className="text-sm font-semibold text-foreground">
+          {t('contacts.form.section_address')} <span className="text-xs font-normal text-muted-foreground">— {t('contacts.form.optional')}</span>
+        </h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={t('contacts.category.label')}>
-            <Select value={category} onValueChange={v => setCategory(v as ContactCategory)}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+          <div className="space-y-1.5">
+            <Label htmlFor="country">{t('contacts.form.country')}</Label>
+            <CountrySelect id="country" value={countryCode} onChange={setCountryCode} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="city">{t('contacts.form.city')}</Label>
+            <Input id="city" value={city} onChange={e => setCity(e.target.value)} maxLength={100} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="postal">{t('contacts.form.postal_code')}</Label>
+            <Input id="postal" value={postalCode} onChange={e => setPostalCode(e.target.value)} maxLength={20} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="region">{t('contacts.form.region')}</Label>
+            <Select value={region || 'none'} onValueChange={v => setRegion(v === 'none' ? '' : v)}>
+              <SelectTrigger id="region"><SelectValue placeholder={t('contacts.form.region_placeholder')} /></SelectTrigger>
               <SelectContent>
-                {CATS.map(c => (
-                  <SelectItem key={c} value={c}>{t(`contacts.category.${c}`)}</SelectItem>
+                <SelectItem value="none">{t('contacts.form.region_none')}</SelectItem>
+                {PL_VOIVODESHIPS.map(v => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </Field>
-          <Field label={t('contacts.form.source')}>
-            <Input value={source} onChange={e => setSource(e.target.value)} />
-          </Field>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="street">{t('contacts.form.street')}</Label>
+            <Input id="street" value={street} onChange={e => setStreet(e.target.value)} maxLength={200} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bno">{t('contacts.form.building_no')}</Label>
+            <Input id="bno" value={buildingNo} onChange={e => setBuildingNo(e.target.value)} maxLength={20} />
+          </div>
         </div>
-        <Field label={t('contacts.form.tags')}>
-          <Input value={tagsStr} onChange={e => setTagsStr(e.target.value)} placeholder="vip, lokalny" />
-        </Field>
-        <Field label={t('contacts.form.preferred_language')}>
-          <Input value={preferredLanguage} onChange={e => setPreferredLanguage(e.target.value)} placeholder="pl, en, de..." />
-        </Field>
-        <Field label={t('contacts.form.notes')}>
-          <WysiwygEditor value={notesHtml} onChange={setNotesHtml} minHeight="160px" hideHeadings />
-        </Field>
+      </section>
+
+      {/* Klasyfikacja */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          {t('contacts.form.section_meta')} <span className="text-xs font-normal text-destructive">*</span>
+        </h3>
+        <p className="text-xs text-muted-foreground">{t('contacts.form.classification_hint')}</p>
+        <div className="grid grid-cols-1 gap-2 rounded-md border border-border p-3 sm:grid-cols-2 lg:grid-cols-3">
+          {CONTACT_CLASSIFICATIONS.map(c => {
+            const checked = classifications.includes(c);
+            return (
+              <label key={c} className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent/40">
+                <Checkbox checked={checked} onCheckedChange={() => toggleClassification(c)} />
+                <span className="text-sm text-foreground">{t(`contacts.classification.${c}`)}</span>
+              </label>
+            );
+          })}
+        </div>
+        {errors.classifications && <p className="text-xs text-destructive">{errors.classifications}</p>}
+
+        <div className="space-y-1.5 pt-2">
+          <Label htmlFor="notes">{t('contacts.form.notes')}</Label>
+          <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} maxLength={2000} rows={4} />
+        </div>
       </section>
 
       <div className="flex justify-end gap-2 border-t border-border pt-4">
-        {onCancel && <Button variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>}
-        <Button onClick={handleSave} disabled={upsert.isPending}>
-          {upsert.isPending ? t('common.saving') : t('contacts.form.save')}
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
+            {t('common.cancel')}
+          </Button>
+        )}
+        <Button type="submit" disabled={submitting}>
+          {submitting ? t('common.saving', 'Zapisywanie...') : t('contacts.form.save')}
         </Button>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      {label && <Label className="text-xs">{label}</Label>}
-      {children}
-    </div>
+    </form>
   );
 }

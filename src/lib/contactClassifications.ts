@@ -1,0 +1,55 @@
+// Concertivo — klasyfikacje kontaktów (osoby) + polskie województwa
+export const CONTACT_CLASSIFICATIONS = [
+  'artist_musician',
+  'artist_cabaret',
+  'actor',
+  'manager',
+  'dancer',
+  'composer',
+  'conductor',
+  'lighting_engineer',
+  'sound_engineer',
+  'multimedia_operator',
+  'stage_technician',
+  'photographer',
+  'pyrotechnician',
+  'radio_journalist',
+  'music_journalist',
+  'organizer',
+  'music_producer',
+  'tv_producer',
+  'graphic_designer',
+  'visuals_creator',
+  'mayor_village',
+  'mayor_city',
+  'dm_director',
+  'um_ug_employee',
+  'accountant',
+  'lawyer',
+  'security',
+  'paramedic',
+  'driver',
+] as const;
+
+export type ContactClassification = (typeof CONTACT_CLASSIFICATIONS)[number];
+
+export const PL_VOIVODESHIPS = [
+  'dolnośląskie',
+  'kujawsko-pomorskie',
+  'lubelskie',
+  'lubuskie',
+  'łódzkie',
+  'małopolskie',
+  'mazowieckie',
+  'opolskie',
+  'podkarpackie',
+  'podlaskie',
+  'pomorskie',
+  'śląskie',
+  'świętokrzyskie',
+  'warmińsko-mazurskie',
+  'wielkopolskie',
+  'zachodniopomorskie',
+] as const;
+
+export type PlVoivodeship = (typeof PL_VOIVODESHIPS)[number];
