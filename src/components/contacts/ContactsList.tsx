@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, Mail, Phone, MapPin, User, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Mail, Phone, MapPin, User, Building2, X } from 'lucide-react';
 import {
   useContacts, useDeleteContact,
   type Contact, type ContactScope,
@@ -11,6 +11,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -19,8 +23,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ContactForm } from './ContactForm';
-import { CONTACT_CLASSIFICATIONS } from '@/lib/contactClassifications';
+import { CONTACT_CLASSIFICATIONS, PL_VOIVODESHIPS } from '@/lib/contactClassifications';
+import { sortedCountries } from '@/lib/countries';
 import { listMyContactCounterpartyLinks } from '@/lib/contact-counterparty-links.functions';
+
+const ALL = '__all__';
 
 interface Props { scope: ContactScope; }
 
