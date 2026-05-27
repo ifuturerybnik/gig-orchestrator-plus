@@ -3,6 +3,20 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeOrgName } from "@/lib/normalizeOrgName";
+import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
+import { MUSIC_GENRES } from "@/lib/genres";
+import { normalizeNip } from "@/lib/nip";
+
+const OrgTypeEnum = z.enum(ORG_TYPES as unknown as [string, ...string[]]);
+const ArtistKindEnum = z.enum(ARTIST_KINDS as unknown as [string, ...string[]]);
+const GenreEnum = z.enum(MUSIC_GENRES as unknown as [string, ...string[]]);
+const optStr = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null));
 
 /**
  * Sprawdza dostępność nazwy organizacji w bazie zarejestrowanych
