@@ -486,7 +486,7 @@ export function AddCounterpartyDialog({
                 onClick={() => createDraft.mutate()}
                 disabled={!canSubmitStep2 || createDraft.isPending}
               >
-                {t("organizations.form.submit")}
+                {t("organizations.counterparties.add_btn")}
               </Button>
             </>
           )}
