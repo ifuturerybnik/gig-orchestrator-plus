@@ -40,6 +40,7 @@ import {
   getCounterpartyDetails,
   updateMyCounterparty,
 } from "@/lib/counterparty-links.functions";
+import { LinkedContactsSection } from "@/components/pickers/LinkedContactsSection";
 
 interface Props {
   linkId: string | null;
