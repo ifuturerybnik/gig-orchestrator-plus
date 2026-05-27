@@ -47,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/organizations/")({
 });
 
 function OrganizationsListPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const fetchOrgs = useServerFn(listMyOrganizations);
   const fetchCounterparties = useServerFn(listMyCounterparties);
