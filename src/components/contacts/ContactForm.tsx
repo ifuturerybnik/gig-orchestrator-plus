@@ -26,6 +26,11 @@ import {
   listLinkedCounterpartiesForContact,
   unlinkContactCounterparty,
 } from '@/lib/contact-counterparty-links.functions';
+import {
+  getContactOrgShares,
+  setContactOrgShares,
+} from '@/lib/org-sharing.functions';
+import { MyOrgsShareSection } from '@/components/pickers/MyOrgsShareSection';
 
 interface Props {
   scope: ContactScope;
