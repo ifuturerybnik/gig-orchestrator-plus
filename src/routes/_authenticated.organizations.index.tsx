@@ -270,6 +270,11 @@ function OrganizationsListPage() {
         open={cpDialogOpen}
         onOpenChange={setCpDialogOpen}
       />
+      <CounterpartyDetailsDialog
+        linkId={cpDetailsLinkId}
+        onOpenChange={(open) => !open && setCpDetailsLinkId(null)}
+      />
+
     </div>
   );
 }
