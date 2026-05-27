@@ -1,14 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-async function assertAdmin(supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : import("@supabase/supabase-js").SupabaseClient, userId: string, requireSuper = false) {
+async function assertAdmin(
+  supabase: SupabaseClient,
+  userId: string,
+  requireSuper = false,
+) {
   const { data: roles } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);
-  const list = (roles ?? []).map((r) => r.role as string);
+  const list = ((roles ?? []) as Array<{ role: string }>).map((r) => r.role);
   if (requireSuper) {
     if (!list.includes("super_admin")) throw new Error("Forbidden");
   } else if (!list.some((r) => r === "super_admin" || r === "admin_staff")) {
