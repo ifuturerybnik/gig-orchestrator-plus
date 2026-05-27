@@ -86,6 +86,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const [city, setCity] = useState("");
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!data?.organization) return;
