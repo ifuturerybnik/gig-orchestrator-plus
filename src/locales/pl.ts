@@ -404,7 +404,9 @@ export default
         "step2_title": "Dane kontrahenta",
         "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". To Twój prywatny kontrahent — zapiszemy go na Twojej liście.",
         "artist_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa artysty / zespołu.",
+        "artist_name_label": "Nazwa artysty / zespołu",
         "company_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa firmy.",
+        "company_name_label": "Nazwa firmy",
         "review_hint": "To Twój prywatny kontrahent — dane widzisz tylko Ty (i osoby, którym później udostępnisz tę listę). Administrator aplikacji nie zatwierdza tego wpisu.",
         "submitted_for_review": "Dodano kontrahenta do Twojej listy."
       }
