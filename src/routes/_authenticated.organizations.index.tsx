@@ -29,6 +29,7 @@ import {
   listMyCounterparties,
   removeCounterpartyLink,
 } from "@/lib/counterparty-links.functions";
+import { listMyContactCounterpartyLinks } from "@/lib/contact-counterparty-links.functions";
 import { RegisterOrgDialog } from "@/components/organizations/RegisterOrgDialog";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
