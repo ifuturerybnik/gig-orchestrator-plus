@@ -198,6 +198,113 @@ export const removeCounterpartyLink = createServerFn({ method: "POST" })
   });
 
 /**
+ * Pobiera pełne dane kontrahenta z listy zalogowanego usera.
+ * canEdit = true tylko jeśli to prywatny wpis (is_shared=false) utworzony przez tego usera.
+ */
+export const getCounterpartyDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ linkId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: link, error: linkErr } = await supabase
+      .from("counterparty_links")
+      .select("id, counterparty_org_id, owner_kind, owner_user_id, note")
+      .eq("id", data.linkId)
+      .maybeSingle();
+    if (linkErr) throw new Error(linkErr.message);
+    if (!link || link.owner_kind !== "user" || link.owner_user_id !== userId) {
+      throw new Error("Not found");
+    }
+
+    const { data: org, error: orgErr } = await supabaseAdmin
+      .from("organizations")
+      .select(
+        "id, name, types, artist_kind, genres, description, tax_id, address_country, address_postal_code, address_city, address_street, address_building_no, is_shared, status, created_by",
+      )
+      .eq("id", link.counterparty_org_id)
+      .maybeSingle();
+    if (orgErr) throw new Error(orgErr.message);
+    if (!org) throw new Error("Not found");
+
+    const canEdit = !org.is_shared && org.created_by === userId;
+    return { link: { id: link.id, note: link.note }, organization: org, canEdit };
+  });
+
+/**
+ * Edycja prywatnego kontrahenta usera. Zarejestrowane (is_shared=true) są tylko do odczytu.
+ */
+export const updateMyCounterparty = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        linkId: z.string().uuid(),
+        name: z.string().trim().min(2).max(200),
+        types: z.array(OrgTypeEnum).min(1).max(ORG_TYPES.length),
+        description: optStr(2000),
+        artist_kind: ArtistKindEnum.optional().nullable(),
+        genres: z.array(GenreEnum).max(1).optional(),
+        tax_id: optStr(40),
+        address_country: optStr(120),
+        address_postal_code: optStr(20),
+        address_city: optStr(120),
+        address_street: optStr(200),
+        address_building_no: optStr(40),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: link } = await supabase
+      .from("counterparty_links")
+      .select("id, counterparty_org_id, owner_kind, owner_user_id")
+      .eq("id", data.linkId)
+      .maybeSingle();
+    if (!link || link.owner_kind !== "user" || link.owner_user_id !== userId) {
+      throw new Error("Not found");
+    }
+
+    const { data: org } = await supabaseAdmin
+      .from("organizations")
+      .select("id, is_shared, created_by")
+      .eq("id", link.counterparty_org_id)
+      .maybeSingle();
+    if (!org) throw new Error("Not found");
+    if (org.is_shared || org.created_by !== userId) {
+      throw new Error(
+        "Tego kontrahenta nie można edytować — jest zarejestrowany w bazie współdzielonej.",
+      );
+    }
+
+    const isArtist = data.types.includes("artist");
+    const hasCompanyType = data.types.some((t) => t !== "artist");
+
+    const { error } = await supabaseAdmin
+      .from("organizations")
+      .update({
+        name: data.name,
+        types: data.types,
+        description: data.description,
+        artist_kind: isArtist ? data.artist_kind ?? null : null,
+        genres: isArtist ? data.genres ?? [] : [],
+        legal_name: hasCompanyType ? data.name : null,
+        tax_id: hasCompanyType && data.tax_id ? normalizeNip(data.tax_id) : null,
+        address_country: hasCompanyType ? data.address_country : null,
+        address_postal_code: hasCompanyType ? data.address_postal_code : null,
+        address_city: hasCompanyType ? data.address_city : null,
+        address_street: hasCompanyType ? data.address_street : null,
+        address_building_no: hasCompanyType ? data.address_building_no : null,
+      })
+      .eq("id", org.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
  * Tworzy nową organizację jako kontrahenta (status = 'pending', is_shared = true)
  * i jednocześnie dodaje link do listy kontrahentów zalogowanego usera.
  * Administrator aplikacji widzi wszystkie pola w panelu zatwierdzeń.
