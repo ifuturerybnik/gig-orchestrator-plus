@@ -39,7 +39,7 @@ export default
     "organizations": "Organizations",
     "contacts": "Contacts",
     "profile": "Profile",
-    "admin": "Admin panel",
+    "admin": "Admin",
     "approvals": "Approvals",
     "logout": "Log out",
     "login": "Sign in",
