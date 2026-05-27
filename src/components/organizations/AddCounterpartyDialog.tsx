@@ -115,6 +115,7 @@ export function AddCounterpartyDialog({
       setCity("");
       setStreet("");
       setBuildingNo("");
+      setPendingContacts([]);
     }
   }, [open, initialCountry]);
 
