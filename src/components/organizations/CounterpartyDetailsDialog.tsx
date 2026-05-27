@@ -40,7 +40,12 @@ import {
   getCounterpartyDetails,
   updateMyCounterparty,
 } from "@/lib/counterparty-links.functions";
+import {
+  getCounterpartyOrgShares,
+  setCounterpartyOrgShares,
+} from "@/lib/org-sharing.functions";
 import { LinkedContactsSection } from "@/components/pickers/LinkedContactsSection";
+import { MyOrgsShareSection } from "@/components/pickers/MyOrgsShareSection";
 
 interface Props {
   linkId: string | null;
@@ -52,6 +57,8 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const queryClient = useQueryClient();
   const getFn = useServerFn(getCounterpartyDetails);
   const updateFn = useServerFn(updateMyCounterparty);
+  const getSharesFn = useServerFn(getCounterpartyOrgShares);
+  const setSharesFn = useServerFn(setCounterpartyOrgShares);
 
   const open = !!linkId;
 
@@ -59,6 +66,13 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
     queryKey: ["counterparty-details", linkId],
     queryFn: () => getFn({ data: { linkId: linkId! } }),
     enabled: open,
+  });
+
+  const orgIdForShares = data?.organization?.id ?? null;
+  const { data: sharesData } = useQuery({
+    queryKey: ["counterparty-org-shares", orgIdForShares],
+    queryFn: () => getSharesFn({ data: { counterpartyOrgId: orgIdForShares! } }),
+    enabled: !!orgIdForShares,
   });
 
   const [name, setName] = useState("");
@@ -72,6 +86,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const [city, setCity] = useState("");
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!data?.organization) return;
@@ -105,34 +120,46 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   };
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      updateFn({
-        data: {
-          linkId: linkId!,
-          name: name.trim(),
-          types,
-          description: description.trim() || undefined,
-          artist_kind: showArtist && artistKind ? (artistKind as ArtistKind) : null,
-          genres: showGenre && genre ? [genre as MusicGenre] : undefined,
-          tax_id: showCompany && nip ? normalizeNip(nip) : undefined,
-          address_country: showCompany ? country : undefined,
-          address_postal_code: showCompany ? postal || undefined : undefined,
-          address_city: showCompany ? city || undefined : undefined,
-          address_street: showCompany ? street || undefined : undefined,
-          address_building_no: showCompany ? buildingNo || undefined : undefined,
-        },
-      }),
+    mutationFn: async () => {
+      if (canEdit) {
+        await updateFn({
+          data: {
+            linkId: linkId!,
+            name: name.trim(),
+            types,
+            description: description.trim() || undefined,
+            artist_kind: showArtist && artistKind ? (artistKind as ArtistKind) : null,
+            genres: showGenre && genre ? [genre as MusicGenre] : undefined,
+            tax_id: showCompany && nip ? normalizeNip(nip) : undefined,
+            address_country: showCompany ? country : undefined,
+            address_postal_code: showCompany ? postal || undefined : undefined,
+            address_city: showCompany ? city || undefined : undefined,
+            address_street: showCompany ? street || undefined : undefined,
+            address_building_no: showCompany ? buildingNo || undefined : undefined,
+          },
+        });
+      }
+      if (orgIdForShares && shareOrgIds !== null) {
+        await setSharesFn({
+          data: { counterpartyOrgId: orgIdForShares, orgIds: shareOrgIds },
+        });
+      }
+    },
     onSuccess: () => {
       toast.success(t("organizations.counterparties.details.saved"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       queryClient.invalidateQueries({ queryKey: ["counterparty-details", linkId] });
+      queryClient.invalidateQueries({ queryKey: ["counterparty-org-shares", orgIdForShares] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
   });
 
   const canSubmit = (() => {
-    if (!canEdit) return false;
+    if (!canEdit) {
+      // tryb readOnly — pozwól zapisać jeśli zmieniono share
+      return shareOrgIds !== null;
+    }
     if (name.trim().length < 2) return false;
     if (types.length === 0) return false;
     if (showArtist && !artistKind) return false;
@@ -349,6 +376,15 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
             {data?.organization?.id && (
               <LinkedContactsSection counterpartyOrgId={data.organization.id} />
             )}
+
+            {orgIdForShares && (
+              <MyOrgsShareSection
+                selectedOrgIds={shareOrgIds}
+                onChange={setShareOrgIds}
+                initialSelected={sharesData?.orgIds ?? null}
+                defaultAllChecked={false}
+              />
+            )}
           </div>
         )}
 
@@ -356,14 +392,12 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? t("common.close") : t("common.cancel")}
           </Button>
-          {!readOnly && (
-            <Button
-              onClick={() => saveMutation.mutate()}
-              disabled={!canSubmit || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? t("common.saving") : t("common.save")}
-            </Button>
-          )}
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={!canSubmit || saveMutation.isPending}
+          >
+            {saveMutation.isPending ? t("common.saving") : t("common.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

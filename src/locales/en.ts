@@ -835,5 +835,9 @@ export default
       "cp_picker_empty": "No counterparties available."
     },
     "empty_orgs": "You don't belong to any organization yet. You can still create private contacts or join/create an organization."
+  },
+  "sharing": {
+    "my_orgs_title": "My organizations",
+    "my_orgs_help": "Check the organizations this entry should also be visible in. Uncheck to keep it strictly private."
   }
 } as const;
