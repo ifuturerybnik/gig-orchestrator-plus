@@ -211,12 +211,34 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
     if (orgErr) throw new Error(orgErr.message);
     if (!org) throw new Error("Not found");
 
+    // Autoryzacja: szczegóły org dostępne tylko dla członka / twórcy / admina aplikacji.
+    // (RLS na organizations dopuszcza is_shared+approved dla wyszukiwarki kontrahentów,
+    //  ale tu zwracamy pełne dane finansowe — wymagamy faktycznego dostępu.)
+    const { data: myMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const { data: rolesGate } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAppAdminGate = (rolesGate ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+    const isCreator = (org as { created_by?: string | null }).created_by === userId;
+    if (!myMembership && !isAppAdminGate && !isCreator) {
+      throw new Error("Forbidden");
+    }
+
     const { data: members, error: memErr } = await supabase
       .from("organization_members")
       .select("id, user_id, role, joined_at")
       .eq("organization_id", data.organizationId)
       .order("joined_at", { ascending: true });
     if (memErr) throw new Error(memErr.message);
+
 
     const userIds = (members ?? []).map((m) => m.user_id);
     const { data: profiles } = userIds.length
