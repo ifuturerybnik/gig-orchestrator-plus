@@ -70,14 +70,52 @@ export const createOrganization = createServerFn({ method: "POST" })
 export const listMyOrganizations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+
+    // Czy admin aplikacji? Admin widzi wszystko.
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roles ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+
+    if (isAdmin) {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, types, artist_kind, name, status, description, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return { organizations: data ?? [] };
+    }
+
+    // Zwykły user: tylko org, których jest członkiem LUB twórcą.
+    // (RLS pozwala też widzieć wszystkie is_shared+approved — to potrzebne
+    //  dla wyszukiwarki kontrahentów, ale na liście „Moje organizacje" musimy
+    //  filtrować jawnie.)
+    const { data: memberships, error: memErr } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId);
+    if (memErr) throw new Error(memErr.message);
+    const memberOrgIds = (memberships ?? []).map((m) => m.organization_id);
+
     const { data, error } = await supabase
       .from("organizations")
-      .select("id, types, artist_kind, name, status, description, created_at")
+      .select("id, types, artist_kind, name, status, description, created_at, created_by")
+      .or(
+        memberOrgIds.length > 0
+          ? `created_by.eq.${userId},id.in.(${memberOrgIds.join(",")})`
+          : `created_by.eq.${userId}`,
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { organizations: data ?? [] };
+    return {
+      organizations: (data ?? []).map(({ created_by: _cb, ...rest }) => rest),
+    };
   });
+
 
 export const listPendingOrganizations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -173,12 +211,34 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
     if (orgErr) throw new Error(orgErr.message);
     if (!org) throw new Error("Not found");
 
+    // Autoryzacja: szczegóły org dostępne tylko dla członka / twórcy / admina aplikacji.
+    // (RLS na organizations dopuszcza is_shared+approved dla wyszukiwarki kontrahentów,
+    //  ale tu zwracamy pełne dane finansowe — wymagamy faktycznego dostępu.)
+    const { data: myMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const { data: rolesGate } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAppAdminGate = (rolesGate ?? []).some(
+      (r) => r.role === "super_admin" || r.role === "admin_staff",
+    );
+    const isCreator = (org as { created_by?: string | null }).created_by === userId;
+    if (!myMembership && !isAppAdminGate && !isCreator) {
+      throw new Error("Forbidden");
+    }
+
     const { data: members, error: memErr } = await supabase
       .from("organization_members")
       .select("id, user_id, role, joined_at")
       .eq("organization_id", data.organizationId)
       .order("joined_at", { ascending: true });
     if (memErr) throw new Error(memErr.message);
+
 
     const userIds = (members ?? []).map((m) => m.user_id);
     const { data: profiles } = userIds.length
