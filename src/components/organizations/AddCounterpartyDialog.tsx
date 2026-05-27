@@ -101,6 +101,7 @@ export function AddCounterpartyDialog({
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
   const [pendingContacts, setPendingContacts] = useState<PendingContact[]>([]);
+  const [shareOrgIds, setShareOrgIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!open) {
