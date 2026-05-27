@@ -195,7 +195,8 @@ export function AddCounterpartyDialog({
           address_building_no: showCompany ? buildingNo || undefined : undefined,
         },
       }),
-    onSuccess: () => {
+    onSuccess: async (r) => {
+      await flushPendingContacts(r.organizationId);
       toast.success(t("organizations.counterparties.dialog.submitted_for_review"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
       onOpenChange(false);
