@@ -23,6 +23,7 @@ import {
 } from "@/lib/counterparty-links.functions";
 import { RegisterOrgDialog } from "@/components/organizations/RegisterOrgDialog";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
+import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 
 export const Route = createFileRoute("/_authenticated/organizations/")({
@@ -48,6 +49,7 @@ function OrganizationsListPage() {
 
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
+  const [cpDetailsLinkId, setCpDetailsLinkId] = useState<string | null>(null);
 
   const removeMutation = useMutation({
     mutationFn: (linkId: string) => removeFn({ data: { linkId } }),
