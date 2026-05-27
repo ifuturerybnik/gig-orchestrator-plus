@@ -156,7 +156,10 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   });
 
   const canSubmit = (() => {
-    if (!canEdit) return false;
+    if (!canEdit) {
+      // tryb readOnly — pozwól zapisać jeśli zmieniono share
+      return shareOrgIds !== null;
+    }
     if (name.trim().length < 2) return false;
     if (types.length === 0) return false;
     if (showArtist && !artistKind) return false;
