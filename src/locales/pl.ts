@@ -390,11 +390,11 @@ export default
         "continue_soon_tooltip": "",
         "exact_blocks_new": "Istnieje już zarejestrowana organizacja o tej nazwie — dodaj ją z listy zamiast tworzyć duplikat.",
         "step2_title": "Dane kontrahenta",
-        "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". Po wysłaniu trafią do administratora aplikacji do zatwierdzenia.",
+        "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". To Twój prywatny kontrahent — zapiszemy go na Twojej liście.",
         "artist_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa artysty / zespołu.",
         "company_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa firmy.",
-        "review_hint": "Wszystkie wypełnione pola będą widoczne dla administratora aplikacji podczas zatwierdzania.",
-        "submitted_for_review": "Kontrahent dodany. Wysłaliśmy zgłoszenie do administratora."
+        "review_hint": "To Twój prywatny kontrahent — dane widzisz tylko Ty (i osoby, którym później udostępnisz tę listę). Administrator aplikacji nie zatwierdza tego wpisu.",
+        "submitted_for_review": "Dodano kontrahenta do Twojej listy."
       }
     },
     "status": {

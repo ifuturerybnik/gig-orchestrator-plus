@@ -367,11 +367,11 @@ export default
         "continue_soon_tooltip": "",
         "exact_blocks_new": "An organization with this name is already registered — add it from the list instead of creating a duplicate.",
         "step2_title": "Counterparty details",
-        "step2_subtitle": "Fill in details for: \"{{name}}\". After submission they go to the app administrator for approval.",
+        "step2_subtitle": "Fill in details for: \"{{name}}\". This is a private counterparty saved to your list.",
         "artist_name_hint": "The name \"{{name}}\" will be saved as the artist / band name.",
         "company_name_hint": "The name \"{{name}}\" will be saved as the company name.",
-        "review_hint": "All filled fields will be visible to the app administrator during approval.",
-        "submitted_for_review": "Counterparty added. Submitted to the administrator for review."
+        "review_hint": "This is your private counterparty — only you (and people you later share this list with) can see it. The app administrator does not approve this entry.",
+        "submitted_for_review": "Counterparty added to your list."
       }
     },
     "status": {

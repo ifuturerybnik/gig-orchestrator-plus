@@ -226,10 +226,11 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
     const isArtist = data.types.includes("artist");
     const hasCompanyType = data.types.some((t) => t !== "artist");
 
-    // Deduplikacja po znormalizowanej nazwie — jeśli już istnieje zarejestrowany
-    // kontrahent o tej samej nazwie, nie tworzymy duplikatu.
+    // Deduplikacja: nie tworzymy duplikatu, jeśli ten user ma już kontrahenta
+    // o tej samej znormalizowanej nazwie LUB istnieje w bazie współdzielony,
+    // zatwierdzony kontrahent o tej nazwie (lepiej dodać go z listy).
     const normalized = normalizeOrgName(data.name);
-    const { data: dupe } = await supabaseAdmin
+    const { data: sharedDupe } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("is_shared", true)
@@ -237,13 +238,17 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
       .eq("name_normalized", normalized)
       .limit(1)
       .maybeSingle();
-    if (dupe) {
+    if (sharedDupe) {
       throw new Error(
-        "Organizacja o takiej nazwie już istnieje w bazie. Dodaj ją z listy wyników.",
+        "Organizacja o takiej nazwie już istnieje w bazie współdzielonej. Dodaj ją z listy wyników.",
       );
     }
 
-    const { data: org, error: orgErr } = await supabase
+    // Prywatny kontrahent usera: is_shared = false, status = 'approved'.
+    // Administrator aplikacji NIE musi tego zatwierdzać — to prywatna lista usera.
+    // Insert przez supabaseAdmin, bo RLS na `organizations` wymusza status = 'pending'
+    // dla insertów przez user-klienta.
+    const { data: org, error: orgErr } = await supabaseAdmin
       .from("organizations")
       .insert({
         types: data.types,
@@ -258,8 +263,8 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
         address_city: hasCompanyType ? data.address_city : null,
         address_street: hasCompanyType ? data.address_street : null,
         address_building_no: hasCompanyType ? data.address_building_no : null,
-        is_shared: true,
-        status: "pending",
+        is_shared: false,
+        status: "approved",
         created_by: userId,
       })
       .select("id")
