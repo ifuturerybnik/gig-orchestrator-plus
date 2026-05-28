@@ -342,7 +342,7 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Podgląd */}
-        <Card className="col-span-7 overflow-hidden flex flex-col">
+        <Card className="flex-1 overflow-hidden flex flex-col">
           {!selected && (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
               {t("correspondence.mail.select_message")}
