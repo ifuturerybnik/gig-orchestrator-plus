@@ -268,7 +268,7 @@ export function MailLayout({ orgId }: Props) {
         </Button>
       </div>
 
-      <div className="flex gap-3 h-[calc(100vh-220px)] min-h-[500px]">
+      <div className="flex gap-0 h-[calc(100vh-180px)] min-h-[500px] -mx-4">
         {/* Sidebar: skrzynki + foldery */}
         <Card className="w-48 shrink-0 p-2 overflow-y-auto">
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
