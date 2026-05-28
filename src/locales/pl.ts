@@ -139,7 +139,9 @@ export default
       "scan_help": "Zeskanuj poniższy kod QR w aplikacji uwierzytelniającej, a następnie wpisz wygenerowany 6-cyfrowy kod.",
       "secret_label": "Klucz (wpisz ręcznie jeśli nie możesz zeskanować)",
       "code_label": "6-cyfrowy kod z aplikacji",
-      "verify": "Zweryfikuj i włącz"
+      "verify": "Zweryfikuj i włącz",
+      "warning_aria": "Brak 2FA — zalecane włączenie",
+      "warning_tooltip": "Twoje konto pełni odpowiedzialną rolę (administrator aplikacji lub właściciel organizacji), a nie ma włączonej weryfikacji dwuetapowej. Brak 2FA znacznie zwiększa ryzyko przejęcia konta i dostępu osób trzecich do danych Twoich i Twojej organizacji. Włącz 2FA w sekcji „Profil → Bezpieczeństwo”."
     }
   },
 
@@ -285,6 +287,11 @@ export default
       "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę",
       "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności.",
       "email_already_registered": "Ten adres e-mail jest już zarejestrowany. Spróbuj się zalogować lub odzyskać hasło."
+    },
+    "oauth": {
+      "google": "Zaloguj się przez Google",
+      "apple": "Zaloguj się przez Apple",
+      "or": "lub kontynuuj z hasłem"
     }
   },
   "user_kinds": {
