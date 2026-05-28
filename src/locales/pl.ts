@@ -907,5 +907,17 @@ export default
   "sharing": {
     "my_orgs_title": "Moje organizacje",
     "my_orgs_help": "Zaznacz organizacje, w których ten wpis ma być też widoczny. Odznacz, jeśli ma pozostać wyłącznie prywatny. Pamiętaj, że dostęp do kontaktów i kontrahentów w Twojej organizacji pozwala na pełną automatyzację komunikacji z nimi z wykorzystaniem AI oraz automatyzację przy podpisywaniu umów koncertowych oraz powiadomień. Zalecane jest, aby Twoje kontakty i kontrahenci byli również kontaktami i kontrahentami Twoich organizacji."
+  },
+  "correspondence": {
+    "mail": {
+      "title": "Poczta",
+      "subtitle": "Skrzynki IMAP/SMTP organizacji — odbiór i wysyłka wiadomości.",
+      "coming_soon": "Moduł poczty pojawi się tutaj wkrótce."
+    },
+    "autokor": {
+      "title": "Autokorespondencja",
+      "subtitle": "Kampanie mailingowe do kontaktów i kontrahentów z harmonogramem i statystykami.",
+      "coming_soon": "Moduł autokorespondencji pojawi się tutaj wkrótce."
+    }
   }
 } as const;
