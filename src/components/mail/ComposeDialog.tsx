@@ -91,7 +91,7 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
 
   async function handleSend() {
     if (!to.trim()) {
-      toast.error(t("correspondence.mail.compose.recipient_required"));
+      toast.error(t("correspondence.mail.composer.recipient_required"));
       return;
     }
     setSending(true);
@@ -112,7 +112,7 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
           bodyHtml: fullBody,
         },
       });
-      toast.success(t("correspondence.mail.compose.sent"));
+      toast.success(t("correspondence.mail.composer.sent"));
       onOpenChange(false);
       qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
     } catch (e) {
@@ -127,12 +127,12 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {replyTo ? t("correspondence.mail.compose.reply_title") : t("correspondence.mail.compose.title")}
+            {replyTo ? t("correspondence.mail.composer.reply_title") : t("correspondence.mail.composer.title")}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 flex-1 overflow-y-auto">
           <div className="grid gap-2">
-            <Label>{t("correspondence.mail.compose.to")}</Label>
+            <Label>{t("correspondence.mail.composer.to")}</Label>
             <Input
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -140,15 +140,15 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
             />
           </div>
           <div className="grid gap-2">
-            <Label>{t("correspondence.mail.compose.subject")}</Label>
+            <Label>{t("correspondence.mail.composer.subject")}</Label>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
           {szablony.length > 0 && (
             <div className="grid gap-2">
-              <Label>{t("correspondence.mail.compose.template")}</Label>
+              <Label>{t("correspondence.mail.composer.template")}</Label>
               <Select onValueChange={applyTemplate}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t("correspondence.mail.compose.pick_template")} />
+                  <SelectValue placeholder={t("correspondence.mail.composer.pick_template")} />
                 </SelectTrigger>
                 <SelectContent>
                   {szablony.map((s) => (
@@ -162,7 +162,7 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
             </div>
           )}
           <div className="grid gap-2">
-            <Label>{t("correspondence.mail.compose.body")}</Label>
+            <Label>{t("correspondence.mail.composer.body")}</Label>
             <WysiwygEditor
               value={body}
               onChange={setBody}
@@ -181,7 +181,7 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSend} disabled={sending}>
-            {sending ? t("common.loading") : t("correspondence.mail.compose.send")}
+            {sending ? t("common.loading") : t("correspondence.mail.composer.send")}
           </Button>
         </DialogFooter>
       </DialogContent>
