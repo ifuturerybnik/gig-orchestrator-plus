@@ -146,7 +146,9 @@ function RegisterPage() {
             {t("auth.register.check_email")}
           </div>
         ) : step === 1 ? (
-          <form onSubmit={handleAccount} className="mt-6 space-y-4">
+          <div className="mt-6">
+            <OAuthButtons />
+            <form onSubmit={handleAccount} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.register.email")}</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
