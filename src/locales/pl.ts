@@ -287,6 +287,11 @@ export default
       "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę",
       "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności.",
       "email_already_registered": "Ten adres e-mail jest już zarejestrowany. Spróbuj się zalogować lub odzyskać hasło."
+    },
+    "oauth": {
+      "google": "Zaloguj się przez Google",
+      "apple": "Zaloguj się przez Apple",
+      "or": "lub kontynuuj z hasłem"
     }
   },
   "user_kinds": {
