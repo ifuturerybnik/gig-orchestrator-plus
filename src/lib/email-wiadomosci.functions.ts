@@ -6,6 +6,27 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callMailProxy } from "./mail-proxy.server";
 
+type ProxyBodyResponse = {
+  body_html?: unknown;
+  body_text?: unknown;
+  html?: unknown;
+  text?: unknown;
+  message?: { body_html?: unknown; body_text?: unknown; html?: unknown; text?: unknown };
+  wiadomosc?: { body_html?: unknown; body_text?: unknown; html?: unknown; text?: unknown };
+};
+
+function extractProxyBody(result: unknown): { body_html: string | null; body_text: string | null } {
+  if (!result || typeof result !== "object") return { body_html: null, body_text: null };
+  const data = result as ProxyBodyResponse;
+  const nested = data.message ?? data.wiadomosc;
+  const bodyHtml = data.body_html ?? data.html ?? nested?.body_html ?? nested?.html;
+  const bodyText = data.body_text ?? data.text ?? nested?.body_text ?? nested?.text;
+  return {
+    body_html: typeof bodyHtml === "string" && bodyHtml.length > 0 ? bodyHtml : null,
+    body_text: typeof bodyText === "string" && bodyText.length > 0 ? bodyText : null,
+  };
+}
+
 async function loadWiadomoscWithAccess(wiadomoscId: string, userId: string) {
   const { data: w, error } = await supabaseAdmin
     .from("email_wiadomosci")
@@ -43,7 +64,26 @@ export const fetchWiadomoscBody = createServerFn({ method: "POST" })
     if (w.body_html || w.body_text) {
       return { ok: true, cached: true, body_html: w.body_html, body_text: w.body_text };
     }
-    await callMailProxy("body", { wiadomosc_id: w.id });
+
+    const proxyPayload = {
+      wiadomosc_id: w.id,
+      id: w.id,
+      skrzynka_id: w.skrzynka_id,
+      folder: w.folder,
+      uid: w.uid,
+      message_id: w.message_id,
+    };
+
+    const proxyResult = await callMailProxy("body", proxyPayload);
+    const proxyBody = extractProxyBody(proxyResult);
+    if (proxyBody.body_html || proxyBody.body_text) {
+      await supabaseAdmin
+        .from("email_wiadomosci")
+        .update({ body_html: proxyBody.body_html, body_text: proxyBody.body_text })
+        .eq("id", w.id);
+      return { ok: true, cached: false, ...proxyBody };
+    }
+
     const { data: refreshed, error } = await supabaseAdmin
       .from("email_wiadomosci")
       .select("body_html, body_text")
