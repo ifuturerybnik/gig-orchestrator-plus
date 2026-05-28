@@ -11,9 +11,21 @@ function getBase(): string {
 }
 
 function getToken(): string {
-  const token = process.env.MAIL_PROXY_TOKEN?.trim();
+  const token = (process.env.MAIL_PROXY_TOKEN ?? "")
+    .trim()
+    .replace(/^\s*(?:MAIL_PROXY_TOKEN|PROXY_TOKEN)\s*=\s*/i, "")
+    .replace(/^['"]|['"]$/g, "")
+    .trim();
   if (!token) throw new Error("Missing MAIL_PROXY_TOKEN");
   return token;
+}
+
+function proxyAuthHeaders(): Record<string, string> {
+  const token = getToken();
+  return {
+    "X-Proxy-Token": token,
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 export async function callMailProxy<T = unknown>(
@@ -24,7 +36,7 @@ export async function callMailProxy<T = unknown>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Proxy-Token": getToken(),
+      ...proxyAuthHeaders(),
     },
     body: JSON.stringify(body),
   });
@@ -59,7 +71,7 @@ export async function callMailProxy<T = unknown>(
 
 export async function mailProxyHealth(): Promise<{ status: string; time: string }> {
   const res = await fetch(`${getBase()}/health`, {
-    headers: { "X-Proxy-Token": getToken() },
+    headers: proxyAuthHeaders(),
   });
   if (!res.ok) throw new Error(`Mail proxy health failed (${res.status})`);
   return res.json() as Promise<{ status: string; time: string }>;
