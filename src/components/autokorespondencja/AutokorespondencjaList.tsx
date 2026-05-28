@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Plus, Play, Pause, Trash2, Pencil, X } from "lucide-react";
+import { Plus, Play, Pause, Trash2, Pencil, X, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   deleteKampania,
 } from "@/lib/autokorespondencje.functions";
 import { AutokorespondencjaWizardDialog } from "./AutokorespondencjaWizardDialog";
+import { SuppressionListsDialog } from "./SuppressionListsDialog";
 
 interface Props {
   orgId: string;
@@ -44,6 +45,7 @@ export function AutokorespondencjaList({ orgId }: Props) {
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [listsOpen, setListsOpen] = useState(false);
 
   async function changeStatus(id: string, status: Kampania["status"]) {
     try {
@@ -76,6 +78,10 @@ export function AutokorespondencjaList({ orgId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-semibold flex-1">{t("correspondence.autokor.title")}</h1>
+        <Button variant="outline" onClick={() => setListsOpen(true)}>
+          <ShieldOff className="h-4 w-4 mr-1" />
+          {t("correspondence.lists.button")}
+        </Button>
         <Button onClick={() => { setEditId(null); setWizardOpen(true); }}>
           <Plus className="h-4 w-4 mr-1" />
           {t("correspondence.autokor.new")}
