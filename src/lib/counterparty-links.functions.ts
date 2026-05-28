@@ -142,7 +142,7 @@ export const addCounterpartyLink = createServerFn({ method: "POST" })
 
     const { data: row, error } = await supabase
       .from("counterparty_links")
-      .insert(insertRow)
+      .insert(insertRow as never)
       .select("id")
       .single();
     if (error) {
