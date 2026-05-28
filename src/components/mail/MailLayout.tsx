@@ -268,9 +268,9 @@ export function MailLayout({ orgId }: Props) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-12 gap-3 h-[calc(100vh-220px)] min-h-[500px]">
+      <div className="flex gap-3 h-[calc(100vh-220px)] min-h-[500px]">
         {/* Sidebar: skrzynki + foldery */}
-        <Card className="col-span-2 p-2 overflow-y-auto">
+        <Card className="w-48 shrink-0 p-2 overflow-y-auto">
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
             {t("correspondence.mail.mailboxes")}
           </div>
