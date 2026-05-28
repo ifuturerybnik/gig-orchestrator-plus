@@ -36,6 +36,18 @@ export async function callMailProxy<T = unknown>(
     parsed = { raw: text };
   }
   if (!res.ok) {
+    console.error("Mail proxy request failed", {
+      endpoint,
+      status: res.status,
+      body: parsed,
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        "Mail proxy odrzucił autoryzację. Sprawdź sekret MAIL_PROXY_TOKEN oraz konfigurację proxy na VPS.",
+      );
+    }
+
     const msg =
       parsed && typeof parsed === "object" && "error" in parsed
         ? String((parsed as { error: unknown }).error)
