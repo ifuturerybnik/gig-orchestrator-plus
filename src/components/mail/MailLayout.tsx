@@ -96,7 +96,7 @@ export function MailLayout({ orgId }: Props) {
   const [composeReply, setComposeReply] = useState<Wiadomosc | null>(null);
   const [view, setView] = useState<"mail" | "szablony">("mail");
   const [bodyLoadingId, setBodyLoadingId] = useState<string | null>(null);
-  const [bodyErrorId, setBodyErrorId] = useState<string | null>(null);
+  const [bodyError, setBodyError] = useState<{ id: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!skrzynkaId && skrzynki.length > 0) {
@@ -154,13 +154,13 @@ export function MailLayout({ orgId }: Props) {
     if (!selected) return;
     if (selected.body_html || selected.body_text) {
       setBodyLoadingId(null);
-      setBodyErrorId(null);
+      setBodyError(null);
       return;
     }
 
     let cancelled = false;
     setBodyLoadingId(selected.id);
-    setBodyErrorId(null);
+    setBodyError(null);
     fetchBodyFn({ data: { wiadomoscId: selected.id } })
       .then(async (result) => {
         if (cancelled) return;
@@ -173,12 +173,17 @@ export function MailLayout({ orgId }: Props) {
             ),
           );
         } else {
-          setBodyErrorId(selected.id);
+          setBodyError({ id: selected.id, message: t("common.error") });
         }
         await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId, folder] });
       })
-      .catch(() => {
-        if (!cancelled) setBodyErrorId(selected.id);
+      .catch((error) => {
+        if (!cancelled) {
+          setBodyError({
+            id: selected.id,
+            message: error instanceof Error ? error.message : t("common.error"),
+          });
+        }
       })
       .finally(() => {
         if (!cancelled) setBodyLoadingId((current) => (current === selected.id ? null : current));
@@ -393,9 +398,9 @@ export function MailLayout({ orgId }: Props) {
                   />
                 ) : selected.body_text ? (
                   <pre className="whitespace-pre-wrap p-4 text-sm">{selected.body_text}</pre>
-                ) : bodyErrorId === selected.id ? (
+                ) : bodyError?.id === selected.id ? (
                   <div className="p-4 text-sm text-destructive">
-                    {t("common.error")}
+                    {bodyError.message}
                   </div>
                 ) : (
                   <div className="p-4 text-sm text-muted-foreground">
