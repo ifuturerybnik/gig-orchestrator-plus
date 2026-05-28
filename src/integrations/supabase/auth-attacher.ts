@@ -9,7 +9,7 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       return next();
     }
 
-    let { data } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
     let session = data.session;
 
     const expiresAtMs = session?.expires_at ? session.expires_at * 1000 : 0;
@@ -25,5 +25,5 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       return next({ headers: { Authorization: `Bearer ${token}` } });
     }
     return next();
-  }
+  },
 );
