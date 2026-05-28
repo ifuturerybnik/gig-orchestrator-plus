@@ -95,6 +95,8 @@ export function MailLayout({ orgId }: Props) {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeReply, setComposeReply] = useState<Wiadomosc | null>(null);
   const [view, setView] = useState<"mail" | "szablony">("mail");
+  const [bodyLoadingId, setBodyLoadingId] = useState<string | null>(null);
+  const [bodyErrorId, setBodyErrorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!skrzynkaId && skrzynki.length > 0) {
@@ -150,9 +152,31 @@ export function MailLayout({ orgId }: Props) {
   // Auto pobranie body przy zaznaczeniu
   useEffect(() => {
     if (!selected) return;
-    if (selected.body_html || selected.body_text) return;
-    fetchBodyFn({ data: { wiadomoscId: selected.id } }).catch(() => {});
-  }, [selected, fetchBodyFn]);
+    if (selected.body_html || selected.body_text) {
+      if (bodyLoadingId === selected.id) setBodyLoadingId(null);
+      if (bodyErrorId === selected.id) setBodyErrorId(null);
+      return;
+    }
+
+    let cancelled = false;
+    setBodyLoadingId(selected.id);
+    setBodyErrorId(null);
+    fetchBodyFn({ data: { wiadomoscId: selected.id } })
+      .then(async () => {
+        if (cancelled) return;
+        await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId, folder] });
+      })
+      .catch(() => {
+        if (!cancelled) setBodyErrorId(selected.id);
+      })
+      .finally(() => {
+        if (!cancelled) setBodyLoadingId((current) => (current === selected.id ? null : current));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, fetchBodyFn, qc, skrzynkaId, folder, bodyLoadingId, bodyErrorId]);
 
   async function handleSync() {
     if (!skrzynkaId) return;
@@ -358,6 +382,10 @@ export function MailLayout({ orgId }: Props) {
                   />
                 ) : selected.body_text ? (
                   <pre className="whitespace-pre-wrap p-4 text-sm">{selected.body_text}</pre>
+                ) : bodyErrorId === selected.id ? (
+                  <div className="p-4 text-sm text-destructive">
+                    {t("common.error")}
+                  </div>
                 ) : (
                   <div className="p-4 text-sm text-muted-foreground">
                     {t("correspondence.mail.loading_body")}
