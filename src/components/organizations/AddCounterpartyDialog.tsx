@@ -166,14 +166,22 @@ export function AddCounterpartyDialog({
     }
   };
 
+  const invalidateLists = () => {
+    if (ownerOrgId) {
+      queryClient.invalidateQueries({ queryKey: ["org-counterparties", ownerOrgId] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
-      addFn({ data: { counterpartyOrgId } }),
+      addFn({ data: { counterpartyOrgId, ownerOrgId } }),
     onSuccess: async (_r, counterpartyOrgId) => {
       await flushPendingContacts(counterpartyOrgId);
-      await flushOrgShares(counterpartyOrgId);
+      if (!ownerOrgId) await flushOrgShares(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
-      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+      invalidateLists();
       onOpenChange(false);
     },
     onError: (err: unknown) => {
