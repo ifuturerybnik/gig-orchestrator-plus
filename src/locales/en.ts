@@ -523,6 +523,9 @@ export default
       "events": "Concerts",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
+      "correspondence": "Correspondence",
+      "mail": "Mail",
+      "autokorespondencja": "Auto-correspondence",
       "back_to_list": "← All organizations",
       "pending_expenses": "Pending expenses: {{count}}"
     },
