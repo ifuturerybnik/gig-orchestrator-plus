@@ -262,6 +262,17 @@ export default
       "select_at_least_one_kind": "Select at least one role",
       "legal_required": "You must accept the Terms and Privacy Policy to continue.",
       "email_already_registered": "This email is already registered. Try to log in or reset your password."
+    },
+    "oauth": {
+      "google": "Sign in with Google",
+      "apple": "Sign in with Apple",
+      "or": "or continue with password"
+    }
+  },
+  "security": {
+    "mfa": {
+      "warning_aria": "2FA not enabled — recommended",
+      "warning_tooltip": "Your account has a responsible role (app administrator or organization owner) and two-factor authentication is not enabled. Without 2FA the risk of account takeover and unauthorized access to your and your organization's data is significantly higher. Enable 2FA under „Profile → Security”."
     }
   },
   "user_kinds": {
