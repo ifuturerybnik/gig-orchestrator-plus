@@ -32,10 +32,12 @@ import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
+import { Route as AuthenticatedOrganizationsOrgIdMailRouteImport } from './routes/_authenticated.organizations.$orgId.mail'
 import { Route as AuthenticatedOrganizationsOrgIdEventsRouteImport } from './routes/_authenticated.organizations.$orgId.events'
 import { Route as AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport } from './routes/_authenticated.organizations.$orgId.counterparties'
 import { Route as AuthenticatedOrganizationsOrgIdContactsRouteImport } from './routes/_authenticated.organizations.$orgId.contacts'
 import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './routes/_authenticated.organizations.$orgId.budget'
+import { Route as AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport } from './routes/_authenticated.organizations.$orgId.autokorespondencja'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -161,6 +163,12 @@ const AuthenticatedOrganizationsOrgIdMembersRoute =
     path: '/members',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdMailRoute =
+  AuthenticatedOrganizationsOrgIdMailRouteImport.update({
+    id: '/mail',
+    path: '/mail',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdEventsRoute =
   AuthenticatedOrganizationsOrgIdEventsRouteImport.update({
     id: '/events',
@@ -183,6 +191,12 @@ const AuthenticatedOrganizationsOrgIdBudgetRoute =
   AuthenticatedOrganizationsOrgIdBudgetRouteImport.update({
     id: '/budget',
     path: '/budget',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
+const AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute =
+  AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport.update({
+    id: '/autokorespondencja',
+    path: '/autokorespondencja',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
 const AuthenticatedContactsOrgOrgIdRoute =
@@ -213,10 +227,12 @@ export interface FileRoutesByFullPath {
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
@@ -239,10 +255,12 @@ export interface FileRoutesByTo {
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
@@ -270,10 +288,12 @@ export interface FileRoutesById {
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/_authenticated/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/_authenticated/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/_authenticated/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/_authenticated/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/_authenticated/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  '/_authenticated/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
@@ -301,10 +321,12 @@ export interface FileRouteTypes {
     | '/contacts/'
     | '/organizations/'
     | '/contacts/org/$orgId'
+    | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
     | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/events'
+    | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/'
@@ -327,10 +349,12 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/organizations'
     | '/contacts/org/$orgId'
+    | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
     | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/events'
+    | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId'
@@ -357,10 +381,12 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
     | '/_authenticated/contacts/org/$orgId'
+    | '/_authenticated/organizations/$orgId/autokorespondencja'
     | '/_authenticated/organizations/$orgId/budget'
     | '/_authenticated/organizations/$orgId/contacts'
     | '/_authenticated/organizations/$orgId/counterparties'
     | '/_authenticated/organizations/$orgId/events'
+    | '/_authenticated/organizations/$orgId/mail'
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/'
@@ -539,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdMembersRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/mail': {
+      id: '/_authenticated/organizations/$orgId/mail'
+      path: '/mail'
+      fullPath: '/organizations/$orgId/mail'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdMailRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/events': {
       id: '/_authenticated/organizations/$orgId/events'
       path: '/events'
@@ -565,6 +598,13 @@ declare module '@tanstack/react-router' {
       path: '/budget'
       fullPath: '/organizations/$orgId/budget'
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdBudgetRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/_authenticated/organizations/$orgId/autokorespondencja': {
+      id: '/_authenticated/organizations/$orgId/autokorespondencja'
+      path: '/autokorespondencja'
+      fullPath: '/organizations/$orgId/autokorespondencja'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
     '/_authenticated/contacts/org/$orgId': {
@@ -612,10 +652,12 @@ const AuthenticatedContactsRouteWithChildren =
   )
 
 interface AuthenticatedOrganizationsOrgIdRouteChildren {
+  AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   AuthenticatedOrganizationsOrgIdBudgetRoute: typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   AuthenticatedOrganizationsOrgIdContactsRoute: typeof AuthenticatedOrganizationsOrgIdContactsRoute
   AuthenticatedOrganizationsOrgIdCounterpartiesRoute: typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   AuthenticatedOrganizationsOrgIdEventsRoute: typeof AuthenticatedOrganizationsOrgIdEventsRoute
+  AuthenticatedOrganizationsOrgIdMailRoute: typeof AuthenticatedOrganizationsOrgIdMailRoute
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
   AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
   AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
@@ -623,6 +665,8 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
 
 const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOrgIdRouteChildren =
   {
+    AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute:
+      AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute,
     AuthenticatedOrganizationsOrgIdBudgetRoute:
       AuthenticatedOrganizationsOrgIdBudgetRoute,
     AuthenticatedOrganizationsOrgIdContactsRoute:
@@ -631,6 +675,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
       AuthenticatedOrganizationsOrgIdCounterpartiesRoute,
     AuthenticatedOrganizationsOrgIdEventsRoute:
       AuthenticatedOrganizationsOrgIdEventsRoute,
+    AuthenticatedOrganizationsOrgIdMailRoute:
+      AuthenticatedOrganizationsOrgIdMailRoute,
     AuthenticatedOrganizationsOrgIdMembersRoute:
       AuthenticatedOrganizationsOrgIdMembersRoute,
     AuthenticatedOrganizationsOrgIdProfileRoute:
