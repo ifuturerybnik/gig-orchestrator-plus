@@ -50,9 +50,10 @@ import { MyOrgsShareSection } from "@/components/pickers/MyOrgsShareSection";
 interface Props {
   linkId: string | null;
   onOpenChange: (open: boolean) => void;
+  ownerOrgId?: string;
 }
 
-export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
+export function CounterpartyDetailsDialog({ linkId, onOpenChange, ownerOrgId }: Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const getFn = useServerFn(getCounterpartyDetails);
@@ -63,8 +64,8 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const open = !!linkId;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["counterparty-details", linkId],
-    queryFn: () => getFn({ data: { linkId: linkId! } }),
+    queryKey: ["counterparty-details", linkId, ownerOrgId ?? null],
+    queryFn: () => getFn({ data: { linkId: linkId!, ownerOrgId } }),
     enabled: open,
   });
 
@@ -72,7 +73,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
   const { data: sharesData } = useQuery({
     queryKey: ["counterparty-org-shares", orgIdForShares],
     queryFn: () => getSharesFn({ data: { counterpartyOrgId: orgIdForShares! } }),
-    enabled: !!orgIdForShares,
+    enabled: !!orgIdForShares && !ownerOrgId,
   });
 
   const [name, setName] = useState("");
@@ -125,6 +126,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
         await updateFn({
           data: {
             linkId: linkId!,
+            ownerOrgId,
             name: name.trim(),
             types,
             description: description.trim() || undefined,
@@ -139,7 +141,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
           },
         });
       }
-      if (orgIdForShares && shareOrgIds !== null) {
+      if (!ownerOrgId && orgIdForShares && shareOrgIds !== null) {
         await setSharesFn({
           data: { counterpartyOrgId: orgIdForShares, orgIds: shareOrgIds },
         });
@@ -148,6 +150,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
     onSuccess: () => {
       toast.success(t("organizations.counterparties.details.saved"));
       queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+      queryClient.invalidateQueries({ queryKey: ["org-counterparties"] });
       queryClient.invalidateQueries({ queryKey: ["counterparty-details", linkId] });
       queryClient.invalidateQueries({ queryKey: ["counterparty-org-shares", orgIdForShares] });
       onOpenChange(false);
@@ -157,8 +160,8 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
 
   const canSubmit = (() => {
     if (!canEdit) {
-      // tryb readOnly — pozwól zapisać jeśli zmieniono share
-      return shareOrgIds !== null;
+      // tryb readOnly — pozwól zapisać jeśli zmieniono share (tylko user-scope)
+      return !ownerOrgId && shareOrgIds !== null;
     }
     if (name.trim().length < 2) return false;
     if (types.length === 0) return false;
@@ -377,7 +380,7 @@ export function CounterpartyDetailsDialog({ linkId, onOpenChange }: Props) {
               <LinkedContactsSection counterpartyOrgId={data.organization.id} />
             )}
 
-            {orgIdForShares && (
+            {orgIdForShares && !ownerOrgId && (
               <MyOrgsShareSection
                 selectedOrgIds={shareOrgIds}
                 onChange={setShareOrgIds}
