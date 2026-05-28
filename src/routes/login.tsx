@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trustDevice, isDeviceTrusted } from "@/lib/mfa-trust";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
