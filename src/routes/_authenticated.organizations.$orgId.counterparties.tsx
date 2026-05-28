@@ -15,6 +15,7 @@ import {
   removeCounterpartyLink,
 } from "@/lib/counterparty-links.functions";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
+import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 
 export const Route = createFileRoute("/_authenticated/organizations/$orgId/counterparties")({
@@ -28,6 +29,7 @@ function OrgCounterpartiesTab() {
   const listFn = useServerFn(listOrgCounterparties);
   const removeFn = useServerFn(removeCounterpartyLink);
   const [addOpen, setAddOpen] = useState(false);
+  const [detailsLinkId, setDetailsLinkId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["org-counterparties", orgId],
@@ -79,7 +81,11 @@ function OrgCounterpartiesTab() {
                 const o = cp.organization;
                 if (!o) return null;
                 return (
-                  <TableRow key={cp.link_id}>
+                  <TableRow
+                    key={cp.link_id}
+                    className="cursor-pointer"
+                    onClick={() => setDetailsLinkId(cp.link_id)}
+                  >
                     <TableCell className="font-medium">{o.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       <OrgTypesText types={o.types as string[] | null} />
@@ -98,7 +104,8 @@ function OrgCounterpartiesTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (window.confirm(t("organizations.counterparties.remove_confirm"))) {
                             removeMutation.mutate(cp.link_id);
                           }
@@ -120,6 +127,11 @@ function OrgCounterpartiesTab() {
       <AddCounterpartyDialog
         open={addOpen}
         onOpenChange={setAddOpen}
+        ownerOrgId={orgId}
+      />
+      <CounterpartyDetailsDialog
+        linkId={detailsLinkId}
+        onOpenChange={(open) => !open && setDetailsLinkId(null)}
         ownerOrgId={orgId}
       />
     </div>
