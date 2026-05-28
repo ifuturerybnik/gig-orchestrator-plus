@@ -249,25 +249,39 @@ export const removeCounterpartyLink = createServerFn({ method: "POST" })
   });
 
 /**
- * Pobiera pełne dane kontrahenta z listy zalogowanego usera.
+ * Pobiera pełne dane kontrahenta z listy zalogowanego usera lub organizacji,
+ * której user jest członkiem.
  * canEdit = true tylko jeśli to prywatny wpis (is_shared=false) utworzony przez tego usera.
  */
 export const getCounterpartyDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ linkId: z.string().uuid() }).parse(input),
+    z
+      .object({
+        linkId: z.string().uuid(),
+        ownerOrgId: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
     const { data: link, error: linkErr } = await supabase
       .from("counterparty_links")
-      .select("id, counterparty_org_id, owner_kind, owner_user_id, note")
+      .select("id, counterparty_org_id, owner_kind, owner_user_id, owner_org_id, note")
       .eq("id", data.linkId)
       .maybeSingle();
     if (linkErr) throw new Error(linkErr.message);
-    if (!link || link.owner_kind !== "user" || link.owner_user_id !== userId) {
-      throw new Error("Not found");
+    if (!link) throw new Error("Not found");
+
+    if (data.ownerOrgId) {
+      if (link.owner_kind !== "organization" || link.owner_org_id !== data.ownerOrgId) {
+        throw new Error("Not found");
+      }
+    } else {
+      if (link.owner_kind !== "user" || link.owner_user_id !== userId) {
+        throw new Error("Not found");
+      }
     }
 
     const { data: org, error: orgErr } = await supabaseAdmin
@@ -285,7 +299,7 @@ export const getCounterpartyDetails = createServerFn({ method: "POST" })
   });
 
 /**
- * Edycja prywatnego kontrahenta usera. Zarejestrowane (is_shared=true) są tylko do odczytu.
+ * Edycja prywatnego kontrahenta. Zarejestrowane (is_shared=true) są tylko do odczytu.
  */
 export const updateMyCounterparty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -293,6 +307,7 @@ export const updateMyCounterparty = createServerFn({ method: "POST" })
     z
       .object({
         linkId: z.string().uuid(),
+        ownerOrgId: z.string().uuid().optional(),
         name: z.string().trim().min(2).max(200),
         types: z.array(OrgTypeEnum).min(1).max(ORG_TYPES.length),
         description: optStr(2000),
@@ -312,11 +327,18 @@ export const updateMyCounterparty = createServerFn({ method: "POST" })
 
     const { data: link } = await supabase
       .from("counterparty_links")
-      .select("id, counterparty_org_id, owner_kind, owner_user_id")
+      .select("id, counterparty_org_id, owner_kind, owner_user_id, owner_org_id")
       .eq("id", data.linkId)
       .maybeSingle();
-    if (!link || link.owner_kind !== "user" || link.owner_user_id !== userId) {
-      throw new Error("Not found");
+    if (!link) throw new Error("Not found");
+    if (data.ownerOrgId) {
+      if (link.owner_kind !== "organization" || link.owner_org_id !== data.ownerOrgId) {
+        throw new Error("Not found");
+      }
+    } else {
+      if (link.owner_kind !== "user" || link.owner_user_id !== userId) {
+        throw new Error("Not found");
+      }
     }
 
     const { data: org } = await supabaseAdmin
@@ -353,6 +375,56 @@ export const updateMyCounterparty = createServerFn({ method: "POST" })
       .eq("id", org.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Lista kontrahentów wskazanej organizacji (user musi być członkiem).
+ */
+export const listOrgCounterparties = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Walidacja członkostwa (RLS i tak ograniczy, ale daje jasny błąd)
+    const { data: mem } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (!mem) throw new Error("Brak dostępu do tej organizacji.");
+
+    const { data: links, error } = await supabase
+      .from("counterparty_links")
+      .select("id, created_at, counterparty_org_id")
+      .eq("owner_kind", "organization")
+      .eq("owner_org_id", data.organizationId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const ids = (links ?? []).map((l) => l.counterparty_org_id);
+    if (ids.length === 0) return { counterparties: [] };
+
+    const { data: orgs, error: orgsErr } = await supabaseAdmin
+      .from("organizations")
+      .select(
+        "id, name, legal_name, tax_id, types, artist_kind, address_postal_code, address_city, address_street, address_building_no, address_country, is_shared",
+      )
+      .in("id", ids);
+    if (orgsErr) throw new Error(orgsErr.message);
+    const orgMap = new Map((orgs ?? []).map((o) => [o.id, o] as const));
+
+    return {
+      counterparties: (links ?? []).map((l) => ({
+        link_id: l.id,
+        created_at: l.created_at,
+        organization: orgMap.get(l.counterparty_org_id) ?? null,
+        shared_to_orgs: [] as { id: string; name: string }[],
+      })),
+    };
   });
 
 /**
