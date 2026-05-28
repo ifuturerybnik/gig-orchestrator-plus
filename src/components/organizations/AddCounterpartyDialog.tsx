@@ -56,6 +56,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCountry?: string;
+  /** Gdy podane — kontrahent dodawany jest do tej organizacji (owner_kind='organization'). */
+  ownerOrgId?: string;
 }
 
 type MatchOrg = {
@@ -74,6 +76,7 @@ export function AddCounterpartyDialog({
   open,
   onOpenChange,
   defaultCountry,
+  ownerOrgId,
 }: Props) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
