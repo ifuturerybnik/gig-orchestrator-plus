@@ -89,5 +89,11 @@ export const previewKampaniaRecipients = createServerFn({ method: "POST" })
     await ensureMember(context.userId, k.organization_id as string);
     const { generateRecipientsForKampania } = await import("./autokor-engine.server");
     const list = await generateRecipientsForKampania(data.id);
-    return { total: list.length, sample: list.slice(0, 50) };
+    const sample = list.slice(0, 50).map((r) => ({
+      email: r.email,
+      name: r.name,
+      kind: r.kind,
+      id: r.id,
+    }));
+    return { total: list.length, sample };
   });

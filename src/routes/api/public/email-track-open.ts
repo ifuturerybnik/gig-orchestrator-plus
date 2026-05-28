@@ -22,8 +22,6 @@ export const Route = createFileRoute("/api/public/email-track-open")({
               kampania_wiadomosc_id: m,
               user_agent: ua,
             });
-            await supabaseAdmin.rpc("noop").catch(() => {});
-            // increment otwarcia counter via update
             const { data: row } = await supabaseAdmin
               .from("autokorespondencje_wiadomosci")
               .select("otwarcia")

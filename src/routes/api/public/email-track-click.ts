@@ -21,11 +21,6 @@ export const Route = createFileRoute("/api/public/email-track-click")({
         }
         try {
           if (k && m) {
-            const ua = request.headers.get("user-agent")?.slice(0, 500) ?? null;
-            await supabaseAdmin.from("email_linki_klikniecia").insert({
-              link_id: m, // używamy m jako wiadomosc_id (uproszczone)
-              user_agent: ua,
-            } as never).catch(() => {});
             const { data: row } = await supabaseAdmin
               .from("autokorespondencje_wiadomosci")
               .select("klikniecia")

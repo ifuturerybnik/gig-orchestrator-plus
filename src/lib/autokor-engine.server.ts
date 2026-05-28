@@ -244,12 +244,21 @@ export async function dispatchPendingForKampania(
   let sent = 0;
   let failed = 0;
 
+  // pobierz nazwę org raz
+  const { data: orgRow } = await supabaseAdmin
+    .from("organizations")
+    .select("name, contact_email")
+    .eq("id", k.organization_id as string)
+    .maybeSingle();
+  const orgNazwa = (orgRow?.name as string | null) ?? null;
+  const orgEmail = (orgRow?.contact_email as string | null) ?? null;
+
   for (const w of pending ?? []) {
     try {
       const ctx = {
-        kontakt: { email: w.recipient_email, imie: w.recipient_name ?? "" },
+        kontakt: { email: String(w.recipient_email), imie: w.recipient_name ?? "" },
         kontrahent: { nazwa: w.recipient_name ?? "" },
-        organizacja: { id: k.organization_id },
+        organizacja: { nazwa: orgNazwa, email: orgEmail },
         data: { dzisiaj: new Date().toLocaleDateString("pl-PL") },
       };
       const subjectRendered = renderTemplate(String(k.temat ?? ""), ctx);
