@@ -2,7 +2,24 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LayoutDashboard, Users, Building2, CalendarDays, Wallet, Contact, Briefcase } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  CalendarDays,
+  Wallet,
+  Contact,
+  Briefcase,
+  Inbox,
+  Mail,
+  Bot,
+  ChevronDown,
+} from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -13,15 +30,29 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { listBudgetEntries } from "@/lib/organizations.functions";
 
-type Item = {
+type LeafItem = {
+  kind: "leaf";
   to: string;
   labelKey: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
 };
+
+type GroupItem = {
+  kind: "group";
+  id: string;
+  labelKey: string;
+  icon: typeof LayoutDashboard;
+  children: LeafItem[];
+};
+
+type Item = LeafItem | GroupItem;
 
 export function OrgSidebar({
   orgId,
@@ -50,37 +81,64 @@ export function OrgSidebar({
   const base = `/organizations/${orgId}`;
   const items: Item[] = [
     {
+      kind: "leaf",
       to: base,
       labelKey: "organizations.sidebar.overview",
       icon: LayoutDashboard,
       exact: true,
     },
     {
+      kind: "leaf",
       to: `${base}/events`,
       labelKey: "organizations.sidebar.events",
       icon: CalendarDays,
     },
     {
+      kind: "leaf",
       to: `${base}/budget`,
       labelKey: "organizations.sidebar.budget",
       icon: Wallet,
     },
     {
+      kind: "leaf",
       to: `${base}/profile`,
       labelKey: "organizations.sidebar.profile",
       icon: Building2,
     },
     {
+      kind: "leaf",
       to: `${base}/contacts`,
       labelKey: "organizations.sidebar.contacts",
       icon: Contact,
     },
     {
+      kind: "leaf",
       to: `${base}/counterparties`,
       labelKey: "organizations.sidebar.counterparties",
       icon: Briefcase,
     },
     {
+      kind: "group",
+      id: "correspondence",
+      labelKey: "organizations.sidebar.correspondence",
+      icon: Inbox,
+      children: [
+        {
+          kind: "leaf",
+          to: `${base}/mail`,
+          labelKey: "organizations.sidebar.mail",
+          icon: Mail,
+        },
+        {
+          kind: "leaf",
+          to: `${base}/autokorespondencja`,
+          labelKey: "organizations.sidebar.autokorespondencja",
+          icon: Bot,
+        },
+      ],
+    },
+    {
+      kind: "leaf",
       to: `${base}/members`,
       labelKey: "organizations.sidebar.members",
       icon: Users,
@@ -116,6 +174,59 @@ export function OrgSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
+                if (item.kind === "group") {
+                  const GroupIcon = item.icon;
+                  const groupActive = item.children.some((c) => isActive(c.to));
+                  return (
+                    <Collapsible
+                      key={item.id}
+                      defaultOpen={groupActive}
+                      className="group/collapsible"
+                      asChild
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton
+                            tooltip={t(item.labelKey)}
+                            isActive={groupActive}
+                            className="w-full"
+                          >
+                            <GroupIcon className="h-4 w-4" />
+                            <span className="flex-1 text-left">
+                              {t(item.labelKey)}
+                            </span>
+                            <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.children.map((child) => {
+                              const ChildIcon = child.icon;
+                              const childActive = isActive(child.to);
+                              return (
+                                <SidebarMenuSubItem key={child.to}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={childActive}
+                                  >
+                                    <Link
+                                      to={child.to}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <ChildIcon className="h-4 w-4" />
+                                      <span>{t(child.labelKey)}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
+
                 const Icon = item.icon;
                 const active = isActive(item.to, item.exact);
                 return (

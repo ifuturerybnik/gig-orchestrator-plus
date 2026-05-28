@@ -523,6 +523,9 @@ export default
       "events": "Concerts",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
+      "correspondence": "Correspondence",
+      "mail": "Mail",
+      "autokorespondencja": "Auto-correspondence",
       "back_to_list": "← All organizations",
       "pending_expenses": "Pending expenses: {{count}}"
     },
@@ -884,5 +887,17 @@ export default
   "sharing": {
     "my_orgs_title": "My organizations",
     "my_orgs_help": "Check the organizations this entry should also be visible in. Uncheck to keep it strictly private. Remember: granting your organizations access to your contacts and counterparties enables full AI-powered communication automation as well as automation for concert contracts and notifications. It is recommended that your contacts and counterparties are also contacts and counterparties of your organizations."
+  },
+  "correspondence": {
+    "mail": {
+      "title": "Mail",
+      "subtitle": "Organization IMAP/SMTP mailboxes — receive and send messages.",
+      "coming_soon": "The mail module will appear here soon."
+    },
+    "autokor": {
+      "title": "Auto-correspondence",
+      "subtitle": "Email campaigns to contacts and counterparties with scheduling and stats.",
+      "coming_soon": "The auto-correspondence module will appear here soon."
+    }
   }
 } as const;
