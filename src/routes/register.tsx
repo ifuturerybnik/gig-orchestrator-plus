@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PhoneInput } from "@/components/phone-input";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { recordSignupConsents } from "@/lib/consents.functions";
 import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal";
 
@@ -146,7 +147,9 @@ function RegisterPage() {
             {t("auth.register.check_email")}
           </div>
         ) : step === 1 ? (
-          <form onSubmit={handleAccount} className="mt-6 space-y-4">
+          <div className="mt-6">
+            <OAuthButtons />
+            <form onSubmit={handleAccount} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.register.email")}</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -213,6 +216,7 @@ function RegisterPage() {
               {t("common.next")}
             </Button>
           </form>
+          </div>
         ) : step === 2 ? (
           <form onSubmit={handleProfile} className="mt-6 space-y-4">
             <div className="space-y-2">

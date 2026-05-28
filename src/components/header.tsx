@@ -6,6 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getMyProfile } from "@/lib/profile.functions";
 import logoUrl from "@/assets/logo.png";
 
@@ -20,6 +26,20 @@ export function Header() {
     enabled: !!user,
   });
   const isAdmin = profileQuery.data?.isAdmin === true;
+  const mfaRecommended = profileQuery.data?.mfaRecommended === true;
+
+  const mfaQuery = useQuery({
+    queryKey: ["my-mfa-factors", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && mfaRecommended,
+    staleTime: 60_000,
+  });
+  const hasMfa = !!mfaQuery.data?.totp?.some((f) => f.status === "verified");
+  const showMfaWarning = mfaRecommended && !mfaQuery.isLoading && !hasMfa;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -44,9 +64,33 @@ export function Header() {
               <Link to="/contacts" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.contacts")}
               </Link>
-              <Link to="/profile" className="text-sm text-muted-foreground hover:text-foreground">
-                {t("nav.profile")}
-              </Link>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/profile"
+                      className="relative inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {t("nav.profile")}
+                      {showMfaWarning && (
+                        <span
+                          aria-label={t("security.mfa.warning_aria")}
+                          className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
+                        >
+                          !
+                        </span>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  {showMfaWarning && (
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      <p className="text-xs leading-snug">
+                        {t("security.mfa.warning_tooltip")}
+                      </p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               {isAdmin && (
                 <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
                   {t("nav.admin")}
