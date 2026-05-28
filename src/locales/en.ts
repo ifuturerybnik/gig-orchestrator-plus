@@ -987,6 +987,13 @@ export default
           "pn": "Mo", "wt": "Tu", "sr": "We", "cz": "Th", "pt": "Fr", "sb": "Sa", "nd": "Su"
         }
       }
+    },
+    "lists": {
+      "button": "Suppression lists",
+      "title": "Unsubscribes and bounces",
+      "rezygnacje": "Unsubscribes",
+      "odbicia": "Bounces",
+      "empty": "No entries."
     }
   }
 } as const;
