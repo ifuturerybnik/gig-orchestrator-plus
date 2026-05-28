@@ -518,6 +518,8 @@ export default
       "overview": "Overview",
       "profile": "Profile",
       "members": "Members",
+      "contacts": "Contacts",
+      "counterparties": "Counterparties",
       "events": "Concerts",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
