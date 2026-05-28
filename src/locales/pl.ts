@@ -411,7 +411,8 @@ export default
         "address": "Adres",
         "source": "Źródło",
         "source_shared": "Zarejestrowany",
-        "source_private": "Prywatny"
+        "source_private": "Prywatny",
+        "shared_to_org": "Udostępniony do organizacji: {{name}}"
       },
       "details": {
         "view_title": "Dane kontrahenta",

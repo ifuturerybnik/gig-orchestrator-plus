@@ -475,11 +475,23 @@ function OrganizationsListPage() {
                         {addr || "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={o.is_shared ? "default" : "secondary"}>
-                          {o.is_shared
-                            ? t("organizations.counterparties.table.source_shared")
-                            : t("organizations.counterparties.table.source_private")}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge variant={o.is_shared ? "default" : "secondary"}>
+                            {o.is_shared
+                              ? t("organizations.counterparties.table.source_shared")
+                              : t("organizations.counterparties.table.source_private")}
+                          </Badge>
+                          {(cp.shared_to_orgs ?? []).map((so) => (
+                            <Badge
+                              key={so.id}
+                              variant="outline"
+                              className="text-[10px]"
+                              title={t("organizations.counterparties.table.shared_to_org", { name: so.name })}
+                            >
+                              {so.name}
+                            </Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
