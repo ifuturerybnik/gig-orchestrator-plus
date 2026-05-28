@@ -162,8 +162,17 @@ export function MailLayout({ orgId }: Props) {
     setBodyLoadingId(selected.id);
     setBodyErrorId(null);
     fetchBodyFn({ data: { wiadomoscId: selected.id } })
-      .then(async () => {
+      .then(async (result) => {
         if (cancelled) return;
+        if (result.body_html || result.body_text) {
+          qc.setQueryData<Wiadomosc[]>(["email_wiadomosci", skrzynkaId, folder], (current) =>
+            (current ?? []).map((w) =>
+              w.id === selected.id
+                ? { ...w, body_html: result.body_html, body_text: result.body_text }
+                : w,
+            ),
+          );
+        }
         await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId, folder] });
       })
       .catch(() => {
