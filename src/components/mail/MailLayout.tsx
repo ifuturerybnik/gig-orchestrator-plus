@@ -308,7 +308,7 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Lista wiadomości */}
-        <Card className="col-span-3 overflow-hidden flex flex-col">
+        <Card className="w-80 shrink-0 overflow-hidden flex flex-col">
           <ScrollArea className="flex-1">
             {wiadQ.isLoading && (
               <div className="p-3 text-sm text-muted-foreground">{t("common.loading")}</div>
