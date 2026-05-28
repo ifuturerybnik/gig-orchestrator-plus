@@ -270,7 +270,7 @@ export function MailLayout({ orgId }: Props) {
 
       <div className="grid grid-cols-12 gap-3 h-[calc(100vh-220px)] min-h-[500px]">
         {/* Sidebar: skrzynki + foldery */}
-        <Card className="col-span-3 p-2 overflow-y-auto">
+        <Card className="col-span-2 p-2 overflow-y-auto">
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
             {t("correspondence.mail.mailboxes")}
           </div>
@@ -308,7 +308,7 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Lista wiadomości */}
-        <Card className="col-span-4 overflow-hidden flex flex-col">
+        <Card className="col-span-3 overflow-hidden flex flex-col">
           <ScrollArea className="flex-1">
             {wiadQ.isLoading && (
               <div className="p-3 text-sm text-muted-foreground">{t("common.loading")}</div>
@@ -342,7 +342,7 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Podgląd */}
-        <Card className="col-span-5 overflow-hidden flex flex-col">
+        <Card className="col-span-7 overflow-hidden flex flex-col">
           {!selected && (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
               {t("correspondence.mail.select_message")}
