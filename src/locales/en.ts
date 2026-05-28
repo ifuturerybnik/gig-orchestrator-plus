@@ -880,6 +880,6 @@ export default
   },
   "sharing": {
     "my_orgs_title": "My organizations",
-    "my_orgs_help": "Check the organizations this entry should also be visible in. Uncheck to keep it strictly private."
+    "my_orgs_help": "Check the organizations this entry should also be visible in. Uncheck to keep it strictly private. Remember: granting your organizations access to your contacts and counterparties enables full AI-powered communication automation as well as automation for concert contracts and notifications. It is recommended that your contacts and counterparties are also contacts and counterparties of your organizations."
   }
 } as const;
