@@ -4,6 +4,14 @@
 
 type ProxyEndpoint = "sync" | "body-sync" | "body" | "send" | "mark";
 
+async function tokenFingerprint(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest))
+    .slice(0, 8)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function getBase(): string {
   const url = process.env.MAIL_PROXY_URL;
   if (!url) throw new Error("Missing MAIL_PROXY_URL");
@@ -32,11 +40,14 @@ export async function callMailProxy<T = unknown>(
   endpoint: ProxyEndpoint,
   body: Record<string, unknown> = {},
 ): Promise<T> {
+  const base = getBase();
+  const token = getToken();
   const res = await fetch(`${getBase()}/${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...proxyAuthHeaders(),
+      "X-Proxy-Token": token,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(body),
   });
@@ -50,7 +61,10 @@ export async function callMailProxy<T = unknown>(
   if (!res.ok) {
     console.error("Mail proxy request failed", {
       endpoint,
+      base,
       status: res.status,
+      tokenLength: token.length,
+      tokenSha256Prefix: await tokenFingerprint(token),
       body: parsed,
     });
 
