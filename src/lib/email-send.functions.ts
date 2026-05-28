@@ -43,13 +43,17 @@ export const sendEmail = createServerFn({ method: "POST" })
       if (!m) throw new Error("Forbidden");
     }
 
+    const toEmails = data.to.map((r) => r.email);
+    const ccEmails = (data.cc ?? []).map((r) => r.email);
+    const bccEmails = (data.bcc ?? []).map((r) => r.email);
+
     const result = await callMailProxy<{ ok?: boolean; messageId?: string; error?: string }>(
       "send",
       {
         skrzynka_id: data.skrzynkaId,
-        to: data.to,
-        cc: data.cc ?? [],
-        bcc: data.bcc ?? [],
+        to: toEmails,
+        cc: ccEmails,
+        bcc: bccEmails,
         subject: data.subject,
         html: data.bodyHtml,
         in_reply_to: data.inReplyTo ?? null,
