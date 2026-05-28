@@ -931,7 +931,7 @@ export default
         "drafts": "Robocze",
         "spam": "Spam"
       },
-      "compose": {
+      "composer": {
         "title": "Nowa wiadomość",
         "reply_title": "Odpowiedź",
         "to": "Do",

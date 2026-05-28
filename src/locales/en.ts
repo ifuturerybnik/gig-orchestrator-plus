@@ -911,7 +911,7 @@ export default
         "drafts": "Drafts",
         "spam": "Spam"
       },
-      "compose": {
+      "composer": {
         "title": "New message",
         "reply_title": "Reply",
         "to": "To",
