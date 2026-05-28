@@ -892,12 +892,101 @@ export default
     "mail": {
       "title": "Mail",
       "subtitle": "Organization IMAP/SMTP mailboxes — receive and send messages.",
-      "coming_soon": "The mail module will appear here soon."
+      "mailboxes": "Mailboxes",
+      "no_mailboxes": "No mailboxes for this organization. Add them in Profile → Email mailboxes.",
+      "empty_folder": "No messages in this folder.",
+      "select_message": "Select a message to preview.",
+      "loading_body": "Loading message body…",
+      "sync": "Sync",
+      "synced": "Synced",
+      "compose": "New message",
+      "reply": "Reply",
+      "templates": "Templates",
+      "delete_confirm": "Delete this message from the mail server and database?",
+      "deleted": "Message deleted",
+      "folders": {
+        "label": "Folders",
+        "inbox": "Inbox",
+        "sent": "Sent",
+        "drafts": "Drafts",
+        "spam": "Spam"
+      },
+      "composer": {
+        "title": "New message",
+        "reply_title": "Reply",
+        "to": "To",
+        "subject": "Subject",
+        "body": "Body",
+        "template": "Template",
+        "pick_template": "— pick a template —",
+        "send": "Send",
+        "sent": "Message sent",
+        "recipient_required": "Enter at least one recipient address."
+      }
+    },
+    "templates": {
+      "title": "Email templates",
+      "subtitle": "Templates used in Mail and Auto-correspondence. Insert dynamic fields.",
+      "new": "New template",
+      "edit": "Edit template",
+      "empty": "No templates yet. Add your first one.",
+      "name": "Name",
+      "name_required": "Template name is required.",
+      "category": "Category (optional)",
+      "subject": "Subject",
+      "body": "Body",
+      "variables": "Dynamic fields — click to insert",
+      "delete_confirm": "Delete this template?"
     },
     "autokor": {
       "title": "Auto-correspondence",
       "subtitle": "Email campaigns to contacts and counterparties with scheduling and stats.",
-      "coming_soon": "The auto-correspondence module will appear here soon."
+      "new": "New campaign",
+      "empty": "No campaigns yet. Create the first one.",
+      "delete_confirm": "Delete the campaign and all scheduled messages?",
+      "recipients_one": "{{count}} recipient",
+      "recipients_other": "{{count}} recipients",
+      "recipients": "{{count}} rcp.",
+      "name_required": "Campaign name is required.",
+      "mailbox_required": "Pick a sender mailbox.",
+      "status": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "running": "Running",
+        "paused": "Paused",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
+      "wizard": {
+        "new": "New campaign",
+        "edit": "Edit campaign",
+        "name": "Name",
+        "mailbox": "Sender mailbox",
+        "template": "Template (optional)",
+        "subject": "Subject",
+        "body": "Body",
+        "filters": "Recipient filters",
+        "sources": "Sources",
+        "types": "Contact types",
+        "schedule": "Schedule",
+        "hours_from": "From",
+        "hours_to": "To",
+        "rate": "Rate/min",
+        "days": "Days of week",
+        "source": {
+          "user_contacts": "My contacts",
+          "org_contacts": "Organization contacts",
+          "org_counterparties": "Organization counterparties"
+        },
+        "type": {
+          "person": "People",
+          "company": "Companies",
+          "artist": "Artists"
+        },
+        "day": {
+          "pn": "Mo", "wt": "Tu", "sr": "We", "cz": "Th", "pt": "Fr", "sb": "Sa", "nd": "Su"
+        }
+      }
     }
   }
 } as const;

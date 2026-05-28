@@ -912,12 +912,101 @@ export default
     "mail": {
       "title": "Poczta",
       "subtitle": "Skrzynki IMAP/SMTP organizacji — odbiór i wysyłka wiadomości.",
-      "coming_soon": "Moduł poczty pojawi się tutaj wkrótce."
+      "mailboxes": "Skrzynki",
+      "no_mailboxes": "Brak skrzynek tej organizacji. Dodaj je w sekcji Profil → Skrzynki email.",
+      "empty_folder": "Brak wiadomości w tym folderze.",
+      "select_message": "Wybierz wiadomość, aby zobaczyć podgląd.",
+      "loading_body": "Pobieram treść wiadomości…",
+      "sync": "Synchronizuj",
+      "synced": "Zsynchronizowano",
+      "compose": "Nowa wiadomość",
+      "reply": "Odpowiedz",
+      "templates": "Szablony",
+      "delete_confirm": "Usunąć wiadomość z serwera pocztowego i z bazy?",
+      "deleted": "Usunięto wiadomość",
+      "folders": {
+        "label": "Foldery",
+        "inbox": "Odebrane",
+        "sent": "Wysłane",
+        "drafts": "Robocze",
+        "spam": "Spam"
+      },
+      "composer": {
+        "title": "Nowa wiadomość",
+        "reply_title": "Odpowiedź",
+        "to": "Do",
+        "subject": "Temat",
+        "body": "Treść",
+        "template": "Szablon",
+        "pick_template": "— wybierz szablon —",
+        "send": "Wyślij",
+        "sent": "Wiadomość wysłana",
+        "recipient_required": "Podaj przynajmniej jeden adres odbiorcy."
+      }
+    },
+    "templates": {
+      "title": "Szablony e-mail",
+      "subtitle": "Szablony używane w Poczcie i Autokorespondencji. Możesz wstawiać pola dynamiczne.",
+      "new": "Nowy szablon",
+      "edit": "Edytuj szablon",
+      "empty": "Brak szablonów. Dodaj pierwszy.",
+      "name": "Nazwa",
+      "name_required": "Podaj nazwę szablonu.",
+      "category": "Kategoria (opcjonalnie)",
+      "subject": "Temat",
+      "body": "Treść",
+      "variables": "Pola dynamiczne — kliknij, aby wstawić",
+      "delete_confirm": "Usunąć szablon?"
     },
     "autokor": {
       "title": "Autokorespondencja",
       "subtitle": "Kampanie mailingowe do kontaktów i kontrahentów z harmonogramem i statystykami.",
-      "coming_soon": "Moduł autokorespondencji pojawi się tutaj wkrótce."
+      "new": "Nowa kampania",
+      "empty": "Brak kampanii. Utwórz pierwszą.",
+      "delete_confirm": "Usunąć kampanię i wszystkie zaplanowane wiadomości?",
+      "recipients_one": "{{count}} odbiorca",
+      "recipients_other": "{{count}} odbiorców",
+      "recipients": "{{count}} odb.",
+      "name_required": "Podaj nazwę kampanii.",
+      "mailbox_required": "Wybierz skrzynkę nadawczą.",
+      "status": {
+        "draft": "Szkic",
+        "scheduled": "Zaplanowana",
+        "running": "Aktywna",
+        "paused": "Wstrzymana",
+        "done": "Zakończona",
+        "cancelled": "Anulowana"
+      },
+      "wizard": {
+        "new": "Nowa kampania",
+        "edit": "Edytuj kampanię",
+        "name": "Nazwa",
+        "mailbox": "Skrzynka nadawcza",
+        "template": "Szablon (opcjonalnie)",
+        "subject": "Temat",
+        "body": "Treść",
+        "filters": "Filtry odbiorców",
+        "sources": "Źródła",
+        "types": "Typy kontaktów",
+        "schedule": "Harmonogram",
+        "hours_from": "Od godz.",
+        "hours_to": "Do godz.",
+        "rate": "Limit/min",
+        "days": "Dni tygodnia",
+        "source": {
+          "user_contacts": "Moje kontakty",
+          "org_contacts": "Kontakty organizacji",
+          "org_counterparties": "Kontrahenci organizacji"
+        },
+        "type": {
+          "person": "Osoby",
+          "company": "Firmy",
+          "artist": "Artyści"
+        },
+        "day": {
+          "pn": "Pn", "wt": "Wt", "sr": "Śr", "cz": "Cz", "pt": "Pt", "sb": "Sb", "nd": "Nd"
+        }
+      }
     }
   }
 } as const;
