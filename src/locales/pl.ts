@@ -1007,6 +1007,13 @@ export default
           "pn": "Pn", "wt": "Wt", "sr": "Śr", "cz": "Cz", "pt": "Pt", "sb": "Sb", "nd": "Nd"
         }
       }
+    },
+    "lists": {
+      "button": "Listy wykluczeń",
+      "title": "Rezygnacje i odbicia",
+      "rezygnacje": "Rezygnacje",
+      "odbicia": "Odbicia",
+      "empty": "Brak wpisów."
     }
   }
 } as const;
