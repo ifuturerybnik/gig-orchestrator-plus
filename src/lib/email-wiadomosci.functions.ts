@@ -40,9 +40,22 @@ export const fetchWiadomoscBody = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ wiadomoscId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const w = await loadWiadomoscWithAccess(data.wiadomoscId, context.userId);
-    if (w.body_html || w.body_text) return { ok: true, cached: true };
+    if (w.body_html || w.body_text) {
+      return { ok: true, cached: true, body_html: w.body_html, body_text: w.body_text };
+    }
     await callMailProxy("body", { wiadomosc_id: w.id });
-    return { ok: true, cached: false };
+    const { data: refreshed, error } = await supabaseAdmin
+      .from("email_wiadomosci")
+      .select("body_html, body_text")
+      .eq("id", w.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      ok: true,
+      cached: false,
+      body_html: refreshed?.body_html ?? null,
+      body_text: refreshed?.body_text ?? null,
+    };
   });
 
 export const markWiadomosc = createServerFn({ method: "POST" })
