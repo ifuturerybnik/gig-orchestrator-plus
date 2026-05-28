@@ -437,6 +437,7 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
+        ownerOrgId: z.string().uuid().optional(),
         name: z.string().trim().min(2).max(200),
         types: z.array(OrgTypeEnum).min(1).max(ORG_TYPES.length),
         description: optStr(2000),
@@ -456,9 +457,6 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
     const isArtist = data.types.includes("artist");
     const hasCompanyType = data.types.some((t) => t !== "artist");
 
-    // Deduplikacja: nie tworzymy duplikatu, jeśli ten user ma już kontrahenta
-    // o tej samej znormalizowanej nazwie LUB istnieje w bazie współdzielony,
-    // zatwierdzony kontrahent o tej nazwie (lepiej dodać go z listy).
     const normalized = normalizeOrgName(data.name);
     const { data: sharedDupe } = await supabaseAdmin
       .from("organizations")
@@ -474,10 +472,6 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
       );
     }
 
-    // Prywatny kontrahent usera: is_shared = false, status = 'approved'.
-    // Administrator aplikacji NIE musi tego zatwierdzać — to prywatna lista usera.
-    // Insert przez supabaseAdmin, bo RLS na `organizations` wymusza status = 'pending'
-    // dla insertów przez user-klienta.
     const { data: org, error: orgErr } = await supabaseAdmin
       .from("organizations")
       .insert({
@@ -501,24 +495,28 @@ export const createCounterpartyDraft = createServerFn({ method: "POST" })
       .single();
     if (orgErr) throw new Error(orgErr.message);
 
-    // Trigger handle_new_organization automatycznie dodał usera jako 'owner'
-    // tej org. Dla prywatnych kontrahentów to niepożądane — kontrahent NIE
-    // jest "moją organizacją", tylko wpisem na liście kontrahentów.
     await supabaseAdmin
       .from("organization_members")
       .delete()
       .eq("organization_id", org.id)
       .eq("user_id", userId);
 
-
+    const linkRow = data.ownerOrgId
+      ? {
+          owner_kind: "organization" as const,
+          owner_org_id: data.ownerOrgId,
+          counterparty_org_id: org.id,
+          created_by: userId,
+        }
+      : {
+          owner_kind: "user" as const,
+          owner_user_id: userId,
+          counterparty_org_id: org.id,
+          created_by: userId,
+        };
     const { error: linkErr } = await supabase
       .from("counterparty_links")
-      .insert({
-        owner_kind: "user",
-        owner_user_id: userId,
-        counterparty_org_id: org.id,
-        created_by: userId,
-      });
+      .insert(linkRow as never);
     if (linkErr) throw new Error(linkErr.message);
 
     return { organizationId: org.id };
