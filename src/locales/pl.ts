@@ -900,6 +900,6 @@ export default
   },
   "sharing": {
     "my_orgs_title": "Moje organizacje",
-    "my_orgs_help": "Zaznacz organizacje, w których ten wpis ma być też widoczny. Odznacz, jeśli ma pozostać wyłącznie prywatny."
+    "my_orgs_help": "Zaznacz organizacje, w których ten wpis ma być też widoczny. Odznacz, jeśli ma pozostać wyłącznie prywatny. Pamiętaj, że dostęp do kontaktów i kontrahentów w Twojej organizacji pozwala na pełną automatyzację komunikacji z nimi z wykorzystaniem AI oraz automatyzację przy podpisywaniu umów koncertowych oraz powiadomień. Zalecane jest, aby Twoje kontakty i kontrahenci byli również kontaktami i kontrahentami Twoich organizacji."
   }
 } as const;
