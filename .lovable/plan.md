@@ -1,119 +1,102 @@
+
+# Plan: Moduł Korespondencja w panelu organizacji
+
 ## Cel
+W bocznym menu organizacji dodać zakładkę **Korespondencja** rozwijającą się na dwie podzakładki: **Poczta** i **Autokorespondencja**. Funkcjonalność 1:1 jak w CRM Hub, ale:
+- adaptacja z react-router-dom → TanStack Start (routes pliki + `createServerFn`),
+- filtry i pola dynamiczne dopasowane do encji Concertivo (kontakty, kontrahenci, organizacje) zamiast `leady/klienci/dostawcy`,
+- WYSIWYG: używamy istniejącego globalnego `@/components/ui/wysiwyg-editor` (już jest w projekcie),
+- moduł GLOBALNY — działa dla każdego typu organizacji (zgodnie z istniejącą notką w pamięci).
 
-Na dole dialogu **dodawania/edycji kontrahenta** oraz dialogu **dodawania/edycji kontaktu** pokazać listę „Moje organizacje" (te, w których jestem właścicielem/adminem/członkiem) z checkboxami. **Domyślnie wszystkie zaznaczone.** Po odznaczeniu danej organizacji wpis zostaje wyłącznie prywatny dla mnie.
+## Co już mamy (NIE robimy ponownie)
+- `email_skrzynki`, `email_wiadomosci` (migracje 0013/0014)
+- `mail-proxy.server.ts`, `mail-crypto.server.ts`, `email-skrzynki.functions.ts`
+- `StopkaPicker`, `StopkiManager`, `org-mailboxes-section`
+- Globalny `WysiwygEditor` (Tiptap)
+- Auth/middleware, `attachSupabaseAuth`, RLS
 
-## Logika (dwa różne modele danych)
+## Zakres prac
 
-### A. Kontrahenci — już mamy w schemacie
+### 1. Sidebar — grupa rozwijana „Korespondencja"
+- Refactor `src/components/org-sidebar.tsx`: dodać sekcję z `Collapsible` (shadcn) nad „Członkowie", zawierającą:
+  - `Poczta` → `/organizations/$orgId/mail`
+  - `Autokorespondencja` → `/organizations/$orgId/autokorespondencja`
+- Tłumaczenia w `src/locales/pl.ts` i `en.ts` (`organizations.sidebar.correspondence/mail/autokor`).
 
-Tabela `counterparty_links` ma kolumny `owner_kind = 'user' | 'organization'` + `owner_user_id` / `owner_org_id`. Wystarczy tworzyć **dodatkowy wpis** w `counterparty_links` per każda zaznaczona organizacja (`owner_kind = 'organization'`).
+### 2. Migracje SQL (`db/migrations/`)
+Nowe pliki — wykonasz ręcznie w panelu zewnętrznego Supabase:
+- `0015_email_szablony.sql` — szablony wiadomości (per user / per organization, z polem `body_html`, `temat`, `kategoria`, `zmienne`).
+- `0016_email_zalaczniki.sql` — załączniki wiadomości (storage path, inline cid, content_id).
+- `0017_email_linki_sledzace.sql` — śledzenie kliknięć linków (per wysłana wiadomość).
+- `0018_email_odbicia_rezygnacje.sql` — bounce list + lista rezygnacji (suppressions).
+- `0019_autokorespondencje.sql` — kampanie + `autokorespondencje_wiadomosci` (status: pending/sent/failed/skipped, planowana_wysylka, klikniecia, otwarcia).
+- Każda tabela: GRANT-y + RLS scoped per user lub org-member (wzorem `email_skrzynki`).
 
-To samo dla **powiązań kontakt ↔ kontrahent** (`contact_counterparty_links`) — w polityki RLS dla 'organization' już są w migracji 0022.
+### 3. Server functions (`src/lib/`)
+- `email-szablony.functions.ts` — CRUD szablonów (scope user/org).
+- `email-wiadomosci.functions.ts` — list/search/markRead/star/move/delete (proxy do `mail-proxy`).
+- `email-send.functions.ts` — wysyłka pojedyncza (przez `callMailProxy('send', ...)`), zapis log + zalączniki.
+- `email-attachments.functions.ts` — signed URL + upload do bucketu `email-attachments`.
+- `email-tracking.functions.ts` — listy bounce'ów, rezygnacji, kliknięć.
+- `autokorespondencje.functions.ts` — CRUD kampanii, start/pause/cancel/clone, statystyki.
+- Server route publiczne (TSS) pod `/api/public/`:
+  - `unsubscribe` — odbiór klika z linka rezygnacji,
+  - `track-open` (pixel 1×1),
+  - `track-click` (redirect z logowaniem),
+  - `autokor-tick` (cron co minutę — generuje kolejną partię wiadomości do wysyłki).
 
-### B. Kontakty — potrzebny nowy mechanizm udostępniania
+### 4. Komponenty UI (`src/components/mail/` + `src/components/autokorespondencja/`)
+**Mail:**
+- `MailLayout.tsx` — lewy panel (skrzynki + foldery), środek (lista wiadomości), prawy (podgląd) — port z `Mail.tsx`.
+- `ComposeDialog.tsx` — kompozycja maila (WysiwygEditor + StopkaPicker + załączniki + Do/CC/BCC z ContactPicker + wybór szablonu).
+- `SzablonyManager.tsx`, `SzablonPicker.tsx` — biblioteka szablonów.
+- `LinkiSledzaceDialog.tsx`, `ZwrotyDialog.tsx` — statystyki tracking.
+- Hook adapter `useResolvedHtmlBody` (cid → signed URL).
 
-Tabela `contacts` jest single-owner (`owner_user_id` XOR `organization_id`). Żeby „ten sam kontakt" widoczny był też w organizacji, dodajemy nową tabelę `contact_org_shares (contact_id, organization_id)`.
+**Autokorespondencja:**
+- `AutokorespondencjaList.tsx` — tabela kampanii + akcje (pause/play/cancel/clone/delete/edit).
+- `AutokorespondencjaWizardDialog.tsx` — kreator wieloetapowy:
+  1. Nazwa + skrzynka nadawcza + szablon/treść (WysiwygEditor),
+  2. **Filtry odbiorców** — dostosowane do Concertivo: typ kontaktu (person/company/artist), tagi, klasyfikacja, kraj/miasto, źródło (moje vs org), lista kontrahentów, status koncertów, gatunki muzyczne (z `genres.ts`),
+  3. Harmonogram (godzina/dni tygodnia, rate-limit per minuta),
+  4. Podgląd listy + start.
+- `ListaRezygnacjiDialog.tsx`, `ListaOdbiciaDialog.tsx`.
+- `AutokorespondencjaSzczegoly.tsx` (route detail) — wykres postępu, lista wiadomości z filtrami statusu.
 
-To pozwala uniknąć duplikacji rekordu i utrzymać jeden „złoty" rekord kontaktu.
+**Pola dynamiczne w szablonach** (zamiast CRM Hub'owych `{{lead.imie}}`):
+- `{{kontakt.imie}}`, `{{kontakt.nazwisko}}`, `{{kontakt.email}}`, `{{kontakt.firma}}`
+- `{{kontrahent.nazwa}}`, `{{kontrahent.nip}}`
+- `{{organizacja.nazwa}}`, `{{uzytkownik.imie}}`, `{{data.dzisiaj}}`
+- Engine podmiany w `src/lib/email-template-vars.ts`.
 
-## Zmiany
+### 5. Routes (TanStack)
+- `src/routes/_authenticated.organizations.$orgId.mail.tsx`
+- `src/routes/_authenticated.organizations.$orgId.autokorespondencja.tsx`
+- `src/routes/_authenticated.organizations.$orgId.autokorespondencja.$kampaniaId.tsx`
+- `src/routes/api/public/email-unsubscribe.tsx`
+- `src/routes/api/public/email-track-open.tsx`
+- `src/routes/api/public/email-track-click.tsx`
+- `src/routes/api/public/autokor-tick.tsx`
 
-### 1. Migracja DB — `supabase/migrations/0023_contact_org_shares.sql`
+### 6. i18n
+Komplet kluczy w `pl.ts` i `en.ts` dla wszystkich nowych ekranów (sidebar, lista, wizard, dialogi, błędy, toasty).
 
-```sql
-create table public.contact_org_shares (
-  id uuid primary key default gen_random_uuid(),
-  contact_id uuid not null references public.contacts(id) on delete cascade,
-  organization_id uuid not null references public.organizations(id) on delete cascade,
-  created_by uuid not null references auth.users(id),
-  created_at timestamptz not null default now(),
-  unique (contact_id, organization_id)
-);
+### 7. Pamięć projektu
+Aktualizacja `mem://features/correspondence-module` o końcowe lokalizacje plików, listę tabel i punkty stylu pól dynamicznych.
 
-grant select, insert, delete on public.contact_org_shares to authenticated;
-grant all on public.contact_org_shares to service_role;
+## Czego NIE robimy w tym kroku
+- Nie zmieniamy `mail-proxy` na VPS — wykorzystujemy istniejące endpointy (`sync/body-sync/body/send/mark`). Jeśli okaże się że brakuje endpointu (np. wysyłka z załącznikami z pełnym MIME) — dopiero wtedy dodam zadanie.
+- Nie portujemy ekranów CRM Hub niedotyczących maila (Leady, Klienci, Dostawcy).
+- Nie ruszamy logiki kontrahentów/kontaktów — używamy istniejących `ContactPicker` / `CounterpartyPicker` jako adresatów.
 
-alter table public.contact_org_shares enable row level security;
+## Kolejność wykonania (etapy)
+1. Sidebar + puste routes + i18n (szybko, sprawdzimy nawigację).
+2. Migracje SQL (dostarczę pliki — wykonujesz ręcznie, czekam na potwierdzenie).
+3. Server functions + tracking endpoints.
+4. UI Poczta (lista folderów → lista wiadomości → podgląd → Compose).
+5. Szablony + Stopki integracja.
+6. Autokorespondencja (lista → wizard → detail → cron tick).
+7. QA, tłumaczenia, memoria.
 
--- SELECT: właściciel kontaktu lub członek org, której kontakt jest udostępniony
-create policy "shares_select" on public.contact_org_shares for select to authenticated
-using (
-  exists (select 1 from contacts c
-          where c.id = contact_id and c.owner_user_id = auth.uid())
-  or exists (select 1 from organization_members m
-             where m.organization_id = contact_org_shares.organization_id
-               and m.user_id = auth.uid())
-);
-
--- INSERT: tylko właściciel kontaktu, do org której jest członkiem
-create policy "shares_insert" on public.contact_org_shares for insert to authenticated
-with check (
-  created_by = auth.uid()
-  and exists (select 1 from contacts c
-              where c.id = contact_id and c.owner_user_id = auth.uid())
-  and exists (select 1 from organization_members m
-              where m.organization_id = contact_org_shares.organization_id
-                and m.user_id = auth.uid())
-);
-
--- DELETE: właściciel kontaktu
-create policy "shares_delete" on public.contact_org_shares for delete to authenticated
-using (
-  exists (select 1 from contacts c
-          where c.id = contact_id and c.owner_user_id = auth.uid())
-);
-```
-
-Aktualizacja widoczności w `useContacts` (tryb `org`): rozszerzyć zapytanie o kontakty udostępnione poprzez `contact_org_shares` (dwa zapytania + merge po stronie hooka, by uniknąć przebudowy SQL).
-
-### 2. Nowy komponent — `src/components/pickers/MyOrgsShareSection.tsx`
-
-Lista checkboxów moich organizacji (z `organization_members` gdzie `user_id = ja`). Props:
-- `selectedOrgIds: string[]`
-- `onChange(ids: string[])`
-- `title` (override etykiety)
-- `helpText`
-- `defaultAllChecked?: boolean` (domyślnie `true` — przy pierwszym załadowaniu zaznacza wszystkie)
-
-Jeśli user nie ma żadnej organizacji — sekcja się nie renderuje (cicha degradacja).
-
-### 3. Server functions — `src/lib/org-sharing.functions.ts` (nowy)
-
-- `listMyOrganizationsForSharing()` — zwraca `{ id, name }[]` org gdzie jestem członkiem
-- `setCounterpartyOrgShares({ counterpartyOrgId, orgIds })` — synchronizuje `counterparty_links` (owner_kind='organization') do dokładnego zestawu `orgIds` (insert brakujących, delete nadmiarowych — tylko dla org, których user jest członkiem i które są przez niego utworzone/zarządzane)
-- `setContactOrgShares({ contactId, orgIds })` — to samo dla `contact_org_shares`
-- `getCounterpartyOrgShares({ counterpartyOrgId })` → `string[]` org ids
-- `getContactOrgShares({ contactId })` → `string[]` org ids
-
-### 4. UI — `AddCounterpartyDialog.tsx`
-
-W kroku 2, nad/pod sekcją „Powiązane kontakty", wstawić `<MyOrgsShareSection />`. Domyślnie wszystkie zaznaczone. Po `addMutation`/`createDraft` (gdy mamy już `counterpartyOrgId`) → wywołać `setCounterpartyOrgShares({ counterpartyOrgId, orgIds })`. To samo w `CounterpartyDetailsDialog.tsx` (z prefetchem aktualnego stanu przez `getCounterpartyOrgShares`).
-
-### 5. UI — `ContactForm.tsx`
-
-Sekcja `<MyOrgsShareSection />` widoczna tylko gdy `scope.kind === 'user'`. Po `upsert.mutateAsync` → `setContactOrgShares({ contactId: saved.id, orgIds })`. W trybie edycji prefetch obecnych shares.
-
-### 6. Drobne — i18n
-
-Nowe klucze `sharing.my_orgs_title`, `sharing.my_orgs_help`, `sharing.no_orgs` w `src/locales/{pl,en}.ts`.
-
-## Pliki
-
-**Nowe**
-- `supabase/migrations/0023_contact_org_shares.sql`
-- `src/components/pickers/MyOrgsShareSection.tsx`
-- `src/lib/org-sharing.functions.ts`
-
-**Edytowane**
-- `src/components/organizations/AddCounterpartyDialog.tsx`
-- `src/components/organizations/CounterpartyDetailsDialog.tsx`
-- `src/components/contacts/ContactForm.tsx`
-- `src/hooks/useContacts.ts` (rozszerzenie listy o udostępnione)
-- `src/locales/pl.ts`, `src/locales/en.ts`
-
-## Uwagi
-
-- Migracja 0023 wymaga ręcznego uruchomienia w panelu zewnętrznego Supabase.
-- Domyślnie zaznaczone = przy nowym wpisie inicjujemy `selectedOrgIds = wszystkie moje org`. Przy edycji = `selectedOrgIds = aktualny stan z DB`.
-- Odznaczenie wszystkich = wpis pozostaje wyłącznie prywatny (`owner_kind='user'`).
-- Sekcja jest ukryta jeśli user nie ma żadnej swojej organizacji (sam siebie z `counterparty_links` nie excludujemy — przefiltruje to RLS i `listMyOrganizationsForSharing`).
+## Pytanie do Ciebie przed startem
+Czy potwierdzasz pełny zakres, czy chcesz najpierw etap **1+2** (sidebar + migracje), zaakceptować, i dopiero potem przejść do UI? Polecam wariant etapowy — całość to ~30–40 nowych plików, łatwiej weryfikować po częściach.
