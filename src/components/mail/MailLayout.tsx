@@ -172,6 +172,8 @@ export function MailLayout({ orgId }: Props) {
                 : w,
             ),
           );
+        } else {
+          setBodyErrorId(selected.id);
         }
         await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId, folder] });
       })
