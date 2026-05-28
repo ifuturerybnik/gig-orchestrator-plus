@@ -312,7 +312,7 @@ export function AddCounterpartyDialog({
               </div>
             )}
 
-            {canSearch && hasMatches && (
+            {canSearch && hasMatches && !ownerOrgId && (
               <MyOrgsShareSection
                 selectedOrgIds={shareOrgIds}
                 onChange={setShareOrgIds}
