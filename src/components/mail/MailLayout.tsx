@@ -192,7 +192,7 @@ export function MailLayout({ orgId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [selected, fetchBodyFn, qc, skrzynkaId, folder]);
+  }, [selected, fetchBodyFn, qc, skrzynkaId, folder, t]);
 
   async function handleSync() {
     if (!skrzynkaId) return;
