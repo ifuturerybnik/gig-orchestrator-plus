@@ -153,8 +153,8 @@ export function MailLayout({ orgId }: Props) {
   useEffect(() => {
     if (!selected) return;
     if (selected.body_html || selected.body_text) {
-      if (bodyLoadingId === selected.id) setBodyLoadingId(null);
-      if (bodyErrorId === selected.id) setBodyErrorId(null);
+      setBodyLoadingId(null);
+      setBodyErrorId(null);
       return;
     }
 
@@ -176,7 +176,7 @@ export function MailLayout({ orgId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [selected, fetchBodyFn, qc, skrzynkaId, folder, bodyLoadingId, bodyErrorId]);
+  }, [selected, fetchBodyFn, qc, skrzynkaId, folder]);
 
   async function handleSync() {
     if (!skrzynkaId) return;
