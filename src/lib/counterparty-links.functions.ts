@@ -170,11 +170,47 @@ export const listMyCounterparties = createServerFn({ method: "GET" })
     if (orgsErr) throw new Error(orgsErr.message);
     const orgMap = new Map((orgs ?? []).map((o) => [o.id, o] as const));
 
+    // Org-shares: linki owner_kind='organization' do tych samych counterparty,
+    // ograniczone do organizacji, których user jest członkiem.
+    const { data: myMems } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId);
+    const myOrgIds = (myMems ?? []).map(
+      (m: { organization_id: string }) => m.organization_id,
+    );
+    const sharedMap = new Map<string, { id: string; name: string }[]>();
+    if (myOrgIds.length > 0) {
+      const { data: orgLinks } = await supabase
+        .from("counterparty_links")
+        .select("counterparty_org_id, owner_org_id")
+        .eq("owner_kind", "organization")
+        .in("counterparty_org_id", ids)
+        .in("owner_org_id", myOrgIds);
+      const { data: ownerOrgs } = await supabaseAdmin
+        .from("organizations")
+        .select("id, name")
+        .in("id", myOrgIds);
+      const ownerNameMap = new Map(
+        (ownerOrgs ?? []).map((o) => [o.id as string, o.name as string]),
+      );
+      for (const l of (orgLinks ?? []) as Array<{
+        counterparty_org_id: string;
+        owner_org_id: string;
+      }>) {
+        const arr = sharedMap.get(l.counterparty_org_id) ?? [];
+        const name = ownerNameMap.get(l.owner_org_id);
+        if (name) arr.push({ id: l.owner_org_id, name });
+        sharedMap.set(l.counterparty_org_id, arr);
+      }
+    }
+
     return {
       counterparties: (links ?? []).map((l) => ({
         link_id: l.id,
         created_at: l.created_at,
         organization: orgMap.get(l.counterparty_org_id) ?? null,
+        shared_to_orgs: sharedMap.get(l.counterparty_org_id) ?? [],
       })),
     };
   });
