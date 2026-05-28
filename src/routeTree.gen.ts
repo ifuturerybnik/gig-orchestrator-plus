@@ -23,6 +23,10 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
 import { Route as AuthenticatedContactsIndexRouteImport } from './routes/_authenticated.contacts.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
+import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
+import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
+import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
+import { Route as ApiPublicAutokorTickRouteImport } from './routes/api/public/autokor-tick'
 import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_authenticated.organizations.new'
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedContactsMeRouteImport } from './routes/_authenticated.contacts.me'
@@ -110,6 +114,28 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const ApiPublicEmailUnsubscribeRoute =
+  ApiPublicEmailUnsubscribeRouteImport.update({
+    id: '/api/public/email-unsubscribe',
+    path: '/api/public/email-unsubscribe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicEmailTrackOpenRoute = ApiPublicEmailTrackOpenRouteImport.update({
+  id: '/api/public/email-track-open',
+  path: '/api/public/email-track-open',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEmailTrackClickRoute =
+  ApiPublicEmailTrackClickRouteImport.update({
+    id: '/api/public/email-track-click',
+    path: '/api/public/email-track-click',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAutokorTickRoute = ApiPublicAutokorTickRouteImport.update({
+  id: '/api/public/autokor-tick',
+  path: '/api/public/autokor-tick',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOrganizationsNewRoute =
   AuthenticatedOrganizationsNewRouteImport.update({
@@ -223,6 +249,10 @@ export interface FileRoutesByFullPath {
   '/contacts/me': typeof AuthenticatedContactsMeRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
+  '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
+  '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
+  '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -251,6 +281,10 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
+  '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
+  '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
+  '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
@@ -284,6 +318,10 @@ export interface FileRoutesById {
   '/_authenticated/contacts/me': typeof AuthenticatedContactsMeRoute
   '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/_authenticated/organizations/new': typeof AuthenticatedOrganizationsNewRoute
+  '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
+  '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
+  '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -317,6 +355,10 @@ export interface FileRouteTypes {
     | '/contacts/me'
     | '/organizations/$orgId'
     | '/organizations/new'
+    | '/api/public/autokor-tick'
+    | '/api/public/email-track-click'
+    | '/api/public/email-track-open'
+    | '/api/public/email-unsubscribe'
     | '/admin/'
     | '/contacts/'
     | '/organizations/'
@@ -345,6 +387,10 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/contacts/me'
     | '/organizations/new'
+    | '/api/public/autokor-tick'
+    | '/api/public/email-track-click'
+    | '/api/public/email-track-open'
+    | '/api/public/email-unsubscribe'
     | '/admin'
     | '/contacts'
     | '/organizations'
@@ -377,6 +423,10 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts/me'
     | '/_authenticated/organizations/$orgId'
     | '/_authenticated/organizations/new'
+    | '/api/public/autokor-tick'
+    | '/api/public/email-track-click'
+    | '/api/public/email-track-open'
+    | '/api/public/email-unsubscribe'
     | '/_authenticated/admin/'
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
@@ -400,6 +450,10 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicAutokorTickRoute: typeof ApiPublicAutokorTickRoute
+  ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
+  ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
+  ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -501,6 +555,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/email-unsubscribe': {
+      id: '/api/public/email-unsubscribe'
+      path: '/api/public/email-unsubscribe'
+      fullPath: '/api/public/email-unsubscribe'
+      preLoaderRoute: typeof ApiPublicEmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/email-track-open': {
+      id: '/api/public/email-track-open'
+      path: '/api/public/email-track-open'
+      fullPath: '/api/public/email-track-open'
+      preLoaderRoute: typeof ApiPublicEmailTrackOpenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/email-track-click': {
+      id: '/api/public/email-track-click'
+      path: '/api/public/email-track-click'
+      fullPath: '/api/public/email-track-click'
+      preLoaderRoute: typeof ApiPublicEmailTrackClickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/autokor-tick': {
+      id: '/api/public/autokor-tick'
+      path: '/api/public/autokor-tick'
+      fullPath: '/api/public/autokor-tick'
+      preLoaderRoute: typeof ApiPublicAutokorTickRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/organizations/new': {
       id: '/_authenticated/organizations/new'
@@ -723,6 +805,10 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  ApiPublicAutokorTickRoute: ApiPublicAutokorTickRoute,
+  ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
+  ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
+  ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
