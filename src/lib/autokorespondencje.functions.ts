@@ -121,7 +121,7 @@ export const setKampaniaStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: row } = await supabaseAdmin
       .from("autokorespondencje")
-      .select("organization_id")
+      .select("organization_id, status")
       .eq("id", data.id)
       .maybeSingle();
     if (!row) throw new Error("Not found");
@@ -131,6 +131,21 @@ export const setKampaniaStatus = createServerFn({ method: "POST" })
       .update({ status: data.status, updated_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // Jeśli właśnie startujemy — wygeneruj listę odbiorców (idempotentne).
+    if (data.status === "running") {
+      const { ensureRecipientsGenerated } = await import("./autokor-engine.server");
+      try {
+        await ensureRecipientsGenerated(data.id);
+      } catch (e) {
+        // przywróć poprzedni status żeby user widział błąd
+        await supabaseAdmin
+          .from("autokorespondencje")
+          .update({ status: row.status })
+          .eq("id", data.id);
+        throw e;
+      }
+    }
     return { ok: true };
   });
 
