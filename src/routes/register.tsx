@@ -215,6 +215,7 @@ function RegisterPage() {
               {t("common.next")}
             </Button>
           </form>
+          </div>
         ) : step === 2 ? (
           <form onSubmit={handleProfile} className="mt-6 space-y-4">
             <div className="space-y-2">
