@@ -96,8 +96,9 @@ export const checkOrgNameAvailability = createServerFn({ method: "POST" })
   });
 
 /**
- * Dodaje istniejącą zarejestrowaną organizację jako kontrahenta zalogowanego
- * usera. Etap 1: tylko owner_kind = 'user'.
+ * Dodaje istniejącą zarejestrowaną organizację jako kontrahenta:
+ *   - zalogowanego usera (domyślnie), lub
+ *   - wskazanej organizacji (gdy podane `ownerOrgId` — user musi być członkiem).
  */
 export const addCounterpartyLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -105,6 +106,7 @@ export const addCounterpartyLink = createServerFn({ method: "POST" })
     z
       .object({
         counterpartyOrgId: z.string().uuid(),
+        ownerOrgId: z.string().uuid().optional(),
         note: z.string().trim().max(500).optional(),
       })
       .parse(input),
@@ -112,7 +114,6 @@ export const addCounterpartyLink = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Sprawdź czy kontrahent jest zarejestrowany i widoczny
     const { data: cp, error: cpErr } = await supabase
       .from("organizations")
       .select("id, is_shared, status")
@@ -123,20 +124,34 @@ export const addCounterpartyLink = createServerFn({ method: "POST" })
       throw new Error("Wybrana organizacja nie jest dostępna jako kontrahent.");
     }
 
+    const insertRow = data.ownerOrgId
+      ? {
+          owner_kind: "organization" as const,
+          owner_org_id: data.ownerOrgId,
+          counterparty_org_id: data.counterpartyOrgId,
+          note: data.note ?? null,
+          created_by: userId,
+        }
+      : {
+          owner_kind: "user" as const,
+          owner_user_id: userId,
+          counterparty_org_id: data.counterpartyOrgId,
+          note: data.note ?? null,
+          created_by: userId,
+        };
+
     const { data: row, error } = await supabase
       .from("counterparty_links")
-      .insert({
-        owner_kind: "user",
-        owner_user_id: userId,
-        counterparty_org_id: data.counterpartyOrgId,
-        note: data.note ?? null,
-        created_by: userId,
-      })
+      .insert(insertRow)
       .select("id")
       .single();
     if (error) {
       if (error.code === "23505") {
-        throw new Error("Masz już tego kontrahenta na swojej liście.");
+        throw new Error(
+          data.ownerOrgId
+            ? "Ta organizacja ma już tego kontrahenta na liście."
+            : "Masz już tego kontrahenta na swojej liście.",
+        );
       }
       throw new Error(error.message);
     }
