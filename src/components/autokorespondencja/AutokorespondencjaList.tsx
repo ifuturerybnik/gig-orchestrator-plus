@@ -140,6 +140,7 @@ export function AutokorespondencjaList({ orgId }: Props) {
         orgId={orgId}
         editId={editId}
       />
+      <SuppressionListsDialog open={listsOpen} onOpenChange={setListsOpen} orgId={orgId} />
     </div>
   );
 }
