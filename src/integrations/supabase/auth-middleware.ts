@@ -11,9 +11,12 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
   async ({ next }) => {
     const authHeader = getRequestHeader("authorization");
     if (!authHeader) {
-      throw new Response("Unauthorized: No authorization header provided", {
-        status: 401,
-      });
+      throw new Response(
+        "Sesja aplikacji wygasła: brak tokenu logowania. Wyloguj się i zaloguj ponownie.",
+        {
+          status: 401,
+        },
+      );
     }
 
     const supabase = createClient(supabaseUrl, supabasePublishableKey, {
@@ -23,7 +26,10 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      throw new Response("Unauthorized: Invalid session", { status: 401 });
+      throw new Response(
+        "Sesja aplikacji wygasła albo jest nieprawidłowa. Wyloguj się i zaloguj ponownie.",
+        { status: 401 },
+      );
     }
 
     return next({
@@ -33,5 +39,5 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
         userEmail: data.user.email ?? null,
       },
     });
-  }
+  },
 );
