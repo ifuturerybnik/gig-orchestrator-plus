@@ -33,6 +33,8 @@ import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './rout
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
 import { Route as AuthenticatedOrganizationsOrgIdEventsRouteImport } from './routes/_authenticated.organizations.$orgId.events'
+import { Route as AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport } from './routes/_authenticated.organizations.$orgId.counterparties'
+import { Route as AuthenticatedOrganizationsOrgIdContactsRouteImport } from './routes/_authenticated.organizations.$orgId.contacts'
 import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './routes/_authenticated.organizations.$orgId.budget'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
 
@@ -165,6 +167,18 @@ const AuthenticatedOrganizationsOrgIdEventsRoute =
     path: '/events',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdCounterpartiesRoute =
+  AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport.update({
+    id: '/counterparties',
+    path: '/counterparties',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
+const AuthenticatedOrganizationsOrgIdContactsRoute =
+  AuthenticatedOrganizationsOrgIdContactsRouteImport.update({
+    id: '/contacts',
+    path: '/contacts',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdBudgetRoute =
   AuthenticatedOrganizationsOrgIdBudgetRouteImport.update({
     id: '/budget',
@@ -200,6 +214,8 @@ export interface FileRoutesByFullPath {
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
+  '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
+  '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
@@ -224,6 +240,8 @@ export interface FileRoutesByTo {
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
+  '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
+  '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
@@ -253,6 +271,8 @@ export interface FileRoutesById {
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/_authenticated/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
+  '/_authenticated/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
+  '/_authenticated/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/_authenticated/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
@@ -282,6 +302,8 @@ export interface FileRouteTypes {
     | '/organizations/'
     | '/contacts/org/$orgId'
     | '/organizations/$orgId/budget'
+    | '/organizations/$orgId/contacts'
+    | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
@@ -306,6 +328,8 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/contacts/org/$orgId'
     | '/organizations/$orgId/budget'
+    | '/organizations/$orgId/contacts'
+    | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
@@ -334,6 +358,8 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/'
     | '/_authenticated/contacts/org/$orgId'
     | '/_authenticated/organizations/$orgId/budget'
+    | '/_authenticated/organizations/$orgId/contacts'
+    | '/_authenticated/organizations/$orgId/counterparties'
     | '/_authenticated/organizations/$orgId/events'
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
@@ -520,6 +546,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdEventsRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/counterparties': {
+      id: '/_authenticated/organizations/$orgId/counterparties'
+      path: '/counterparties'
+      fullPath: '/organizations/$orgId/counterparties'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/_authenticated/organizations/$orgId/contacts': {
+      id: '/_authenticated/organizations/$orgId/contacts'
+      path: '/contacts'
+      fullPath: '/organizations/$orgId/contacts'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdContactsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/budget': {
       id: '/_authenticated/organizations/$orgId/budget'
       path: '/budget'
@@ -573,6 +613,8 @@ const AuthenticatedContactsRouteWithChildren =
 
 interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdBudgetRoute: typeof AuthenticatedOrganizationsOrgIdBudgetRoute
+  AuthenticatedOrganizationsOrgIdContactsRoute: typeof AuthenticatedOrganizationsOrgIdContactsRoute
+  AuthenticatedOrganizationsOrgIdCounterpartiesRoute: typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   AuthenticatedOrganizationsOrgIdEventsRoute: typeof AuthenticatedOrganizationsOrgIdEventsRoute
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
   AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
@@ -583,6 +625,10 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
   {
     AuthenticatedOrganizationsOrgIdBudgetRoute:
       AuthenticatedOrganizationsOrgIdBudgetRoute,
+    AuthenticatedOrganizationsOrgIdContactsRoute:
+      AuthenticatedOrganizationsOrgIdContactsRoute,
+    AuthenticatedOrganizationsOrgIdCounterpartiesRoute:
+      AuthenticatedOrganizationsOrgIdCounterpartiesRoute,
     AuthenticatedOrganizationsOrgIdEventsRoute:
       AuthenticatedOrganizationsOrgIdEventsRoute,
     AuthenticatedOrganizationsOrgIdMembersRoute:

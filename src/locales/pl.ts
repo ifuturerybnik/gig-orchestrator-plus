@@ -538,6 +538,8 @@ export default
       "overview": "Przegląd",
       "profile": "Profil",
       "members": "Członkowie",
+      "contacts": "Kontakty",
+      "counterparties": "Kontrahenci",
       "events": "Koncerty",
       "budget": "Budżet",
       "skrzynki": "Skrzynki pocztowe",
