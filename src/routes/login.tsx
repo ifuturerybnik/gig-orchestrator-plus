@@ -121,7 +121,9 @@ function LoginPage() {
             </Button>
           </form>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="mt-6">
+            <OAuthButtons />
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.login.email")}</Label>
               <Input
