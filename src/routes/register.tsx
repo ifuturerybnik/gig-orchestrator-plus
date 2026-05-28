@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PhoneInput } from "@/components/phone-input";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+
 import { recordSignupConsents } from "@/lib/consents.functions";
 import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal";
 
@@ -148,7 +148,6 @@ function RegisterPage() {
           </div>
         ) : step === 1 ? (
           <div className="mt-6">
-            <OAuthButtons />
             <form onSubmit={handleAccount} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.register.email")}</Label>
