@@ -150,6 +150,7 @@ function LoginPage() {
               {t("auth.login.submit")}
             </Button>
           </form>
+          </div>
         )}
 
 
