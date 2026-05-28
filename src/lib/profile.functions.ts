@@ -10,9 +10,14 @@ export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, userEmail } = context;
-    const [{ data: profile }, { data: roles }] = await Promise.all([
+    const [{ data: profile }, { data: roles }, { count: ownerCount }] = await Promise.all([
       supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase
+        .from("organization_members")
+        .select("organization_id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("role", "owner"),
     ]);
 
     // Odszyfrowujemy PII na granicy serwer→klient — komponent dostaje plaintext.
@@ -29,13 +34,17 @@ export const getMyProfile = createServerFn({ method: "GET" })
       : null;
 
     const roleList = (roles ?? []).map((r) => r.role as string);
+    const isAdmin = roleList.includes("super_admin") || roleList.includes("admin_staff");
+    const isOrgOwner = (ownerCount ?? 0) > 0;
     return {
       userId,
       email: userEmail,
       profile: decryptedProfile,
       roles: roleList,
-      isAdmin: roleList.includes("super_admin") || roleList.includes("admin_staff"),
+      isAdmin,
       isSuperAdmin: roleList.includes("super_admin"),
+      isOrgOwner,
+      mfaRecommended: isAdmin || isOrgOwner,
     };
   });
 
