@@ -392,7 +392,8 @@ export default
         "address": "Address",
         "source": "Source",
         "source_shared": "Registered",
-        "source_private": "Private"
+        "source_private": "Private",
+        "shared_to_org": "Shared with organization: {{name}}"
       },
       "details": {
         "view_title": "Counterparty details",
