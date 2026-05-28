@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trustDevice, isDeviceTrusted } from "@/lib/mfa-trust";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -122,7 +122,6 @@ function LoginPage() {
           </form>
         ) : (
           <div className="mt-6">
-            <OAuthButtons />
             <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.login.email")}</Label>
