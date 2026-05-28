@@ -209,6 +209,7 @@ export function AddCounterpartyDialog({
     mutationFn: () =>
       createDraftFn({
         data: {
+          ownerOrgId,
           name: name.trim(),
           types,
           description: description.trim() || undefined,
@@ -224,9 +225,9 @@ export function AddCounterpartyDialog({
       }),
     onSuccess: async (r) => {
       await flushPendingContacts(r.organizationId);
-      await flushOrgShares(r.organizationId);
+      if (!ownerOrgId) await flushOrgShares(r.organizationId);
       toast.success(t("organizations.counterparties.dialog.submitted_for_review"));
-      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+      invalidateLists();
       onOpenChange(false);
     },
     onError: (err: unknown) =>
