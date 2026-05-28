@@ -56,6 +56,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCountry?: string;
+  /** Gdy podane — kontrahent dodawany jest do tej organizacji (owner_kind='organization'). */
+  ownerOrgId?: string;
 }
 
 type MatchOrg = {
@@ -74,6 +76,7 @@ export function AddCounterpartyDialog({
   open,
   onOpenChange,
   defaultCountry,
+  ownerOrgId,
 }: Props) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -163,14 +166,22 @@ export function AddCounterpartyDialog({
     }
   };
 
+  const invalidateLists = () => {
+    if (ownerOrgId) {
+      queryClient.invalidateQueries({ queryKey: ["org-counterparties", ownerOrgId] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (counterpartyOrgId: string) =>
-      addFn({ data: { counterpartyOrgId } }),
+      addFn({ data: { counterpartyOrgId, ownerOrgId } }),
     onSuccess: async (_r, counterpartyOrgId) => {
       await flushPendingContacts(counterpartyOrgId);
-      await flushOrgShares(counterpartyOrgId);
+      if (!ownerOrgId) await flushOrgShares(counterpartyOrgId);
       toast.success(t("organizations.counterparties.dialog.added"));
-      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+      invalidateLists();
       onOpenChange(false);
     },
     onError: (err: unknown) => {
@@ -198,6 +209,7 @@ export function AddCounterpartyDialog({
     mutationFn: () =>
       createDraftFn({
         data: {
+          ownerOrgId,
           name: name.trim(),
           types,
           description: description.trim() || undefined,
@@ -213,9 +225,9 @@ export function AddCounterpartyDialog({
       }),
     onSuccess: async (r) => {
       await flushPendingContacts(r.organizationId);
-      await flushOrgShares(r.organizationId);
+      if (!ownerOrgId) await flushOrgShares(r.organizationId);
       toast.success(t("organizations.counterparties.dialog.submitted_for_review"));
-      queryClient.invalidateQueries({ queryKey: ["my-counterparties"] });
+      invalidateLists();
       onOpenChange(false);
     },
     onError: (err: unknown) =>
@@ -300,7 +312,7 @@ export function AddCounterpartyDialog({
               </div>
             )}
 
-            {canSearch && hasMatches && (
+            {canSearch && hasMatches && !ownerOrgId && (
               <MyOrgsShareSection
                 selectedOrgIds={shareOrgIds}
                 onChange={setShareOrgIds}
@@ -505,10 +517,12 @@ export function AddCounterpartyDialog({
               onPendingChange={setPendingContacts}
             />
 
-            <MyOrgsShareSection
-              selectedOrgIds={shareOrgIds}
-              onChange={setShareOrgIds}
-            />
+            {!ownerOrgId && (
+              <MyOrgsShareSection
+                selectedOrgIds={shareOrgIds}
+                onChange={setShareOrgIds}
+              />
+            )}
 
             <p className="text-xs text-muted-foreground">
               {t("organizations.counterparties.dialog.review_hint")}
