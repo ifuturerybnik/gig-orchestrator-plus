@@ -11,7 +11,7 @@ function getBase(): string {
 }
 
 function getToken(): string {
-  const token = process.env.MAIL_PROXY_TOKEN;
+  const token = process.env.MAIL_PROXY_TOKEN?.trim();
   if (!token) throw new Error("Missing MAIL_PROXY_TOKEN");
   return token;
 }
