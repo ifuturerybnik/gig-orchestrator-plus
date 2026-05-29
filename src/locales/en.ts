@@ -520,7 +520,7 @@ export default
       "members": "Members",
       "contacts": "Contacts",
       "counterparties": "Counterparties",
-      "events": "Concerts",
+      "events": "Performances",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
       "correspondence": "Correspondence",
@@ -530,11 +530,82 @@ export default
       "pending_expenses": "Pending expenses: {{count}}"
     },
     "events": {
-      "title": "Concerts",
-      "subtitle": "Plan and manage this organization's concerts.",
-      "empty": "No concerts scheduled yet. The concert management module is coming here soon.",
+      "title": "Performances",
+      "subtitle": "Plan and manage this organization's performances.",
+      "empty": "No performances scheduled yet.",
       "coming_soon": "Coming soon"
     },
+    "performances": {
+      "title": "Performances",
+      "subtitle": "Plan and manage this organization's performances.",
+      "add": "Add performance",
+      "empty_title": "No performances",
+      "empty": "Add your first performance using the button above.",
+      "col": {
+        "date": "Date",
+        "status": "Status",
+        "name": "Name",
+        "city": "City",
+        "assignments": "Assignments",
+        "visibility": "Visibility"
+      },
+      "status": {
+        "inquiry": "Inquiry",
+        "tentative": "Tentative booking",
+        "confirmed_signing": "Confirmed (contract being signed)",
+        "confirmed_signed": "Confirmed (contract signed)"
+      },
+      "visibility": {
+        "private": "Only me",
+        "members_date": "Show members date only",
+        "members_full": "Show members full info",
+        "public_date": "Publish on site — date only",
+        "public_full": "Publish on site — full info"
+      },
+      "fields": {
+        "date": "Performance date",
+        "date_placeholder": "Pick a date",
+        "status": "Status",
+        "status_placeholder": "Select status",
+        "visibility": "Visibility",
+        "visibility_hint": "'Full info' covers the date, performance name and venue.",
+        "name": "Performance name",
+        "city": "City",
+        "postal_code": "Postal code",
+        "street": "Street",
+        "street_number": "Number",
+        "google_maps_url": "Google Maps pin (URL)",
+        "google_maps_url_hint": "Required only when visibility = 'Publish on site — full info'."
+      },
+      "assignments": {
+        "title": "Assignments",
+        "contacts": "Contacts",
+        "counterparties": "Counterparties",
+        "empty": "No assignments",
+        "assign_contact": "Assign contact",
+        "assign_counterparty": "Assign counterparty",
+        "add_contact": "Add contact",
+        "add_counterparty": "Add counterparty"
+      },
+      "dialog": {
+        "title": "New performance",
+        "submit": "Save performance"
+      },
+      "actions": {
+        "assign": "Assign"
+      },
+      "toasts": {
+        "created": "Performance added",
+        "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
+        "linked_contact_suggest": "Linked contact: {{name}} — assign too?"
+      },
+      "errors": {
+        "date_required": "Performance date is required",
+        "status_required": "Status is required",
+        "required": "Required field"
+      }
+    },
+
     "budget": {
       "title": "Budget",
       "intro": "Plan your expenses and budget.",
