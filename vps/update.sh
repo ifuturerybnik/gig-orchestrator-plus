@@ -84,6 +84,6 @@ for i in 1 2 3 4 5; do
   sleep 2
 done
 
-err "Aplikacja NIE odpowiada na http://127.0.0.1:'"$PORT"' po 5 próbach"
+err "Aplikacja NIE odpowiada na http://127.0.0.1:${PORT} po 5 próbach"
 err "Sprawdź logi:  pm2 logs $PM2_NAME --lines 50"
 exit 1
