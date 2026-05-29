@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2, Pencil } from "lucide-react";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,10 +87,15 @@ function OrganizationPerformancesPage() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<PerformanceInitial | null>(null);
+  const [createDate, setCreateDate] = useState<string | null>(null);
   const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
   const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Calendar popover state — anchor positioned at click coords
+  const [popoverDate, setPopoverDate] = useState<string | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const qc = useQueryClient();
   const fetchList = useServerFn(listPerformances);
