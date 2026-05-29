@@ -8,12 +8,15 @@ import { decryptPii, encryptPii } from "../crypto.server";
 import type { SocialPlatformId } from "../social-platforms";
 import { refreshTwitterToken, twitterAdapter } from "./twitter.server";
 import { linkedinAdapter, refreshLinkedInToken } from "./linkedin.server";
+import { facebookAdapter, instagramAdapter } from "./meta.server";
 import type { PlatformAccount, PlatformAdapter } from "./types";
 
 // Mapa platformId → adapter. Kolejne tury dorzucają tu wpisy.
 export const PLATFORM_ADAPTERS: Partial<Record<SocialPlatformId, PlatformAdapter>> = {
   twitter: twitterAdapter,
   linkedin: linkedinAdapter,
+  facebook: facebookAdapter,
+  instagram: instagramAdapter,
 };
 
 
@@ -27,11 +30,13 @@ export async function getAppCredentialsServer(
   organizationId: string,
   platform: string,
 ): Promise<{ clientId: string; clientSecret: string } | null> {
+  // Instagram dzieli credentials Meta z Facebookiem (jeden App ID).
+  const lookupPlatform = platform === "instagram" ? "facebook" : platform;
   const { data, error } = await supabaseAdmin
     .from("social_app_credentials")
     .select("client_id, client_secret_enc")
     .eq("organization_id", organizationId)
-    .eq("platform", platform)
+    .eq("platform", lookupPlatform)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
