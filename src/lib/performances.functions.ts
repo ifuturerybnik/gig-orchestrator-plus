@@ -378,3 +378,24 @@ export const findCounterpartyLinkForOrg = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { linkId: link?.id ?? null };
   });
+
+export const deletePerformance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        performanceId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("performances")
+      .delete()
+      .eq("id", data.performanceId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
