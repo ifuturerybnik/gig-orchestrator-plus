@@ -553,7 +553,8 @@ export default
       "mail": "Poczta",
       "autokorespondencja": "Autokorespondencja",
       "back_to_list": "← Wszystkie organizacje",
-      "pending_expenses": "Niezrealizowane wydatki: {{count}}"
+      "pending_expenses": "Niezrealizowane wydatki: {{count}}",
+      "social": "Organizacja SM"
     },
     "events": {
       "title": "Występy",
