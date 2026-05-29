@@ -625,3 +625,99 @@ export async function handleTikTokOAuthCallback(args: {
 }
 
 
+
+// =============================================================================
+// Spotify (OAuth 2.0 Authorization Code)
+// =============================================================================
+
+export async function handleSpotifyOAuthCallback(args: {
+  code: string;
+  state: string;
+  callbackUrl: string;
+}): Promise<{ orgId: string; accountName: string; redirectBack: string | null }> {
+  const admin = supabaseAdmin;
+
+  const { data: stateRow, error: stateErr } = await admin
+    .from("social_oauth_states")
+    .select("organization_id, user_id, platform, redirect_back, expires_at")
+    .eq("state", args.state)
+    .maybeSingle();
+  if (stateErr) throw new Error(stateErr.message);
+  if (!stateRow) throw new Error("Nieznany lub wygasły state OAuth.");
+  const s = stateRow as {
+    organization_id: string;
+    user_id: string;
+    platform: string;
+    redirect_back: string | null;
+    expires_at: string;
+  };
+  if (s.platform !== "spotify_artists") {
+    throw new Error("State nie pasuje do platformy Spotify.");
+  }
+  if (new Date(s.expires_at).getTime() < Date.now()) {
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    throw new Error("State OAuth wygasł — uruchom proces od nowa.");
+  }
+
+  let redirectBack: string | null = null;
+  if (s.redirect_back) {
+    const decoded = decryptPii(s.redirect_back);
+    if (decoded) {
+      try {
+        const parsed = JSON.parse(decoded) as { r?: string | null };
+        redirectBack = parsed.r ?? null;
+      } catch {
+        redirectBack = null;
+      }
+    }
+  }
+
+  const { data: credRow, error: credErr } = await admin
+    .from("social_app_credentials")
+    .select("client_id, client_secret_enc")
+    .eq("organization_id", s.organization_id)
+    .eq("platform", "spotify_artists")
+    .maybeSingle();
+  if (credErr) throw new Error(credErr.message);
+  if (!credRow) throw new Error("Brak credentials aplikacji Spotify dla organizacji.");
+  const { client_id, client_secret_enc } = credRow as {
+    client_id: string;
+    client_secret_enc: string;
+  };
+  const clientSecret = decryptPii(client_secret_enc);
+  if (!clientSecret) throw new Error("Nie udało się odszyfrować Client Secret.");
+
+  const tok = await exchangeSpotifyCode({
+    code: args.code,
+    redirectUri: args.callbackUrl,
+    clientId: client_id,
+    clientSecret,
+  });
+
+  const me = await fetchSpotifyMe(tok.accessToken);
+
+  const { error: upErr } = await admin.from("social_accounts").upsert(
+    {
+      organization_id: s.organization_id,
+      platform: "spotify_artists",
+      external_account_id: me.id,
+      account_name: me.displayName,
+      account_avatar_url: me.avatarUrl,
+      scopes: tok.scope ? tok.scope.split(" ") : [],
+      access_token_enc: encryptPii(tok.accessToken),
+      refresh_token_enc: tok.refreshToken ? encryptPii(tok.refreshToken) : null,
+      token_expires_at: tok.expiresAt,
+      status: "connected",
+      last_error: null,
+      connected_by: s.user_id,
+      connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "organization_id,platform" },
+  );
+  if (upErr) throw new Error(upErr.message);
+
+  await admin.from("social_oauth_states").delete().eq("state", args.state);
+
+  return { orgId: s.organization_id, accountName: me.displayName, redirectBack };
+}
