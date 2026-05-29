@@ -1310,10 +1310,20 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         code_challenge_method: "S256",
       });
       authorizeUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+    } else if (data.platform === "linkedin") {
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: "openid profile email w_member_social",
+        state,
+      });
+      authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
     } else {
       throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
     }
 
     return { authorizeUrl, callbackUrl };
   });
+
 
