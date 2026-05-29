@@ -906,7 +906,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
       {/* Details from assigned badges */}
       <ContactDetailsDialog
         contactId={detailsContactId}
-        scope={{ kind: "organization", organizationId }}
+        scope={{ kind: "org", organizationId }}
         onOpenChange={(o) => !o && setDetailsContactId(null)}
       />
       <CounterpartyDetailsDialog
