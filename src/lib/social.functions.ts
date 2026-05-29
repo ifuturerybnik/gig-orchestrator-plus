@@ -1360,6 +1360,15 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         prompt: "consent",
       });
       authorizeUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    } else if (data.platform === "tiktok") {
+      const params = new URLSearchParams({
+        client_key: clientId,
+        response_type: "code",
+        scope: "user.info.basic,video.upload,video.publish,video.list",
+        redirect_uri: callbackUrl,
+        state,
+      });
+      authorizeUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
     } else {
       throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
     }

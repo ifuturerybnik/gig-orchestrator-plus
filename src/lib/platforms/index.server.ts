@@ -117,6 +117,12 @@ export async function getValidAccount(args: {
         clientId: credentials.clientId,
         clientSecret: credentials.clientSecret,
       });
+    } else if (row.platform === "tiktok") {
+      refreshed = await refreshTikTokToken({
+        refreshToken,
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+      });
     }
     if (refreshed) {
       accessToken = refreshed.accessToken;
