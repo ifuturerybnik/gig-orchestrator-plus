@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2, Pencil } from "lucide-react";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,10 +87,15 @@ function OrganizationPerformancesPage() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<PerformanceInitial | null>(null);
+  const [createDate, setCreateDate] = useState<string | null>(null);
   const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
   const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Calendar popover state — anchor positioned at click coords
+  const [popoverDate, setPopoverDate] = useState<string | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const qc = useQueryClient();
   const fetchList = useServerFn(listPerformances);
@@ -118,8 +130,31 @@ function OrganizationPerformancesPage() {
 
   const items = data?.items ?? [];
 
-  const openCreate = () => {
+  // Build a map: yyyy-MM-dd -> events for that day
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, typeof items>();
+    for (const p of items) {
+      const arr = map.get(p.performance_date) ?? [];
+      arr.push(p);
+      map.set(p.performance_date, arr);
+    }
+    return map;
+  }, [items]);
+
+  const eventDates = useMemo(
+    () =>
+      Array.from(eventsByDate.keys()).map((iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }),
+    [eventsByDate],
+  );
+
+  const popoverItems = popoverDate ? eventsByDate.get(popoverDate) ?? [] : [];
+
+  const openCreate = (iso?: string) => {
     setEditing(null);
+    setCreateDate(iso ?? null);
     setOpen(true);
   };
 
@@ -139,7 +174,19 @@ function OrganizationPerformancesPage() {
       notes: p.notes,
       assignments: p.assignments,
     });
+    setCreateDate(null);
     setOpen(true);
+  };
+
+  const handleDayClick = (day: Date, _mods: unknown, e: React.MouseEvent) => {
+    const iso = format(day, "yyyy-MM-dd");
+    const dayEvents = eventsByDate.get(iso) ?? [];
+    if (dayEvents.length === 0) {
+      openCreate(iso);
+      return;
+    }
+    setPopoverDate(iso);
+    setPopoverAnchor({ x: e.clientX, y: e.clientY });
   };
 
   const openCpDetails = async (cpOrgId: string) => {
@@ -165,11 +212,115 @@ function OrganizationPerformancesPage() {
             {t("organizations.performances.subtitle")}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={() => openCreate()}>
           <Plus className="h-4 w-4" />
           {t("organizations.performances.add")}
         </Button>
       </div>
+
+      {/* Calendar overview — click empty day = create, click busy day = popover */}
+      <div className="rounded-md border border-border bg-card p-3">
+        <Calendar
+          mode="single"
+          onDayClick={handleDayClick}
+          modifiers={{ hasEvents: eventDates }}
+          modifiersClassNames={{
+            hasEvents:
+              "relative font-semibold !bg-primary/15 !text-primary hover:!bg-primary/25",
+          }}
+          showOutsideDays
+          className="pointer-events-auto mx-auto"
+          classNames={{
+            months: "flex flex-col sm:flex-row gap-4 w-full",
+            month: "flex-1 space-y-4",
+            table: "w-full border-collapse",
+            head_row: "flex w-full",
+            head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-xs",
+            row: "flex w-full mt-2",
+            cell: "flex-1 text-center text-sm relative",
+            day: "h-10 w-full p-0 font-normal aria-selected:opacity-100 rounded-md hover:bg-accent transition-colors",
+          }}
+        />
+      </div>
+
+      <Popover
+        open={!!popoverDate}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPopoverDate(null);
+            setPopoverAnchor(null);
+          }
+        }}
+      >
+        <PopoverAnchor asChild>
+          <div
+            style={{
+              position: "fixed",
+              left: popoverAnchor?.x ?? 0,
+              top: popoverAnchor?.y ?? 0,
+              width: 1,
+              height: 1,
+              pointerEvents: "none",
+            }}
+          />
+        </PopoverAnchor>
+        <PopoverContent side="top" align="center" className="w-80 p-3">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              {popoverDate}
+            </p>
+            <div className="space-y-1.5">
+              {popoverItems.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    openEdit(p);
+                  }}
+                  className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
+                >
+                  <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-medium text-foreground">
+                        {p.name?.trim() || renderEventKind(p.event_kind)}
+                      </span>
+                      <Badge
+                        variant={statusVariant[p.status as PerformanceStatus]}
+                        className={`${statusClassName[p.status as PerformanceStatus]} shrink-0`}
+                      >
+                        {t(`organizations.performances.status.${p.status}`)}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground">
+                      {renderEventKind(p.event_kind)}
+                      {p.city ? ` · ${p.city}` : ""}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const iso = popoverDate;
+                setPopoverDate(null);
+                setPopoverAnchor(null);
+                if (iso) openCreate(iso);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t("organizations.performances.add")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
@@ -360,10 +511,14 @@ function OrganizationPerformancesPage() {
         open={open}
         onOpenChange={(v) => {
           setOpen(v);
-          if (!v) setEditing(null);
+          if (!v) {
+            setEditing(null);
+            setCreateDate(null);
+          }
         }}
         organizationId={orgId}
         initial={editing}
+        initialDate={createDate}
       />
 
       <ContactDetailsDialog
