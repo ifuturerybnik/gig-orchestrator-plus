@@ -1304,7 +1304,7 @@ export default
       "not_ready_toast": "Integracja nie jest jeszcze gotowa.",
       "oauth_redirect_coming_soon": "Przekierowanie OAuth zostanie uruchomione w kolejnej turze.",
       "ready_title": "Wszystko gotowe",
-      "not_ready_body_v2": "Brak skonfigurowanej aplikacji deweloperskiej dla tej platformy. Wróć do kroku „Konfiguracja aplikacji" i wklej Client ID + Client Secret.",
+      "not_ready_body_v2": "Brak skonfigurowanej aplikacji deweloperskiej dla tej platformy. Wróć do kroku „Konfiguracja aplikacji\" i wklej Client ID + Client Secret.",
       "back_to_setup": "Wróć do konfiguracji",
       "platform_coming_soon_title": "Platforma w trakcie wdrożenia",
       "platform_coming_soon_body": "Integracja {{platform}} zostanie udostępniona w kolejnej iteracji. Na razie aktywny jest tylko X (Twitter).",
