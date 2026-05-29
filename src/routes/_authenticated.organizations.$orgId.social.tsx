@@ -6,6 +6,7 @@ import { PlatformsTab } from "@/components/social/PlatformsTab";
 import { AiStudioTab } from "@/components/social/AiStudioTab";
 import { ScheduleTab } from "@/components/social/ScheduleTab";
 import { StatsTab } from "@/components/social/StatsTab";
+import { InboxTab } from "@/components/social/InboxTab";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/social",
@@ -32,8 +33,9 @@ function SocialIntegrationsPage() {
       </header>
 
       <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="grid w-full max-w-3xl grid-cols-5">
           <TabsTrigger value="accounts">{t("social.tabs.accounts")}</TabsTrigger>
+          <TabsTrigger value="inbox">{t("social.tabs.inbox")}</TabsTrigger>
           <TabsTrigger value="ai">{t("social.tabs.ai_studio")}</TabsTrigger>
           <TabsTrigger value="schedule">{t("social.tabs.schedule")}</TabsTrigger>
           <TabsTrigger value="stats">{t("social.tabs.stats")}</TabsTrigger>
@@ -41,6 +43,9 @@ function SocialIntegrationsPage() {
 
         <TabsContent value="accounts" className="mt-6">
           <PlatformsTab orgId={orgId} />
+        </TabsContent>
+        <TabsContent value="inbox" className="mt-6">
+          <InboxTab orgId={orgId} />
         </TabsContent>
         <TabsContent value="ai" className="mt-6">
           <AiStudioTab orgId={orgId} />

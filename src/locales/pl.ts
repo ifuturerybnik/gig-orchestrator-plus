@@ -1166,9 +1166,42 @@ export default
     "subtitle": "Połącz konta w social mediach z tą organizacją i zarządzaj publikacjami w jednym miejscu.",
     "tabs": {
       "accounts": "Połączone konta",
+      "inbox": "Skrzynka",
       "ai_studio": "AI Studio",
       "schedule": "Harmonogram",
       "stats": "Statystyki"
+    },
+    "inbox": {
+      "title": "Skrzynka komentarzy i wiadomości",
+      "subtitle": "Jedno miejsce na wszystkie komentarze pod postami i wiadomości DM z połączonych kont. Odpowiadaj, ukrywaj, moderuj — z pomocą AI.",
+      "coming_soon_badge": "Aktywne po połączeniu kont",
+      "empty_state": "Brak komentarzy i wiadomości. Po połączeniu konta i włączeniu synchronizacji pojawią się tu nowe pozycje z platform.",
+      "features_title": "Co dostajesz w skrzynce",
+      "features_subtitle": "Wszystkie funkcje uruchamiają się automatycznie po podłączeniu danej platformy (Tury 2–7).",
+      "features": {
+        "unified_inbox": { "title": "Wspólna skrzynka", "desc": "Komentarze i DM-y ze wszystkich platform w jednej liście, z filtrami: platforma, post, status." },
+        "quick_reply": { "title": "Szybkie odpowiedzi", "desc": "Odpowiadaj na komentarze i wiadomości bezpośrednio w Concertivo — bez przełączania się między aplikacjami." },
+        "moderation": { "title": "Moderacja", "desc": "Ukrywaj, usuwaj, oznaczaj jako spam, banuj użytkowników — wszystko z audytem akcji." },
+        "ai_replies": { "title": "AI sugeruje odpowiedzi", "desc": "Trzy warianty odpowiedzi (formalny, ciepły, krótki) generowane na bazie kontekstu posta i tonu komentarza." },
+        "ai_moderator": { "title": "AI moderator", "desc": "Automatyczne wykrywanie hejtu, spamu i pytań wymagających pilnej reakcji — z oznaczeniami i sentymentem." },
+        "notifications": { "title": "Powiadomienia", "desc": "Powiadomienia e-mail i w aplikacji o nowych komentarzach i wiadomościach do obsługi." },
+        "user_history": { "title": "Historia interakcji", "desc": "Zobacz kto często komentuje, jaki ma sentyment, kiedy ostatnio pisał — kontekst dla lepszej odpowiedzi." }
+      },
+      "platform_support_title": "Co da się zrobić na której platformie",
+      "platform_support_subtitle": "Zakres operacji zależy od API dostawcy. Tabela pokazuje docelowe możliwości po połączeniu.",
+      "table": {
+        "platform": "Platforma",
+        "read": "Czytanie",
+        "reply": "Odpowiedź",
+        "hide": "Ukrycie",
+        "delete": "Usunięcie",
+        "dm": "Wiadomości DM"
+      },
+      "support": {
+        "yes": "Tak",
+        "partial": "Częściowo",
+        "no": "Brak"
+      }
     },
     "intro": {
       "title": "Jak to działa?",
