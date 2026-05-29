@@ -2,6 +2,11 @@
 // Importowane TYLKO przez server routes pod /api/public/social/*.
 import { encryptPii, decryptPii } from "./crypto.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  exchangeLinkedInCode,
+  fetchLinkedInUserInfo,
+} from "./platforms/linkedin.server";
+
 
 export async function handleXOAuthCallback(args: {
   code: string;
