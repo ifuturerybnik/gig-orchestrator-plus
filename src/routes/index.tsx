@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 import heroBg from "@/assets/landing-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
+  useForceLightTheme();
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-background">

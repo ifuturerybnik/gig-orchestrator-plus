@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trustDevice, isDeviceTrusted } from "@/lib/mfa-trust";
+import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 
 export const Route = createFileRoute("/login")({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  useForceLightTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");

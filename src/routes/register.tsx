@@ -13,6 +13,7 @@ import { PhoneInput } from "@/components/phone-input";
 
 import { recordSignupConsents } from "@/lib/consents.functions";
 import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal";
+import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 
 export const Route = createFileRoute("/register")({
@@ -33,6 +34,7 @@ const USER_KINDS = [
 ] as const;
 
 function RegisterPage() {
+  useForceLightTheme();
   const { t, i18n } = useTranslation();
   const recordConsents = useServerFn(recordSignupConsents);
   const [step, setStep] = useState(1);
