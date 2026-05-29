@@ -635,7 +635,12 @@ export default
       "actions": {
         "assign": "Przypisz",
         "click_to_edit": "Kliknij, aby edytować",
-        "open_details": "Otwórz szczegóły"
+        "open_details": "Otwórz szczegóły",
+        "delete": "Usuń wydarzenie",
+        "delete_confirm_title": "Usunąć wydarzenie?",
+        "delete_confirm_desc": "Tej operacji nie można cofnąć. Wydarzenie wraz z przypisaniami zostanie trwale usunięte.",
+        "delete_cancel": "Anuluj",
+        "delete_confirm": "Usuń"
       },
       "toasts": {
         "created": "Wydarzenie zostało dodane",
