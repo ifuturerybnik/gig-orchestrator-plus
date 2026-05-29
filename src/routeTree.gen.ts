@@ -34,6 +34,7 @@ import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
 import { Route as AuthenticatedOrganizationsOrgIdMailRouteImport } from './routes/_authenticated.organizations.$orgId.mail'
@@ -177,6 +178,12 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdSocialRoute =
+  AuthenticatedOrganizationsOrgIdSocialRouteImport.update({
+    id: '/social',
+    path: '/social',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdProfileRoute =
   AuthenticatedOrganizationsOrgIdProfileRouteImport.update({
     id: '/profile',
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -297,6 +305,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
@@ -334,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -371,6 +381,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
+    | '/organizations/$orgId/social'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
+    | '/organizations/$orgId/social'
     | '/organizations/$orgId'
   id:
     | '__root__'
@@ -439,6 +451,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/mail'
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
+    | '/_authenticated/organizations/$orgId/social'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
@@ -633,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/social': {
+      id: '/_authenticated/organizations/$orgId/social'
+      path: '/social'
+      fullPath: '/organizations/$orgId/social'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdSocialRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/profile': {
       id: '/_authenticated/organizations/$orgId/profile'
       path: '/profile'
@@ -742,6 +762,7 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdMailRoute: typeof AuthenticatedOrganizationsOrgIdMailRoute
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
   AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
+  AuthenticatedOrganizationsOrgIdSocialRoute: typeof AuthenticatedOrganizationsOrgIdSocialRoute
   AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 
@@ -763,6 +784,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
       AuthenticatedOrganizationsOrgIdMembersRoute,
     AuthenticatedOrganizationsOrgIdProfileRoute:
       AuthenticatedOrganizationsOrgIdProfileRoute,
+    AuthenticatedOrganizationsOrgIdSocialRoute:
+      AuthenticatedOrganizationsOrgIdSocialRoute,
     AuthenticatedOrganizationsOrgIdIndexRoute:
       AuthenticatedOrganizationsOrgIdIndexRoute,
   }
@@ -813,13 +836,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -13,6 +13,7 @@ import {
   Inbox,
   Mail,
   Bot,
+  Share2,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -136,6 +137,12 @@ export function OrgSidebar({
           icon: Bot,
         },
       ],
+    },
+    {
+      kind: "leaf",
+      to: `${base}/social`,
+      labelKey: "organizations.sidebar.social",
+      icon: Share2,
     },
     {
       kind: "leaf",
