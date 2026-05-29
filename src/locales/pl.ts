@@ -626,13 +626,18 @@ export default
       },
       "dialog": {
         "title": "Nowe wydarzenie",
-        "submit": "Zapisz wydarzenie"
+        "title_edit": "Edytuj wydarzenie",
+        "submit": "Zapisz wydarzenie",
+        "submit_edit": "Zapisz zmiany"
       },
       "actions": {
-        "assign": "Przypisz"
+        "assign": "Przypisz",
+        "click_to_edit": "Kliknij, aby edytować",
+        "open_details": "Otwórz szczegóły"
       },
       "toasts": {
         "created": "Wydarzenie zostało dodane",
+        "updated": "Zmiany zostały zapisane",
         "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
         "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?",
         "past_date_warning": "Wybrałeś datę wsteczną ({{date}}) — upewnij się, że to celowe."
@@ -646,7 +651,8 @@ export default
         "date_required": "Data wydarzenia jest wymagana",
         "status_required": "Status jest wymagany",
         "event_kind_required": "Rodzaj wydarzenia jest wymagany",
-        "required": "Pole wymagane"
+        "required": "Pole wymagane",
+        "cp_link_missing": "Nie można otworzyć szczegółów kontrahenta — brak powiązania w tej organizacji."
       }
     },
 
