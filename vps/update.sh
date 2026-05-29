@@ -70,7 +70,7 @@ fi
 log "Sprawdzam czy aplikacja odpowiada..."
 sleep 2
 for i in 1 2 3 4 5; do
-  CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || echo "000")
+  CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:'"$PORT"'/ || echo "000")
   # Każda odpowiedź HTTP (1xx-5xx) oznacza, że serwer żyje.
   # 401/403 = działa, tylko route wymaga auth — to OK dla healthchecku.
   if [ "$CODE" != "000" ] && [ "$CODE" -ge 100 ] && [ "$CODE" -lt 600 ]; then
@@ -84,6 +84,6 @@ for i in 1 2 3 4 5; do
   sleep 2
 done
 
-err "Aplikacja NIE odpowiada na http://127.0.0.1:3000 po 5 próbach"
+err "Aplikacja NIE odpowiada na http://127.0.0.1:'"$PORT"' po 5 próbach"
 err "Sprawdź logi:  pm2 logs $PM2_NAME --lines 50"
 exit 1
