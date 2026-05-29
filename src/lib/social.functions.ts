@@ -1107,3 +1107,329 @@ export const publishPostNow = createServerFn({ method: "POST" })
     }
     return { results };
   });
+
+// ============================================================================
+// CREDENTIALS APLIKACJI DEVELOPERSKIEJ (per organizacja, per platforma)
+// ============================================================================
+// Użytkownicy (nie-Lovable) konfigurują własną aplikację u dostawcy
+// (np. developer.x.com) i wklejają Client ID + Client Secret w UI.
+// Secret szyfrujemy AES-256-GCM (crypto.server.ts).
+
+import { encryptPii, decryptPii } from "./crypto.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { randomBytes, createHash } from "crypto";
+
+export const getAppCredentials = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("social_app_credentials")
+      .select("id, client_id, configured_at, configured_by, updated_at")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const r = row as null | {
+      id: string;
+      client_id: string;
+      configured_at: string;
+      configured_by: string;
+      updated_at: string;
+    };
+    return {
+      exists: !!r,
+      clientId: r?.client_id ?? null,
+      clientIdMasked: r ? maskClientIdLong(r.client_id) : null,
+      configuredAt: r?.configured_at ?? null,
+      updatedAt: r?.updated_at ?? null,
+    };
+  });
+
+function maskClientIdLong(s: string): string {
+  if (s.length <= 8) return "•".repeat(s.length);
+  return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
+}
+
+export const saveAppCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+        clientId: z.string().trim().min(3).max(512),
+        clientSecret: z.string().trim().min(3).max(2048),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const secretEnc = encryptPii(data.clientSecret);
+    if (!secretEnc) throw new Error("Nie udało się zaszyfrować Client Secret.");
+
+    const { error } = await supabase
+      .from("social_app_credentials")
+      .upsert(
+        {
+          organization_id: data.organizationId,
+          platform: data.platform,
+          client_id: data.clientId,
+          client_secret_enc: secretEnc,
+          configured_by: userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "organization_id,platform" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteAppCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("social_app_credentials")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================================
+// OAUTH START — generuje URL do dostawcy + zapisuje state w social_oauth_states
+// ============================================================================
+// Na razie wspieramy tylko X (Twitter) OAuth 2.0 z PKCE. Kolejne platformy
+// dodajemy w startSocialOAuth w nowych case'ach.
+
+function getCallbackUrl(platform: string, request: Request): string {
+  const url = new URL(request.url);
+  return `${url.origin}/api/public/social/${platform}-callback`;
+}
+
+function base64UrlEncode(buf: Buffer): string {
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export const startSocialOAuth = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+        redirectBack: z.string().max(1024).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // 1) pobierz credentials org+platform
+    const { data: credRow, error: credErr } = await supabase
+      .from("social_app_credentials")
+      .select("client_id")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (credErr) throw new Error(credErr.message);
+    if (!credRow) {
+      throw new Error("Brak skonfigurowanej aplikacji dla tej platformy. Najpierw wklej Client ID i Client Secret.");
+    }
+    const clientId = (credRow as { client_id: string }).client_id;
+
+    // 2) wygeneruj state + PKCE
+    const state = base64UrlEncode(randomBytes(32));
+    const codeVerifier = base64UrlEncode(randomBytes(48));
+    const codeChallenge = base64UrlEncode(
+      createHash("sha256").update(codeVerifier).digest(),
+    );
+
+    // 3) callback URL (z bieżącego requestu — będzie inny w dev/prod)
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const callbackUrl = getCallbackUrl(data.platform, request);
+
+    // 4) zapisz state w DB (TTL 15 min). codeVerifier trzymamy w redirect_back jako prefiks "pkce:".
+    //    (social_oauth_states nie ma osobnej kolumny code_verifier; chowamy go w redirect_back zaszyfrowany.)
+    const pkceBlob = encryptPii(JSON.stringify({ v: codeVerifier, r: data.redirectBack ?? null }));
+    const { error: stateErr } = await supabase.from("social_oauth_states").insert({
+      state,
+      organization_id: data.organizationId,
+      user_id: userId,
+      platform: data.platform,
+      redirect_back: pkceBlob,
+    });
+    if (stateErr) throw new Error(stateErr.message);
+
+    // 5) zbuduj URL u dostawcy
+    let authorizeUrl: string;
+    if (data.platform === "twitter") {
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: "tweet.read tweet.write users.read offline.access",
+        state,
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+      });
+      authorizeUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+    } else {
+      throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
+    }
+
+    return { authorizeUrl, callbackUrl };
+  });
+
+// ============================================================================
+// OAUTH CALLBACK HANDLER — używany przez route /api/public/social/x-callback
+// Wymiana code → access_token + refresh_token, zapis w social_accounts.
+// ============================================================================
+export async function handleXOAuthCallback(args: {
+  code: string;
+  state: string;
+  callbackUrl: string;
+}): Promise<{ orgId: string; accountName: string; redirectBack: string | null }> {
+  const admin = supabaseAdmin;
+
+  // 1) odczytaj state
+  const { data: stateRow, error: stateErr } = await admin
+    .from("social_oauth_states")
+    .select("organization_id, user_id, platform, redirect_back, expires_at")
+    .eq("state", args.state)
+    .maybeSingle();
+  if (stateErr) throw new Error(stateErr.message);
+  if (!stateRow) throw new Error("Nieznany lub wygasły state OAuth.");
+  const s = stateRow as {
+    organization_id: string;
+    user_id: string;
+    platform: string;
+    redirect_back: string | null;
+    expires_at: string;
+  };
+  if (s.platform !== "twitter") throw new Error("State nie pasuje do platformy X.");
+  if (new Date(s.expires_at).getTime() < Date.now()) {
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    throw new Error("State OAuth wygasł — uruchom proces od nowa.");
+  }
+
+  // 2) odszyfruj code_verifier
+  const decoded = decryptPii(s.redirect_back);
+  if (!decoded) throw new Error("Nie udało się odczytać code_verifier.");
+  const { v: codeVerifier, r: redirectBack } = JSON.parse(decoded) as {
+    v: string;
+    r: string | null;
+  };
+
+  // 3) credentials org
+  const { data: credRow, error: credErr } = await admin
+    .from("social_app_credentials")
+    .select("client_id, client_secret_enc")
+    .eq("organization_id", s.organization_id)
+    .eq("platform", "twitter")
+    .maybeSingle();
+  if (credErr) throw new Error(credErr.message);
+  if (!credRow) throw new Error("Brak credentials aplikacji X dla organizacji.");
+  const { client_id, client_secret_enc } = credRow as {
+    client_id: string;
+    client_secret_enc: string;
+  };
+  const clientSecret = decryptPii(client_secret_enc);
+  if (!clientSecret) throw new Error("Nie udało się odszyfrować Client Secret.");
+
+  // 4) wymiana code → tokens (X OAuth 2.0 PKCE z Basic Auth dla Confidential client)
+  const basic = Buffer.from(`${client_id}:${clientSecret}`).toString("base64");
+  const tokenBody = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: args.code,
+    redirect_uri: args.callbackUrl,
+    code_verifier: codeVerifier,
+  });
+  const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basic}`,
+    },
+    body: tokenBody.toString(),
+  });
+  if (!tokenRes.ok) {
+    const t = await tokenRes.text();
+    throw new Error(`X token exchange błąd ${tokenRes.status}: ${t.slice(0, 300)}`);
+  }
+  const tok = (await tokenRes.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    scope: string;
+    token_type: string;
+  };
+
+  // 5) pobierz informacje o użytkowniku
+  const meRes = await fetch("https://api.twitter.com/2/users/me?user.fields=username,profile_image_url,name", {
+    headers: { Authorization: `Bearer ${tok.access_token}` },
+  });
+  if (!meRes.ok) {
+    const t = await meRes.text();
+    throw new Error(`X /users/me błąd ${meRes.status}: ${t.slice(0, 300)}`);
+  }
+  const me = (await meRes.json()) as {
+    data: { id: string; username: string; name: string; profile_image_url?: string };
+  };
+
+  // 6) zapisz/upsert social_accounts
+  const expiresAt = new Date(Date.now() + tok.expires_in * 1000).toISOString();
+  const accessEnc = encryptPii(tok.access_token);
+  const refreshEnc = tok.refresh_token ? encryptPii(tok.refresh_token) : null;
+
+  const { error: upErr } = await admin
+    .from("social_accounts")
+    .upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "twitter",
+        external_account_id: me.data.id,
+        account_name: `@${me.data.username}`,
+        account_avatar_url: me.data.profile_image_url ?? null,
+        scopes: tok.scope.split(" "),
+        access_token_enc: accessEnc,
+        refresh_token_enc: refreshEnc,
+        token_expires_at: expiresAt,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+  if (upErr) throw new Error(upErr.message);
+
+  // 7) sprzątanie state
+  await admin.from("social_oauth_states").delete().eq("state", args.state);
+
+  return {
+    orgId: s.organization_id,
+    accountName: `@${me.data.username}`,
+    redirectBack: redirectBack ?? null,
+  };
+}
