@@ -1302,7 +1302,56 @@ export default
       "for_admin": "Dla administratora",
       "for_admin_body": "Załóż aplikację deweloperską {{platform}}, pobierz Client ID i Client Secret, a następnie dodaj je w Lovable jako sekrety {{envKey}}.",
       "not_ready_toast": "Integracja nie jest jeszcze gotowa.",
-      "oauth_redirect_coming_soon": "Przekierowanie OAuth zostanie uruchomione w kolejnej turze."
+      "oauth_redirect_coming_soon": "Przekierowanie OAuth zostanie uruchomione w kolejnej turze.",
+      "ready_title": "Wszystko gotowe",
+      "not_ready_body_v2": "Brak skonfigurowanej aplikacji deweloperskiej dla tej platformy. Wróć do kroku „Konfiguracja aplikacji\" i wklej Client ID + Client Secret.",
+      "back_to_setup": "Wróć do konfiguracji",
+      "platform_coming_soon_title": "Platforma w trakcie wdrożenia",
+      "platform_coming_soon_body": "Integracja {{platform}} zostanie udostępniona w kolejnej iteracji. Na razie aktywny jest tylko X (Twitter).",
+      "step_names": {
+        "intro": "Wprowadzenie",
+        "checklist": "Lista kontrolna",
+        "setup": "Konfiguracja aplikacji",
+        "permissions": "Uprawnienia",
+        "connect": "Połączenie"
+      }
+    },
+    "setup": {
+      "already_configured": "Aplikacja jest już skonfigurowana",
+      "delete_credentials": "Usuń klucze",
+      "callback_url_label": "Callback URL (wklej w ustawieniach aplikacji u dostawcy)",
+      "callback_url_hint": "Ten adres MUSI być wpisany w konfiguracji aplikacji u dostawcy jako dozwolony Callback / Redirect URI.",
+      "callback_copied": "Skopiowano callback URL.",
+      "instructions_title": "Instrukcja krok po kroku — jak utworzyć aplikację",
+      "instructions_coming_soon": "Szczegółowa instrukcja dla tej platformy pojawi się wkrótce.",
+      "update_title": "Zaktualizuj klucze",
+      "enter_title": "Wklej Client ID i Client Secret",
+      "update_hint": "Nadpisze obecne",
+      "client_id_placeholder": "np. abc123XYZ...",
+      "client_secret_placeholder": "Wklej Client Secret (pokazywany u dostawcy tylko raz)",
+      "secret_hint": "Secret jest szyfrowany AES-256-GCM po stronie serwera. Nigdy nie jest pokazywany w aplikacji ponownie.",
+      "save_new": "Zapisz klucze",
+      "save_update": "Zaktualizuj klucze",
+      "saved": "Klucze zostały zapisane.",
+      "deleted": "Klucze zostały usunięte.",
+      "x": {
+        "intro": "Aby Concertivo mogło publikować w imieniu Twojej organizacji na X, musisz założyć własną aplikację deweloperską u X. Zajmuje to ~5 minut.",
+        "open_portal": "Otwórz X Developer Portal",
+        "tip_label": "Wskazówka",
+        "tip_body": "Client Secret X pokazywany jest TYLKO RAZ podczas tworzenia. Jeśli go zgubisz, musisz wygenerować nowy (Regenerate) w ustawieniach aplikacji.",
+        "steps": [
+          "Zaloguj się na <strong>developer.x.com</strong> swoim kontem X. Jeśli nie masz konta developerskiego, kliknij „Sign up\" i wypełnij formularz (poziom <strong>Free</strong> wystarczy do startu — testowanie i podstawowe funkcje).",
+          "W panelu kliknij <strong>+ Create Project</strong>. Nazwa: np. „Concertivo — [nazwa Twojej organizacji]\". Use case: wybierz <em>Making a bot</em> lub <em>Publishing tools</em>. Opis: „Publikacja postów i odczyt komentarzy dla organizacji muzycznej\".",
+          "Wewnątrz projektu utwórz <strong>App</strong> (np. „concertivo-prod\"). Po utworzeniu zobaczysz <em>API Key</em>, <em>API Secret</em>, <em>Bearer Token</em> — <strong>ZIGNORUJ je</strong> (to OAuth 1.0a). Potrzebujemy OAuth 2.0.",
+          "Wejdź w zakładkę <strong>Settings</strong> aplikacji → sekcja <strong>User authentication settings</strong> → kliknij <strong>Set up</strong> (lub Edit).",
+          "<strong>App permissions</strong>: zaznacz <strong>Read and write and Direct message</strong>.<br/><strong>Type of App</strong>: wybierz <strong>Web App, Automated App or Bot</strong> (Confidential client).",
+          "<strong>Callback URI / Redirect URL</strong>: wklej dokładnie ten adres: {CALLBACK_URL}<br/>Możesz dodać wiele callbacków (np. dev + prod) — każdy w osobnej linii.",
+          "<strong>Website URL</strong>: wpisz adres strony Twojej organizacji (np. https://twoja-domena.pl). To wymagane pole.",
+          "Kliknij <strong>Save</strong>. Pojawi się ekran z <strong>OAuth 2.0 Client ID</strong> i <strong>Client Secret</strong>. <strong>Skopiuj OBA</strong> — Client Secret pokazywany jest tylko raz!",
+          "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
+          "Po zapisaniu przejdź do ostatniego kroku „Połączenie\" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta."
+        ]
+      }
     },
     "platforms": {
       "facebook": {

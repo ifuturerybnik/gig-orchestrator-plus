@@ -35,6 +35,7 @@ import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
@@ -185,6 +186,12 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const ApiPublicSocialXCallbackRoute =
+  ApiPublicSocialXCallbackRouteImport.update({
+    id: '/api/public/social/x-callback',
+    path: '/api/public/social/x-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOrganizationsOrgIdSocialRoute =
   AuthenticatedOrganizationsOrgIdSocialRouteImport.update({
     id: '/social',
@@ -281,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -315,6 +323,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
@@ -354,6 +363,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/api/public/social/x-callback'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/api/public/social/x-callback'
     | '/organizations/$orgId'
   id:
     | '__root__'
@@ -465,6 +477,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/social'
+    | '/api/public/social/x-callback'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
@@ -481,6 +494,7 @@ export interface RootRouteChildren {
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
+  ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -666,6 +680,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/organizations/$orgId/'
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/api/public/social/x-callback': {
+      id: '/api/public/social/x-callback'
+      path: '/api/public/social/x-callback'
+      fullPath: '/api/public/social/x-callback'
+      preLoaderRoute: typeof ApiPublicSocialXCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/organizations/$orgId/social': {
       id: '/_authenticated/organizations/$orgId/social'
@@ -854,6 +875,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
+  ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

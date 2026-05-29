@@ -91,27 +91,43 @@ export const disconnectSocialAccount = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ---------- Wizard: sprawdzenie gotowości platformy (czy mamy client_id) ----------
+// ---------- Wizard: sprawdzenie gotowości platformy (per-organizacja) ----------
+// Każda organizacja konfiguruje WŁASNĄ aplikację developerską u dostawcy
+// (np. developer.x.com). Client ID + zaszyfrowany Client Secret żyją w
+// public.social_app_credentials (RLS: tylko członkowie organizacji).
 
 export const checkPlatformReadiness = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ platform: platformSchema }).parse(input),
+    z
+      .object({
+        platform: platformSchema,
+        organizationId: z.string().uuid(),
+      })
+      .parse(input),
   )
-  .handler(async ({ data }) => {
-    const envMap: Record<string, string> = {
-      facebook: "META_APP_ID",
-      instagram: "META_APP_ID",
-      youtube: "GOOGLE_CLIENT_ID",
-      linkedin: "LINKEDIN_CLIENT_ID",
-      twitter: "TWITTER_CLIENT_ID",
-      tiktok: "TIKTOK_CLIENT_KEY",
-      spotify_artists: "SPOTIFY_CLIENT_ID",
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("social_app_credentials")
+      .select("id, client_id, configured_at")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const r = row as null | { id: string; client_id: string; configured_at: string };
+    return {
+      platform: data.platform,
+      hasClientId: !!r,
+      clientIdMasked: r ? maskClientId(r.client_id) : null,
+      configuredAt: r?.configured_at ?? null,
     };
-    const envKey = envMap[data.platform];
-    const hasClientId = !!process.env[envKey];
-    return { platform: data.platform, hasClientId, envKey };
   });
+
+function maskClientId(s: string): string {
+  if (s.length <= 8) return "•".repeat(s.length);
+  return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
+}
 
 // ---------- Posty: CRUD ----------
 
@@ -1091,3 +1107,195 @@ export const publishPostNow = createServerFn({ method: "POST" })
     }
     return { results };
   });
+
+// ============================================================================
+// CREDENTIALS APLIKACJI DEVELOPERSKIEJ (per organizacja, per platforma)
+// ============================================================================
+// Użytkownicy (nie-Lovable) konfigurują własną aplikację u dostawcy
+// (np. developer.x.com) i wklejają Client ID + Client Secret w UI.
+// Secret szyfrujemy AES-256-GCM (crypto.server.ts).
+
+import { encryptPii, decryptPii } from "./crypto.server";
+import { randomBytes, createHash } from "crypto";
+
+export const getAppCredentials = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("social_app_credentials")
+      .select("id, client_id, configured_at, configured_by, updated_at")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const r = row as null | {
+      id: string;
+      client_id: string;
+      configured_at: string;
+      configured_by: string;
+      updated_at: string;
+    };
+    return {
+      exists: !!r,
+      clientId: r?.client_id ?? null,
+      clientIdMasked: r ? maskClientIdLong(r.client_id) : null,
+      configuredAt: r?.configured_at ?? null,
+      updatedAt: r?.updated_at ?? null,
+    };
+  });
+
+function maskClientIdLong(s: string): string {
+  if (s.length <= 8) return "•".repeat(s.length);
+  return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
+}
+
+export const saveAppCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+        clientId: z.string().trim().min(3).max(512),
+        clientSecret: z.string().trim().min(3).max(2048),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const secretEnc = encryptPii(data.clientSecret);
+    if (!secretEnc) throw new Error("Nie udało się zaszyfrować Client Secret.");
+
+    const { error } = await supabase
+      .from("social_app_credentials")
+      .upsert(
+        {
+          organization_id: data.organizationId,
+          platform: data.platform,
+          client_id: data.clientId,
+          client_secret_enc: secretEnc,
+          configured_by: userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "organization_id,platform" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteAppCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("social_app_credentials")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================================
+// OAUTH START — generuje URL do dostawcy + zapisuje state w social_oauth_states
+// ============================================================================
+// Na razie wspieramy tylko X (Twitter) OAuth 2.0 z PKCE. Kolejne platformy
+// dodajemy w startSocialOAuth w nowych case'ach.
+
+function getCallbackUrl(platform: string, request: Request): string {
+  const url = new URL(request.url);
+  return `${url.origin}/api/public/social/${platform}-callback`;
+}
+
+function base64UrlEncode(buf: Buffer): string {
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export const startSocialOAuth = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+        redirectBack: z.string().max(1024).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // 1) pobierz credentials org+platform
+    const { data: credRow, error: credErr } = await supabase
+      .from("social_app_credentials")
+      .select("client_id")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (credErr) throw new Error(credErr.message);
+    if (!credRow) {
+      throw new Error("Brak skonfigurowanej aplikacji dla tej platformy. Najpierw wklej Client ID i Client Secret.");
+    }
+    const clientId = (credRow as { client_id: string }).client_id;
+
+    // 2) wygeneruj state + PKCE
+    const state = base64UrlEncode(randomBytes(32));
+    const codeVerifier = base64UrlEncode(randomBytes(48));
+    const codeChallenge = base64UrlEncode(
+      createHash("sha256").update(codeVerifier).digest(),
+    );
+
+    // 3) callback URL (z bieżącego requestu — będzie inny w dev/prod)
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const callbackUrl = getCallbackUrl(data.platform, request);
+
+    // 4) zapisz state w DB (TTL 15 min). codeVerifier trzymamy w redirect_back jako prefiks "pkce:".
+    //    (social_oauth_states nie ma osobnej kolumny code_verifier; chowamy go w redirect_back zaszyfrowany.)
+    const pkceBlob = encryptPii(JSON.stringify({ v: codeVerifier, r: data.redirectBack ?? null }));
+    const { error: stateErr } = await supabase.from("social_oauth_states").insert({
+      state,
+      organization_id: data.organizationId,
+      user_id: userId,
+      platform: data.platform,
+      redirect_back: pkceBlob,
+    });
+    if (stateErr) throw new Error(stateErr.message);
+
+    // 5) zbuduj URL u dostawcy
+    let authorizeUrl: string;
+    if (data.platform === "twitter") {
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: "tweet.read tweet.write users.read offline.access",
+        state,
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+      });
+      authorizeUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+    } else {
+      throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
+    }
+
+    return { authorizeUrl, callbackUrl };
+  });
+
