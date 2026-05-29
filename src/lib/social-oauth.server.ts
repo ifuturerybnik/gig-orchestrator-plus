@@ -19,6 +19,11 @@ import {
   exchangeTikTokCode,
   fetchTikTokUserInfo,
 } from "./platforms/tiktok.server";
+import {
+  exchangeSpotifyCode,
+  fetchSpotifyMe,
+} from "./platforms/spotify.server";
+
 
 
 export async function handleXOAuthCallback(args: {
