@@ -574,6 +574,7 @@ export default
       "status": {
         "inquiry": "Zapytanie",
         "tentative": "Wstępna rezerwacja",
+        "confirmed": "Potwierdzony",
         "confirmed_signing": "Potwierdzony (w trakcie podpisywania umowy)",
         "confirmed_signed": "Potwierdzony (umowa podpisana)"
       },
