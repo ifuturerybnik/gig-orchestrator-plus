@@ -563,11 +563,13 @@ export default
       "empty": "Dodaj pierwsze wydarzenie klikając przycisk powyżej.",
       "col": {
         "date": "Data",
+        "event_kind": "Rodzaj wydarzenia",
         "status": "Status",
         "name": "Nazwa",
         "city": "Miejscowość",
         "assignments": "Przypisania",
-        "visibility": "Widoczność"
+        "visibility": "Widoczność",
+        "actions": "Akcje"
       },
       "status": {
         "inquiry": "Zapytanie",
@@ -633,11 +635,17 @@ export default
       "actions": {
         "assign": "Przypisz",
         "click_to_edit": "Kliknij, aby edytować",
-        "open_details": "Otwórz szczegóły"
+        "open_details": "Otwórz szczegóły",
+        "delete": "Usuń wydarzenie",
+        "delete_confirm_title": "Usunąć wydarzenie?",
+        "delete_confirm_desc": "Tej operacji nie można cofnąć. Wydarzenie wraz z przypisaniami zostanie trwale usunięte.",
+        "delete_cancel": "Anuluj",
+        "delete_confirm": "Usuń"
       },
       "toasts": {
         "created": "Wydarzenie zostało dodane",
         "updated": "Zmiany zostały zapisane",
+        "deleted": "Wydarzenie usunięte",
         "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
         "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?",
         "past_date_warning": "Wybrałeś datę wsteczną ({{date}}) — upewnij się, że to celowe."

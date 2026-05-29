@@ -1,13 +1,23 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CalendarDays, Plus, Eye, EyeOff, Users, Globe } from "lucide-react";
+import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -29,7 +39,9 @@ import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog
 import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import {
   listPerformances,
+  deletePerformance,
   findCounterpartyLinkForOrg,
+  PERFORMANCE_EVENT_KIND_PRESETS,
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
@@ -61,13 +73,39 @@ function OrganizationPerformancesPage() {
   const [editing, setEditing] = useState<PerformanceInitial | null>(null);
   const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
   const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
+  const qc = useQueryClient();
   const fetchList = useServerFn(listPerformances);
   const findCpLink = useServerFn(findCounterpartyLinkForOrg);
+  const removePerformance = useServerFn(deletePerformance);
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
   });
+
+  const renderEventKind = (kind: string) => {
+    if ((PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind)) {
+      return t(`organizations.performances.event_kind.${kind}`);
+    }
+    return kind;
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await removePerformance({ data: { organizationId: orgId, performanceId: deleteId } });
+      toast.success(t("organizations.performances.toasts.deleted"));
+      setDeleteId(null);
+      await qc.invalidateQueries({ queryKey: ["performances", orgId] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const items = data?.items ?? [];
 
@@ -144,11 +182,13 @@ function OrganizationPerformancesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("organizations.performances.col.date")}</TableHead>
+                <TableHead>{t("organizations.performances.col.event_kind")}</TableHead>
                 <TableHead>{t("organizations.performances.col.status")}</TableHead>
                 <TableHead>{t("organizations.performances.col.name")}</TableHead>
                 <TableHead>{t("organizations.performances.col.city")}</TableHead>
                 <TableHead>{t("organizations.performances.col.assignments")}</TableHead>
                 <TableHead className="w-12">{t("organizations.performances.col.visibility")}</TableHead>
+                <TableHead className="w-12 text-right">{t("organizations.performances.col.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -161,6 +201,7 @@ function OrganizationPerformancesPage() {
                       title={t("organizations.performances.actions.click_to_edit")}
                     >
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
+                      <TableCell>{renderEventKind(p.event_kind)}</TableCell>
                       <TableCell>
                         <Badge variant={statusVariant[p.status as PerformanceStatus]}>
                           {t(`organizations.performances.status.${p.status}`)}
@@ -209,6 +250,21 @@ function OrganizationPerformancesPage() {
                         >
                           <VisibilityIcon v={p.visibility as PerformanceVisibility} />
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={t("organizations.performances.actions.delete")}
+                          title={t("organizations.performances.actions.delete")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(p.id);
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   </HoverCardTrigger>
@@ -305,6 +361,34 @@ function OrganizationPerformancesPage() {
         onOpenChange={(o) => !o && setDetailsCpLinkId(null)}
         ownerOrgId={orgId}
       />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && !deleting && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("organizations.performances.actions.delete_confirm_title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("organizations.performances.actions.delete_confirm_desc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {t("organizations.performances.actions.delete_cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("organizations.performances.actions.delete_confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

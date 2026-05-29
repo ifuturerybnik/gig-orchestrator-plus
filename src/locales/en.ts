@@ -543,11 +543,13 @@ export default
       "empty": "Add your first event using the button above.",
       "col": {
         "date": "Date",
+        "event_kind": "Event type",
         "status": "Status",
         "name": "Name",
         "city": "City",
         "assignments": "Assignments",
-        "visibility": "Visibility"
+        "visibility": "Visibility",
+        "actions": "Actions"
       },
       "status": {
         "inquiry": "Inquiry",
@@ -613,11 +615,17 @@ export default
       "actions": {
         "assign": "Assign",
         "click_to_edit": "Click to edit",
-        "open_details": "Open details"
+        "open_details": "Open details",
+        "delete": "Delete event",
+        "delete_confirm_title": "Delete this event?",
+        "delete_confirm_desc": "This cannot be undone. The event and its assignments will be permanently removed.",
+        "delete_cancel": "Cancel",
+        "delete_confirm": "Delete"
       },
       "toasts": {
         "created": "Event added",
         "updated": "Changes saved",
+        "deleted": "Event deleted",
         "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
         "linked_contact_suggest": "Linked contact: {{name}} — assign too?",
         "past_date_warning": "You picked a past date ({{date}}) — make sure this is intentional."
