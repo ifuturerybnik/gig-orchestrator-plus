@@ -853,6 +853,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
             <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
               {mutation.isPending
                 ? t("common.saving")
+                : isEdit
+                ? t("organizations.performances.dialog.submit_edit")
                 : t("organizations.performances.dialog.submit")}
             </Button>
           </DialogFooter>
