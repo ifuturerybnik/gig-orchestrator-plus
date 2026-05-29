@@ -92,7 +92,7 @@ interface Props {
 type ContactRef = { id: string; name: string };
 type CounterpartyRef = { id: string; name: string };
 
-const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
+const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
 
 export function PerformanceDialog({ open, onOpenChange, organizationId, initial }: Props) {
   const { t } = useTranslation();
