@@ -145,6 +145,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     setGoogleMapsUrl("");
     setContacts([]);
     setCounterparties([]);
+    setSuggestedContacts([]);
+    setSuggestedCounterparties([]);
   };
 
   const mutation = useMutation({
