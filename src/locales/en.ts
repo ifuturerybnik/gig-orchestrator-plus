@@ -615,7 +615,12 @@ export default
       "actions": {
         "assign": "Assign",
         "click_to_edit": "Click to edit",
-        "open_details": "Open details"
+        "open_details": "Open details",
+        "delete": "Delete event",
+        "delete_confirm_title": "Delete this event?",
+        "delete_confirm_desc": "This cannot be undone. The event and its assignments will be permanently removed.",
+        "delete_cancel": "Cancel",
+        "delete_confirm": "Delete"
       },
       "toasts": {
         "created": "Event added",
