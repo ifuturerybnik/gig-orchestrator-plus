@@ -60,8 +60,8 @@ if pm2 describe "$PM2_NAME" > /dev/null 2>&1; then
   pm2 reload "$PM2_NAME" --update-env
   ok "PM2 reload OK"
 else
-  warn "Proces PM2 '$PM2_NAME' nie istnieje — startuję od zera"
-  pm2 start vps/server.mjs --name "$PM2_NAME" --update-env
+  warn "Proces PM2 '$PM2_NAME' nie istnieje — startuję od zera na porcie $PORT"
+  PORT="$PORT" pm2 start vps/server.mjs --name "$PM2_NAME" --update-env
   pm2 save
   ok "PM2 start OK"
 fi
