@@ -625,6 +625,7 @@ export default
       "toasts": {
         "created": "Event added",
         "updated": "Changes saved",
+        "deleted": "Event deleted",
         "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
         "linked_contact_suggest": "Linked contact: {{name}} — assign too?",
         "past_date_warning": "You picked a past date ({{date}}) — make sure this is intentional."
