@@ -91,27 +91,43 @@ export const disconnectSocialAccount = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ---------- Wizard: sprawdzenie gotowości platformy (czy mamy client_id) ----------
+// ---------- Wizard: sprawdzenie gotowości platformy (per-organizacja) ----------
+// Każda organizacja konfiguruje WŁASNĄ aplikację developerską u dostawcy
+// (np. developer.x.com). Client ID + zaszyfrowany Client Secret żyją w
+// public.social_app_credentials (RLS: tylko członkowie organizacji).
 
 export const checkPlatformReadiness = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ platform: platformSchema }).parse(input),
+    z
+      .object({
+        platform: platformSchema,
+        organizationId: z.string().uuid(),
+      })
+      .parse(input),
   )
-  .handler(async ({ data }) => {
-    const envMap: Record<string, string> = {
-      facebook: "META_APP_ID",
-      instagram: "META_APP_ID",
-      youtube: "GOOGLE_CLIENT_ID",
-      linkedin: "LINKEDIN_CLIENT_ID",
-      twitter: "TWITTER_CLIENT_ID",
-      tiktok: "TIKTOK_CLIENT_KEY",
-      spotify_artists: "SPOTIFY_CLIENT_ID",
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("social_app_credentials")
+      .select("id, client_id, configured_at")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const r = row as null | { id: string; client_id: string; configured_at: string };
+    return {
+      platform: data.platform,
+      hasClientId: !!r,
+      clientIdMasked: r ? maskClientId(r.client_id) : null,
+      configuredAt: r?.configured_at ?? null,
     };
-    const envKey = envMap[data.platform];
-    const hasClientId = !!process.env[envKey];
-    return { platform: data.platform, hasClientId, envKey };
   });
+
+function maskClientId(s: string): string {
+  if (s.length <= 8) return "•".repeat(s.length);
+  return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
+}
 
 // ---------- Posty: CRUD ----------
 
