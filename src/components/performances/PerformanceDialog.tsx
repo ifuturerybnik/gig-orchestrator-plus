@@ -65,8 +65,43 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const { t } = useTranslation();
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
+  const fetchList = useServerFn(listPerformances);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const { data: existingList } = useQuery({
+    queryKey: ["performances", organizationId],
+    queryFn: () => fetchList({ data: { organizationId } }),
+    enabled: open,
+    staleTime: 30_000,
+  });
+
+  // Map ISO date (yyyy-MM-dd) -> list of event labels for that day
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of existingList?.items ?? []) {
+      const label = p.name?.trim() || t(`organizations.performances.status.${p.status}`);
+      const arr = map.get(p.performance_date) ?? [];
+      arr.push(label);
+      map.set(p.performance_date, arr);
+    }
+    return map;
+  }, [existingList, t]);
+
+  const eventDates = useMemo(
+    () =>
+      Array.from(eventsByDate.keys()).map((iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }),
+    [eventsByDate],
+  );
+
+  const todayMidnight = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<PerformanceStatus | "">("");
