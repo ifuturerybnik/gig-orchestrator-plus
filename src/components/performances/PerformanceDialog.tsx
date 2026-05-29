@@ -211,18 +211,14 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
       const suggested = (res.items ?? [])
         .map((i) => i.organization)
         .filter((o): o is { id: string; name: string; tax_id: string | null; is_shared: boolean } => !!o)
-        .filter((o) => !counterparties.find((cp) => cp.id === o.id));
-      for (const s of suggested) {
-        toast(t("organizations.performances.toasts.linked_cp_suggest", { name: s.name }), {
-          action: {
-            label: t("organizations.performances.actions.assign"),
-            onClick: () =>
-              setCounterparties((prev) =>
-                prev.find((x) => x.id === s.id) ? prev : [...prev, { id: s.id, name: s.name }],
-              ),
-          },
-        });
-      }
+        .map((o) => ({ id: o.id, name: o.name }));
+      setSuggestedCounterparties((prev) => {
+        const next = [...prev];
+        for (const s of suggested) {
+          if (!next.find((x) => x.id === s.id)) next.push(s);
+        }
+        return next;
+      });
     } catch {
       /* non-fatal */
     }
@@ -237,24 +233,29 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
       const suggested = (res.items ?? [])
         .map((i) => i.contact)
         .filter((c): c is { id: string; display_name: string; email: string | null; phone: string | null } => !!c)
-        .filter((c) => !contacts.find((x) => x.id === c.id));
-      for (const s of suggested) {
-        toast(t("organizations.performances.toasts.linked_contact_suggest", { name: s.display_name }), {
-          action: {
-            label: t("organizations.performances.actions.assign"),
-            onClick: () =>
-              setContacts((prev) =>
-                prev.find((x) => x.id === s.id)
-                  ? prev
-                  : [...prev, { id: s.id, name: s.display_name }],
-              ),
-          },
-        });
-      }
+        .map((c) => ({ id: c.id, name: c.display_name }));
+      setSuggestedContacts((prev) => {
+        const next = [...prev];
+        for (const s of suggested) {
+          if (!next.find((x) => x.id === s.id)) next.push(s);
+        }
+        return next;
+      });
     } catch {
       /* non-fatal */
     }
   };
+
+  // Filter out suggestions that are already assigned
+  const visibleSuggestedContacts = useMemo(
+    () => suggestedContacts.filter((s) => !contacts.find((c) => c.id === s.id)),
+    [suggestedContacts, contacts],
+  );
+  const visibleSuggestedCounterparties = useMemo(
+    () => suggestedCounterparties.filter((s) => !counterparties.find((c) => c.id === s.id)),
+    [suggestedCounterparties, counterparties],
+  );
+
 
   return (
     <>
