@@ -1410,10 +1410,10 @@ export default
         "checklist": ["Mam konto TikTok Business", "Mam zatwierdzoną aplikację w TikTok Developers", "Mam dostęp do Content Posting API"]
       },
       "spotify_artists": {
-        "name": "Spotify for Artists",
-        "tagline": "Tylko statystyki",
-        "benefits": ["Statystyki odsłuchań", "Dane demograficzne słuchaczy", "AI analizuje trendy popularności"],
-        "checklist": ["Mam zweryfikowany profil Spotify for Artists", "Jestem zalogowany jako Team admin", "API dostępne tylko dla wybranych partnerów"]
+        "name": "Spotify",
+        "tagline": "Profil artysty — tylko statystyki",
+        "benefits": ["Liczba obserwujących profilu Spotify", "Popularność i gatunki wykonawcy", "AI analizuje trendy popularności"],
+        "checklist": ["Mam konto Spotify powiązane z profilem artysty", "Założyłem aplikację w Spotify Developer Dashboard", "Dodałem moje konto w sekcji Users and Access"]
       }
     },
     "ai": {
