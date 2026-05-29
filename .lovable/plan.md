@@ -1,102 +1,143 @@
+# Moduł "Występy" (dawniej "Koncerty / Wydarzenia")
 
-# Plan: Moduł Korespondencja w panelu organizacji
+## 1. Zmiana nazwy zakładki
 
-## Cel
-W bocznym menu organizacji dodać zakładkę **Korespondencja** rozwijającą się na dwie podzakładki: **Poczta** i **Autokorespondencja**. Funkcjonalność 1:1 jak w CRM Hub, ale:
-- adaptacja z react-router-dom → TanStack Start (routes pliki + `createServerFn`),
-- filtry i pola dynamiczne dopasowane do encji Concertivo (kontakty, kontrahenci, organizacje) zamiast `leady/klienci/dostawcy`,
-- WYSIWYG: używamy istniejącego globalnego `@/components/ui/wysiwyg-editor` (już jest w projekcie),
-- moduł GLOBALNY — działa dla każdego typu organizacji (zgodnie z istniejącą notką w pamięci).
+W sidebarze organizacji (`src/components/org-sidebar.tsx`) klucz `organizations.sidebar.events` pozostaje, ale w `src/locales/pl.ts` i `en.ts` zmieniam tłumaczenie na **„Występy" / „Performances"**. Ścieżka `/organizations/:orgId/events` bez zmian (mniej refaktoringu, brak zerwania linków).
 
-## Co już mamy (NIE robimy ponownie)
-- `email_skrzynki`, `email_wiadomosci` (migracje 0013/0014)
-- `mail-proxy.server.ts`, `mail-crypto.server.ts`, `email-skrzynki.functions.ts`
-- `StopkaPicker`, `StopkiManager`, `org-mailboxes-section`
-- Globalny `WysiwygEditor` (Tiptap)
-- Auth/middleware, `attachSupabaseAuth`, RLS
+## 2. Baza danych — nowa migracja `db/migrations/0023_performances.sql`
 
-## Zakres prac
+```sql
+create type public.performance_status as enum (
+  'inquiry',              -- Zapytanie
+  'tentative',            -- Wstępna rezerwacja
+  'confirmed_signing',    -- Potwierdzony (w trakcie podpisywania)
+  'confirmed_signed'      -- Potwierdzony (umowa podpisana)
+);
 
-### 1. Sidebar — grupa rozwijana „Korespondencja"
-- Refactor `src/components/org-sidebar.tsx`: dodać sekcję z `Collapsible` (shadcn) nad „Członkowie", zawierającą:
-  - `Poczta` → `/organizations/$orgId/mail`
-  - `Autokorespondencja` → `/organizations/$orgId/autokorespondencja`
-- Tłumaczenia w `src/locales/pl.ts` i `en.ts` (`organizations.sidebar.correspondence/mail/autokor`).
+create type public.performance_visibility as enum (
+  'private',              -- Tylko dla mnie
+  'members_date',         -- Członkowie: tylko data
+  'members_full',         -- Członkowie: wszystko
+  'public_date',          -- Publiczne: tylko data
+  'public_full'           -- Publiczne: wszystko
+);
 
-### 2. Migracje SQL (`db/migrations/`)
-Nowe pliki — wykonasz ręcznie w panelu zewnętrznego Supabase:
-- `0015_email_szablony.sql` — szablony wiadomości (per user / per organization, z polem `body_html`, `temat`, `kategoria`, `zmienne`).
-- `0016_email_zalaczniki.sql` — załączniki wiadomości (storage path, inline cid, content_id).
-- `0017_email_linki_sledzace.sql` — śledzenie kliknięć linków (per wysłana wiadomość).
-- `0018_email_odbicia_rezygnacje.sql` — bounce list + lista rezygnacji (suppressions).
-- `0019_autokorespondencje.sql` — kampanie + `autokorespondencje_wiadomosci` (status: pending/sent/failed/skipped, planowana_wysylka, klikniecia, otwarcia).
-- Każda tabela: GRANT-y + RLS scoped per user lub org-member (wzorem `email_skrzynki`).
+create table public.performances (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  created_by uuid not null references auth.users(id),
+  performance_date date not null,
+  status public.performance_status not null,
+  visibility public.performance_visibility not null default 'private',
+  name text,
+  city text,
+  postal_code text,
+  street text,
+  street_number text,
+  google_maps_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-### 3. Server functions (`src/lib/`)
-- `email-szablony.functions.ts` — CRUD szablonów (scope user/org).
-- `email-wiadomosci.functions.ts` — list/search/markRead/star/move/delete (proxy do `mail-proxy`).
-- `email-send.functions.ts` — wysyłka pojedyncza (przez `callMailProxy('send', ...)`), zapis log + zalączniki.
-- `email-attachments.functions.ts` — signed URL + upload do bucketu `email-attachments`.
-- `email-tracking.functions.ts` — listy bounce'ów, rezygnacji, kliknięć.
-- `autokorespondencje.functions.ts` — CRUD kampanii, start/pause/cancel/clone, statystyki.
-- Server route publiczne (TSS) pod `/api/public/`:
-  - `unsubscribe` — odbiór klika z linka rezygnacji,
-  - `track-open` (pixel 1×1),
-  - `track-click` (redirect z logowaniem),
-  - `autokor-tick` (cron co minutę — generuje kolejną partię wiadomości do wysyłki).
+create index on public.performances(organization_id, performance_date desc);
 
-### 4. Komponenty UI (`src/components/mail/` + `src/components/autokorespondencja/`)
-**Mail:**
-- `MailLayout.tsx` — lewy panel (skrzynki + foldery), środek (lista wiadomości), prawy (podgląd) — port z `Mail.tsx`.
-- `ComposeDialog.tsx` — kompozycja maila (WysiwygEditor + StopkaPicker + załączniki + Do/CC/BCC z ContactPicker + wybór szablonu).
-- `SzablonyManager.tsx`, `SzablonPicker.tsx` — biblioteka szablonów.
-- `LinkiSledzaceDialog.tsx`, `ZwrotyDialog.tsx` — statystyki tracking.
-- Hook adapter `useResolvedHtmlBody` (cid → signed URL).
+create table public.performance_assignments (
+  id uuid primary key default gen_random_uuid(),
+  performance_id uuid not null references public.performances(id) on delete cascade,
+  contact_id uuid references public.contacts(id) on delete cascade,
+  counterparty_id uuid references public.organizations(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  check ((contact_id is not null) <> (counterparty_id is not null))
+);
+create unique index on public.performance_assignments(performance_id, contact_id) where contact_id is not null;
+create unique index on public.performance_assignments(performance_id, counterparty_id) where counterparty_id is not null;
 
-**Autokorespondencja:**
-- `AutokorespondencjaList.tsx` — tabela kampanii + akcje (pause/play/cancel/clone/delete/edit).
-- `AutokorespondencjaWizardDialog.tsx` — kreator wieloetapowy:
-  1. Nazwa + skrzynka nadawcza + szablon/treść (WysiwygEditor),
-  2. **Filtry odbiorców** — dostosowane do Concertivo: typ kontaktu (person/company/artist), tagi, klasyfikacja, kraj/miasto, źródło (moje vs org), lista kontrahentów, status koncertów, gatunki muzyczne (z `genres.ts`),
-  3. Harmonogram (godzina/dni tygodnia, rate-limit per minuta),
-  4. Podgląd listy + start.
-- `ListaRezygnacjiDialog.tsx`, `ListaOdbiciaDialog.tsx`.
-- `AutokorespondencjaSzczegoly.tsx` (route detail) — wykres postępu, lista wiadomości z filtrami statusu.
+grant select, insert, update, delete on public.performances to authenticated;
+grant all on public.performances to service_role;
+grant select, insert, update, delete on public.performance_assignments to authenticated;
+grant all on public.performance_assignments to service_role;
 
-**Pola dynamiczne w szablonach** (zamiast CRM Hub'owych `{{lead.imie}}`):
-- `{{kontakt.imie}}`, `{{kontakt.nazwisko}}`, `{{kontakt.email}}`, `{{kontakt.firma}}`
-- `{{kontrahent.nazwa}}`, `{{kontrahent.nip}}`
-- `{{organizacja.nazwa}}`, `{{uzytkownik.imie}}`, `{{data.dzisiaj}}`
-- Engine podmiany w `src/lib/email-template-vars.ts`.
+alter table public.performances enable row level security;
+alter table public.performance_assignments enable row level security;
 
-### 5. Routes (TanStack)
-- `src/routes/_authenticated.organizations.$orgId.mail.tsx`
-- `src/routes/_authenticated.organizations.$orgId.autokorespondencja.tsx`
-- `src/routes/_authenticated.organizations.$orgId.autokorespondencja.$kampaniaId.tsx`
-- `src/routes/api/public/email-unsubscribe.tsx`
-- `src/routes/api/public/email-track-open.tsx`
-- `src/routes/api/public/email-track-click.tsx`
-- `src/routes/api/public/autokor-tick.tsx`
+-- Członkowie organizacji mogą czytać/pisać występy swojej organizacji
+create policy "members read performances"
+  on public.performances for select to authenticated
+  using (public.is_org_member(organization_id, auth.uid()));
+create policy "members write performances"
+  on public.performances for all to authenticated
+  using (public.is_org_member(organization_id, auth.uid()))
+  with check (public.is_org_member(organization_id, auth.uid()));
 
-### 6. i18n
-Komplet kluczy w `pl.ts` i `en.ts` dla wszystkich nowych ekranów (sidebar, lista, wizard, dialogi, błędy, toasty).
+create policy "members rw assignments"
+  on public.performance_assignments for all to authenticated
+  using (exists (select 1 from public.performances p
+                 where p.id = performance_id
+                   and public.is_org_member(p.organization_id, auth.uid())))
+  with check (exists (select 1 from public.performances p
+                 where p.id = performance_id
+                   and public.is_org_member(p.organization_id, auth.uid())));
+```
 
-### 7. Pamięć projektu
-Aktualizacja `mem://features/correspondence-module` o końcowe lokalizacje plików, listę tabel i punkty stylu pól dynamicznych.
+> Zakładam istnienie funkcji `public.is_org_member(uuid, uuid)`. Jeśli w bazie ma inną nazwę — dostosuję policy do faktycznego helpera użytego w innych tabelach (sprawdzę przed wygenerowaniem migracji).
 
-## Czego NIE robimy w tym kroku
-- Nie zmieniamy `mail-proxy` na VPS — wykorzystujemy istniejące endpointy (`sync/body-sync/body/send/mark`). Jeśli okaże się że brakuje endpointu (np. wysyłka z załącznikami z pełnym MIME) — dopiero wtedy dodam zadanie.
-- Nie portujemy ekranów CRM Hub niedotyczących maila (Leady, Klienci, Dostawcy).
-- Nie ruszamy logiki kontrahentów/kontaktów — używamy istniejących `ContactPicker` / `CounterpartyPicker` jako adresatów.
+Użytkownik wykona migrację ręcznie w panelu Supabase (zgodnie z core memory).
 
-## Kolejność wykonania (etapy)
-1. Sidebar + puste routes + i18n (szybko, sprawdzimy nawigację).
-2. Migracje SQL (dostarczę pliki — wykonujesz ręcznie, czekam na potwierdzenie).
-3. Server functions + tracking endpoints.
-4. UI Poczta (lista folderów → lista wiadomości → podgląd → Compose).
-5. Szablony + Stopki integracja.
-6. Autokorespondencja (lista → wizard → detail → cron tick).
-7. QA, tłumaczenia, memoria.
+## 3. Server functions — `src/lib/performances.functions.ts`
 
-## Pytanie do Ciebie przed startem
-Czy potwierdzasz pełny zakres, czy chcesz najpierw etap **1+2** (sidebar + migracje), zaakceptować, i dopiero potem przejść do UI? Polecam wariant etapowy — całość to ~30–40 nowych plików, łatwiej weryfikować po częściach.
+- `listPerformances({ organizationId })` — lista posortowana po dacie
+- `createPerformance({ organizationId, ...fields, assignments: { contactIds, counterpartyIds } })` — walidacja Zod po stronie serwera odzwierciedlająca reguły warunkowe (patrz §5)
+- `listAssignments({ performanceId })` — dla widoku szczegółów (przyszłość)
+
+Wszystko z `requireSupabaseAuth`.
+
+## 4. UI — strona występów
+
+`src/routes/_authenticated.organizations.$orgId.events.tsx`:
+- nagłówek „Występy" + przycisk **„Dodaj występ"** (otwiera `PerformanceDialog`)
+- tabela: Data, Status (badge), Nazwa, Miejscowość, Widoczność (ikona), Akcje
+- pusty stan gdy brak rekordów
+
+## 5. Dialog `src/components/performances/PerformanceDialog.tsx`
+
+Pola w kolejności:
+1. **Data występu** — `<Popover>` + `<Calendar mode="single">` (shadcn), zawsze wymagane
+2. **Status** — `<Select>` z 4 opcjami
+3. **Widoczność** — `<Select>` z 5 opcjami
+4. **Nazwa występu** — `<Input>`
+5. **Miejscowość, Kod pocztowy, Ulica, Numer** — 4 inputy w gridzie 2 kol.
+6. **Pinezka Google (URL)** — `<Input type="url">`
+
+**Walidacja warunkowa (Zod + react-hook-form):**
+
+| Pole | inquiry / tentative | confirmed_signing / confirmed_signed |
+|---|---|---|
+| Nazwa | opcjonalne | **wymagane** |
+| Miasto, kod, ulica, numer | opcjonalne | **wymagane** |
+| Pinezka Google | wymagana tylko gdy `visibility === 'public_full'` | jw. |
+
+Sekcja **Przypisania** (na końcu dialogu, nad przyciskami):
+- Listy chipów przypisanych kontaktów i kontrahentów (z X)
+- 2 przyciski: **„Przypisz kontakt"**, **„Przypisz kontrahenta"**
+- Klik → otwiera istniejący `ContactPicker` / `CounterpartyPicker` (z `excludeIds`)
+- Po wybraniu wołam `listLinkedCounterpartiesForContact` / `listLinkedContactsForCounterparty` — jeśli zwróci powiązania których nie ma jeszcze na liście, pokazuję **toast z akcją „Dodaj też"** (sonner action button) sugerujący dopisanie powiązanego kontaktu/kontrahenta
+- W pickerze (oba istnieją) — gdy lista pusta lub user nie znajduje → przyciski **„Dodaj kontakt"** / **„Dodaj kontrahenta"** otwierające istniejące `ContactForm` / `AddCounterpartyDialog` (sprawdzę, czy pickery już je mają; jeśli nie — dodam).
+
+Submit → `createPerformance` → invalidate `["performances", orgId]` → toast → close.
+
+## 6. i18n
+
+Nowe klucze pod `organizations.performances.*` (lista, dialog, statusy, widoczności, walidacje) w `pl.ts` (komplet) i `en.ts` (odpowiedniki). Klucz `organizations.sidebar.events` → „Występy" / „Performances".
+
+## 7. Akcje użytkownika (po wdrożeniu)
+
+Uruchomić migrację `0023_performances.sql` w panelu Supabase. Brak nowych sekretów.
+
+## Czego NIE robię w tej turze
+
+- Edycji/usuwania występów (tylko create + list)
+- Widoku szczegółów (`/events/$id`)
+- Publicznej strony organizacji wyświetlającej upublicznione występy
+- Eksportu/iCal
+
+Te elementy zrobię w kolejnych turach po Twoim potwierdzeniu UI.
