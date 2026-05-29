@@ -543,11 +543,13 @@ export default
       "empty": "Add your first event using the button above.",
       "col": {
         "date": "Date",
+        "event_kind": "Event type",
         "status": "Status",
         "name": "Name",
         "city": "City",
         "assignments": "Assignments",
-        "visibility": "Visibility"
+        "visibility": "Visibility",
+        "actions": "Actions"
       },
       "status": {
         "inquiry": "Inquiry",
