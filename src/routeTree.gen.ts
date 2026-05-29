@@ -23,6 +23,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
 import { Route as AuthenticatedContactsIndexRouteImport } from './routes/_authenticated.contacts.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
+import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/api/public/social-publish-scheduled'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
 import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
@@ -116,6 +117,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicSocialPublishScheduledRoute =
+  ApiPublicSocialPublishScheduledRouteImport.update({
+    id: '/api/public/social-publish-scheduled',
+    path: '/api/public/social-publish-scheduled',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEmailUnsubscribeRoute =
   ApiPublicEmailUnsubscribeRouteImport.update({
     id: '/api/public/email-unsubscribe',
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -293,6 +301,7 @@ export interface FileRoutesByTo {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
@@ -331,6 +340,7 @@ export interface FileRoutesById {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/social-publish-scheduled'
     | '/admin/'
     | '/contacts/'
     | '/organizations/'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/social-publish-scheduled'
     | '/admin'
     | '/contacts'
     | '/organizations'
@@ -439,6 +451,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/social-publish-scheduled'
     | '/_authenticated/admin/'
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
@@ -467,6 +480,7 @@ export interface RootRouteChildren {
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
+  ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -568,6 +582,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/social-publish-scheduled': {
+      id: '/api/public/social-publish-scheduled'
+      path: '/api/public/social-publish-scheduled'
+      fullPath: '/api/public/social-publish-scheduled'
+      preLoaderRoute: typeof ApiPublicSocialPublishScheduledRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/email-unsubscribe': {
       id: '/api/public/email-unsubscribe'
@@ -832,7 +853,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
+  ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
