@@ -78,7 +78,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
   youtube: {
     id: "youtube",
     brandColor: "bg-[#FF0000]",
-    status: "coming_soon",
+    status: "live",
     requiresAppReview: false,
     requiresPaidApi: false,
     supportsText: false,
@@ -87,7 +87,11 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: 5000,
     aiTone: "professional",
-    scopes: ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"],
+    scopes: [
+      "https://www.googleapis.com/auth/youtube.upload",
+      "https://www.googleapis.com/auth/youtube.readonly",
+      "https://www.googleapis.com/auth/youtube.force-ssl",
+    ],
     envClientIdKey: "GOOGLE_CLIENT_ID",
   },
   linkedin: {
