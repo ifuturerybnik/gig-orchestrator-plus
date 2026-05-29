@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as ApiPublicSocialYoutubeCallbackRouteImport } from './routes/api/public/social.youtube-callback'
 import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
 import { Route as ApiPublicSocialMetaCallbackRouteImport } from './routes/api/public/social.meta-callback'
 import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
@@ -202,6 +203,12 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const ApiPublicSocialYoutubeCallbackRoute =
+  ApiPublicSocialYoutubeCallbackRouteImport.update({
+    id: '/api/public/social/youtube-callback',
+    path: '/api/public/social/youtube-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSocialXCallbackRoute =
   ApiPublicSocialXCallbackRouteImport.update({
     id: '/api/public/social/x-callback',
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
+  '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -360,6 +368,7 @@ export interface FileRoutesByTo {
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
+  '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRoutesById {
@@ -404,6 +413,7 @@ export interface FileRoutesById {
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
+  '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
+    | '/api/public/social/youtube-callback'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
+    | '/api/public/social/youtube-callback'
     | '/organizations/$orgId'
   id:
     | '__root__'
@@ -530,6 +542,7 @@ export interface FileRouteTypes {
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
+    | '/api/public/social/youtube-callback'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
 }
@@ -551,6 +564,7 @@ export interface RootRouteChildren {
   ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
   ApiPublicSocialMetaCallbackRoute: typeof ApiPublicSocialMetaCallbackRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
+  ApiPublicSocialYoutubeCallbackRoute: typeof ApiPublicSocialYoutubeCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -750,6 +764,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/organizations/$orgId/'
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
+    '/api/public/social/youtube-callback': {
+      id: '/api/public/social/youtube-callback'
+      path: '/api/public/social/youtube-callback'
+      fullPath: '/api/public/social/youtube-callback'
+      preLoaderRoute: typeof ApiPublicSocialYoutubeCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/social/x-callback': {
       id: '/api/public/social/x-callback'
@@ -964,6 +985,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
   ApiPublicSocialMetaCallbackRoute: ApiPublicSocialMetaCallbackRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
+  ApiPublicSocialYoutubeCallbackRoute: ApiPublicSocialYoutubeCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
