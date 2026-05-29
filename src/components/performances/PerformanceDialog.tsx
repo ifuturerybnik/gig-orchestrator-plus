@@ -321,10 +321,28 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                       DayButton: (props) => {
                         const iso = format(props.day.date, "yyyy-MM-dd");
                         const events = eventsByDate.get(iso);
-                        const title = events
-                          ? `${t("organizations.performances.calendar.day_events_title", { date: iso })}\n• ${events.join("\n• ")}`
-                          : undefined;
-                        return <CalendarDayButton {...props} title={title} />;
+                        if (!events || events.length === 0) {
+                          return <CalendarDayButton {...props} />;
+                        }
+                        return (
+                          <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <CalendarDayButton {...props} />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="mb-1 font-semibold">
+                                  {t("organizations.performances.calendar.day_events_title", { date: iso })}
+                                </p>
+                                <ul className="space-y-0.5">
+                                  {events.map((e, i) => (
+                                    <li key={i}>• {e}</li>
+                                  ))}
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
                       },
                     }}
                     className="p-3 pointer-events-auto [--cell-size:2.5rem]"
