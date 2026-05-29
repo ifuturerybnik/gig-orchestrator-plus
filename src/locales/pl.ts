@@ -540,7 +540,7 @@ export default
       "members": "Członkowie",
       "contacts": "Kontakty",
       "counterparties": "Kontrahenci",
-      "events": "Występy",
+      "events": "Wydarzenia",
       "budget": "Budżet",
       "skrzynki": "Skrzynki pocztowe",
       "correspondence": "Korespondencja",
@@ -556,11 +556,11 @@ export default
       "coming_soon": "Wkrótce"
     },
     "performances": {
-      "title": "Występy",
-      "subtitle": "Planuj i zarządzaj występami tej organizacji.",
-      "add": "Dodaj występ",
-      "empty_title": "Brak występów",
-      "empty": "Dodaj pierwszy występ klikając przycisk powyżej.",
+      "title": "Wydarzenia",
+      "subtitle": "Planuj i zarządzaj wydarzeniami tej organizacji.",
+      "add": "Dodaj wydarzenie",
+      "empty_title": "Brak wydarzeń",
+      "empty": "Dodaj pierwsze wydarzenie klikając przycisk powyżej.",
       "col": {
         "date": "Data",
         "status": "Status",
@@ -582,20 +582,33 @@ export default
         "public_date": "Upublicznij na stronie tylko datę",
         "public_full": "Upublicznij na stronie wszystko"
       },
+      "event_kind": {
+        "concert": "Koncert",
+        "tv_appearance": "Występ telewizyjny",
+        "radio_interview": "Wywiad radiowy",
+        "marketing": "Działania marketingowe",
+        "cabaret": "Występ kabaretowy",
+        "other": "Inne…"
+      },
       "fields": {
-        "date": "Data występu",
+        "date": "Data wydarzenia",
         "date_placeholder": "Wybierz datę",
+        "event_kind": "Rodzaj wydarzenia",
+        "event_kind_placeholder": "Wybierz rodzaj wydarzenia",
+        "event_kind_custom_placeholder": "Wpisz własny rodzaj wydarzenia",
         "status": "Status",
         "status_placeholder": "Wybierz status",
         "visibility": "Widoczność",
-        "visibility_hint": "„Wszystko” obejmuje datę, nazwę występu oraz miejsce występu.",
-        "name": "Nazwa występu",
+        "visibility_hint": "„Wszystko” obejmuje datę, nazwę wydarzenia oraz miejsce.",
+        "name": "Nazwa wydarzenia",
         "city": "Miejscowość",
         "postal_code": "Kod pocztowy",
         "street": "Ulica",
         "street_number": "Numer",
         "google_maps_url": "Pinezka Google (URL)",
-        "google_maps_url_hint": "Wymagana tylko gdy widoczność = „Upublicznij na stronie wszystko”."
+        "google_maps_url_hint": "Wymagana tylko gdy widoczność = „Upublicznij na stronie wszystko”.",
+        "notes": "Notatki",
+        "notes_placeholder": "Dodatkowe informacje o wydarzeniu…"
       },
       "assignments": {
         "title": "Przypisania",
@@ -612,26 +625,27 @@ export default
         "dismiss": "Odrzuć"
       },
       "dialog": {
-        "title": "Nowy występ",
-        "submit": "Zapisz występ"
+        "title": "Nowe wydarzenie",
+        "submit": "Zapisz wydarzenie"
       },
       "actions": {
         "assign": "Przypisz"
       },
       "toasts": {
-        "created": "Występ został dodany",
+        "created": "Wydarzenie zostało dodane",
         "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
         "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?",
         "past_date_warning": "Wybrałeś datę wsteczną ({{date}}) — upewnij się, że to celowe."
       },
       "calendar": {
         "legend_past": "Data przeszła",
-        "legend_event": "Zaplanowany występ",
-        "day_events_title": "Występy w dniu {{date}}:"
+        "legend_event": "Zaplanowane wydarzenie",
+        "day_events_title": "Wydarzenia w dniu {{date}}:"
       },
       "errors": {
-        "date_required": "Data występu jest wymagana",
+        "date_required": "Data wydarzenia jest wymagana",
         "status_required": "Status jest wymagany",
+        "event_kind_required": "Rodzaj wydarzenia jest wymagany",
         "required": "Pole wymagane"
       }
     },

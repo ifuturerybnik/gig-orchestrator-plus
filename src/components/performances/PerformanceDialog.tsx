@@ -43,11 +43,14 @@ import { CounterpartyPicker } from "@/components/pickers/CounterpartyPicker";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { ContactForm } from "@/components/contacts/ContactForm";
 
+import { Textarea } from "@/components/ui/textarea";
 import {
   createPerformance,
   listPerformances,
+  listPerformanceEventKinds,
   PERFORMANCE_STATUSES,
   PERFORMANCE_VISIBILITIES,
+  PERFORMANCE_EVENT_KIND_PRESETS,
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
@@ -72,8 +75,16 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
   const fetchList = useServerFn(listPerformances);
+  const fetchKinds = useServerFn(listPerformanceEventKinds);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const { data: kindsList } = useQuery({
+    queryKey: ["performance-event-kinds", organizationId],
+    queryFn: () => fetchKinds({ data: { organizationId } }),
+    enabled: open,
+    staleTime: 30_000,
+  });
 
   const { data: existingList } = useQuery({
     queryKey: ["performances", organizationId],
@@ -112,12 +123,17 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<PerformanceStatus | "">("");
   const [visibility, setVisibility] = useState<PerformanceVisibility>("private");
+  // eventKindSelection holds either a preset slug, a custom-kind label, or "__custom__"
+  // (sentinel meaning "user is typing a new custom kind into eventKindCustom").
+  const [eventKindSelection, setEventKindSelection] = useState<string>("");
+  const [eventKindCustom, setEventKindCustom] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [street, setStreet] = useState("");
   const [streetNumber, setStreetNumber] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [notes, setNotes] = useState("");
 
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [counterparties, setCounterparties] = useState<CounterpartyRef[]>([]);
@@ -132,17 +148,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
 
   const isConfirmed = status && CONFIRMED.includes(status as PerformanceStatus);
   const isPublicFull = visibility === "public_full";
+  const isCustomKind = eventKindSelection === "__custom__";
+  const resolvedEventKind = isCustomKind ? eventKindCustom.trim() : eventKindSelection;
 
   const reset = () => {
     setDate(undefined);
     setStatus("");
     setVisibility("private");
+    setEventKindSelection("");
+    setEventKindCustom("");
     setName("");
     setCity("");
     setPostalCode("");
     setStreet("");
     setStreetNumber("");
     setGoogleMapsUrl("");
+    setNotes("");
     setContacts([]);
     setCounterparties([]);
     setSuggestedContacts([]);
@@ -153,18 +174,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     mutationFn: async () => {
       if (!date) throw new Error(t("organizations.performances.errors.date_required"));
       if (!status) throw new Error(t("organizations.performances.errors.status_required"));
+      if (!resolvedEventKind)
+        throw new Error(t("organizations.performances.errors.event_kind_required"));
       return create({
         data: {
           organizationId,
           performanceDate: format(date, "yyyy-MM-dd"),
           status: status as PerformanceStatus,
           visibility,
+          eventKind: resolvedEventKind,
           name: name.trim() || null,
           city: city.trim() || null,
           postalCode: postalCode.trim() || null,
           street: street.trim() || null,
           streetNumber: streetNumber.trim() || null,
           googleMapsUrl: googleMapsUrl.trim() || null,
+          notes: notes.trim() || null,
           contactIds: contacts.map((c) => c.id),
           counterpartyIds: counterparties.map((c) => c.id),
         },
@@ -173,6 +198,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     onSuccess: () => {
       toast.success(t("organizations.performances.toasts.created"));
       qc.invalidateQueries({ queryKey: ["performances", organizationId] });
+      qc.invalidateQueries({ queryKey: ["performance-event-kinds", organizationId] });
       reset();
       onOpenChange(false);
     },
@@ -184,6 +210,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     const e: Record<string, string> = {};
     if (!date) e.date = t("organizations.performances.errors.date_required");
     if (!status) e.status = t("organizations.performances.errors.status_required");
+    if (!resolvedEventKind)
+      e.eventKind = t("organizations.performances.errors.event_kind_required");
     if (isConfirmed) {
       if (!name.trim()) e.name = t("organizations.performances.errors.required");
       if (!city.trim()) e.city = t("organizations.performances.errors.required");
@@ -196,7 +224,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     }
     return e;
   }, [
-    date, status, isConfirmed, name, city, postalCode, street, streetNumber,
+    date, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
     isPublicFull, googleMapsUrl, t,
   ]);
 
@@ -365,7 +393,50 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
               </Popover>
             </div>
 
-
+            {/* Rodzaj wydarzenia */}
+            <div className="space-y-2">
+              <Label>
+                {t("organizations.performances.fields.event_kind")}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={eventKindSelection}
+                onValueChange={(v) => {
+                  setEventKindSelection(v);
+                  if (v !== "__custom__") setEventKindCustom("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t("organizations.performances.fields.event_kind_placeholder")}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERFORMANCE_EVENT_KIND_PRESETS.filter((k) => k !== "other").map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {t(`organizations.performances.event_kind.${k}`)}
+                    </SelectItem>
+                  ))}
+                  {(kindsList?.items ?? []).map((k) => (
+                    <SelectItem key={k.id} value={k.label}>
+                      {k.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">
+                    {t("organizations.performances.event_kind.other")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {isCustomKind && (
+                <Input
+                  autoFocus
+                  value={eventKindCustom}
+                  onChange={(e) => setEventKindCustom(e.target.value)}
+                  maxLength={120}
+                  placeholder={t("organizations.performances.fields.event_kind_custom_placeholder")}
+                />
+              )}
+            </div>
 
 
             {/* Status */}
@@ -668,6 +739,18 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Notatki */}
+            <div className="space-y-2">
+              <Label>{t("organizations.performances.fields.notes")}</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={5000}
+                rows={4}
+                placeholder={t("organizations.performances.fields.notes_placeholder")}
+              />
             </div>
           </div>
 
