@@ -645,3 +645,449 @@ export const aiAnalyzeEngagement = createServerFn({ method: "POST" })
 
     return { summary };
   });
+
+// ============================================================================
+// Skrzynka / Moderacja
+// ============================================================================
+
+export type InboxCommentRow = {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  platform: string;
+  post_id: string | null;
+  external_post_id: string;
+  external_comment_id: string;
+  author_name: string | null;
+  author_avatar_url: string | null;
+  content: string;
+  permalink: string | null;
+  posted_at: string | null;
+  status: string;
+  ai_sentiment: string | null;
+  ai_flags: string[];
+  ai_suggested_reply: string | null;
+  like_count: number;
+  reply_count: number;
+};
+
+export const listInboxComments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        status: z
+          .enum(["new", "replied", "hidden", "deleted", "spam", "archived", "all"])
+          .default("new"),
+        platform: platformSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ items: InboxCommentRow[] }> => {
+    const { supabase } = context;
+    let q = supabase
+      .from("social_comments")
+      .select(
+        "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("posted_at", { ascending: false, nullsFirst: false })
+      .limit(200);
+    if (data.status !== "all") q = q.eq("status", data.status);
+    if (data.platform) q = q.eq("platform", data.platform);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return { items: (rows ?? []) as InboxCommentRow[] };
+  });
+
+export const getInboxCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows } = await supabase
+      .from("social_comments")
+      .select("status")
+      .eq("organization_id", data.organizationId);
+    const counts: Record<string, number> = { new: 0, replied: 0, hidden: 0, spam: 0, total: 0 };
+    for (const r of (rows ?? []) as Array<{ status: string }>) {
+      counts.total++;
+      counts[r.status] = (counts[r.status] ?? 0) + 1;
+    }
+    return counts;
+  });
+
+export const moderateComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        commentId: z.string().uuid(),
+        action: z.enum(["hide", "unhide", "delete", "mark_spam", "archive"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const statusByAction: Record<string, string> = {
+      hide: "hidden",
+      unhide: "new",
+      delete: "deleted",
+      mark_spam: "spam",
+      archive: "archived",
+    };
+    const { error } = await supabase
+      .from("social_comments")
+      .update({
+        status: statusByAction[data.action],
+        handled_by: userId,
+        handled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+
+    await supabase.from("social_moderation_log").insert({
+      organization_id: data.organizationId,
+      comment_id: data.commentId,
+      action: data.action,
+      result: "ok",
+      performed_by: userId,
+    });
+    return { ok: true };
+  });
+
+export const replyToComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        commentId: z.string().uuid(),
+        text: z.string().min(1).max(4000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // W Turze 2 odpowiedź nie idzie jeszcze do API platformy.
+    // Zapisujemy ją w log + oznaczamy komentarz jako 'replied'.
+    const { error } = await supabase
+      .from("social_comments")
+      .update({
+        status: "replied",
+        handled_by: userId,
+        handled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+
+    await supabase.from("social_moderation_log").insert({
+      organization_id: data.organizationId,
+      comment_id: data.commentId,
+      action: "reply",
+      payload: { text: data.text, pending_oauth: true },
+      result: "pending_oauth",
+      error_message:
+        "Odpowiedź zapisana lokalnie. Realne wysłanie do platformy zostanie aktywowane po podłączeniu OAuth (Tura 3+).",
+      performed_by: userId,
+    });
+    return { ok: true };
+  });
+
+export const aiSuggestCommentReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        commentId: z.string().uuid(),
+        tone: z.enum(["warm", "formal", "short"]).default("warm"),
+        language: z.enum(["pl", "en"]).default("pl"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ variants: string[] }> => {
+    const { supabase, userId, userEmail } = context;
+    const { data: c, error } = await supabase
+      .from("social_comments")
+      .select("id, content, platform, author_name, post_id")
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!c) throw new Error("Komentarz nie istnieje.");
+
+    let postCtx = "";
+    const cm = c as { id: string; content: string; platform: string; author_name: string | null; post_id: string | null };
+    if (cm.post_id) {
+      const { data: post } = await supabase
+        .from("social_posts")
+        .select("content_per_platform")
+        .eq("id", cm.post_id)
+        .maybeSingle();
+      const cpp = (post as { content_per_platform?: Record<string, { text?: string }> } | null)?.content_per_platform;
+      if (cpp) {
+        postCtx = Object.values(cpp)[0]?.text ?? "";
+      }
+    }
+
+    const toneText = {
+      warm: "ciepły, ludzki, z podziękowaniem",
+      formal: "formalny, profesjonalny",
+      short: "krótki i konkretny (1-2 zdania)",
+    }[data.tone];
+    const langName = data.language === "pl" ? "polski" : "angielski";
+
+    const systemPrompt =
+      "Jesteś specjalistą obsługi klienta w mediach społecznościowych dla organizacji eventowej/koncertowej. Tworzysz odpowiedzi krótkie, naturalne, bez korpomowy. Zwracasz WYŁĄCZNIE poprawny JSON.";
+    const userPrompt = [
+      `Platforma: ${cm.platform}`,
+      postCtx ? `Kontekst posta: ${postCtx}` : null,
+      `Autor komentarza: ${cm.author_name ?? "anonim"}`,
+      `Treść komentarza: ${cm.content}`,
+      `Wygeneruj 3 warianty odpowiedzi w języku ${langName}. Ton: ${toneText}.`,
+      `Zwróć JSON: { "variants": ["wariant 1","wariant 2","wariant 3"] }`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const raw = await callAiInternal({
+      userId,
+      userEmail,
+      scenariusz: "social_inbox_reply_suggest",
+      systemPrompt,
+      userPrompt,
+      maxTokens: 800,
+    });
+    let cleaned = raw.trim();
+    const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) cleaned = fence[1].trim();
+    let parsed: { variants?: string[] };
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      throw new Error("AI zwróciła odpowiedź w nieprawidłowym formacie.");
+    }
+    const variants = Array.isArray(parsed.variants)
+      ? parsed.variants.filter((v) => typeof v === "string").slice(0, 3)
+      : [];
+    if (variants.length === 0) throw new Error("AI nie zwróciła żadnych wariantów.");
+
+    // Zapisz pierwszą sugestię w komentarzu
+    await supabase
+      .from("social_comments")
+      .update({ ai_suggested_reply: variants[0], updated_at: new Date().toISOString() })
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId);
+
+    return { variants };
+  });
+
+export const aiModerateComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        commentId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ sentiment: string; flags: string[] }> => {
+      const { supabase, userId, userEmail } = context;
+      const { data: c } = await supabase
+        .from("social_comments")
+        .select("id, content")
+        .eq("id", data.commentId)
+        .eq("organization_id", data.organizationId)
+        .maybeSingle();
+      if (!c) throw new Error("Komentarz nie istnieje.");
+
+      const systemPrompt =
+        "Jesteś moderatorem treści. Klasyfikujesz komentarz pod kątem sentymentu i flag (spam, hate, urgent_question, off_topic, praise). Zwracasz WYŁĄCZNIE poprawny JSON.";
+      const userPrompt = `Komentarz:\n"""${(c as { content: string }).content}"""\n\nZwróć JSON:\n{ "sentiment": "positive|neutral|negative", "flags": ["..."] }\nFlagi tylko z listy: spam, hate, urgent_question, off_topic, praise.`;
+
+      const raw = await callAiInternal({
+        userId,
+        userEmail,
+        scenariusz: "social_inbox_moderate",
+        systemPrompt,
+        userPrompt,
+        maxTokens: 200,
+      });
+      let cleaned = raw.trim();
+      const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fence) cleaned = fence[1].trim();
+      let parsed: { sentiment?: string; flags?: string[] };
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        throw new Error("AI zwróciła odpowiedź w nieprawidłowym formacie.");
+      }
+      const sentiment = ["positive", "neutral", "negative"].includes(parsed.sentiment ?? "")
+        ? parsed.sentiment!
+        : "neutral";
+      const flagSet = new Set(["spam", "hate", "urgent_question", "off_topic", "praise"]);
+      const flags = (parsed.flags ?? []).filter((f) => flagSet.has(f)).slice(0, 5);
+
+      await supabase
+        .from("social_comments")
+        .update({
+          ai_sentiment: sentiment,
+          ai_flags: flags,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.commentId)
+        .eq("organization_id", data.organizationId);
+
+      return { sentiment, flags };
+    },
+  );
+
+/**
+ * Seed demo komentarzy — pozwala przetestować UI skrzynki zanim ruszy OAuth.
+ * Wymaga, by w organizacji było co najmniej jedno konto SM (może być nawet
+ * placeholder — sprawdza tylko obecność wiersza w `social_accounts`).
+ * Jeśli brak — tworzy demo-konto dla platformy 'facebook'.
+ */
+export const seedDemoInboxComments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Pobierz lub utwórz demo konto
+    let { data: acct } = await supabase
+      .from("social_accounts")
+      .select("id, platform")
+      .eq("organization_id", data.organizationId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!acct) {
+      const ins = await supabase
+        .from("social_accounts")
+        .insert({
+          organization_id: data.organizationId,
+          platform: "facebook",
+          external_account_id: "demo_page",
+          account_name: "Demo Page (test)",
+          scopes: [],
+          status: "demo",
+          connected_by: userId,
+        })
+        .select("id, platform")
+        .single();
+      if (ins.error) throw new Error(ins.error.message);
+      acct = ins.data;
+    }
+
+    const account = acct as { id: string; platform: string };
+
+    const samples = [
+      {
+        author: "Anna K.",
+        content: "Super koncert! Czekam na kolejną edycję, kiedy bilety?",
+        sentiment: null,
+      },
+      {
+        author: "Marek W.",
+        content: "Kupcie sobie nagłośnienie bo żenada totalna",
+        sentiment: null,
+      },
+      {
+        author: "Bot Promo",
+        content: "ZARABIAJ 5000 PLN DZIENNIE!!! kliknij link >>>",
+        sentiment: null,
+      },
+      {
+        author: "Karolina J.",
+        content: "Czy są jeszcze miejsca na sobotę 18:00? Mam dwie wejściówki dla taty.",
+        sentiment: null,
+      },
+    ];
+
+    const now = Date.now();
+    const rows = samples.map((s, i) => ({
+      organization_id: data.organizationId,
+      account_id: account.id,
+      platform: account.platform,
+      external_post_id: "demo_post_1",
+      external_comment_id: `demo_${now}_${i}`,
+      author_name: s.author,
+      content: s.content,
+      posted_at: new Date(now - i * 3600 * 1000).toISOString(),
+      status: "new",
+    }));
+    const { error } = await supabase.from("social_comments").insert(rows);
+    if (error) throw new Error(error.message);
+    return { inserted: rows.length };
+  });
+
+/**
+ * Wymusza ręczne uruchomienie publikacji (ten sam stub co cron).
+ * W Turze 2 wszystkie wyniki będą 'skipped_no_account' lub 'pending_oauth'.
+ */
+export const publishPostNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        postId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: post, error } = await supabase
+      .from("social_posts")
+      .select("id, organization_id, target_platforms")
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!post) throw new Error("Post nie istnieje.");
+
+    const p = post as { id: string; organization_id: string; target_platforms: string[] };
+    const { data: accounts } = await supabase
+      .from("social_accounts")
+      .select("platform")
+      .eq("organization_id", p.organization_id);
+    const connected = new Set(((accounts ?? []) as Array<{ platform: string }>).map((a) => a.platform));
+
+    const nowIso = new Date().toISOString();
+    const results: Record<string, string> = {};
+    for (const platform of p.target_platforms) {
+      const status = connected.has(platform) ? "pending_oauth" : "skipped_no_account";
+      await supabase.from("social_post_results").upsert(
+        {
+          post_id: p.id,
+          platform,
+          status,
+          error_message:
+            status === "pending_oauth"
+              ? "OAuth dla tej platformy uruchomi się w kolejnej turze. Wynik zapisany."
+              : "Brak podłączonego konta tej platformy.",
+          published_at: nowIso,
+        },
+        { onConflict: "post_id,platform" },
+      );
+      results[platform] = status;
+    }
+    return { results };
+  });
