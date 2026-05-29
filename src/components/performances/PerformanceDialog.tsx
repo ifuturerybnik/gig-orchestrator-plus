@@ -393,7 +393,50 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
               </Popover>
             </div>
 
-
+            {/* Rodzaj wydarzenia */}
+            <div className="space-y-2">
+              <Label>
+                {t("organizations.performances.fields.event_kind")}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={eventKindSelection}
+                onValueChange={(v) => {
+                  setEventKindSelection(v);
+                  if (v !== "__custom__") setEventKindCustom("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t("organizations.performances.fields.event_kind_placeholder")}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERFORMANCE_EVENT_KIND_PRESETS.filter((k) => k !== "other").map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {t(`organizations.performances.event_kind.${k}`)}
+                    </SelectItem>
+                  ))}
+                  {(kindsList?.items ?? []).map((k) => (
+                    <SelectItem key={k.id} value={k.label}>
+                      {k.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">
+                    {t("organizations.performances.event_kind.other")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {isCustomKind && (
+                <Input
+                  autoFocus
+                  value={eventKindCustom}
+                  onChange={(e) => setEventKindCustom(e.target.value)}
+                  maxLength={120}
+                  placeholder={t("organizations.performances.fields.event_kind_custom_placeholder")}
+                />
+              )}
+            </div>
 
 
             {/* Status */}
