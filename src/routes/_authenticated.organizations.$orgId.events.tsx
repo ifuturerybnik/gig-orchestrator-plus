@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { CalendarDays, Plus, Eye, EyeOff, Users, Globe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PerformanceDialog } from "@/components/performances/PerformanceDialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+  PerformanceDialog,
+  type PerformanceInitial,
+} from "@/components/performances/PerformanceDialog";
+import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog";
+import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import {
   listPerformances,
+  findCounterpartyLinkForOrg,
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
@@ -46,14 +58,54 @@ function OrganizationPerformancesPage() {
   const { orgId } = Route.useParams();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<PerformanceInitial | null>(null);
+  const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
+  const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
 
   const fetchList = useServerFn(listPerformances);
+  const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
   });
 
   const items = data?.items ?? [];
+
+  const openCreate = () => {
+    setEditing(null);
+    setOpen(true);
+  };
+
+  const openEdit = (p: (typeof items)[number]) => {
+    setEditing({
+      id: p.id,
+      performance_date: p.performance_date,
+      status: p.status as PerformanceStatus,
+      visibility: p.visibility as PerformanceVisibility,
+      event_kind: p.event_kind,
+      name: p.name,
+      city: p.city,
+      postal_code: p.postal_code,
+      street: p.street,
+      street_number: p.street_number,
+      google_maps_url: p.google_maps_url,
+      notes: p.notes,
+      assignments: p.assignments,
+    });
+    setOpen(true);
+  };
+
+  const openCpDetails = async (cpOrgId: string) => {
+    try {
+      const res = await findCpLink({
+        data: { ownerOrgId: orgId, counterpartyOrgId: cpOrgId },
+      });
+      if (res.linkId) setDetailsCpLinkId(res.linkId);
+      else toast.error(t("organizations.performances.errors.cp_link_missing"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -66,7 +118,7 @@ function OrganizationPerformancesPage() {
             {t("organizations.performances.subtitle")}
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           {t("organizations.performances.add")}
         </Button>
@@ -101,49 +153,158 @@ function OrganizationPerformancesPage() {
             </TableHeader>
             <TableBody>
               {items.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.performance_date}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[p.status as PerformanceStatus]}>
-                      {t(`organizations.performances.status.${p.status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{p.name ?? "—"}</TableCell>
-                  <TableCell>{p.city ?? "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {p.assignments.contacts.map((c) => (
-                        <Badge key={`c-${c.id}`} variant="outline" className="text-xs">
-                          {c.name}
-                        </Badge>
-                      ))}
-                      {p.assignments.counterparties.map((o) => (
-                        <Badge key={`o-${o.id}`} variant="secondary" className="text-xs">
-                          {o.name}
-                        </Badge>
-                      ))}
-                      {p.assignments.contacts.length === 0 &&
-                        p.assignments.counterparties.length === 0 && (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      title={t(`organizations.performances.visibility.${p.visibility}`)}
-                      className="text-muted-foreground"
+                <HoverCard key={p.id} openDelay={250} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <TableRow
+                      onClick={() => openEdit(p)}
+                      className="cursor-pointer"
+                      title={t("organizations.performances.actions.click_to_edit")}
                     >
-                      <VisibilityIcon v={p.visibility as PerformanceVisibility} />
-                    </span>
-                  </TableCell>
-                </TableRow>
+                      <TableCell className="font-medium">{p.performance_date}</TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                          {t(`organizations.performances.status.${p.status}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{p.name ?? "—"}</TableCell>
+                      <TableCell>{p.city ?? "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {p.assignments.contacts.map((c) => (
+                            <Badge
+                              key={`c-${c.id}`}
+                              variant="outline"
+                              className="text-xs cursor-pointer hover:bg-accent"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDetailsContactId(c.id);
+                              }}
+                            >
+                              {c.name}
+                            </Badge>
+                          ))}
+                          {p.assignments.counterparties.map((o) => (
+                            <Badge
+                              key={`o-${o.id}`}
+                              variant="secondary"
+                              className="text-xs cursor-pointer hover:bg-secondary/80"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCpDetails(o.id);
+                              }}
+                            >
+                              {o.name}
+                            </Badge>
+                          ))}
+                          {p.assignments.contacts.length === 0 &&
+                            p.assignments.counterparties.length === 0 && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          title={t(`organizations.performances.visibility.${p.visibility}`)}
+                          className="text-muted-foreground"
+                        >
+                          <VisibilityIcon v={p.visibility as PerformanceVisibility} />
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="top" align="start" className="w-96">
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          {p.name?.trim() ||
+                            t(`organizations.performances.status.${p.status}`)}
+                        </p>
+                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                          {t(`organizations.performances.status.${p.status}`)}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-muted-foreground">
+                        <span>{t("organizations.performances.col.date")}:</span>
+                        <span className="text-foreground">{p.performance_date}</span>
+                        <span>{t("organizations.performances.fields.event_kind")}:</span>
+                        <span className="text-foreground">{p.event_kind}</span>
+                        <span>{t("organizations.performances.fields.visibility")}:</span>
+                        <span className="text-foreground">
+                          {t(`organizations.performances.visibility.${p.visibility}`)}
+                        </span>
+                        {(p.city || p.street || p.postal_code) && (
+                          <>
+                            <span>{t("organizations.performances.col.city")}:</span>
+                            <span className="text-foreground">
+                              {[
+                                [p.street, p.street_number].filter(Boolean).join(" "),
+                                [p.postal_code, p.city].filter(Boolean).join(" "),
+                              ]
+                                .filter(Boolean)
+                                .join(", ") || "—"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {(p.assignments.contacts.length > 0 ||
+                        p.assignments.counterparties.length > 0) && (
+                        <div className="border-t border-border pt-2">
+                          <p className="mb-1 font-medium text-foreground">
+                            {t("organizations.performances.assignments.title")}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {p.assignments.contacts.map((c) => (
+                              <Badge key={`hc-${c.id}`} variant="outline" className="text-[10px]">
+                                {c.name}
+                              </Badge>
+                            ))}
+                            {p.assignments.counterparties.map((o) => (
+                              <Badge key={`ho-${o.id}`} variant="secondary" className="text-[10px]">
+                                {o.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {p.notes && (
+                        <div className="border-t border-border pt-2">
+                          <p className="mb-1 font-medium text-foreground">
+                            {t("organizations.performances.fields.notes")}
+                          </p>
+                          <p className="whitespace-pre-wrap text-muted-foreground line-clamp-6">
+                            {p.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               ))}
             </TableBody>
           </Table>
         </div>
       )}
 
-      <PerformanceDialog open={open} onOpenChange={setOpen} organizationId={orgId} />
+      <PerformanceDialog
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v);
+          if (!v) setEditing(null);
+        }}
+        organizationId={orgId}
+        initial={editing}
+      />
+
+      <ContactDetailsDialog
+        contactId={detailsContactId}
+        scope={{ kind: "org", organizationId: orgId }}
+        onOpenChange={(o) => !o && setDetailsContactId(null)}
+      />
+      <CounterpartyDetailsDialog
+        linkId={detailsCpLinkId}
+        onOpenChange={(o) => !o && setDetailsCpLinkId(null)}
+        ownerOrgId={orgId}
+      />
     </div>
   );
 }
