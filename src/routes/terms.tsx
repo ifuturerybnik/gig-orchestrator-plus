@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { APP_OPERATOR, formatOperatorAddress } from "@/lib/operator";
 import { LEGAL_LAST_UPDATED, TERMS_LABEL } from "@/lib/legal";
+import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/terms")({
 });
 
 function TermsPage() {
+  useForceLightTheme();
   const op = APP_OPERATOR;
   const addr = formatOperatorAddress();
 
