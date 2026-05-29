@@ -32,6 +32,8 @@ import {
 } from "@/lib/social.functions";
 import type { SocialPlatformId } from "@/lib/social-platforms";
 import { XSetupInstructions } from "./XSetupInstructions";
+import { LinkedInSetupInstructions } from "./LinkedInSetupInstructions";
+
 
 /**
  * Formularz konfiguracji Client ID + Client Secret per organizacja.
@@ -167,11 +169,14 @@ export function AppCredentialsForm({
           <AccordionContent>
             {platform === "twitter" ? (
               <XSetupInstructions callbackUrl={callbackUrl} />
+            ) : platform === "linkedin" ? (
+              <LinkedInSetupInstructions callbackUrl={callbackUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t("social.setup.instructions_coming_soon")}
               </p>
             )}
+
           </AccordionContent>
         </AccordionItem>
       </Accordion>

@@ -1351,8 +1351,27 @@ export default
           "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
           "Po zapisaniu przejdź do ostatniego kroku „Połączenie\" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta."
         ]
+      },
+      "linkedin": {
+        "intro": "Aby Concertivo mogło publikować w Twoim imieniu na LinkedIn, musisz utworzyć własną aplikację w LinkedIn Developer Portal. Zajmuje to ~5 minut.",
+        "open_portal": "Otwórz LinkedIn Developer Portal",
+        "tip_label": "Wskazówka",
+        "tip_body": "LinkedIn wymaga, aby aplikacja była przypisana do Strony firmowej (Company Page). Jeśli nie masz Strony — utwórz ją najpierw na linkedin.com/company/setup/new/.",
+        "steps": [
+          "Zaloguj się na <strong>linkedin.com/developers/apps</strong> swoim kontem LinkedIn (musi być właścicielem lub administratorem Strony firmowej).",
+          "Kliknij <strong>Create app</strong>. <em>App name</em>: np. „Concertivo — [nazwa Twojej organizacji]”. <em>LinkedIn Page</em>: wybierz Stronę firmową swojej organizacji. <em>App logo</em>: wgraj logo (min. 100×100 px).",
+          "Zaakceptuj warunki i kliknij <strong>Create app</strong>. Zostaniesz przekierowany do panelu aplikacji.",
+          "Wejdź w zakładkę <strong>Auth</strong>. Skopiuj <strong>Client ID</strong> i <strong>Client Secret</strong> (kliknij ikonę oka, aby pokazać Secret).",
+          "Wciąż w zakładce <strong>Auth</strong>, w sekcji <strong>OAuth 2.0 settings → Authorized redirect URLs</strong>, kliknij <strong>+ Add redirect URL</strong> i wklej dokładnie ten adres: {CALLBACK_URL}",
+          "Przejdź do zakładki <strong>Products</strong>. Kliknij <strong>Request access</strong> przy produkcie <strong>Sign In with LinkedIn using OpenID Connect</strong> (zatwierdzenie automatyczne, kilka sekund).",
+          "Następnie kliknij <strong>Request access</strong> przy produkcie <strong>Share on LinkedIn</strong> (również automatyczne).",
+          "Sprawdź w zakładce <strong>Auth → OAuth 2.0 scopes</strong>, czy widzisz aktywne: <code>openid</code>, <code>profile</code>, <code>email</code>, <code>w_member_social</code>. Jeśli któregoś brakuje — wróć do <em>Products</em>.",
+          "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
+          "Po zapisaniu przejdź do ostatniego kroku „Połączenie” i kliknij <strong>Przejdź do LinkedIn</strong> — LinkedIn poprosi o autoryzację, a Concertivo automatycznie zapisze dane konta."
+        ]
       }
     },
+
     "platforms": {
       "facebook": {
         "name": "Facebook",

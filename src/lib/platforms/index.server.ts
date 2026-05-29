@@ -7,12 +7,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { decryptPii, encryptPii } from "../crypto.server";
 import type { SocialPlatformId } from "../social-platforms";
 import { refreshTwitterToken, twitterAdapter } from "./twitter.server";
+import { linkedinAdapter, refreshLinkedInToken } from "./linkedin.server";
 import type { PlatformAccount, PlatformAdapter } from "./types";
 
 // Mapa platformId → adapter. Kolejne tury dorzucają tu wpisy.
 export const PLATFORM_ADAPTERS: Partial<Record<SocialPlatformId, PlatformAdapter>> = {
   twitter: twitterAdapter,
+  linkedin: linkedinAdapter,
 };
+
 
 export function getAdapter(platform: string): PlatformAdapter | null {
   return PLATFORM_ADAPTERS[platform as SocialPlatformId] ?? null;
@@ -84,12 +87,23 @@ export async function getValidAccount(args: {
     expiresAt && new Date(expiresAt).getTime() - Date.now() < REFRESH_MARGIN_MS;
 
   if (needsRefresh && refreshToken) {
+    let refreshed:
+      | { accessToken: string; refreshToken: string | null; expiresAt: string }
+      | null = null;
     if (row.platform === "twitter") {
-      const refreshed = await refreshTwitterToken({
+      refreshed = await refreshTwitterToken({
         refreshToken,
         clientId: credentials.clientId,
         clientSecret: credentials.clientSecret,
       });
+    } else if (row.platform === "linkedin") {
+      refreshed = await refreshLinkedInToken({
+        refreshToken,
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+      });
+    }
+    if (refreshed) {
       accessToken = refreshed.accessToken;
       refreshToken = refreshed.refreshToken ?? refreshToken;
       expiresAt = refreshed.expiresAt;
@@ -104,8 +118,8 @@ export async function getValidAccount(args: {
         })
         .eq("id", row.id);
     }
-    // (kolejne platformy w kolejnych turach)
   }
+
 
   const account: PlatformAccount = {
     id: row.id,
