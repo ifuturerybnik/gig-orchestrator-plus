@@ -97,6 +97,7 @@ export function Header() {
                   {t("nav.admin")}
                 </Link>
               )}
+              <ThemeSwitcher />
               <LanguageSwitcher />
 
               <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -105,6 +106,7 @@ export function Header() {
             </>
           ) : (
             <>
+              <ThemeSwitcher />
               <LanguageSwitcher />
               <Link to="/login">
                 <Button variant="ghost" size="sm">
