@@ -1055,8 +1055,10 @@ export const seedDemoInboxComments = createServerFn({ method: "POST" })
   });
 
 /**
- * Wymusza ręczne uruchomienie publikacji (ten sam stub co cron).
- * W Turze 2 wszystkie wyniki będą 'skipped_no_account' lub 'pending_oauth'.
+ * Wymusza ręczną publikację posta na wszystkich docelowych platformach.
+ * Używa centralnego dispatcha `publishPostToAllPlatforms` — tej samej drogi
+ * używa cron `social-publish-scheduled`. Wynik per platforma jest zapisywany
+ * w `social_post_results` (status + external_post_id + external_url + error).
  */
 export const publishPostNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1068,43 +1070,12 @@ export const publishPostNow = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: post, error } = await supabase
-      .from("social_posts")
-      .select("id, organization_id, target_platforms")
-      .eq("id", data.postId)
-      .eq("organization_id", data.organizationId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!post) throw new Error("Post nie istnieje.");
-
-    const p = post as { id: string; organization_id: string; target_platforms: string[] };
-    const { data: accounts } = await supabase
-      .from("social_accounts")
-      .select("platform")
-      .eq("organization_id", p.organization_id);
-    const connected = new Set(((accounts ?? []) as Array<{ platform: string }>).map((a) => a.platform));
-
-    const nowIso = new Date().toISOString();
-    const results: Record<string, string> = {};
-    for (const platform of p.target_platforms) {
-      const status = connected.has(platform) ? "pending_oauth" : "skipped_no_account";
-      await supabase.from("social_post_results").upsert(
-        {
-          post_id: p.id,
-          platform,
-          status,
-          error_message:
-            status === "pending_oauth"
-              ? "OAuth dla tej platformy uruchomi się w kolejnej turze. Wynik zapisany."
-              : "Brak podłączonego konta tej platformy.",
-          published_at: nowIso,
-        },
-        { onConflict: "post_id,platform" },
-      );
-      results[platform] = status;
-    }
+  .handler(async ({ data }) => {
+    const { publishPostToAllPlatforms } = await import("./social-publish.server");
+    const results = await publishPostToAllPlatforms({
+      postId: data.postId,
+      organizationId: data.organizationId,
+    });
     return { results };
   });
 
