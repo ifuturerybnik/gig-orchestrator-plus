@@ -6,6 +6,11 @@ import {
   exchangeLinkedInCode,
   fetchLinkedInUserInfo,
 } from "./platforms/linkedin.server";
+import {
+  exchangeLongLivedUserToken,
+  exchangeMetaCode,
+  listUserPages,
+} from "./platforms/meta.server";
 
 
 export async function handleXOAuthCallback(args: {
