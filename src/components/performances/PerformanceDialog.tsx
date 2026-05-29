@@ -43,11 +43,14 @@ import { CounterpartyPicker } from "@/components/pickers/CounterpartyPicker";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { ContactForm } from "@/components/contacts/ContactForm";
 
+import { Textarea } from "@/components/ui/textarea";
 import {
   createPerformance,
   listPerformances,
+  listPerformanceEventKinds,
   PERFORMANCE_STATUSES,
   PERFORMANCE_VISIBILITIES,
+  PERFORMANCE_EVENT_KIND_PRESETS,
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
