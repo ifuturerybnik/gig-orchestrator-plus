@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import heroBg from "@/assets/landing-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -18,7 +17,6 @@ function LandingPage() {
         style={{ backgroundImage: `url(${heroBg})` }}
       >
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
-          <ThemeSwitcher />
           <LanguageSwitcher />
           <Link to="/login">
             <Button variant="ghost" size="sm">
