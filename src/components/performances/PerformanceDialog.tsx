@@ -94,14 +94,18 @@ type CounterpartyRef = { id: string; name: string };
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
 
-export function PerformanceDialog({ open, onOpenChange, organizationId }: Props) {
+export function PerformanceDialog({ open, onOpenChange, organizationId, initial }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
+  const update = useServerFn(updatePerformance);
+  const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const fetchList = useServerFn(listPerformances);
   const fetchKinds = useServerFn(listPerformanceEventKinds);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const isEdit = !!initial;
 
   const { data: kindsList } = useQuery({
     queryKey: ["performance-event-kinds", organizationId],
