@@ -226,19 +226,14 @@ function OrganizationPerformancesPage() {
           modifiers={{ hasEvents: eventDates }}
           modifiersClassNames={{
             hasEvents:
-              "relative font-semibold !bg-primary/15 !text-primary hover:!bg-primary/25",
+              "font-semibold !bg-primary/15 !text-primary hover:!bg-primary/25",
           }}
           showOutsideDays
-          className="pointer-events-auto mx-auto"
+          className="pointer-events-auto w-full [--cell-size:3rem]"
           classNames={{
-            months: "flex flex-col sm:flex-row gap-4 w-full",
-            month: "flex-1 space-y-4",
-            table: "w-full border-collapse",
-            head_row: "flex w-full",
-            head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-xs",
-            row: "flex w-full mt-2",
-            cell: "flex-1 text-center text-sm relative",
-            day: "h-10 w-full p-0 font-normal aria-selected:opacity-100 rounded-md hover:bg-accent transition-colors",
+            root: "w-full",
+            months: "relative flex w-full flex-col gap-4",
+            month: "relative flex w-full flex-col gap-4",
           }}
         />
       </div>
