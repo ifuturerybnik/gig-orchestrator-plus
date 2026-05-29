@@ -1116,7 +1116,6 @@ export const publishPostNow = createServerFn({ method: "POST" })
 // Secret szyfrujemy AES-256-GCM (crypto.server.ts).
 
 import { encryptPii, decryptPii } from "./crypto.server";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { randomBytes, createHash } from "crypto";
 
 export const getAppCredentials = createServerFn({ method: "GET" })
