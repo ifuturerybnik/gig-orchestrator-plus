@@ -14,6 +14,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/footer";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 function NotFoundComponent() {
   return (
@@ -86,6 +87,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
         <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('concertivo-theme')||'auto';var d=t==='dark'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+        <script
           defer
           data-domain="concertivo.eu"
           src="https://plausible.io/js/script.js"
@@ -116,16 +122,18 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AuthSync />
-        <div className="flex min-h-screen flex-col">
-          <div className="flex-1">
-            <Outlet />
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthSync />
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">
+              <Outlet />
+            </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
-        <Toaster richColors position="top-right" />
-      </AuthProvider>
+          <Toaster richColors position="top-right" />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
