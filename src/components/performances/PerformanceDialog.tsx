@@ -902,6 +902,19 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
         onOpenChange={setAddCpOpen}
         ownerOrgId={organizationId}
       />
+
+      {/* Details from assigned badges */}
+      <ContactDetailsDialog
+        contactId={detailsContactId}
+        scope={{ kind: "organization", organizationId }}
+        onOpenChange={(o) => !o && setDetailsContactId(null)}
+      />
+      <CounterpartyDetailsDialog
+        linkId={detailsCpLinkId}
+        onOpenChange={(o) => !o && setDetailsCpLinkId(null)}
+        ownerOrgId={organizationId}
+      />
     </>
   );
 }
+
