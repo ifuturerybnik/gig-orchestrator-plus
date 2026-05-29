@@ -1,10 +1,20 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CalendarDays, Plus, Eye, EyeOff, Users, Globe, Trash2, Pencil } from "lucide-react";
+import {
+  CalendarDays,
+  Plus,
+  Eye,
+  EyeOff,
+  Users,
+  Globe,
+  Trash2,
+  Pencil,
+  Plane,
+} from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +52,10 @@ import {
   PerformanceDialog,
   type PerformanceInitial,
 } from "@/components/performances/PerformanceDialog";
+import {
+  VacationDialog,
+  type VacationInitial,
+} from "@/components/vacations/VacationDialog";
 import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog";
 import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import {
@@ -52,6 +66,7 @@ import {
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
+import { listVacations } from "@/lib/vacations.functions";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/events",
@@ -82,6 +97,23 @@ function VisibilityIcon({ v }: { v: PerformanceVisibility }) {
   return <Eye className="h-4 w-4" />;
 }
 
+function isoFromDate(d: Date) {
+  return format(d, "yyyy-MM-dd");
+}
+function parseIso(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function eachDayIso(startIso: string, endIso: string): string[] {
+  const out: string[] = [];
+  const start = parseIso(startIso);
+  const end = parseIso(endIso);
+  for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+    out.push(format(d, "yyyy-MM-dd"));
+  }
+  return out;
+}
+
 function OrganizationPerformancesPage() {
   const { orgId } = Route.useParams();
   const { t } = useTranslation();
@@ -93,17 +125,42 @@ function OrganizationPerformancesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Calendar popover state — anchor positioned at click coords
+  // Vacation dialog state
+  const [vacOpen, setVacOpen] = useState(false);
+  const [vacEditing, setVacEditing] = useState<VacationInitial | null>(null);
+  const [vacInitialDate, setVacInitialDate] = useState<string | null>(null);
+
+  // Hover popover state — anchor positioned at cell coords
   const [popoverDate, setPopoverDate] = useState<string | null>(null);
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => {
+      setPopoverDate(null);
+      setPopoverAnchor(null);
+    }, 200);
+  };
 
   const qc = useQueryClient();
   const fetchList = useServerFn(listPerformances);
+  const fetchVacations = useServerFn(listVacations);
   const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const removePerformance = useServerFn(deletePerformance);
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
+  });
+  const { data: vacData } = useQuery({
+    queryKey: ["vacations", orgId],
+    queryFn: () => fetchVacations({ data: { organizationId: orgId } }),
   });
 
   const renderEventKind = (kind: string) => {
@@ -129,8 +186,9 @@ function OrganizationPerformancesPage() {
   };
 
   const items = data?.items ?? [];
+  const vacations = vacData?.items ?? [];
 
-  // Build a map: yyyy-MM-dd -> events for that day
+  // Build maps for performance lookup by date
   const eventsByDate = useMemo(() => {
     const map = new Map<string, typeof items>();
     for (const p of items) {
@@ -141,16 +199,48 @@ function OrganizationPerformancesPage() {
     return map;
   }, [items]);
 
+  // Build vacation day-coverage maps and modifier date arrays
+  const vacByDate = useMemo(() => {
+    const map = new Map<string, typeof vacations>();
+    for (const v of vacations) {
+      for (const iso of eachDayIso(v.start_date, v.end_date)) {
+        const arr = map.get(iso) ?? [];
+        arr.push(v);
+        map.set(iso, arr);
+      }
+    }
+    return map;
+  }, [vacations]);
+
+  const { vacStart, vacEnd, vacMid, vacSingle } = useMemo(() => {
+    const vS: Date[] = [];
+    const vE: Date[] = [];
+    const vM: Date[] = [];
+    const vSi: Date[] = [];
+    for (const v of vacations) {
+      const days = eachDayIso(v.start_date, v.end_date);
+      if (days.length === 1) {
+        vSi.push(parseIso(days[0]));
+        continue;
+      }
+      days.forEach((iso, i) => {
+        const d = parseIso(iso);
+        if (i === 0) vS.push(d);
+        else if (i === days.length - 1) vE.push(d);
+        else vM.push(d);
+      });
+    }
+    return { vacStart: vS, vacEnd: vE, vacMid: vM, vacSingle: vSi };
+  }, [vacations]);
+
   const eventDates = useMemo(
     () =>
-      Array.from(eventsByDate.keys()).map((iso) => {
-        const [y, m, d] = iso.split("-").map(Number);
-        return new Date(y, m - 1, d);
-      }),
+      Array.from(eventsByDate.keys()).map((iso) => parseIso(iso)),
     [eventsByDate],
   );
 
-  const popoverItems = popoverDate ? eventsByDate.get(popoverDate) ?? [] : [];
+  const popoverEvents = popoverDate ? eventsByDate.get(popoverDate) ?? [] : [];
+  const popoverVacations = popoverDate ? vacByDate.get(popoverDate) ?? [] : [];
 
   const openCreate = (iso?: string) => {
     setEditing(null);
@@ -178,15 +268,39 @@ function OrganizationPerformancesPage() {
     setOpen(true);
   };
 
-  const handleDayClick = (day: Date, _mods: unknown, e: React.MouseEvent) => {
-    const iso = format(day, "yyyy-MM-dd");
-    const dayEvents = eventsByDate.get(iso) ?? [];
-    if (dayEvents.length === 0) {
-      openCreate(iso);
-      return;
-    }
+  const openVacCreate = (iso?: string) => {
+    setVacEditing(null);
+    setVacInitialDate(iso ?? null);
+    setVacOpen(true);
+  };
+  const openVacEdit = (v: (typeof vacations)[number]) => {
+    setVacEditing({
+      id: v.id,
+      start_date: v.start_date,
+      end_date: v.end_date,
+      description: v.description,
+    });
+    setVacInitialDate(null);
+    setVacOpen(true);
+  };
+
+  const showPopover = (day: Date, e: { clientX: number; clientY: number }) => {
+    const iso = isoFromDate(day);
+    const hasEvents = (eventsByDate.get(iso)?.length ?? 0) > 0;
+    const hasVac = (vacByDate.get(iso)?.length ?? 0) > 0;
+    if (!hasEvents && !hasVac) return;
+    cancelClose();
     setPopoverDate(iso);
     setPopoverAnchor({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleDayClick = (day: Date) => {
+    const iso = isoFromDate(day);
+    const dayEvents = eventsByDate.get(iso) ?? [];
+    if (dayEvents.length === 0 && (vacByDate.get(iso)?.length ?? 0) === 0) {
+      openCreate(iso);
+    }
+    // If date is busy, hover already shows popover — click is a no-op
   };
 
   const openCpDetails = async (cpOrgId: string) => {
@@ -212,21 +326,45 @@ function OrganizationPerformancesPage() {
             {t("organizations.performances.subtitle")}
           </p>
         </div>
-        <Button onClick={() => openCreate()}>
-          <Plus className="h-4 w-4" />
-          {t("organizations.performances.add")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => openVacCreate()}>
+            <Plane className="h-4 w-4" />
+            {t("organizations.vacations.add")}
+          </Button>
+          <Button onClick={() => openCreate()}>
+            <Plus className="h-4 w-4" />
+            {t("organizations.performances.add")}
+          </Button>
+        </div>
       </div>
 
-      {/* Calendar overview — click empty day = create, click busy day = popover */}
+      {/* Calendar overview — hover to show day details popover */}
       <div className="rounded-md border border-border bg-card p-3">
         <Calendar
           mode="single"
           onDayClick={handleDayClick}
-          modifiers={{ hasEvents: eventDates }}
+          onDayMouseEnter={(day, _mods, e) =>
+            showPopover(day, { clientX: e.clientX, clientY: e.clientY })
+          }
+          onDayMouseLeave={() => scheduleClose()}
+          modifiers={{
+            hasEvents: eventDates,
+            vacStart,
+            vacEnd,
+            vacMid,
+            vacSingle,
+          }}
           modifiersClassNames={{
             hasEvents:
               "font-semibold !bg-primary/15 !text-primary hover:!bg-primary/25",
+            vacStart:
+              "after:content-[''] after:absolute after:left-1 after:right-0 after:bottom-1 after:h-1 after:bg-amber-500 after:rounded-l-full",
+            vacEnd:
+              "after:content-[''] after:absolute after:left-0 after:right-1 after:bottom-1 after:h-1 after:bg-amber-500 after:rounded-r-full",
+            vacMid:
+              "after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-1 after:h-1 after:bg-amber-500",
+            vacSingle:
+              "after:content-[''] after:absolute after:left-1 after:right-1 after:bottom-1 after:h-1 after:bg-amber-500 after:rounded-full",
           }}
           showOutsideDays
           className="pointer-events-auto w-full [--cell-size:3rem]"
@@ -259,63 +397,121 @@ function OrganizationPerformancesPage() {
             }}
           />
         </PopoverAnchor>
-        <PopoverContent side="top" align="center" className="w-80 p-3">
+        <PopoverContent
+          side="top"
+          align="center"
+          className="w-80 p-3"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-foreground">
-              {popoverDate}
-            </p>
-            <div className="space-y-1.5">
-              {popoverItems.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setPopoverDate(null);
-                    setPopoverAnchor(null);
-                    openEdit(p);
-                  }}
-                  className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
-                >
-                  <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-foreground">
-                        {p.name?.trim() || renderEventKind(p.event_kind)}
-                      </span>
-                      <Badge
-                        variant={statusVariant[p.status as PerformanceStatus]}
-                        className={`${statusClassName[p.status as PerformanceStatus]} shrink-0`}
-                      >
-                        {t(`organizations.performances.status.${p.status}`)}
-                      </Badge>
+            <p className="text-sm font-semibold text-foreground">{popoverDate}</p>
+
+            {popoverVacations.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("organizations.vacations.title")}
+                </p>
+                {popoverVacations.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => {
+                      setPopoverDate(null);
+                      setPopoverAnchor(null);
+                      openVacEdit(v);
+                    }}
+                    className="flex w-full items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-left text-xs transition-colors hover:bg-amber-500/20"
+                  >
+                    <Plane className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="font-medium text-foreground">
+                        {v.start_date}
+                        {v.end_date !== v.start_date ? ` → ${v.end_date}` : ""}
+                      </p>
+                      {v.description && (
+                        <p className="line-clamp-2 text-muted-foreground">
+                          {v.description}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-muted-foreground">
-                      {renderEventKind(p.event_kind)}
-                      {p.city ? ` · ${p.city}` : ""}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {popoverEvents.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("organizations.performances.title")}
+                </p>
+                {popoverEvents.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setPopoverDate(null);
+                      setPopoverAnchor(null);
+                      openEdit(p);
+                    }}
+                    className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
+                  >
+                    <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium text-foreground">
+                          {p.name?.trim() || renderEventKind(p.event_kind)}
+                        </span>
+                        <Badge
+                          variant={statusVariant[p.status as PerformanceStatus]}
+                          className={`${statusClassName[p.status as PerformanceStatus]} shrink-0`}
+                        >
+                          {t(`organizations.performances.status.${p.status}`)}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground">
+                        {renderEventKind(p.event_kind)}
+                        {p.city ? ` · ${p.city}` : ""}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const iso = popoverDate;
+                  setPopoverDate(null);
+                  setPopoverAnchor(null);
+                  if (iso) openCreate(iso);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t("organizations.performances.add")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const iso = popoverDate;
+                  setPopoverDate(null);
+                  setPopoverAnchor(null);
+                  if (iso) openVacCreate(iso);
+                }}
+              >
+                <Plane className="h-3.5 w-3.5" />
+                {t("organizations.vacations.add")}
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                const iso = popoverDate;
-                setPopoverDate(null);
-                setPopoverAnchor(null);
-                if (iso) openCreate(iso);
-              }}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {t("organizations.performances.add")}
-            </Button>
           </div>
         </PopoverContent>
       </Popover>
-
-
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
@@ -514,6 +710,20 @@ function OrganizationPerformancesPage() {
         organizationId={orgId}
         initial={editing}
         initialDate={createDate}
+      />
+
+      <VacationDialog
+        open={vacOpen}
+        onOpenChange={(v) => {
+          setVacOpen(v);
+          if (!v) {
+            setVacEditing(null);
+            setVacInitialDate(null);
+          }
+        }}
+        organizationId={orgId}
+        initial={vacEditing}
+        initialDate={vacInitialDate}
       />
 
       <ContactDetailsDialog

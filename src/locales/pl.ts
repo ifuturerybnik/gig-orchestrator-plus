@@ -664,6 +664,34 @@ export default
         "cp_link_missing": "Nie można otworzyć szczegółów kontrahenta — brak powiązania w tej organizacji."
       }
     },
+    "vacations": {
+      "title": "Urlopy",
+      "add": "Dodaj urlop",
+      "fields": {
+        "range": "Zakres dat urlopu",
+        "description": "Opis (opcjonalnie)",
+        "description_placeholder": "Np. urlop wypoczynkowy, wyjazd zagraniczny…"
+      },
+      "dialog": {
+        "title": "Nowy urlop",
+        "title_edit": "Edytuj urlop",
+        "submit": "Zapisz urlop",
+        "submit_edit": "Zapisz zmiany"
+      },
+      "actions": {
+        "delete": "Usuń urlop",
+        "delete_confirm_title": "Usunąć urlop?",
+        "delete_confirm_desc": "Tej operacji nie można cofnąć."
+      },
+      "toasts": {
+        "created": "Urlop dodany",
+        "updated": "Zmiany zapisane",
+        "deleted": "Urlop usunięty"
+      },
+      "errors": {
+        "range_required": "Wybierz zakres dat urlopu"
+      }
+    },
 
     "budget": {
       "title": "Budżet",

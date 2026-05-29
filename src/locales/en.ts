@@ -644,6 +644,34 @@ export default
         "cp_link_missing": "Cannot open counterparty details — no link in this organization."
       }
     },
+    "vacations": {
+      "title": "Vacations",
+      "add": "Add vacation",
+      "fields": {
+        "range": "Vacation date range",
+        "description": "Description (optional)",
+        "description_placeholder": "E.g. annual leave, trip abroad…"
+      },
+      "dialog": {
+        "title": "New vacation",
+        "title_edit": "Edit vacation",
+        "submit": "Save vacation",
+        "submit_edit": "Save changes"
+      },
+      "actions": {
+        "delete": "Delete vacation",
+        "delete_confirm_title": "Delete vacation?",
+        "delete_confirm_desc": "This action cannot be undone."
+      },
+      "toasts": {
+        "created": "Vacation added",
+        "updated": "Changes saved",
+        "deleted": "Vacation deleted"
+      },
+      "errors": {
+        "range_required": "Select a vacation date range"
+      }
+    },
 
     "budget": {
       "title": "Budget",
