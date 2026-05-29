@@ -302,26 +302,21 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                       hasEvent: eventDates,
                     }}
                     modifiersClassNames={{
-                      past: "text-destructive/80",
+                      past: "text-destructive/70",
                       hasEvent:
-                        "bg-primary/15 text-primary font-semibold ring-1 ring-inset ring-primary/40 rounded-md",
+                        "[&>button]:bg-primary/20 [&>button]:text-primary [&>button]:font-semibold [&>button]:ring-1 [&>button]:ring-inset [&>button]:ring-primary/50 [&>button]:rounded-md",
                     }}
                     components={{
-                      DayButton: ({ day, modifiers, ...props }) => {
-                        const iso = format(day.date, "yyyy-MM-dd");
+                      DayButton: (props) => {
+                        const iso = format(props.day.date, "yyyy-MM-dd");
                         const events = eventsByDate.get(iso);
                         const title = events
                           ? `${t("organizations.performances.calendar.day_events_title", { date: iso })}\n• ${events.join("\n• ")}`
                           : undefined;
-                        return (
-                          <button
-                            {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
-                            title={title}
-                          />
-                        );
+                        return <CalendarDayButton {...props} title={title} />;
                       },
                     }}
-                    className="p-3 pointer-events-auto"
+                    className="p-3 pointer-events-auto [--cell-size:2.5rem]"
                   />
                   <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
