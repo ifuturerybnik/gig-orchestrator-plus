@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
-import { CalendarIcon, X, UserPlus, Building2 } from "lucide-react";
+import { CalendarIcon, X, UserPlus, Building2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { ContactPicker } from "@/components/pickers/ContactPicker";
@@ -115,6 +121,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
 
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [counterparties, setCounterparties] = useState<CounterpartyRef[]>([]);
+  const [suggestedContacts, setSuggestedContacts] = useState<ContactRef[]>([]);
+  const [suggestedCounterparties, setSuggestedCounterparties] = useState<CounterpartyRef[]>([]);
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
@@ -137,6 +145,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     setGoogleMapsUrl("");
     setContacts([]);
     setCounterparties([]);
+    setSuggestedContacts([]);
+    setSuggestedCounterparties([]);
   };
 
   const mutation = useMutation({
@@ -201,18 +211,14 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
       const suggested = (res.items ?? [])
         .map((i) => i.organization)
         .filter((o): o is { id: string; name: string; tax_id: string | null; is_shared: boolean } => !!o)
-        .filter((o) => !counterparties.find((cp) => cp.id === o.id));
-      for (const s of suggested) {
-        toast(t("organizations.performances.toasts.linked_cp_suggest", { name: s.name }), {
-          action: {
-            label: t("organizations.performances.actions.assign"),
-            onClick: () =>
-              setCounterparties((prev) =>
-                prev.find((x) => x.id === s.id) ? prev : [...prev, { id: s.id, name: s.name }],
-              ),
-          },
-        });
-      }
+        .map((o) => ({ id: o.id, name: o.name }));
+      setSuggestedCounterparties((prev) => {
+        const next = [...prev];
+        for (const s of suggested) {
+          if (!next.find((x) => x.id === s.id)) next.push(s);
+        }
+        return next;
+      });
     } catch {
       /* non-fatal */
     }
@@ -227,24 +233,29 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
       const suggested = (res.items ?? [])
         .map((i) => i.contact)
         .filter((c): c is { id: string; display_name: string; email: string | null; phone: string | null } => !!c)
-        .filter((c) => !contacts.find((x) => x.id === c.id));
-      for (const s of suggested) {
-        toast(t("organizations.performances.toasts.linked_contact_suggest", { name: s.display_name }), {
-          action: {
-            label: t("organizations.performances.actions.assign"),
-            onClick: () =>
-              setContacts((prev) =>
-                prev.find((x) => x.id === s.id)
-                  ? prev
-                  : [...prev, { id: s.id, name: s.display_name }],
-              ),
-          },
-        });
-      }
+        .map((c) => ({ id: c.id, name: c.display_name }));
+      setSuggestedContacts((prev) => {
+        const next = [...prev];
+        for (const s of suggested) {
+          if (!next.find((x) => x.id === s.id)) next.push(s);
+        }
+        return next;
+      });
     } catch {
       /* non-fatal */
     }
   };
+
+  // Filter out suggestions that are already assigned
+  const visibleSuggestedContacts = useMemo(
+    () => suggestedContacts.filter((s) => !contacts.find((c) => c.id === s.id)),
+    [suggestedContacts, contacts],
+  );
+  const visibleSuggestedCounterparties = useMemo(
+    () => suggestedCounterparties.filter((s) => !counterparties.find((c) => c.id === s.id)),
+    [suggestedCounterparties, counterparties],
+  );
+
 
   return (
     <>
@@ -310,10 +321,28 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                       DayButton: (props) => {
                         const iso = format(props.day.date, "yyyy-MM-dd");
                         const events = eventsByDate.get(iso);
-                        const title = events
-                          ? `${t("organizations.performances.calendar.day_events_title", { date: iso })}\n• ${events.join("\n• ")}`
-                          : undefined;
-                        return <CalendarDayButton {...props} title={title} />;
+                        if (!events || events.length === 0) {
+                          return <CalendarDayButton {...props} />;
+                        }
+                        return (
+                          <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <CalendarDayButton {...props} />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="mb-1 font-semibold">
+                                  {t("organizations.performances.calendar.day_events_title", { date: iso })}
+                                </p>
+                                <ul className="space-y-0.5">
+                                  {events.map((e, i) => (
+                                    <li key={i}>• {e}</li>
+                                  ))}
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
                       },
                     }}
                     className="p-3 pointer-events-auto [--cell-size:2.5rem]"
@@ -504,6 +533,49 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                     {t("organizations.performances.assignments.add_contact")}
                   </Button>
                 </div>
+                {visibleSuggestedContacts.length > 0 && (
+                  <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                      {t("organizations.performances.assignments.suggestions_title")}
+                    </div>
+                    {visibleSuggestedContacts.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate">
+                          {t("organizations.performances.assignments.suggest_assign_contact", { name: s.name })}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2"
+                            onClick={() => {
+                              setContacts((prev) =>
+                                prev.find((x) => x.id === s.id) ? prev : [...prev, s],
+                              );
+                              setSuggestedContacts((prev) => prev.filter((x) => x.id !== s.id));
+                            }}
+                          >
+                            <Check className="h-3 w-3" />
+                            {t("organizations.performances.actions.assign")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2"
+                            onClick={() =>
+                              setSuggestedContacts((prev) => prev.filter((x) => x.id !== s.id))
+                            }
+                            aria-label={t("organizations.performances.assignments.dismiss")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Kontrahenci */}
@@ -552,6 +624,49 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                     {t("organizations.performances.assignments.add_counterparty")}
                   </Button>
                 </div>
+                {visibleSuggestedCounterparties.length > 0 && (
+                  <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                      {t("organizations.performances.assignments.suggestions_title")}
+                    </div>
+                    {visibleSuggestedCounterparties.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate">
+                          {t("organizations.performances.assignments.suggest_assign_cp", { name: s.name })}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2"
+                            onClick={() => {
+                              setCounterparties((prev) =>
+                                prev.find((x) => x.id === s.id) ? prev : [...prev, s],
+                              );
+                              setSuggestedCounterparties((prev) => prev.filter((x) => x.id !== s.id));
+                            }}
+                          >
+                            <Check className="h-3 w-3" />
+                            {t("organizations.performances.actions.assign")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2"
+                            onClick={() =>
+                              setSuggestedCounterparties((prev) => prev.filter((x) => x.id !== s.id))
+                            }
+                            aria-label={t("organizations.performances.assignments.dismiss")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
