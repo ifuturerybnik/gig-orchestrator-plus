@@ -52,11 +52,20 @@ export const Route = createFileRoute(
   component: OrganizationPerformancesPage,
 });
 
-const statusVariant: Record<PerformanceStatus, "default" | "secondary" | "outline"> = {
+const statusVariant: Record<PerformanceStatus, "default" | "secondary" | "outline" | "destructive"> = {
   inquiry: "outline",
-  tentative: "secondary",
+  tentative: "destructive",
+  confirmed: "default",
   confirmed_signing: "default",
   confirmed_signed: "default",
+};
+
+const statusClassName: Record<PerformanceStatus, string> = {
+  inquiry: "",
+  tentative: "",
+  confirmed: "bg-green-600 hover:bg-green-600/90 text-white border-transparent",
+  confirmed_signing: "bg-yellow-500 hover:bg-yellow-500/90 text-black border-transparent",
+  confirmed_signed: "bg-green-600 hover:bg-green-600/90 text-white border-transparent",
 };
 
 function VisibilityIcon({ v }: { v: PerformanceVisibility }) {
