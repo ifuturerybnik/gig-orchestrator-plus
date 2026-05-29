@@ -242,27 +242,33 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
       if (!status) throw new Error(t("organizations.performances.errors.status_required"));
       if (!resolvedEventKind)
         throw new Error(t("organizations.performances.errors.event_kind_required"));
-      return create({
-        data: {
-          organizationId,
-          performanceDate: format(date, "yyyy-MM-dd"),
-          status: status as PerformanceStatus,
-          visibility,
-          eventKind: resolvedEventKind,
-          name: name.trim() || null,
-          city: city.trim() || null,
-          postalCode: postalCode.trim() || null,
-          street: street.trim() || null,
-          streetNumber: streetNumber.trim() || null,
-          googleMapsUrl: googleMapsUrl.trim() || null,
-          notes: notes.trim() || null,
-          contactIds: contacts.map((c) => c.id),
-          counterpartyIds: counterparties.map((c) => c.id),
-        },
-      });
+      const payload = {
+        organizationId,
+        performanceDate: format(date, "yyyy-MM-dd"),
+        status: status as PerformanceStatus,
+        visibility,
+        eventKind: resolvedEventKind,
+        name: name.trim() || null,
+        city: city.trim() || null,
+        postalCode: postalCode.trim() || null,
+        street: street.trim() || null,
+        streetNumber: streetNumber.trim() || null,
+        googleMapsUrl: googleMapsUrl.trim() || null,
+        notes: notes.trim() || null,
+        contactIds: contacts.map((c) => c.id),
+        counterpartyIds: counterparties.map((c) => c.id),
+      };
+      if (isEdit && initial) {
+        return update({ data: { ...payload, performanceId: initial.id } });
+      }
+      return create({ data: payload });
     },
     onSuccess: () => {
-      toast.success(t("organizations.performances.toasts.created"));
+      toast.success(
+        isEdit
+          ? t("organizations.performances.toasts.updated")
+          : t("organizations.performances.toasts.created"),
+      );
       qc.invalidateQueries({ queryKey: ["performances", organizationId] });
       qc.invalidateQueries({ queryKey: ["performance-event-kinds", organizationId] });
       reset();
