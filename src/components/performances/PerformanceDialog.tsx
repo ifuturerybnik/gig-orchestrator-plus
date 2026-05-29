@@ -740,6 +740,18 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                 )}
               </div>
             </div>
+
+            {/* Notatki */}
+            <div className="space-y-2">
+              <Label>{t("organizations.performances.fields.notes")}</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={5000}
+                rows={4}
+                placeholder={t("organizations.performances.fields.notes_placeholder")}
+              />
+            </div>
           </div>
 
           <DialogFooter>
