@@ -605,7 +605,11 @@ export default
         "assign_contact": "Przypisz kontakt",
         "assign_counterparty": "Przypisz kontrahenta",
         "add_contact": "Dodaj kontakt",
-        "add_counterparty": "Dodaj kontrahenta"
+        "add_counterparty": "Dodaj kontrahenta",
+        "suggestions_title": "Sugestie powiązań",
+        "suggest_assign_cp": "Powiązany kontrahent: {{name}}",
+        "suggest_assign_contact": "Powiązany kontakt: {{name}}",
+        "dismiss": "Odrzuć"
       },
       "dialog": {
         "title": "Nowy występ",
