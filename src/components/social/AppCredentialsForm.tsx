@@ -33,6 +33,7 @@ import {
 import type { SocialPlatformId } from "@/lib/social-platforms";
 import { XSetupInstructions } from "./XSetupInstructions";
 import { LinkedInSetupInstructions } from "./LinkedInSetupInstructions";
+import { MetaSetupInstructions } from "./MetaSetupInstructions";
 
 
 /**
@@ -65,9 +66,16 @@ export function AppCredentialsForm({
   const [clientSecret, setClientSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
 
+  // Slug callback URL: X używa "x", Facebook+Instagram dzielą "meta", reszta = id platformy.
+  const callbackSlug =
+    platform === "twitter"
+      ? "x"
+      : platform === "facebook" || platform === "instagram"
+        ? "meta"
+        : platform;
   const callbackUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/api/public/social/${platform === "twitter" ? "x" : platform}-callback`
+      ? `${window.location.origin}/api/public/social/${callbackSlug}-callback`
       : "";
 
   const saveMut = useMutation({
@@ -171,6 +179,8 @@ export function AppCredentialsForm({
               <XSetupInstructions callbackUrl={callbackUrl} />
             ) : platform === "linkedin" ? (
               <LinkedInSetupInstructions callbackUrl={callbackUrl} />
+            ) : platform === "facebook" || platform === "instagram" ? (
+              <MetaSetupInstructions callbackUrl={callbackUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t("social.setup.instructions_coming_soon")}

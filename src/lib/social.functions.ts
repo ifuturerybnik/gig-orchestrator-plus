@@ -1239,7 +1239,9 @@ export const deleteAppCredentials = createServerFn({ method: "POST" })
 
 function getCallbackUrl(platform: string, request: Request): string {
   const url = new URL(request.url);
-  return `${url.origin}/api/public/social/${platform}-callback`;
+  // Facebook + Instagram dzielą jeden flow Meta i wspólny callback.
+  const slug = platform === "facebook" || platform === "instagram" ? "meta" : platform;
+  return `${url.origin}/api/public/social/${slug}-callback`;
 }
 
 function base64UrlEncode(buf: Buffer): string {
@@ -1260,12 +1262,14 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // 1) pobierz credentials org+platform
+    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook)
+    const credLookupPlatform =
+      data.platform === "instagram" ? "facebook" : data.platform;
     const { data: credRow, error: credErr } = await supabase
       .from("social_app_credentials")
       .select("client_id")
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform)
+      .eq("platform", credLookupPlatform)
       .maybeSingle();
     if (credErr) throw new Error(credErr.message);
     if (!credRow) {
@@ -1319,6 +1323,26 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
       });
       authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+    } else if (data.platform === "facebook" || data.platform === "instagram") {
+      // Jeden flow Facebook Login dla obu platform; callback zapisuje oba konta.
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        state,
+        scope: [
+          "pages_show_list",
+          "pages_manage_posts",
+          "pages_read_engagement",
+          "pages_manage_engagement",
+          "pages_read_user_content",
+          "instagram_basic",
+          "instagram_content_publish",
+          "instagram_manage_comments",
+          "business_management",
+        ].join(","),
+      });
+      authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else {
       throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
     }

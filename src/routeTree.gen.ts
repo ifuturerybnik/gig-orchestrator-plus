@@ -38,6 +38,7 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
 import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
+import { Route as ApiPublicSocialMetaCallbackRouteImport } from './routes/api/public/social.meta-callback'
 import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
@@ -207,6 +208,12 @@ const ApiPublicSocialXCallbackRoute =
     path: '/api/public/social/x-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSocialMetaCallbackRoute =
+  ApiPublicSocialMetaCallbackRouteImport.update({
+    id: '/api/public/social/meta-callback',
+    path: '/api/public/social/meta-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSocialLinkedinCallbackRoute =
   ApiPublicSocialLinkedinCallbackRouteImport.update({
     id: '/api/public/social/linkedin-callback',
@@ -312,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
+  '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -350,6 +358,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
+  '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -393,6 +402,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
+  '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
+    | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
@@ -474,6 +485,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
+    | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
     | '/organizations/$orgId'
   id:
@@ -516,6 +528,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
+    | '/api/public/social/meta-callback'
     | '/api/public/social/x-callback'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
@@ -536,6 +549,7 @@ export interface RootRouteChildren {
   ApiPublicSocialSyncInboxRoute: typeof ApiPublicSocialSyncInboxRoute
   ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
   ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
+  ApiPublicSocialMetaCallbackRoute: typeof ApiPublicSocialMetaCallbackRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
 }
 
@@ -744,6 +758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSocialXCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/social/meta-callback': {
+      id: '/api/public/social/meta-callback'
+      path: '/api/public/social/meta-callback'
+      fullPath: '/api/public/social/meta-callback'
+      preLoaderRoute: typeof ApiPublicSocialMetaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/social/linkedin-callback': {
       id: '/api/public/social/linkedin-callback'
       path: '/api/public/social/linkedin-callback'
@@ -941,6 +962,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialSyncInboxRoute: ApiPublicSocialSyncInboxRoute,
   ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
   ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
+  ApiPublicSocialMetaCallbackRoute: ApiPublicSocialMetaCallbackRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
 }
 export const routeTree = rootRouteImport
