@@ -11,6 +11,7 @@ import { linkedinAdapter, refreshLinkedInToken } from "./linkedin.server";
 import { facebookAdapter, instagramAdapter } from "./meta.server";
 import { youtubeAdapter, refreshGoogleToken } from "./youtube.server";
 import { tiktokAdapter, refreshTikTokToken } from "./tiktok.server";
+import { spotifyAdapter, refreshSpotifyToken } from "./spotify.server";
 import type { PlatformAccount, PlatformAdapter } from "./types";
 
 // Mapa platformId → adapter. Kolejne tury dorzucają tu wpisy.
@@ -21,6 +22,7 @@ export const PLATFORM_ADAPTERS: Partial<Record<SocialPlatformId, PlatformAdapter
   instagram: instagramAdapter,
   youtube: youtubeAdapter,
   tiktok: tiktokAdapter,
+  spotify_artists: spotifyAdapter,
 };
 
 
@@ -119,6 +121,12 @@ export async function getValidAccount(args: {
       });
     } else if (row.platform === "tiktok") {
       refreshed = await refreshTikTokToken({
+        refreshToken,
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+      });
+    } else if (row.platform === "spotify_artists") {
+      refreshed = await refreshSpotifyToken({
         refreshToken,
         clientId: credentials.clientId,
         clientSecret: credentials.clientSecret,

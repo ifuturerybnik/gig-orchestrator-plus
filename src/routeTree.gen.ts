@@ -40,6 +40,7 @@ import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './rout
 import { Route as ApiPublicSocialYoutubeCallbackRouteImport } from './routes/api/public/social.youtube-callback'
 import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
 import { Route as ApiPublicSocialTiktokCallbackRouteImport } from './routes/api/public/social.tiktok-callback'
+import { Route as ApiPublicSocialSpotifyCallbackRouteImport } from './routes/api/public/social.spotify-callback'
 import { Route as ApiPublicSocialMetaCallbackRouteImport } from './routes/api/public/social.meta-callback'
 import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
@@ -222,6 +223,12 @@ const ApiPublicSocialTiktokCallbackRoute =
     path: '/api/public/social/tiktok-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSocialSpotifyCallbackRoute =
+  ApiPublicSocialSpotifyCallbackRouteImport.update({
+    id: '/api/public/social/spotify-callback',
+    path: '/api/public/social/spotify-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSocialMetaCallbackRoute =
   ApiPublicSocialMetaCallbackRouteImport.update({
     id: '/api/public/social/meta-callback',
@@ -334,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
+  '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
@@ -375,6 +383,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
+  '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
@@ -421,6 +430,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
+  '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
@@ -467,6 +477,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
+    | '/api/public/social/spotify-callback'
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
@@ -508,6 +519,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
+    | '/api/public/social/spotify-callback'
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
@@ -553,6 +565,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/social'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
+    | '/api/public/social/spotify-callback'
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
@@ -576,6 +589,7 @@ export interface RootRouteChildren {
   ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
   ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
   ApiPublicSocialMetaCallbackRoute: typeof ApiPublicSocialMetaCallbackRoute
+  ApiPublicSocialSpotifyCallbackRoute: typeof ApiPublicSocialSpotifyCallbackRoute
   ApiPublicSocialTiktokCallbackRoute: typeof ApiPublicSocialTiktokCallbackRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
   ApiPublicSocialYoutubeCallbackRoute: typeof ApiPublicSocialYoutubeCallbackRoute
@@ -800,6 +814,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSocialTiktokCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/social/spotify-callback': {
+      id: '/api/public/social/spotify-callback'
+      path: '/api/public/social/spotify-callback'
+      fullPath: '/api/public/social/spotify-callback'
+      preLoaderRoute: typeof ApiPublicSocialSpotifyCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/social/meta-callback': {
       id: '/api/public/social/meta-callback'
       path: '/api/public/social/meta-callback'
@@ -1005,6 +1026,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
   ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
   ApiPublicSocialMetaCallbackRoute: ApiPublicSocialMetaCallbackRoute,
+  ApiPublicSocialSpotifyCallbackRoute: ApiPublicSocialSpotifyCallbackRoute,
   ApiPublicSocialTiktokCallbackRoute: ApiPublicSocialTiktokCallbackRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
   ApiPublicSocialYoutubeCallbackRoute: ApiPublicSocialYoutubeCallbackRoute,
