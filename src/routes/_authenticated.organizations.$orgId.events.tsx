@@ -511,10 +511,14 @@ function OrganizationPerformancesPage() {
         open={open}
         onOpenChange={(v) => {
           setOpen(v);
-          if (!v) setEditing(null);
+          if (!v) {
+            setEditing(null);
+            setCreateDate(null);
+          }
         }}
         organizationId={orgId}
         initial={editing}
+        initialDate={createDate}
       />
 
       <ContactDetailsDialog
