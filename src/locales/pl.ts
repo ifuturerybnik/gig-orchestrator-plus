@@ -540,7 +540,7 @@ export default
       "members": "Członkowie",
       "contacts": "Kontakty",
       "counterparties": "Kontrahenci",
-      "events": "Występy",
+      "events": "Wydarzenia",
       "budget": "Budżet",
       "skrzynki": "Skrzynki pocztowe",
       "correspondence": "Korespondencja",
