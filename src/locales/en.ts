@@ -533,7 +533,8 @@ export default
       "mail": "Mail",
       "autokorespondencja": "Auto-correspondence",
       "back_to_list": "← All organizations",
-      "pending_expenses": "Pending expenses: {{count}}"
+      "pending_expenses": "Pending expenses: {{count}}",
+      "social": "Social Hub"
     },
     "events": {
       "title": "Performances",
