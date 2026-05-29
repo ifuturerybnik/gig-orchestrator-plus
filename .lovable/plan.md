@@ -1,143 +1,87 @@
-# Moduł "Występy" (dawniej "Koncerty / Wydarzenia")
+# Moduł "Integracje SM" dla Concertivo
 
-## 1. Zmiana nazwy zakładki
+## Rzeczywistość integracji z SM (musisz to wiedzieć przed startem)
 
-W sidebarze organizacji (`src/components/org-sidebar.tsx`) klucz `organizations.sidebar.events` pozostaje, ale w `src/locales/pl.ts` i `en.ts` zmieniam tłumaczenie na **„Występy" / „Performances"**. Ścieżka `/organizations/:orgId/events` bez zmian (mniej refaktoringu, brak zerwania linków).
+Integracja z Facebook, Instagram, YouTube, LinkedIn, TikTok, X **nie jest plug-and-play**. Każda platforma wymaga:
 
-## 2. Baza danych — nowa migracja `db/migrations/0023_performances.sql`
+1. **Twojej aplikacji deweloperskiej** zarejestrowanej u dostawcy (Meta for Developers, Google Cloud Console, LinkedIn Developers, X Developer Portal). To Ty jako i-Future zakładasz raz "Concertivo App", a wszystkie organizacje używają jej do logowania.
+2. **App Review** (Meta i TikTok wymagają, Google YouTube częściowo, LinkedIn dla niektórych scope) — proces trwa 1–4 tygodnie i wymaga screencastów oraz polityki prywatności.
+3. **OAuth Redirect URI** wskazującego na Concertivo (musi być HTTPS, stała domena — czyli po wdrożeniu na Hostinger VPS).
+4. **Płatnego API w przypadku X/Twitter** (~100 USD/mc Basic).
+5. **Spotify for Artists nie ma publicznego API** do publikacji — tylko statystyki przez Spotify for Developers, i to ograniczone.
 
-```sql
-create type public.performance_status as enum (
-  'inquiry',              -- Zapytanie
-  'tentative',            -- Wstępna rezerwacja
-  'confirmed_signing',    -- Potwierdzony (w trakcie podpisywania)
-  'confirmed_signed'      -- Potwierdzony (umowa podpisana)
-);
+Dlatego proponuję **podejście warstwowe**: w turze 1 budujemy całą infrastrukturę modułu (UI, DB, AI), tak żeby OAuth dla każdej platformy dokładać niezależnie w kolejnych turach.
 
-create type public.performance_visibility as enum (
-  'private',              -- Tylko dla mnie
-  'members_date',         -- Członkowie: tylko data
-  'members_full',         -- Członkowie: wszystko
-  'public_date',          -- Publiczne: tylko data
-  'public_full'           -- Publiczne: wszystko
-);
+## Tura 1 (TA implementacja) — Fundament + AI Studio + tutoriale
 
-create table public.performances (
-  id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
-  created_by uuid not null references auth.users(id),
-  performance_date date not null,
-  status public.performance_status not null,
-  visibility public.performance_visibility not null default 'private',
-  name text,
-  city text,
-  postal_code text,
-  street text,
-  street_number text,
-  google_maps_url text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+### A. Struktura modułu
+- Nowa sekcja w sidebar organizacji: **"Integracje SM"** (`/organizations/:orgId/social`)
+- Cztery zakładki:
+  1. **Połączone konta** — lista platform z statusem (Połączono / Nie połączono), per-platform "Połącz" otwiera wizard
+  2. **AI Studio** — generator postów z AI (działa od razu, bo używa istniejącego OpenAI)
+  3. **Harmonogram** — kalendarz zaplanowanych postów (te same konwencje co istniejący `<Calendar />`)
+  4. **Statystyki** — szkielet pod metryki (puste do momentu OAuth)
 
-create index on public.performances(organization_id, performance_date desc);
+### B. Baza danych (migracja `0028_social_integrations.sql`)
+- `social_platforms` (słownik) — facebook, instagram, youtube, linkedin, twitter, tiktok, spotify_artists; pole `requires_app_review`, `requires_paid_api`, status w Concertivo (live/coming_soon)
+- `social_accounts` — per organizacja: `platform`, `external_account_id`, `account_name`, `access_token_enc` (szyfrowane EXT_PII_ENCRYPTION_KEY), `refresh_token_enc`, `token_expires_at`, `scopes`, `connected_by`, `connected_at`
+- `social_posts` — draft/scheduled/published/failed; `org_id`, `created_by`, `content_per_platform` (JSONB: różne wersje dla różnych platform), `target_platforms[]`, `scheduled_at`, `published_at`, `linked_event_id` (FK do performances), `linked_vacation_id` (opcjonalnie)
+- `social_post_results` — wynik publikacji per platforma (success/error, external_post_id, error_message)
+- `social_post_metrics` — likes/comments/shares/views per post per platforma, snapshot z datą
+- Wszystkie z RLS scoped per org_id + GRANT dla authenticated/service_role
 
-create table public.performance_assignments (
-  id uuid primary key default gen_random_uuid(),
-  performance_id uuid not null references public.performances(id) on delete cascade,
-  contact_id uuid references public.contacts(id) on delete cascade,
-  counterparty_id uuid references public.organizations(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  check ((contact_id is not null) <> (counterparty_id is not null))
-);
-create unique index on public.performance_assignments(performance_id, contact_id) where contact_id is not null;
-create unique index on public.performance_assignments(performance_id, counterparty_id) where counterparty_id is not null;
+### C. AI Studio (działa od razu, używa OpenAI z modułu Administracja)
+Cztery generatory:
+1. **Z wydarzenia** — wybierasz wydarzenie z kalendarza → AI generuje post (tytuł, opis, hashtagi, sugestię obrazka) na bazie: nazwa, data, miejsce, artyści, link do biletów
+2. **Z pustego promptu** — wpisujesz temat → AI proponuje post
+3. **Adaptacja per platforma** — jeden temat → cztery wersje (FB długa, IG hashtagowa, LI profesjonalna, X krótka <280)
+4. **Sugestia best time** — AI na podstawie typu treści proponuje optymalny dzień+godzinę
 
-grant select, insert, update, delete on public.performances to authenticated;
-grant all on public.performances to service_role;
-grant select, insert, update, delete on public.performance_assignments to authenticated;
-grant all on public.performance_assignments to service_role;
+Wszystko zapisuje się jako `social_posts` ze statusem `draft`.
 
-alter table public.performances enable row level security;
-alter table public.performance_assignments enable row level security;
+### D. Tutoriale "łopatologiczne" per platforma
+Dla każdej platformy osobny ekran w stylu krok-po-kroku ze zrzutami ekranu i checklistami:
+- **Co dostaniesz** (publikacja postów, czytanie komentarzy, statystyki)
+- **Czego potrzebujesz** (np. Facebook Page admin, Instagram Business Account, kanał YT z >0 subskrybentów)
+- **Krok 1**: Co kliknąć w Concertivo
+- **Krok 2**: Co zobaczysz na ekranie platformy
+- **Krok 3**: Jakie uprawnienia zatwierdzić i dlaczego
+- **Krok 4**: Jak zweryfikować że działa
+- **FAQ**: typowe problemy (np. "IG wymaga konta Business połączonego z FB Page")
+- **Ograniczenia** (np. "TikTok pozwala publikować max 10 filmów/dzień")
 
--- Członkowie organizacji mogą czytać/pisać występy swojej organizacji
-create policy "members read performances"
-  on public.performances for select to authenticated
-  using (public.is_org_member(organization_id, auth.uid()));
-create policy "members write performances"
-  on public.performances for all to authenticated
-  using (public.is_org_member(organization_id, auth.uid()))
-  with check (public.is_org_member(organization_id, auth.uid()));
+Treści tutoriali w `pl.ts`/`en.ts` (i18next).
 
-create policy "members rw assignments"
-  on public.performance_assignments for all to authenticated
-  using (exists (select 1 from public.performances p
-                 where p.id = performance_id
-                   and public.is_org_member(p.organization_id, auth.uid())))
-  with check (exists (select 1 from public.performances p
-                 where p.id = performance_id
-                   and public.is_org_member(p.organization_id, auth.uid())));
-```
+### E. Wizard połączenia (stub OAuth)
+Per platforma przycisk "Połącz" otwiera dialog wizard:
+- Krok 1: tutorial + checklist "Mam Facebook Page", "Jestem adminem"
+- Krok 2: "Kliknij aby przejść do logowania" — w turze 1 pokazuje komunikat "Wkrótce — OAuth zostanie aktywowany po publikacji aplikacji u dostawcy"
+- Architektura gotowa: server fn `connectSocialAccount(platform, code)` istnieje, OAuth handler `/api/public/social/callback/:platform` przygotowany — czeka tylko na client_id/secret w runtime secrets
 
-> Zakładam istnienie funkcji `public.is_org_member(uuid, uuid)`. Jeśli w bazie ma inną nazwę — dostosuję policy do faktycznego helpera użytego w innych tabelach (sprawdzę przed wygenerowaniem migracji).
+### F. i18n
+Pełne tłumaczenia pl/en dla całego modułu: nazwy platform, statusy, tutoriale, komunikaty AI, formularz harmonogramu.
 
-Użytkownik wykona migrację ręcznie w panelu Supabase (zgodnie z core memory).
+## Tury kolejne (do uzgodnienia po turze 1)
 
-## 3. Server functions — `src/lib/performances.functions.ts`
+- **Tura 2**: Facebook + Instagram OAuth + publikacja postów + odczyt komentarzy + statystyki (Meta Graph API — jedna app obsługuje obie platformy)
+- **Tura 3**: LinkedIn OAuth + publikacja na Company Page + statystyki
+- **Tura 4**: YouTube Data API v3 — upload filmów, statystyki kanału, lista filmów
+- **Tura 5**: X / Twitter (wymaga decyzji o płatnym API)
+- **Tura 6**: Spotify for Artists (jeśli ktoś ma estradową org) — tylko statystyki
+- **Tura 7**: TikTok (wymaga App Review)
+- **Tura 8**: Cron `pg_cron` + server route `/api/public/social/publish-scheduled` — publikacja zaplanowanych postów
 
-- `listPerformances({ organizationId })` — lista posortowana po dacie
-- `createPerformance({ organizationId, ...fields, assignments: { contactIds, counterpartyIds } })` — walidacja Zod po stronie serwera odzwierciedlająca reguły warunkowe (patrz §5)
-- `listAssignments({ performanceId })` — dla widoku szczegółów (przyszłość)
+## Detale techniczne
 
-Wszystko z `requireSupabaseAuth`.
+- **Tokeny SM**: szyfrowane w `social_accounts.access_token_enc` tym samym AES-256-GCM co PESEL/IBAN (helpery z `crypto.server.ts`, klucz `EXT_PII_ENCRYPTION_KEY`)
+- **OAuth callback**: server route TanStack `src/routes/api/public/social/callback.$platform.tsx` (jeden plik, switch po `params.platform`)
+- **State token**: krótkotrwały JWT-like w `social_oauth_states` (org_id + user_id + platform + redirect_back) — chroni przed CSRF
+- **Refresh tokens**: cron co 12h sprawdza `token_expires_at` i odświeża (osobna server fn)
+- **AI calls**: przez istniejący `ai.functions.ts` (`callAi(scenariusz: "social_post_generate", ...)`) — dodajemy nowe scenariusze do tabeli `ai_konfiguracja.scenariusz_model`
+- **Pamięć projektu**: dodam memory `social-integrations` z konwencjami modułu (per-org accounts, gdzie OAuth, jak AI scenariusze nazwane)
 
-## 4. UI — strona występów
+## Co nie jest w zakresie tury 1
 
-`src/routes/_authenticated.organizations.$orgId.events.tsx`:
-- nagłówek „Występy" + przycisk **„Dodaj występ"** (otwiera `PerformanceDialog`)
-- tabela: Data, Status (badge), Nazwa, Miejscowość, Widoczność (ikona), Akcje
-- pusty stan gdy brak rekordów
-
-## 5. Dialog `src/components/performances/PerformanceDialog.tsx`
-
-Pola w kolejności:
-1. **Data występu** — `<Popover>` + `<Calendar mode="single">` (shadcn), zawsze wymagane
-2. **Status** — `<Select>` z 4 opcjami
-3. **Widoczność** — `<Select>` z 5 opcjami
-4. **Nazwa występu** — `<Input>`
-5. **Miejscowość, Kod pocztowy, Ulica, Numer** — 4 inputy w gridzie 2 kol.
-6. **Pinezka Google (URL)** — `<Input type="url">`
-
-**Walidacja warunkowa (Zod + react-hook-form):**
-
-| Pole | inquiry / tentative | confirmed_signing / confirmed_signed |
-|---|---|---|
-| Nazwa | opcjonalne | **wymagane** |
-| Miasto, kod, ulica, numer | opcjonalne | **wymagane** |
-| Pinezka Google | wymagana tylko gdy `visibility === 'public_full'` | jw. |
-
-Sekcja **Przypisania** (na końcu dialogu, nad przyciskami):
-- Listy chipów przypisanych kontaktów i kontrahentów (z X)
-- 2 przyciski: **„Przypisz kontakt"**, **„Przypisz kontrahenta"**
-- Klik → otwiera istniejący `ContactPicker` / `CounterpartyPicker` (z `excludeIds`)
-- Po wybraniu wołam `listLinkedCounterpartiesForContact` / `listLinkedContactsForCounterparty` — jeśli zwróci powiązania których nie ma jeszcze na liście, pokazuję **toast z akcją „Dodaj też"** (sonner action button) sugerujący dopisanie powiązanego kontaktu/kontrahenta
-- W pickerze (oba istnieją) — gdy lista pusta lub user nie znajduje → przyciski **„Dodaj kontakt"** / **„Dodaj kontrahenta"** otwierające istniejące `ContactForm` / `AddCounterpartyDialog` (sprawdzę, czy pickery już je mają; jeśli nie — dodam).
-
-Submit → `createPerformance` → invalidate `["performances", orgId]` → toast → close.
-
-## 6. i18n
-
-Nowe klucze pod `organizations.performances.*` (lista, dialog, statusy, widoczności, walidacje) w `pl.ts` (komplet) i `en.ts` (odpowiedniki). Klucz `organizations.sidebar.events` → „Występy" / „Performances".
-
-## 7. Akcje użytkownika (po wdrożeniu)
-
-Uruchomić migrację `0023_performances.sql` w panelu Supabase. Brak nowych sekretów.
-
-## Czego NIE robię w tej turze
-
-- Edycji/usuwania występów (tylko create + list)
-- Widoku szczegółów (`/events/$id`)
-- Publicznej strony organizacji wyświetlającej upublicznione występy
-- Eksportu/iCal
-
-Te elementy zrobię w kolejnych turach po Twoim potwierdzeniu UI.
+- Faktyczne wywołania API Facebook/IG/YT/LI/X/TikTok — wymagają zarejestrowanych aplikacji deweloperskich (które najpierw musisz założyć Ty jako i-Future, dostarczę instrukcję w turze 2)
+- Upload filmów do YouTube/TikTok — wymaga obsługi dużych plików, dorobimy w turze ich platform
+- Real-time webhooki (np. komentarze) — Tura 8+
