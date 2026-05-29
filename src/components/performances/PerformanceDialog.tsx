@@ -746,13 +746,21 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
                   ) : (
                     counterparties.map((o) => (
                       <Badge key={o.id} variant="secondary" className="gap-1">
-                        {o.name}
+                        <button
+                          type="button"
+                          onClick={() => openCounterpartyDetails(o.id)}
+                          className="hover:underline"
+                          title={t("organizations.performances.actions.open_details")}
+                        >
+                          {o.name}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
                             setCounterparties((prev) => prev.filter((x) => x.id !== o.id))
                           }
                           className="hover:text-destructive"
+                          aria-label={t("common.remove")}
                         >
                           <X className="h-3 w-3" />
                         </button>
