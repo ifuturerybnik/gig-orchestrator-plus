@@ -9,6 +9,7 @@ import type { SocialPlatformId } from "../social-platforms";
 import { refreshTwitterToken, twitterAdapter } from "./twitter.server";
 import { linkedinAdapter, refreshLinkedInToken } from "./linkedin.server";
 import { facebookAdapter, instagramAdapter } from "./meta.server";
+import { youtubeAdapter, refreshGoogleToken } from "./youtube.server";
 import type { PlatformAccount, PlatformAdapter } from "./types";
 
 // Mapa platformId → adapter. Kolejne tury dorzucają tu wpisy.
@@ -17,6 +18,7 @@ export const PLATFORM_ADAPTERS: Partial<Record<SocialPlatformId, PlatformAdapter
   linkedin: linkedinAdapter,
   facebook: facebookAdapter,
   instagram: instagramAdapter,
+  youtube: youtubeAdapter,
 };
 
 
@@ -103,6 +105,12 @@ export async function getValidAccount(args: {
       });
     } else if (row.platform === "linkedin") {
       refreshed = await refreshLinkedInToken({
+        refreshToken,
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+      });
+    } else if (row.platform === "youtube") {
+      refreshed = await refreshGoogleToken({
         refreshToken,
         clientId: credentials.clientId,
         clientSecret: credentials.clientSecret,
