@@ -585,7 +585,11 @@ export default
         "assign_contact": "Assign contact",
         "assign_counterparty": "Assign counterparty",
         "add_contact": "Add contact",
-        "add_counterparty": "Add counterparty"
+        "add_counterparty": "Add counterparty",
+        "suggestions_title": "Link suggestions",
+        "suggest_assign_cp": "Linked counterparty: {{name}}",
+        "suggest_assign_contact": "Linked contact: {{name}}",
+        "dismiss": "Dismiss"
       },
       "dialog": {
         "title": "New performance",
