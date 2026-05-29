@@ -12,7 +12,7 @@ REPO_URL="https://github.com/TWOJ_USERNAME/TWOJE_REPO.git"  # <-- CHANGE THIS
 DOMAIN="twojadomena.pl"                                      # <-- CHANGE THIS
 EMAIL="twoj@email.pl"                                        # <-- CHANGE THIS (for SSL)
 APP_DIR="/var/www/concertivo"
-PORT="3000"
+PORT="3001"
 
 # --------------- 1. System update & dependencies ------------
 echo "==> Updating system..."
