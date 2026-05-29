@@ -533,6 +533,49 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                     {t("organizations.performances.assignments.add_contact")}
                   </Button>
                 </div>
+                {visibleSuggestedContacts.length > 0 && (
+                  <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                      {t("organizations.performances.assignments.suggestions_title")}
+                    </div>
+                    {visibleSuggestedContacts.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate">
+                          {t("organizations.performances.assignments.suggest_assign_contact", { name: s.name })}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2"
+                            onClick={() => {
+                              setContacts((prev) =>
+                                prev.find((x) => x.id === s.id) ? prev : [...prev, s],
+                              );
+                              setSuggestedContacts((prev) => prev.filter((x) => x.id !== s.id));
+                            }}
+                          >
+                            <Check className="h-3 w-3" />
+                            {t("organizations.performances.actions.assign")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2"
+                            onClick={() =>
+                              setSuggestedContacts((prev) => prev.filter((x) => x.id !== s.id))
+                            }
+                            aria-label={t("organizations.performances.assignments.dismiss")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Kontrahenci */}
