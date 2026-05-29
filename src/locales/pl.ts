@@ -553,7 +553,8 @@ export default
       "mail": "Poczta",
       "autokorespondencja": "Autokorespondencja",
       "back_to_list": "← Wszystkie organizacje",
-      "pending_expenses": "Niezrealizowane wydatki: {{count}}"
+      "pending_expenses": "Niezrealizowane wydatki: {{count}}",
+      "social": "Organizacja SM"
     },
     "events": {
       "title": "Występy",
@@ -1158,6 +1159,157 @@ export default
       "rezygnacje": "Rezygnacje",
       "odbicia": "Odbicia",
       "empty": "Brak wpisów."
+    }
+  },
+  "social": {
+    "title": "Organizacja SM",
+    "subtitle": "Połącz konta w social mediach z tą organizacją i zarządzaj publikacjami w jednym miejscu.",
+    "tabs": {
+      "accounts": "Połączone konta",
+      "ai_studio": "AI Studio",
+      "schedule": "Harmonogram",
+      "stats": "Statystyki"
+    },
+    "intro": {
+      "title": "Jak to działa?",
+      "body": "Połącz konta swojej organizacji (Facebook, Instagram, LinkedIn itd.), generuj treści postów przez AI z kontekstem wydarzeń, planuj publikacje na najlepsze godziny i analizuj wyniki."
+    },
+    "status": {
+      "connected": "Połączone",
+      "coming_soon": "Wkrótce",
+      "planned": "Planowane"
+    },
+    "caps": {
+      "text": "Posty tekstowe",
+      "images": "Zdjęcia",
+      "video": "Wideo",
+      "metrics": "Statystyki",
+      "paid_api": "Wymaga płatnego API"
+    },
+    "actions": {
+      "connect": "Połącz",
+      "learn_more": "Dowiedz się więcej"
+    },
+    "connected_at": "Połączone",
+    "post_status": {
+      "draft": "Szkic",
+      "scheduled": "Zaplanowany",
+      "published": "Opublikowany",
+      "failed": "Błąd"
+    },
+    "wizard": {
+      "title": "Połącz {{platform}}",
+      "step_indicator": "Krok {{current}} z {{total}}",
+      "what_you_get": "Co zyskasz",
+      "limits": "Ograniczenia",
+      "requires_app_review": "Wymaga akceptacji dostawcy",
+      "requires_paid_api": "Płatne API",
+      "max_chars": "Maks. {{count}} znaków",
+      "checklist_intro": "Zanim klikniesz „Połącz”, upewnij się, że masz wszystko gotowe:",
+      "permissions_intro": "Concertivo poprosi o następujące uprawnienia:",
+      "scopes_requested": "Wymagane zakresy",
+      "permissions_explanation": "Uprawnienia służą tylko publikowaniu i odczytowi statystyk Twoich treści. Nie czytamy prywatnych wiadomości ani danych innych użytkowników.",
+      "ready_to_connect": "Wszystko gotowe — kliknij poniżej, aby przejść do okna logowania dostawcy.",
+      "continue_to_provider": "Przejdź do {{platform}}",
+      "not_ready_title": "Integracja jeszcze nieaktywna",
+      "not_ready_body": "OAuth dla tej platformy zostanie uruchomiony po skonfigurowaniu klucza aplikacji ({{envKey}}) w sekretach środowiska.",
+      "for_admin": "Dla administratora",
+      "for_admin_body": "Załóż aplikację deweloperską {{platform}}, pobierz Client ID i Client Secret, a następnie dodaj je w Lovable jako sekrety {{envKey}}.",
+      "not_ready_toast": "Integracja nie jest jeszcze gotowa.",
+      "oauth_redirect_coming_soon": "Przekierowanie OAuth zostanie uruchomione w kolejnej turze."
+    },
+    "platforms": {
+      "facebook": {
+        "name": "Facebook",
+        "tagline": "Strony firmowe (Pages)",
+        "benefits": ["Publikuj posty na Stronie organizacji", "Planowanie wpisów z wyprzedzeniem", "Statystyki zasięgu i reakcji", "AI dopasuje długość i ton do FB"],
+        "checklist": ["Mam rolę administratora Strony", "Strona jest opublikowana (nie tryb roboczy)", "Mam profil osobisty FB powiązany z rolą"]
+      },
+      "instagram": {
+        "name": "Instagram",
+        "tagline": "Konto firmowe / twórcy",
+        "benefits": ["Publikuj zdjęcia i karuzele", "Statystyki zasięgu i zapisów", "AI generuje hashtagi i CTA"],
+        "checklist": ["Konto IG jest typu Business/Creator", "Konto IG jest połączone ze Stroną FB", "Mam dostęp administratora do tej Strony FB"]
+      },
+      "youtube": {
+        "name": "YouTube",
+        "tagline": "Kanał + filmy",
+        "benefits": ["Zarządzaj opisami i tagami filmów", "Statystyki obejrzeń i subskrypcji", "AI proponuje tytuły i opisy SEO"],
+        "checklist": ["Mam dostęp właściciela kanału", "Kanał jest zweryfikowany", "Konto Google ma włączone API"]
+      },
+      "linkedin": {
+        "name": "LinkedIn",
+        "tagline": "Strona firmowa (Company Page)",
+        "benefits": ["Publikuj posty na Stronie firmowej", "Statystyki impresji i klików", "AI dostosuje ton do profesjonalnego B2B"],
+        "checklist": ["Mam rolę Super Admin Strony firmowej", "Strona ma uzupełniony profil (logo, opis)", "Konto osobiste jest aktywne i powiązane"]
+      },
+      "twitter": {
+        "name": "X (Twitter)",
+        "tagline": "Konto firmowe",
+        "benefits": ["Publikuj krótkie wpisy (do 280 znaków)", "Statystyki wyświetleń i zaangażowania", "AI skraca treści do limitu X"],
+        "checklist": ["Mam konto deweloperskie X", "Mam aktywny plan Basic lub Pro (API jest płatne)", "Aplikacja ma uprawnienia Read+Write"]
+      },
+      "tiktok": {
+        "name": "TikTok",
+        "tagline": "Konto biznesowe",
+        "benefits": ["Planowanie publikacji wideo", "Statystyki obejrzeń", "AI proponuje opisy i hashtagi"],
+        "checklist": ["Mam konto TikTok Business", "Mam zatwierdzoną aplikację w TikTok Developers", "Mam dostęp do Content Posting API"]
+      },
+      "spotify_artists": {
+        "name": "Spotify for Artists",
+        "tagline": "Tylko statystyki",
+        "benefits": ["Statystyki odsłuchań", "Dane demograficzne słuchaczy", "AI analizuje trendy popularności"],
+        "checklist": ["Mam zweryfikowany profil Spotify for Artists", "Jestem zalogowany jako Team admin", "API dostępne tylko dla wybranych partnerów"]
+      }
+    },
+    "ai": {
+      "form": {
+        "title": "Generator treści AI",
+        "subtitle": "Wybierz wydarzenie lub opisz temat, a AI przygotuje wersje postu pod każdą platformę.",
+        "event": "Wydarzenie (opcjonalnie)",
+        "no_event": "Brak — wpiszę temat ręcznie",
+        "prompt": "Temat lub dodatkowe wskazówki",
+        "prompt_placeholder": "Np. „Zapowiedź jesiennej trasy koncertowej”",
+        "tone": "Ton wypowiedzi",
+        "platforms": "Platformy docelowe"
+      },
+      "tones": {
+        "informational": "Informacyjny",
+        "promotional": "Promocyjny",
+        "celebratory": "Świąteczny / okazjonalny",
+        "behind_the_scenes": "Zza kulis"
+      },
+      "actions": {
+        "generate": "Wygeneruj treści",
+        "edit": "Edytuj",
+        "save_draft": "Zapisz jako szkic"
+      },
+      "empty": "Wygenerowane treści pojawią się tutaj. Wybierz platformy i kliknij „Wygeneruj treści”.",
+      "best_time": "Sugerowany najlepszy czas publikacji",
+      "edit_title": "Edytuj wersję dla: {{platform}}",
+      "edit_subtitle": "Możesz dostosować treść i hashtagi przed zapisaniem.",
+      "hashtags": "Hashtagi",
+      "errors": {
+        "no_platforms": "Wybierz co najmniej jedną platformę."
+      },
+      "toast": {
+        "generated": "Treści wygenerowane.",
+        "saved_draft": "Zapisano jako szkic."
+      }
+    },
+    "schedule": {
+      "calendar_title": "Kalendarz publikacji",
+      "list_title": "Zaplanowane wpisy",
+      "list_subtitle": "Lista postów oczekujących na publikację oraz historia.",
+      "empty": "Brak zaplanowanych wpisów."
+    },
+    "stats": {
+      "title": "Statystyki",
+      "subtitle": "Zasięgi, reakcje i klikalność opublikowanych treści.",
+      "empty_state": "Statystyki pojawią się po opublikowaniu pierwszych postów.",
+      "ai_analysis_title": "Analiza AI",
+      "ai_analysis_subtitle": "AI przeanalizuje wyniki i zaproponuje kierunki optymalizacji.",
+      "run_analysis": "Uruchom analizę"
     }
   }
 } as const;
