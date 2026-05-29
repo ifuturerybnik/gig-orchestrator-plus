@@ -39,6 +39,7 @@ import { ContactForm } from "@/components/contacts/ContactForm";
 
 import {
   createPerformance,
+  listPerformances,
   PERFORMANCE_STATUSES,
   PERFORMANCE_VISIBILITIES,
   type PerformanceStatus,
