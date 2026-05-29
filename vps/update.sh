@@ -70,7 +70,7 @@ fi
 log "Sprawdzam czy aplikacja odpowiada..."
 sleep 2
 for i in 1 2 3 4 5; do
-  CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:'"$PORT"'/ || echo "000")
+  CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/" || echo "000")
   # Każda odpowiedź HTTP (1xx-5xx) oznacza, że serwer żyje.
   # 401/403 = działa, tylko route wymaga auth — to OK dla healthchecku.
   if [ "$CODE" != "000" ] && [ "$CODE" -ge 100 ] && [ "$CODE" -lt 600 ]; then
