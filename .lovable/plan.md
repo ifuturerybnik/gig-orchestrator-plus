@@ -37,15 +37,16 @@ Druga najprostsza (jeden user, jeden token, OAuth standardowy):
 - Komentarze inbox: `/v2/socialActions/{shareUrn}/comments`
 - Instrukcja setupu `LinkedInSetupInstructions.tsx`
 
-### **Tura 3: Facebook + Instagram (Meta Graph API) — `live`**
-Łączymy razem bo wspólne API:
-- Callback `api/public/social.meta-callback.ts` (zwraca Page + IG Business Account)
-- `publishToFacebook()` — POST `/v18.0/{page-id}/feed` lub `/photos` z `page_access_token`
-- `publishToInstagram()` — 2-stopniowo: `/media` → `/media_publish`
-- Long-lived page tokens (60 dni, auto-refresh przy każdym wywołaniu)
-- Metryki: `/insights` per post
-- Komentarze inbox: `/comments` per post + webhook subscription
-- Instrukcje `MetaSetupInstructions.tsx` (oba w jednej, bo wspólny App)
+### **Tura 3: Facebook + Instagram (Meta Graph API) — `live`** ✅ DONE
+- ✅ Callback `api/public/social.meta-callback.ts` (wspólny dla FB + IG)
+- ✅ Adapter `platforms/meta.server.ts` z `facebookAdapter` + `instagramAdapter`
+- ✅ `publishToFacebook` (tekst, /photos, gallery przez attached_media)
+- ✅ `publishToInstagram` (2-stopniowo /media → poll status → /media_publish, carousel)
+- ✅ Long-lived page tokens (60 dni → never-expire dla page token)
+- ✅ Metryki: FB likes/comments/shares + IG like_count/comments_count + insights.reach
+- ✅ Inbox: FB /comments z `since`, IG /comments + reply (FB /comments, IG /replies)
+- ✅ Instrukcja `MetaSetupInstructions.tsx` + integracja w `AppCredentialsForm`
+- ✅ Credentials współdzielone: IG zawsze patrzy w rekord `platform="facebook"`
 
 ### **Tura 4: YouTube — `live`**
 - Callback `api/public/social.youtube-callback.ts` (Google OAuth)
