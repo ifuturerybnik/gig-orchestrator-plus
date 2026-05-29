@@ -520,7 +520,7 @@ export default
       "members": "Members",
       "contacts": "Contacts",
       "counterparties": "Counterparties",
-      "events": "Performances",
+      "events": "Events",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
       "correspondence": "Correspondence",
