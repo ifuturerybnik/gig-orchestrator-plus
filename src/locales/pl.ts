@@ -645,6 +645,7 @@ export default
       "toasts": {
         "created": "Wydarzenie zostało dodane",
         "updated": "Zmiany zostały zapisane",
+        "deleted": "Wydarzenie usunięte",
         "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
         "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?",
         "past_date_warning": "Wybrałeś datę wsteczną ({{date}}) — upewnij się, że to celowe."
