@@ -218,6 +218,110 @@ function OrganizationPerformancesPage() {
         </Button>
       </div>
 
+      {/* Calendar overview — click empty day = create, click busy day = popover */}
+      <div className="rounded-md border border-border bg-card p-3">
+        <Calendar
+          mode="single"
+          onDayClick={handleDayClick}
+          modifiers={{ hasEvents: eventDates }}
+          modifiersClassNames={{
+            hasEvents:
+              "relative font-semibold !bg-primary/15 !text-primary hover:!bg-primary/25",
+          }}
+          showOutsideDays
+          className="pointer-events-auto mx-auto"
+          classNames={{
+            months: "flex flex-col sm:flex-row gap-4 w-full",
+            month: "flex-1 space-y-4",
+            table: "w-full border-collapse",
+            head_row: "flex w-full",
+            head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-xs",
+            row: "flex w-full mt-2",
+            cell: "flex-1 text-center text-sm relative",
+            day: "h-10 w-full p-0 font-normal aria-selected:opacity-100 rounded-md hover:bg-accent transition-colors",
+          }}
+        />
+      </div>
+
+      <Popover
+        open={!!popoverDate}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPopoverDate(null);
+            setPopoverAnchor(null);
+          }
+        }}
+      >
+        <PopoverAnchor asChild>
+          <div
+            style={{
+              position: "fixed",
+              left: popoverAnchor?.x ?? 0,
+              top: popoverAnchor?.y ?? 0,
+              width: 1,
+              height: 1,
+              pointerEvents: "none",
+            }}
+          />
+        </PopoverAnchor>
+        <PopoverContent side="top" align="center" className="w-80 p-3">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              {popoverDate}
+            </p>
+            <div className="space-y-1.5">
+              {popoverItems.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    openEdit(p);
+                  }}
+                  className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
+                >
+                  <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-medium text-foreground">
+                        {p.name?.trim() || renderEventKind(p.event_kind)}
+                      </span>
+                      <Badge
+                        variant={statusVariant[p.status as PerformanceStatus]}
+                        className={`${statusClassName[p.status as PerformanceStatus]} shrink-0`}
+                      >
+                        {t(`organizations.performances.status.${p.status}`)}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground">
+                      {renderEventKind(p.event_kind)}
+                      {p.city ? ` · ${p.city}` : ""}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const iso = popoverDate;
+                setPopoverDate(null);
+                setPopoverAnchor(null);
+                if (iso) openCreate(iso);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t("organizations.performances.add")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : items.length === 0 ? (
