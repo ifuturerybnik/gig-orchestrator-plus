@@ -75,8 +75,16 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
   const fetchList = useServerFn(listPerformances);
+  const fetchKinds = useServerFn(listPerformanceEventKinds);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const { data: kindsList } = useQuery({
+    queryKey: ["performance-event-kinds", organizationId],
+    queryFn: () => fetchKinds({ data: { organizationId } }),
+    enabled: open,
+    staleTime: 30_000,
+  });
 
   const { data: existingList } = useQuery({
     queryKey: ["performances", organizationId],
