@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -96,6 +97,7 @@ export function Header() {
                   {t("nav.admin")}
                 </Link>
               )}
+              <ThemeSwitcher />
               <LanguageSwitcher />
 
               <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -104,6 +106,7 @@ export function Header() {
             </>
           ) : (
             <>
+              <ThemeSwitcher />
               <LanguageSwitcher />
               <Link to="/login">
                 <Button variant="ghost" size="sm">
