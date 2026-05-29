@@ -588,14 +588,14 @@ export default
         "status": "Status",
         "status_placeholder": "Wybierz status",
         "visibility": "Widoczność",
-        "visibility_hint": "„Wszystko" obejmuje datę, nazwę występu oraz miejsce występu.",
+        "visibility_hint": "„Wszystko” obejmuje datę, nazwę występu oraz miejsce występu.",
         "name": "Nazwa występu",
         "city": "Miejscowość",
         "postal_code": "Kod pocztowy",
         "street": "Ulica",
         "street_number": "Numer",
         "google_maps_url": "Pinezka Google (URL)",
-        "google_maps_url_hint": "Wymagana tylko gdy widoczność = „Upublicznij na stronie wszystko"."
+        "google_maps_url_hint": "Wymagana tylko gdy widoczność = „Upublicznij na stronie wszystko”."
       },
       "assignments": {
         "title": "Przypisania",
