@@ -20,6 +20,17 @@ export const PERFORMANCE_VISIBILITIES = [
 ] as const;
 export type PerformanceVisibility = (typeof PERFORMANCE_VISIBILITIES)[number];
 
+// Preset event kinds (slugs). Custom kinds are stored as the literal label.
+export const PERFORMANCE_EVENT_KIND_PRESETS = [
+  "concert",
+  "tv_appearance",
+  "radio_interview",
+  "marketing",
+  "cabaret",
+  "other",
+] as const;
+export type PerformanceEventKindPreset = (typeof PERFORMANCE_EVENT_KIND_PRESETS)[number];
+
 const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
 
 const createInput = z
@@ -28,6 +39,7 @@ const createInput = z
     performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     status: z.enum(PERFORMANCE_STATUSES),
     visibility: z.enum(PERFORMANCE_VISIBILITIES),
+    eventKind: z.string().trim().min(1).max(120),
     name: z.string().trim().max(255).optional().nullable(),
     city: z.string().trim().max(120).optional().nullable(),
     postalCode: z.string().trim().max(20).optional().nullable(),
@@ -41,6 +53,7 @@ const createInput = z
       .optional()
       .nullable()
       .or(z.literal("").transform(() => null)),
+    notes: z.string().trim().max(5000).optional().nullable(),
     contactIds: z.array(z.string().uuid()).max(100).default([]),
     counterpartyIds: z.array(z.string().uuid()).max(100).default([]),
   })
@@ -80,6 +93,20 @@ export const createPerformance = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // If a custom kind (not in presets), record it in the dictionary for future use.
+    const kind = data.eventKind.trim();
+    const isPreset = (PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind);
+    if (!isPreset) {
+      // Upsert-by-unique; ignore conflict (already present).
+      await supabase
+        .from("performance_event_kinds")
+        .insert({ organization_id: data.organizationId, label: kind, created_by: userId })
+        .select("id")
+        .maybeSingle()
+        .then(() => undefined)
+        .catch(() => undefined);
+    }
+
     const { data: perf, error } = await supabase
       .from("performances")
       .insert({
@@ -88,12 +115,14 @@ export const createPerformance = createServerFn({ method: "POST" })
         performance_date: data.performanceDate,
         status: data.status,
         visibility: data.visibility,
+        event_kind: kind,
         name: data.name?.trim() || null,
         city: data.city?.trim() || null,
         postal_code: data.postalCode?.trim() || null,
         street: data.street?.trim() || null,
         street_number: data.streetNumber?.trim() || null,
         google_maps_url: data.googleMapsUrl?.trim() || null,
+        notes: data.notes?.trim() || null,
       })
       .select("id")
       .single();
@@ -129,7 +158,7 @@ export const listPerformances = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabase
       .from("performances")
       .select(
-        "id, performance_date, status, visibility, name, city, postal_code, street, street_number, google_maps_url, created_at",
+        "id, performance_date, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("performance_date", { ascending: false })
@@ -193,4 +222,21 @@ export const listPerformances = createServerFn({ method: "GET" })
         assignments: grouped.get(r.id) ?? { contacts: [], counterparties: [] },
       })),
     };
+  });
+
+export const listPerformanceEventKinds = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("performance_event_kinds")
+      .select("id, label")
+      .eq("organization_id", data.organizationId)
+      .order("label", { ascending: true })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return { items: rows ?? [] };
   });
