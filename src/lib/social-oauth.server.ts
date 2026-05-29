@@ -137,3 +137,102 @@ export async function handleXOAuthCallback(args: {
     redirectBack: redirectBack ?? null,
   };
 }
+
+export async function handleLinkedInOAuthCallback(args: {
+  code: string;
+  state: string;
+  callbackUrl: string;
+}): Promise<{ orgId: string; accountName: string; redirectBack: string | null }> {
+  const admin = supabaseAdmin;
+
+  // 1) state
+  const { data: stateRow, error: stateErr } = await admin
+    .from("social_oauth_states")
+    .select("organization_id, user_id, platform, redirect_back, expires_at")
+    .eq("state", args.state)
+    .maybeSingle();
+  if (stateErr) throw new Error(stateErr.message);
+  if (!stateRow) throw new Error("Nieznany lub wygasły state OAuth.");
+  const s = stateRow as {
+    organization_id: string;
+    user_id: string;
+    platform: string;
+    redirect_back: string | null;
+    expires_at: string;
+  };
+  if (s.platform !== "linkedin") throw new Error("State nie pasuje do platformy LinkedIn.");
+  if (new Date(s.expires_at).getTime() < Date.now()) {
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    throw new Error("State OAuth wygasł — uruchom proces od nowa.");
+  }
+
+  // 2) redirect_back (LinkedIn nie używa PKCE u nas — w blobie jest tylko {r})
+  let redirectBack: string | null = null;
+  if (s.redirect_back) {
+    const decoded = decryptPii(s.redirect_back);
+    if (decoded) {
+      try {
+        const parsed = JSON.parse(decoded) as { r?: string | null };
+        redirectBack = parsed.r ?? null;
+      } catch {
+        redirectBack = null;
+      }
+    }
+  }
+
+  // 3) credentials
+  const { data: credRow, error: credErr } = await admin
+    .from("social_app_credentials")
+    .select("client_id, client_secret_enc")
+    .eq("organization_id", s.organization_id)
+    .eq("platform", "linkedin")
+    .maybeSingle();
+  if (credErr) throw new Error(credErr.message);
+  if (!credRow) throw new Error("Brak credentials aplikacji LinkedIn dla organizacji.");
+  const { client_id, client_secret_enc } = credRow as {
+    client_id: string;
+    client_secret_enc: string;
+  };
+  const clientSecret = decryptPii(client_secret_enc);
+  if (!clientSecret) throw new Error("Nie udało się odszyfrować Client Secret.");
+
+  // 4) token exchange
+  const tok = await exchangeLinkedInCode({
+    code: args.code,
+    redirectUri: args.callbackUrl,
+    clientId: client_id,
+    clientSecret,
+  });
+
+  // 5) /userinfo
+  const me = await fetchLinkedInUserInfo(tok.accessToken);
+
+  // 6) upsert social_accounts
+  const accountName = me.name ?? me.email ?? `LinkedIn ${me.sub.slice(0, 6)}`;
+  const { error: upErr } = await admin
+    .from("social_accounts")
+    .upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "linkedin",
+        external_account_id: me.sub,
+        account_name: accountName,
+        account_avatar_url: me.picture ?? null,
+        scopes: tok.scope ? tok.scope.split(" ") : [],
+        access_token_enc: encryptPii(tok.accessToken),
+        refresh_token_enc: tok.refreshToken ? encryptPii(tok.refreshToken) : null,
+        token_expires_at: tok.expiresAt,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+  if (upErr) throw new Error(upErr.message);
+
+  await admin.from("social_oauth_states").delete().eq("state", args.state);
+
+  return { orgId: s.organization_id, accountName, redirectBack };
+}
