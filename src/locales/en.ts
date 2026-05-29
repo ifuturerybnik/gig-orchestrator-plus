@@ -126,6 +126,12 @@ export default
     "pl": "Polski",
     "en": "English"
   },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
   "footer": {
     "operator": "Operator: i-Future",
     "privacy": "Privacy Policy",
