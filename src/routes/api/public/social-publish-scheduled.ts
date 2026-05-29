@@ -52,8 +52,11 @@ async function processTick() {
     for (const a of (accounts ?? []) as AccountRow[]) accountByPlatform.set(a.platform, a);
 
     const results: Record<string, string> = {};
-    let hadSuccess = false;
-    let hadError = false;
+    // W Turze 2 nie publikujemy realnie — wszystkie wyniki to placeholdery
+    // (`skipped_no_account` lub `pending_oauth`). Realna publikacja per platforma
+    // doda flagi hadSuccess/hadError w kolejnych turach.
+    const hadSuccess = false;
+    const hadError = false;
 
     for (const platform of post.target_platforms) {
       const acct = accountByPlatform.get(platform);
@@ -77,7 +80,6 @@ async function processTick() {
         );
 
       results[platform] = status;
-      if (status === "error") hadError = true;
     }
 
     // Aktualizacja statusu postu — na razie zawsze 'scheduled' (czeka na OAuth)
