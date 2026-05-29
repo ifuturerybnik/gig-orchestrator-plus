@@ -123,12 +123,17 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<PerformanceStatus | "">("");
   const [visibility, setVisibility] = useState<PerformanceVisibility>("private");
+  // eventKindSelection holds either a preset slug, a custom-kind label, or "__custom__"
+  // (sentinel meaning "user is typing a new custom kind into eventKindCustom").
+  const [eventKindSelection, setEventKindSelection] = useState<string>("");
+  const [eventKindCustom, setEventKindCustom] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [street, setStreet] = useState("");
   const [streetNumber, setStreetNumber] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [notes, setNotes] = useState("");
 
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [counterparties, setCounterparties] = useState<CounterpartyRef[]>([]);
@@ -143,17 +148,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
 
   const isConfirmed = status && CONFIRMED.includes(status as PerformanceStatus);
   const isPublicFull = visibility === "public_full";
+  const isCustomKind = eventKindSelection === "__custom__";
+  const resolvedEventKind = isCustomKind ? eventKindCustom.trim() : eventKindSelection;
 
   const reset = () => {
     setDate(undefined);
     setStatus("");
     setVisibility("private");
+    setEventKindSelection("");
+    setEventKindCustom("");
     setName("");
     setCity("");
     setPostalCode("");
     setStreet("");
     setStreetNumber("");
     setGoogleMapsUrl("");
+    setNotes("");
     setContacts([]);
     setCounterparties([]);
     setSuggestedContacts([]);
