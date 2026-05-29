@@ -38,6 +38,7 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
 import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
+import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
@@ -206,6 +207,12 @@ const ApiPublicSocialXCallbackRoute =
     path: '/api/public/social/x-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSocialLinkedinCallbackRoute =
+  ApiPublicSocialLinkedinCallbackRouteImport.update({
+    id: '/api/public/social/linkedin-callback',
+    path: '/api/public/social/linkedin-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOrganizationsOrgIdSocialRoute =
   AuthenticatedOrganizationsOrgIdSocialRouteImport.update({
     id: '/social',
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -341,6 +349,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -383,6 +392,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/api/public/social/linkedin-callback'
     | '/api/public/social/x-callback'
     | '/organizations/$orgId/'
   fileRoutesByTo: FileRoutesByTo
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/api/public/social/linkedin-callback'
     | '/api/public/social/x-callback'
     | '/organizations/$orgId'
   id:
@@ -503,6 +515,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/social'
+    | '/api/public/social/linkedin-callback'
     | '/api/public/social/x-callback'
     | '/_authenticated/organizations/$orgId/'
   fileRoutesById: FileRoutesById
@@ -522,6 +535,7 @@ export interface RootRouteChildren {
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
   ApiPublicSocialSyncInboxRoute: typeof ApiPublicSocialSyncInboxRoute
   ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
+  ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
 }
 
@@ -730,6 +744,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSocialXCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/social/linkedin-callback': {
+      id: '/api/public/social/linkedin-callback'
+      path: '/api/public/social/linkedin-callback'
+      fullPath: '/api/public/social/linkedin-callback'
+      preLoaderRoute: typeof ApiPublicSocialLinkedinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/organizations/$orgId/social': {
       id: '/_authenticated/organizations/$orgId/social'
       path: '/social'
@@ -919,8 +940,19 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
   ApiPublicSocialSyncInboxRoute: ApiPublicSocialSyncInboxRoute,
   ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
+  ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
