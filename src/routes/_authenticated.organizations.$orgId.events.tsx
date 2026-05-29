@@ -361,6 +361,34 @@ function OrganizationPerformancesPage() {
         onOpenChange={(o) => !o && setDetailsCpLinkId(null)}
         ownerOrgId={orgId}
       />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && !deleting && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("organizations.performances.actions.delete_confirm_title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("organizations.performances.actions.delete_confirm_desc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {t("organizations.performances.actions.delete_cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("organizations.performances.actions.delete_confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
