@@ -212,7 +212,10 @@ function OrganizationPerformancesPage() {
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
                       <TableCell>{renderEventKind(p.event_kind)}</TableCell>
                       <TableCell>
-                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                        <Badge
+                          variant={statusVariant[p.status as PerformanceStatus]}
+                          className={statusClassName[p.status as PerformanceStatus]}
+                        >
                           {t(`organizations.performances.status.${p.status}`)}
                         </Badge>
                       </TableCell>
@@ -284,7 +287,10 @@ function OrganizationPerformancesPage() {
                           {p.name?.trim() ||
                             t(`organizations.performances.status.${p.status}`)}
                         </p>
-                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                        <Badge
+                          variant={statusVariant[p.status as PerformanceStatus]}
+                          className={statusClassName[p.status as PerformanceStatus]}
+                        >
                           {t(`organizations.performances.status.${p.status}`)}
                         </Badge>
                       </div>
