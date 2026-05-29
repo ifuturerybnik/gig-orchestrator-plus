@@ -52,11 +52,20 @@ export const Route = createFileRoute(
   component: OrganizationPerformancesPage,
 });
 
-const statusVariant: Record<PerformanceStatus, "default" | "secondary" | "outline"> = {
+const statusVariant: Record<PerformanceStatus, "default" | "secondary" | "outline" | "destructive"> = {
   inquiry: "outline",
-  tentative: "secondary",
+  tentative: "destructive",
+  confirmed: "default",
   confirmed_signing: "default",
   confirmed_signed: "default",
+};
+
+const statusClassName: Record<PerformanceStatus, string> = {
+  inquiry: "",
+  tentative: "",
+  confirmed: "bg-green-600 hover:bg-green-600/90 text-white border-transparent",
+  confirmed_signing: "bg-yellow-500 hover:bg-yellow-500/90 text-black border-transparent",
+  confirmed_signed: "bg-green-600 hover:bg-green-600/90 text-white border-transparent",
 };
 
 function VisibilityIcon({ v }: { v: PerformanceVisibility }) {
@@ -203,7 +212,10 @@ function OrganizationPerformancesPage() {
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
                       <TableCell>{renderEventKind(p.event_kind)}</TableCell>
                       <TableCell>
-                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                        <Badge
+                          variant={statusVariant[p.status as PerformanceStatus]}
+                          className={statusClassName[p.status as PerformanceStatus]}
+                        >
                           {t(`organizations.performances.status.${p.status}`)}
                         </Badge>
                       </TableCell>
@@ -275,7 +287,10 @@ function OrganizationPerformancesPage() {
                           {p.name?.trim() ||
                             t(`organizations.performances.status.${p.status}`)}
                         </p>
-                        <Badge variant={statusVariant[p.status as PerformanceStatus]}>
+                        <Badge
+                          variant={statusVariant[p.status as PerformanceStatus]}
+                          className={statusClassName[p.status as PerformanceStatus]}
+                        >
                           {t(`organizations.performances.status.${p.status}`)}
                         </Badge>
                       </div>

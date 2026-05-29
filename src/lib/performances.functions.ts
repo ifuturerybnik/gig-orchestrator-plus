@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const PERFORMANCE_STATUSES = [
   "inquiry",
   "tentative",
+  "confirmed",
   "confirmed_signing",
   "confirmed_signed",
 ] as const;
@@ -31,7 +32,7 @@ export const PERFORMANCE_EVENT_KIND_PRESETS = [
 ] as const;
 export type PerformanceEventKindPreset = (typeof PERFORMANCE_EVENT_KIND_PRESETS)[number];
 
-const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
+const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
 
 const createInput = z
   .object({
