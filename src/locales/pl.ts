@@ -563,11 +563,13 @@ export default
       "empty": "Dodaj pierwsze wydarzenie klikając przycisk powyżej.",
       "col": {
         "date": "Data",
+        "event_kind": "Rodzaj wydarzenia",
         "status": "Status",
         "name": "Nazwa",
         "city": "Miejscowość",
         "assignments": "Przypisania",
-        "visibility": "Widoczność"
+        "visibility": "Widoczność",
+        "actions": "Akcje"
       },
       "status": {
         "inquiry": "Zapytanie",
