@@ -42,10 +42,14 @@ import { ContactPicker } from "@/components/pickers/ContactPicker";
 import { CounterpartyPicker } from "@/components/pickers/CounterpartyPicker";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { ContactForm } from "@/components/contacts/ContactForm";
+import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog";
+import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 
 import { Textarea } from "@/components/ui/textarea";
 import {
   createPerformance,
+  updatePerformance,
+  findCounterpartyLinkForOrg,
   listPerformances,
   listPerformanceEventKinds,
   PERFORMANCE_STATUSES,
@@ -59,10 +63,30 @@ import {
   listLinkedContactsForCounterparty,
 } from "@/lib/contact-counterparty-links.functions";
 
+export interface PerformanceInitial {
+  id: string;
+  performance_date: string;
+  status: PerformanceStatus;
+  visibility: PerformanceVisibility;
+  event_kind: string;
+  name: string | null;
+  city: string | null;
+  postal_code: string | null;
+  street: string | null;
+  street_number: string | null;
+  google_maps_url: string | null;
+  notes: string | null;
+  assignments: {
+    contacts: { id: string; name: string }[];
+    counterparties: { id: string; name: string }[];
+  };
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
+  initial?: PerformanceInitial | null;
 }
 
 type ContactRef = { id: string; name: string };
