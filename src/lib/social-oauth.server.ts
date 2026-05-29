@@ -1,0 +1,134 @@
+// SERVER-ONLY. Handlery OAuth callback dla platform SM.
+// Importowane TYLKO przez server routes pod /api/public/social/*.
+import { encryptPii, decryptPii } from "./crypto.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+export async function handleXOAuthCallback(args: {
+  code: string;
+  state: string;
+  callbackUrl: string;
+}): Promise<{ orgId: string; accountName: string; redirectBack: string | null }> {
+  const admin = supabaseAdmin;
+
+  // 1) state
+  const { data: stateRow, error: stateErr } = await admin
+    .from("social_oauth_states")
+    .select("organization_id, user_id, platform, redirect_back, expires_at")
+    .eq("state", args.state)
+    .maybeSingle();
+  if (stateErr) throw new Error(stateErr.message);
+  if (!stateRow) throw new Error("Nieznany lub wygasły state OAuth.");
+  const s = stateRow as {
+    organization_id: string;
+    user_id: string;
+    platform: string;
+    redirect_back: string | null;
+    expires_at: string;
+  };
+  if (s.platform !== "twitter") throw new Error("State nie pasuje do platformy X.");
+  if (new Date(s.expires_at).getTime() < Date.now()) {
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    throw new Error("State OAuth wygasł — uruchom proces od nowa.");
+  }
+
+  // 2) decrypt code_verifier
+  const decoded = decryptPii(s.redirect_back);
+  if (!decoded) throw new Error("Nie udało się odczytać code_verifier.");
+  const { v: codeVerifier, r: redirectBack } = JSON.parse(decoded) as {
+    v: string;
+    r: string | null;
+  };
+
+  // 3) credentials
+  const { data: credRow, error: credErr } = await admin
+    .from("social_app_credentials")
+    .select("client_id, client_secret_enc")
+    .eq("organization_id", s.organization_id)
+    .eq("platform", "twitter")
+    .maybeSingle();
+  if (credErr) throw new Error(credErr.message);
+  if (!credRow) throw new Error("Brak credentials aplikacji X dla organizacji.");
+  const { client_id, client_secret_enc } = credRow as {
+    client_id: string;
+    client_secret_enc: string;
+  };
+  const clientSecret = decryptPii(client_secret_enc);
+  if (!clientSecret) throw new Error("Nie udało się odszyfrować Client Secret.");
+
+  // 4) token exchange
+  const basic = Buffer.from(`${client_id}:${clientSecret}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: args.code,
+    redirect_uri: args.callbackUrl,
+    code_verifier: codeVerifier,
+  });
+  const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basic}`,
+    },
+    body: body.toString(),
+  });
+  if (!tokenRes.ok) {
+    const t = await tokenRes.text();
+    throw new Error(`X token exchange ${tokenRes.status}: ${t.slice(0, 300)}`);
+  }
+  const tok = (await tokenRes.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    scope: string;
+    token_type: string;
+  };
+
+  // 5) /users/me
+  const meRes = await fetch(
+    "https://api.twitter.com/2/users/me?user.fields=username,profile_image_url,name",
+    { headers: { Authorization: `Bearer ${tok.access_token}` } },
+  );
+  if (!meRes.ok) {
+    const t = await meRes.text();
+    throw new Error(`X /users/me ${meRes.status}: ${t.slice(0, 300)}`);
+  }
+  const me = (await meRes.json()) as {
+    data: { id: string; username: string; name: string; profile_image_url?: string };
+  };
+
+  // 6) upsert social_accounts
+  const expiresAt = new Date(Date.now() + tok.expires_in * 1000).toISOString();
+  const accessEnc = encryptPii(tok.access_token);
+  const refreshEnc = tok.refresh_token ? encryptPii(tok.refresh_token) : null;
+
+  const { error: upErr } = await admin
+    .from("social_accounts")
+    .upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "twitter",
+        external_account_id: me.data.id,
+        account_name: `@${me.data.username}`,
+        account_avatar_url: me.data.profile_image_url ?? null,
+        scopes: tok.scope.split(" "),
+        access_token_enc: accessEnc,
+        refresh_token_enc: refreshEnc,
+        token_expires_at: expiresAt,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+  if (upErr) throw new Error(upErr.message);
+
+  await admin.from("social_oauth_states").delete().eq("state", args.state);
+
+  return {
+    orgId: s.organization_id,
+    accountName: `@${me.data.username}`,
+    redirectBack: redirectBack ?? null,
+  };
+}
