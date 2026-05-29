@@ -116,6 +116,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [counterparties, setCounterparties] = useState<CounterpartyRef[]>([]);
 
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
   const [cpPickerOpen, setCpPickerOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
@@ -265,7 +266,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                 {t("organizations.performances.fields.date")}{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Popover>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -293,6 +294,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                           }),
                         );
                       }
+                      if (d) setDatePickerOpen(false);
                     }}
                     initialFocus
                     modifiers={{
@@ -300,9 +302,9 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                       hasEvent: eventDates,
                     }}
                     modifiersClassNames={{
-                      past: "text-destructive",
+                      past: "text-destructive/80",
                       hasEvent:
-                        "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                        "bg-primary/15 text-primary font-semibold ring-1 ring-inset ring-primary/40 rounded-md",
                     }}
                     components={{
                       DayButton: ({ day, modifiers, ...props }) => {
@@ -321,19 +323,24 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                     }}
                     className="p-3 pointer-events-auto"
                   />
-                  <div className="flex items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
-                      {t("organizations.performances.calendar.legend_past")}
+                  <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block h-3 w-3 rounded-sm border border-destructive/50 bg-destructive/10" />
+                      <span className="text-destructive/80">
+                        {t("organizations.performances.calendar.legend_past")}
+                      </span>
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="inline-block h-2 w-2 rounded-full bg-primary" />
-                      {t("organizations.performances.calendar.legend_event")}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block h-3 w-3 rounded-sm bg-primary/15 ring-1 ring-inset ring-primary/40" />
+                      <span className="text-primary">
+                        {t("organizations.performances.calendar.legend_event")}
+                      </span>
                     </span>
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
+
 
 
 
