@@ -520,7 +520,7 @@ export default
       "members": "Members",
       "contacts": "Contacts",
       "counterparties": "Counterparties",
-      "events": "Performances",
+      "events": "Events",
       "budget": "Budget",
       "skrzynki": "Mailboxes",
       "correspondence": "Correspondence",
@@ -536,11 +536,11 @@ export default
       "coming_soon": "Coming soon"
     },
     "performances": {
-      "title": "Performances",
-      "subtitle": "Plan and manage this organization's performances.",
-      "add": "Add performance",
-      "empty_title": "No performances",
-      "empty": "Add your first performance using the button above.",
+      "title": "Events",
+      "subtitle": "Plan and manage this organization's events.",
+      "add": "Add event",
+      "empty_title": "No events",
+      "empty": "Add your first event using the button above.",
       "col": {
         "date": "Date",
         "status": "Status",
@@ -562,20 +562,33 @@ export default
         "public_date": "Publish on site — date only",
         "public_full": "Publish on site — full info"
       },
+      "event_kind": {
+        "concert": "Concert",
+        "tv_appearance": "TV appearance",
+        "radio_interview": "Radio interview",
+        "marketing": "Marketing activity",
+        "cabaret": "Cabaret performance",
+        "other": "Other…"
+      },
       "fields": {
-        "date": "Performance date",
+        "date": "Event date",
         "date_placeholder": "Pick a date",
+        "event_kind": "Event type",
+        "event_kind_placeholder": "Select event type",
+        "event_kind_custom_placeholder": "Enter a custom event type",
         "status": "Status",
         "status_placeholder": "Select status",
         "visibility": "Visibility",
-        "visibility_hint": "'Full info' covers the date, performance name and venue.",
-        "name": "Performance name",
+        "visibility_hint": "'Full info' covers the date, event name and venue.",
+        "name": "Event name",
         "city": "City",
         "postal_code": "Postal code",
         "street": "Street",
         "street_number": "Number",
         "google_maps_url": "Google Maps pin (URL)",
-        "google_maps_url_hint": "Required only when visibility = 'Publish on site — full info'."
+        "google_maps_url_hint": "Required only when visibility = 'Publish on site — full info'.",
+        "notes": "Notes",
+        "notes_placeholder": "Additional information about the event…"
       },
       "assignments": {
         "title": "Assignments",
@@ -592,26 +605,27 @@ export default
         "dismiss": "Dismiss"
       },
       "dialog": {
-        "title": "New performance",
-        "submit": "Save performance"
+        "title": "New event",
+        "submit": "Save event"
       },
       "actions": {
         "assign": "Assign"
       },
       "toasts": {
-        "created": "Performance added",
+        "created": "Event added",
         "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
         "linked_contact_suggest": "Linked contact: {{name}} — assign too?",
         "past_date_warning": "You picked a past date ({{date}}) — make sure this is intentional."
       },
       "calendar": {
         "legend_past": "Past date",
-        "legend_event": "Scheduled performance",
-        "day_events_title": "Performances on {{date}}:"
+        "legend_event": "Scheduled event",
+        "day_events_title": "Events on {{date}}:"
       },
       "errors": {
-        "date_required": "Performance date is required",
+        "date_required": "Event date is required",
         "status_required": "Status is required",
+        "event_kind_required": "Event type is required",
         "required": "Required field"
       }
     },
