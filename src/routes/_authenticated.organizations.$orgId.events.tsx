@@ -39,7 +39,9 @@ import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog
 import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 import {
   listPerformances,
+  deletePerformance,
   findCounterpartyLinkForOrg,
+  PERFORMANCE_EVENT_KIND_PRESETS,
   type PerformanceStatus,
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
