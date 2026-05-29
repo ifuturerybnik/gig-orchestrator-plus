@@ -174,18 +174,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     mutationFn: async () => {
       if (!date) throw new Error(t("organizations.performances.errors.date_required"));
       if (!status) throw new Error(t("organizations.performances.errors.status_required"));
+      if (!resolvedEventKind)
+        throw new Error(t("organizations.performances.errors.event_kind_required"));
       return create({
         data: {
           organizationId,
           performanceDate: format(date, "yyyy-MM-dd"),
           status: status as PerformanceStatus,
           visibility,
+          eventKind: resolvedEventKind,
           name: name.trim() || null,
           city: city.trim() || null,
           postalCode: postalCode.trim() || null,
           street: street.trim() || null,
           streetNumber: streetNumber.trim() || null,
           googleMapsUrl: googleMapsUrl.trim() || null,
+          notes: notes.trim() || null,
           contactIds: contacts.map((c) => c.id),
           counterpartyIds: counterparties.map((c) => c.id),
         },
@@ -194,6 +198,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     onSuccess: () => {
       toast.success(t("organizations.performances.toasts.created"));
       qc.invalidateQueries({ queryKey: ["performances", organizationId] });
+      qc.invalidateQueries({ queryKey: ["performance-event-kinds", organizationId] });
       reset();
       onOpenChange(false);
     },
@@ -205,6 +210,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     const e: Record<string, string> = {};
     if (!date) e.date = t("organizations.performances.errors.date_required");
     if (!status) e.status = t("organizations.performances.errors.status_required");
+    if (!resolvedEventKind)
+      e.eventKind = t("organizations.performances.errors.event_kind_required");
     if (isConfirmed) {
       if (!name.trim()) e.name = t("organizations.performances.errors.required");
       if (!city.trim()) e.city = t("organizations.performances.errors.required");
@@ -217,7 +224,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
     }
     return e;
   }, [
-    date, status, isConfirmed, name, city, postalCode, street, streetNumber,
+    date, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
     isPublicFull, googleMapsUrl, t,
   ]);
 
