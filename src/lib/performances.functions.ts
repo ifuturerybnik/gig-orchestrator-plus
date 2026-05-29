@@ -1,0 +1,196 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+export const PERFORMANCE_STATUSES = [
+  "inquiry",
+  "tentative",
+  "confirmed_signing",
+  "confirmed_signed",
+] as const;
+export type PerformanceStatus = (typeof PERFORMANCE_STATUSES)[number];
+
+export const PERFORMANCE_VISIBILITIES = [
+  "private",
+  "members_date",
+  "members_full",
+  "public_date",
+  "public_full",
+] as const;
+export type PerformanceVisibility = (typeof PERFORMANCE_VISIBILITIES)[number];
+
+const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
+
+const createInput = z
+  .object({
+    organizationId: z.string().uuid(),
+    performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    status: z.enum(PERFORMANCE_STATUSES),
+    visibility: z.enum(PERFORMANCE_VISIBILITIES),
+    name: z.string().trim().max(255).optional().nullable(),
+    city: z.string().trim().max(120).optional().nullable(),
+    postalCode: z.string().trim().max(20).optional().nullable(),
+    street: z.string().trim().max(200).optional().nullable(),
+    streetNumber: z.string().trim().max(40).optional().nullable(),
+    googleMapsUrl: z
+      .string()
+      .trim()
+      .max(2048)
+      .url()
+      .optional()
+      .nullable()
+      .or(z.literal("").transform(() => null)),
+    contactIds: z.array(z.string().uuid()).max(100).default([]),
+    counterpartyIds: z.array(z.string().uuid()).max(100).default([]),
+  })
+  .superRefine((d, ctx) => {
+    const confirmed = CONFIRMED.includes(d.status);
+    const required = (v: unknown) =>
+      v != null && typeof v === "string" && v.trim().length > 0;
+    if (confirmed) {
+      const fields = [
+        ["name", d.name],
+        ["city", d.city],
+        ["postalCode", d.postalCode],
+        ["street", d.street],
+        ["streetNumber", d.streetNumber],
+      ] as const;
+      for (const [k, v] of fields) {
+        if (!required(v))
+          ctx.addIssue({
+            code: "custom",
+            path: [k],
+            message: `${k} is required for confirmed status`,
+          });
+      }
+    }
+    if (d.visibility === "public_full" && !required(d.googleMapsUrl)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["googleMapsUrl"],
+        message: "googleMapsUrl is required for public_full visibility",
+      });
+    }
+  });
+
+export const createPerformance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => createInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: perf, error } = await supabase
+      .from("performances")
+      .insert({
+        organization_id: data.organizationId,
+        created_by: userId,
+        performance_date: data.performanceDate,
+        status: data.status,
+        visibility: data.visibility,
+        name: data.name?.trim() || null,
+        city: data.city?.trim() || null,
+        postal_code: data.postalCode?.trim() || null,
+        street: data.street?.trim() || null,
+        street_number: data.streetNumber?.trim() || null,
+        google_maps_url: data.googleMapsUrl?.trim() || null,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const rows: Array<{
+      performance_id: string;
+      contact_id: string | null;
+      counterparty_id: string | null;
+    }> = [];
+    for (const id of data.contactIds)
+      rows.push({ performance_id: perf.id, contact_id: id, counterparty_id: null });
+    for (const id of data.counterpartyIds)
+      rows.push({ performance_id: perf.id, contact_id: null, counterparty_id: id });
+
+    if (rows.length > 0) {
+      const { error: aErr } = await supabase
+        .from("performance_assignments")
+        .insert(rows);
+      if (aErr) throw new Error(aErr.message);
+    }
+
+    return { id: perf.id };
+  });
+
+export const listPerformances = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("performances")
+      .select(
+        "id, performance_date, status, visibility, name, city, postal_code, street, street_number, google_maps_url, created_at",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("performance_date", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+
+    const ids = (rows ?? []).map((r) => r.id);
+    if (ids.length === 0) return { items: [] };
+
+    const { data: assigns, error: aErr } = await supabase
+      .from("performance_assignments")
+      .select("id, performance_id, contact_id, counterparty_id")
+      .in("performance_id", ids);
+    if (aErr) throw new Error(aErr.message);
+
+    const contactIds = Array.from(
+      new Set((assigns ?? []).map((a) => a.contact_id).filter(Boolean)),
+    ) as string[];
+    const cpIds = Array.from(
+      new Set((assigns ?? []).map((a) => a.counterparty_id).filter(Boolean)),
+    ) as string[];
+
+    const [contactsRes, cpsRes] = await Promise.all([
+      contactIds.length
+        ? supabase
+            .from("contacts")
+            .select("id, display_name")
+            .in("id", contactIds)
+        : Promise.resolve({ data: [] as { id: string; display_name: string }[], error: null }),
+      cpIds.length
+        ? supabaseAdmin
+            .from("organizations")
+            .select("id, name")
+            .in("id", cpIds)
+        : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
+    ]);
+    if (contactsRes.error) throw new Error(contactsRes.error.message);
+    if (cpsRes.error) throw new Error(cpsRes.error.message);
+    const cmap = new Map((contactsRes.data ?? []).map((c) => [c.id, c.display_name]));
+    const omap = new Map((cpsRes.data ?? []).map((o) => [o.id, o.name]));
+
+    const grouped = new Map<
+      string,
+      { contacts: { id: string; name: string }[]; counterparties: { id: string; name: string }[] }
+    >();
+    for (const a of assigns ?? []) {
+      const g = grouped.get(a.performance_id) ?? { contacts: [], counterparties: [] };
+      if (a.contact_id)
+        g.contacts.push({ id: a.contact_id, name: cmap.get(a.contact_id) ?? "—" });
+      if (a.counterparty_id)
+        g.counterparties.push({
+          id: a.counterparty_id,
+          name: omap.get(a.counterparty_id) ?? "—",
+        });
+      grouped.set(a.performance_id, g);
+    }
+
+    return {
+      items: (rows ?? []).map((r) => ({
+        ...r,
+        assignments: grouped.get(r.id) ?? { contacts: [], counterparties: [] },
+      })),
+    };
+  });
