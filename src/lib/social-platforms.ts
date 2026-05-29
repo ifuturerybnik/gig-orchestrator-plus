@@ -87,18 +87,19 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
   linkedin: {
     id: "linkedin",
     brandColor: "bg-[#0A66C2]",
-    status: "coming_soon",
+    status: "live",
     requiresAppReview: false,
     requiresPaidApi: false,
     supportsText: true,
     supportsImages: true,
-    supportsVideo: true,
+    supportsVideo: false,
     supportsMetrics: true,
     maxTextLength: 3000,
     aiTone: "professional",
-    scopes: ["w_member_social", "r_organization_social", "w_organization_social"],
+    scopes: ["openid", "profile", "email", "w_member_social"],
     envClientIdKey: "LINKEDIN_CLIENT_ID",
   },
+
   twitter: {
     id: "twitter",
     brandColor: "bg-[#000000]",
