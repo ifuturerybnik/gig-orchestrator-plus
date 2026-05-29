@@ -34,6 +34,7 @@ const USER_KINDS = [
 ] as const;
 
 function RegisterPage() {
+  useForceLightTheme();
   const { t, i18n } = useTranslation();
   const recordConsents = useServerFn(recordSignupConsents);
   const [step, setStep] = useState(1);
