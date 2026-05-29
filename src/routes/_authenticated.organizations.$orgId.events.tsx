@@ -182,11 +182,13 @@ function OrganizationPerformancesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("organizations.performances.col.date")}</TableHead>
+                <TableHead>{t("organizations.performances.col.event_kind")}</TableHead>
                 <TableHead>{t("organizations.performances.col.status")}</TableHead>
                 <TableHead>{t("organizations.performances.col.name")}</TableHead>
                 <TableHead>{t("organizations.performances.col.city")}</TableHead>
                 <TableHead>{t("organizations.performances.col.assignments")}</TableHead>
                 <TableHead className="w-12">{t("organizations.performances.col.visibility")}</TableHead>
+                <TableHead className="w-12 text-right">{t("organizations.performances.col.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
