@@ -33,6 +33,7 @@ import {
 import type { SocialPlatformId } from "@/lib/social-platforms";
 import { XSetupInstructions } from "./XSetupInstructions";
 import { LinkedInSetupInstructions } from "./LinkedInSetupInstructions";
+import { MetaSetupInstructions } from "./MetaSetupInstructions";
 
 
 /**
@@ -171,6 +172,8 @@ export function AppCredentialsForm({
               <XSetupInstructions callbackUrl={callbackUrl} />
             ) : platform === "linkedin" ? (
               <LinkedInSetupInstructions callbackUrl={callbackUrl} />
+            ) : platform === "facebook" || platform === "instagram" ? (
+              <MetaSetupInstructions callbackUrl={callbackUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t("social.setup.instructions_coming_soon")}
