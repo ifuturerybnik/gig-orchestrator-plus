@@ -554,6 +554,7 @@ export default
       "status": {
         "inquiry": "Inquiry",
         "tentative": "Tentative booking",
+        "confirmed": "Confirmed",
         "confirmed_signing": "Confirmed (contract being signed)",
         "confirmed_signed": "Confirmed (contract signed)"
       },
