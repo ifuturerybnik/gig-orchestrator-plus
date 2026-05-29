@@ -66,9 +66,16 @@ export function AppCredentialsForm({
   const [clientSecret, setClientSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
 
+  // Slug callback URL: X używa "x", Facebook+Instagram dzielą "meta", reszta = id platformy.
+  const callbackSlug =
+    platform === "twitter"
+      ? "x"
+      : platform === "facebook" || platform === "instagram"
+        ? "meta"
+        : platform;
   const callbackUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/api/public/social/${platform === "twitter" ? "x" : platform}-callback`
+      ? `${window.location.origin}/api/public/social/${callbackSlug}-callback`
       : "";
 
   const saveMut = useMutation({
