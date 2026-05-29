@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -11,6 +11,8 @@ import {
   ExternalLink,
   ShieldCheck,
   ListChecks,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -23,15 +25,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
-import { checkPlatformReadiness } from "@/lib/social.functions";
+import {
+  SOCIAL_PLATFORMS,
+  type SocialPlatformId,
+} from "@/lib/social-platforms";
+import { checkPlatformReadiness, startSocialOAuth } from "@/lib/social.functions";
+import { AppCredentialsForm } from "./AppCredentialsForm";
 
-type Step = "intro" | "checklist" | "permissions" | "connect";
+type Step = "intro" | "checklist" | "setup" | "permissions" | "connect";
 
 export function ConnectWizardDialog({
   platform,
-  orgId: _orgId,
+  orgId,
   open,
   onClose,
 }: {
@@ -46,27 +51,42 @@ export function ConnectWizardDialog({
   const [checklist, setChecklist] = useState<boolean[]>([false, false, false]);
 
   const checkFn = useServerFn(checkPlatformReadiness);
+  const startOAuthFn = useServerFn(startSocialOAuth);
+
   const readinessQ = useQuery({
-    queryKey: ["platform-readiness", platform],
-    queryFn: () => checkFn({ data: { platform } }),
+    queryKey: ["platform-readiness", platform, orgId],
+    queryFn: () => checkFn({ data: { platform, organizationId: orgId } }),
+    enabled: open,
   });
 
-  const steps: Step[] = ["intro", "checklist", "permissions", "connect"];
+  const startMut = useMutation({
+    mutationFn: () =>
+      startOAuthFn({
+        data: {
+          organizationId: orgId,
+          platform,
+          redirectBack:
+            typeof window !== "undefined"
+              ? `${window.location.origin}/organizations/${orgId}/social`
+              : undefined,
+        },
+      }),
+    onSuccess: (r) => {
+      window.location.href = r.authorizeUrl;
+    },
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const steps: Step[] = ["intro", "checklist", "setup", "permissions", "connect"];
   const currentIdx = steps.indexOf(step);
-
   const allChecked = checklist.every(Boolean);
-
-  const handleConnect = () => {
-    if (!readinessQ.data?.hasClientId) {
-      toast.warning(t("social.wizard.not_ready_toast"));
-      return;
-    }
-    toast.info(t("social.wizard.oauth_redirect_coming_soon"));
-  };
+  const ready = !!readinessQ.data?.hasClientId;
+  const isXPlatform = platform === "twitter";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className={`h-6 w-6 rounded ${meta.brandColor}`} />
@@ -76,7 +96,8 @@ export function ConnectWizardDialog({
             {t("social.wizard.step_indicator", {
               current: currentIdx + 1,
               total: steps.length,
-            })}
+            })}{" "}
+            — {t(`social.wizard.step_names.${step}`)}
           </DialogDescription>
         </DialogHeader>
 
@@ -150,6 +171,10 @@ export function ConnectWizardDialog({
           </div>
         )}
 
+        {step === "setup" && (
+          <AppCredentialsForm orgId={orgId} platform={platform} />
+        )}
+
         {step === "permissions" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -177,33 +202,58 @@ export function ConnectWizardDialog({
 
         {step === "connect" && (
           <div className="space-y-4">
-            {readinessQ.data?.hasClientId ? (
+            {ready && isXPlatform ? (
               <>
-                <p className="text-sm">{t("social.wizard.ready_to_connect")}</p>
-                <Button onClick={handleConnect} className="w-full" size="lg">
-                  <ExternalLink className="mr-2 h-4 w-4" />
+                <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/40">
+                  <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-100">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {t("social.wizard.ready_title")}
+                  </div>
+                  <p className="mt-1 text-emerald-900 dark:text-emerald-200">
+                    {t("social.wizard.ready_to_connect")}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => startMut.mutate()}
+                  disabled={startMut.isPending}
+                  className="w-full"
+                  size="lg"
+                >
+                  {startMut.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
                   {t("social.wizard.continue_to_provider", {
                     platform: t(`social.platforms.${platform}.name`),
                   })}
                 </Button>
               </>
-            ) : (
+            ) : !ready ? (
               <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/40">
                 <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-100">
-                  <Clock className="h-4 w-4" />
+                  <AlertCircle className="h-4 w-4" />
                   {t("social.wizard.not_ready_title")}
                 </div>
                 <p className="text-amber-900 dark:text-amber-200">
-                  {t("social.wizard.not_ready_body", { envKey: readinessQ.data?.envKey })}
+                  {t("social.wizard.not_ready_body_v2")}
                 </p>
-                <Separator />
-                <div className="text-xs text-amber-800 dark:text-amber-300">
-                  <strong>{t("social.wizard.for_admin")}:</strong>{" "}
-                  {t("social.wizard.for_admin_body", {
-                    envKey: readinessQ.data?.envKey,
+                <Button variant="outline" size="sm" onClick={() => setStep("setup")}>
+                  <ChevronLeft className="mr-1 h-3 w-3" />
+                  {t("social.wizard.back_to_setup")}
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md border border-blue-300 bg-blue-50 p-4 text-sm dark:border-blue-900 dark:bg-blue-950/40">
+                <div className="flex items-center gap-2 font-semibold text-blue-900 dark:text-blue-100">
+                  <Clock className="h-4 w-4" />
+                  {t("social.wizard.platform_coming_soon_title")}
+                </div>
+                <p className="mt-1 text-blue-900 dark:text-blue-200">
+                  {t("social.wizard.platform_coming_soon_body", {
                     platform: t(`social.platforms.${platform}.name`),
                   })}
-                </div>
+                </p>
               </div>
             )}
           </div>
