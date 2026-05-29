@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -42,10 +42,14 @@ import { ContactPicker } from "@/components/pickers/ContactPicker";
 import { CounterpartyPicker } from "@/components/pickers/CounterpartyPicker";
 import { AddCounterpartyDialog } from "@/components/organizations/AddCounterpartyDialog";
 import { ContactForm } from "@/components/contacts/ContactForm";
+import { ContactDetailsDialog } from "@/components/contacts/ContactDetailsDialog";
+import { CounterpartyDetailsDialog } from "@/components/organizations/CounterpartyDetailsDialog";
 
 import { Textarea } from "@/components/ui/textarea";
 import {
   createPerformance,
+  updatePerformance,
+  findCounterpartyLinkForOrg,
   listPerformances,
   listPerformanceEventKinds,
   PERFORMANCE_STATUSES,
@@ -59,10 +63,30 @@ import {
   listLinkedContactsForCounterparty,
 } from "@/lib/contact-counterparty-links.functions";
 
+export interface PerformanceInitial {
+  id: string;
+  performance_date: string;
+  status: PerformanceStatus;
+  visibility: PerformanceVisibility;
+  event_kind: string;
+  name: string | null;
+  city: string | null;
+  postal_code: string | null;
+  street: string | null;
+  street_number: string | null;
+  google_maps_url: string | null;
+  notes: string | null;
+  assignments: {
+    contacts: { id: string; name: string }[];
+    counterparties: { id: string; name: string }[];
+  };
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
+  initial?: PerformanceInitial | null;
 }
 
 type ContactRef = { id: string; name: string };
@@ -70,14 +94,18 @@ type CounterpartyRef = { id: string; name: string };
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed_signing", "confirmed_signed"];
 
-export function PerformanceDialog({ open, onOpenChange, organizationId }: Props) {
+export function PerformanceDialog({ open, onOpenChange, organizationId, initial }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
+  const update = useServerFn(updatePerformance);
+  const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const fetchList = useServerFn(listPerformances);
   const fetchKinds = useServerFn(listPerformanceEventKinds);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const isEdit = !!initial;
 
   const { data: kindsList } = useQuery({
     queryKey: ["performance-event-kinds", organizationId],
@@ -146,6 +174,44 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addCpOpen, setAddCpOpen] = useState(false);
 
+  // Details dialogs triggered from assigned badges
+  const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
+  const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
+
+  // Prefill state when editing
+  useEffect(() => {
+    if (!open || !initial) return;
+    const [y, m, d] = initial.performance_date.split("-").map(Number);
+    setDate(new Date(y, m - 1, d));
+    setStatus(initial.status);
+    setVisibility(initial.visibility);
+    setEventKindSelection(initial.event_kind);
+    setEventKindCustom("");
+    setName(initial.name ?? "");
+    setCity(initial.city ?? "");
+    setPostalCode(initial.postal_code ?? "");
+    setStreet(initial.street ?? "");
+    setStreetNumber(initial.street_number ?? "");
+    setGoogleMapsUrl(initial.google_maps_url ?? "");
+    setNotes(initial.notes ?? "");
+    setContacts(initial.assignments.contacts.map((c) => ({ id: c.id, name: c.name })));
+    setCounterparties(initial.assignments.counterparties.map((c) => ({ id: c.id, name: c.name })));
+    setSuggestedContacts([]);
+    setSuggestedCounterparties([]);
+  }, [open, initial]);
+
+  const openCounterpartyDetails = async (cpOrgId: string) => {
+    try {
+      const res = await findCpLink({
+        data: { ownerOrgId: organizationId, counterpartyOrgId: cpOrgId },
+      });
+      if (res.linkId) setDetailsCpLinkId(res.linkId);
+      else toast.error(t("organizations.performances.errors.cp_link_missing"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   const isConfirmed = status && CONFIRMED.includes(status as PerformanceStatus);
   const isPublicFull = visibility === "public_full";
   const isCustomKind = eventKindSelection === "__custom__";
@@ -176,27 +242,33 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
       if (!status) throw new Error(t("organizations.performances.errors.status_required"));
       if (!resolvedEventKind)
         throw new Error(t("organizations.performances.errors.event_kind_required"));
-      return create({
-        data: {
-          organizationId,
-          performanceDate: format(date, "yyyy-MM-dd"),
-          status: status as PerformanceStatus,
-          visibility,
-          eventKind: resolvedEventKind,
-          name: name.trim() || null,
-          city: city.trim() || null,
-          postalCode: postalCode.trim() || null,
-          street: street.trim() || null,
-          streetNumber: streetNumber.trim() || null,
-          googleMapsUrl: googleMapsUrl.trim() || null,
-          notes: notes.trim() || null,
-          contactIds: contacts.map((c) => c.id),
-          counterpartyIds: counterparties.map((c) => c.id),
-        },
-      });
+      const payload = {
+        organizationId,
+        performanceDate: format(date, "yyyy-MM-dd"),
+        status: status as PerformanceStatus,
+        visibility,
+        eventKind: resolvedEventKind,
+        name: name.trim() || null,
+        city: city.trim() || null,
+        postalCode: postalCode.trim() || null,
+        street: street.trim() || null,
+        streetNumber: streetNumber.trim() || null,
+        googleMapsUrl: googleMapsUrl.trim() || null,
+        notes: notes.trim() || null,
+        contactIds: contacts.map((c) => c.id),
+        counterpartyIds: counterparties.map((c) => c.id),
+      };
+      if (isEdit && initial) {
+        return update({ data: { ...payload, performanceId: initial.id } });
+      }
+      return create({ data: payload });
     },
     onSuccess: () => {
-      toast.success(t("organizations.performances.toasts.created"));
+      toast.success(
+        isEdit
+          ? t("organizations.performances.toasts.updated")
+          : t("organizations.performances.toasts.created"),
+      );
       qc.invalidateQueries({ queryKey: ["performances", organizationId] });
       qc.invalidateQueries({ queryKey: ["performance-event-kinds", organizationId] });
       reset();
@@ -295,7 +367,11 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>{t("organizations.performances.dialog.title")}</DialogTitle>
+            <DialogTitle>
+              {isEdit
+                ? t("organizations.performances.dialog.title_edit")
+                : t("organizations.performances.dialog.title")}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -570,14 +646,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                     </span>
                   ) : (
                     contacts.map((c) => (
-                      <Badge key={c.id} variant="secondary" className="gap-1">
-                        {c.name}
+                      <Badge key={c.id} variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80">
+                        <button
+                          type="button"
+                          onClick={() => setDetailsContactId(c.id)}
+                          className="hover:underline"
+                          title={t("organizations.performances.actions.open_details")}
+                        >
+                          {c.name}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
                             setContacts((prev) => prev.filter((x) => x.id !== c.id))
                           }
                           className="hover:text-destructive"
+                          aria-label={t("common.remove")}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -662,13 +746,21 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                   ) : (
                     counterparties.map((o) => (
                       <Badge key={o.id} variant="secondary" className="gap-1">
-                        {o.name}
+                        <button
+                          type="button"
+                          onClick={() => openCounterpartyDetails(o.id)}
+                          className="hover:underline"
+                          title={t("organizations.performances.actions.open_details")}
+                        >
+                          {o.name}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
                             setCounterparties((prev) => prev.filter((x) => x.id !== o.id))
                           }
                           className="hover:text-destructive"
+                          aria-label={t("common.remove")}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -761,6 +853,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
             <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
               {mutation.isPending
                 ? t("common.saving")
+                : isEdit
+                ? t("organizations.performances.dialog.submit_edit")
                 : t("organizations.performances.dialog.submit")}
             </Button>
           </DialogFooter>
@@ -808,6 +902,19 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
         onOpenChange={setAddCpOpen}
         ownerOrgId={organizationId}
       />
+
+      {/* Details from assigned badges */}
+      <ContactDetailsDialog
+        contactId={detailsContactId}
+        scope={{ kind: "org", organizationId }}
+        onOpenChange={(o) => !o && setDetailsContactId(null)}
+      />
+      <CounterpartyDetailsDialog
+        linkId={detailsCpLinkId}
+        onOpenChange={(o) => !o && setDetailsCpLinkId(null)}
+        ownerOrgId={organizationId}
+      />
     </>
   );
 }
+
