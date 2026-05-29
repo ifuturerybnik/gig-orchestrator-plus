@@ -121,6 +121,8 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
 
   const [contacts, setContacts] = useState<ContactRef[]>([]);
   const [counterparties, setCounterparties] = useState<CounterpartyRef[]>([]);
+  const [suggestedContacts, setSuggestedContacts] = useState<ContactRef[]>([]);
+  const [suggestedCounterparties, setSuggestedCounterparties] = useState<CounterpartyRef[]>([]);
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
