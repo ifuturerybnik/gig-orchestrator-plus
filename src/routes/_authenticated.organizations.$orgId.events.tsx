@@ -212,7 +212,7 @@ function OrganizationPerformancesPage() {
             {t("organizations.performances.subtitle")}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={() => openCreate()}>
           <Plus className="h-4 w-4" />
           {t("organizations.performances.add")}
         </Button>
