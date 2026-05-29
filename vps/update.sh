@@ -8,6 +8,7 @@ set -Eeuo pipefail
 APP_DIR="/var/www/concertivo"
 PM2_NAME="concertivo"
 BRANCH="${BRANCH:-main}"
+PORT="${PORT:-3001}"
 
 log()  { printf "\033[1;34m[update]\033[0m %s\n" "$*"; }
 ok()   { printf "\033[1;32m[ ok ]\033[0m %s\n" "$*"; }
