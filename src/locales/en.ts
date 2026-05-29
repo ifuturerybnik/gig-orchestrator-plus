@@ -1146,9 +1146,42 @@ export default
     "subtitle": "Connect your social media accounts to this organization and manage publishing in one place.",
     "tabs": {
       "accounts": "Connected accounts",
+      "inbox": "Inbox",
       "ai_studio": "AI Studio",
       "schedule": "Schedule",
       "stats": "Stats"
+    },
+    "inbox": {
+      "title": "Comments & messages inbox",
+      "subtitle": "One place for all comments under your posts and DMs from connected accounts. Reply, hide, moderate — with AI assistance.",
+      "coming_soon_badge": "Active after connecting accounts",
+      "empty_state": "No comments or messages yet. New items from platforms will appear here once accounts are connected and sync is enabled.",
+      "features_title": "What's in the inbox",
+      "features_subtitle": "All features turn on automatically once a platform is connected (Rounds 2–7).",
+      "features": {
+        "unified_inbox": { "title": "Unified inbox", "desc": "Comments and DMs from every platform in a single list, with filters by platform, post and status." },
+        "quick_reply": { "title": "Quick replies", "desc": "Reply to comments and messages directly from Concertivo — no app switching." },
+        "moderation": { "title": "Moderation", "desc": "Hide, delete, mark spam, ban users — every action audited." },
+        "ai_replies": { "title": "AI-suggested replies", "desc": "Three reply variants (formal, warm, short) generated from the post context and the comment's tone." },
+        "ai_moderator": { "title": "AI moderator", "desc": "Automatic detection of hate, spam and urgent questions — with flags and sentiment." },
+        "notifications": { "title": "Notifications", "desc": "Email and in-app alerts for new comments and messages that need attention." },
+        "user_history": { "title": "Interaction history", "desc": "See who comments often, their sentiment and last contact — context for better replies." }
+      },
+      "platform_support_title": "What's possible on each platform",
+      "platform_support_subtitle": "Capabilities depend on the provider's API. The table shows what will work once connected.",
+      "table": {
+        "platform": "Platform",
+        "read": "Read",
+        "reply": "Reply",
+        "hide": "Hide",
+        "delete": "Delete",
+        "dm": "DMs"
+      },
+      "support": {
+        "yes": "Yes",
+        "partial": "Partial",
+        "no": "None"
+      }
     },
     "intro": {
       "title": "How it works",
