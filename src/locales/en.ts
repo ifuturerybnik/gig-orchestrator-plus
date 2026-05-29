@@ -597,7 +597,13 @@ export default
       "toasts": {
         "created": "Performance added",
         "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
-        "linked_contact_suggest": "Linked contact: {{name}} — assign too?"
+        "linked_contact_suggest": "Linked contact: {{name}} — assign too?",
+        "past_date_warning": "You picked a past date ({{date}}) — make sure this is intentional."
+      },
+      "calendar": {
+        "legend_past": "Past date",
+        "legend_event": "Scheduled performance",
+        "day_events_title": "Performances on {{date}}:"
       },
       "errors": {
         "date_required": "Performance date is required",
