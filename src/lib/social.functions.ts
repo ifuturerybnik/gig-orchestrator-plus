@@ -791,9 +791,57 @@ export const replyToComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // W Turze 2 odpowiedź nie idzie jeszcze do API platformy.
-    // Zapisujemy ją w log + oznaczamy komentarz jako 'replied'.
-    const { error } = await supabase
+
+    // Pobierz komentarz + info o platformie/posta źródłowego
+    const { data: c, error: cErr } = await supabase
+      .from("social_comments")
+      .select(
+        "id, platform, external_post_id, external_comment_id, account_id, organization_id",
+      )
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (cErr) throw new Error(cErr.message);
+    if (!c) throw new Error("Komentarz nie istnieje.");
+    const cm = c as {
+      id: string;
+      platform: string;
+      external_post_id: string;
+      external_comment_id: string;
+      account_id: string;
+      organization_id: string;
+    };
+
+    // Spróbuj wysłać do platformy (jeśli mamy adapter z reply())
+    let sentExternalId: string | null = null;
+    let sendError: string | null = null;
+    try {
+      const { getAdapter, getValidAccount } = await import("./platforms/index.server");
+      const adapter = getAdapter(cm.platform);
+      if (adapter?.reply) {
+        const ctx2 = await getValidAccount({
+          organizationId: cm.organization_id,
+          platform: cm.platform,
+        });
+        if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+        const r = await adapter.reply({
+          account: ctx2.account,
+          externalParentCommentId: cm.external_comment_id,
+          externalPostId: cm.external_post_id,
+          text: data.text,
+          clientId: ctx2.credentials.clientId,
+          clientSecret: ctx2.credentials.clientSecret,
+        });
+        sentExternalId = r.externalCommentId;
+      } else {
+        sendError = `Wysyłka odpowiedzi do ${cm.platform} nie jest jeszcze aktywna.`;
+      }
+    } catch (e) {
+      sendError = e instanceof Error ? e.message : String(e);
+    }
+
+    // Oznacz komentarz jako 'replied' (zawsze — UX: widzimy że obsłużone)
+    const { error: updErr } = await supabase
       .from("social_comments")
       .update({
         status: "replied",
@@ -803,19 +851,18 @@ export const replyToComment = createServerFn({ method: "POST" })
       })
       .eq("id", data.commentId)
       .eq("organization_id", data.organizationId);
-    if (error) throw new Error(error.message);
+    if (updErr) throw new Error(updErr.message);
 
     await supabase.from("social_moderation_log").insert({
       organization_id: data.organizationId,
       comment_id: data.commentId,
       action: "reply",
-      payload: { text: data.text, pending_oauth: true },
-      result: "pending_oauth",
-      error_message:
-        "Odpowiedź zapisana lokalnie. Realne wysłanie do platformy zostanie aktywowane po podłączeniu OAuth (Tura 3+).",
+      payload: { text: data.text, external_id: sentExternalId },
+      result: sendError ? "pending_oauth" : "ok",
+      error_message: sendError,
       performed_by: userId,
     });
-    return { ok: true };
+    return { ok: true, sent: !!sentExternalId, error: sendError };
   });
 
 export const aiSuggestCommentReply = createServerFn({ method: "POST" })
