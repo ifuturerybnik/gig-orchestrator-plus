@@ -240,3 +240,141 @@ export const listPerformanceEventKinds = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { items: rows ?? [] };
   });
+
+const updateInput = z
+  .object({
+    performanceId: z.string().uuid(),
+    organizationId: z.string().uuid(),
+    performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    status: z.enum(PERFORMANCE_STATUSES),
+    visibility: z.enum(PERFORMANCE_VISIBILITIES),
+    eventKind: z.string().trim().min(1).max(120),
+    name: z.string().trim().max(255).optional().nullable(),
+    city: z.string().trim().max(120).optional().nullable(),
+    postalCode: z.string().trim().max(20).optional().nullable(),
+    street: z.string().trim().max(200).optional().nullable(),
+    streetNumber: z.string().trim().max(40).optional().nullable(),
+    googleMapsUrl: z
+      .string()
+      .trim()
+      .max(2048)
+      .url()
+      .optional()
+      .nullable()
+      .or(z.literal("").transform(() => null)),
+    notes: z.string().trim().max(5000).optional().nullable(),
+    contactIds: z.array(z.string().uuid()).max(100).default([]),
+    counterpartyIds: z.array(z.string().uuid()).max(100).default([]),
+  })
+  .superRefine((d, ctx) => {
+    const confirmed = CONFIRMED.includes(d.status);
+    const required = (v: unknown) =>
+      v != null && typeof v === "string" && v.trim().length > 0;
+    if (confirmed) {
+      const fields = [
+        ["name", d.name],
+        ["city", d.city],
+        ["postalCode", d.postalCode],
+        ["street", d.street],
+        ["streetNumber", d.streetNumber],
+      ] as const;
+      for (const [k, v] of fields) {
+        if (!required(v))
+          ctx.addIssue({ code: "custom", path: [k], message: `${k} required` });
+      }
+    }
+    if (d.visibility === "public_full" && !required(d.googleMapsUrl)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["googleMapsUrl"],
+        message: "googleMapsUrl required for public_full",
+      });
+    }
+  });
+
+export const updatePerformance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => updateInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const kind = data.eventKind.trim();
+    const isPreset = (PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind);
+    if (!isPreset) {
+      try {
+        await supabase
+          .from("performance_event_kinds")
+          .insert({ organization_id: data.organizationId, label: kind, created_by: userId });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const { error } = await supabase
+      .from("performances")
+      .update({
+        performance_date: data.performanceDate,
+        status: data.status,
+        visibility: data.visibility,
+        event_kind: kind,
+        name: data.name?.trim() || null,
+        city: data.city?.trim() || null,
+        postal_code: data.postalCode?.trim() || null,
+        street: data.street?.trim() || null,
+        street_number: data.streetNumber?.trim() || null,
+        google_maps_url: data.googleMapsUrl?.trim() || null,
+        notes: data.notes?.trim() || null,
+      })
+      .eq("id", data.performanceId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+
+    // Replace assignments (simple strategy)
+    const { error: delErr } = await supabase
+      .from("performance_assignments")
+      .delete()
+      .eq("performance_id", data.performanceId);
+    if (delErr) throw new Error(delErr.message);
+
+    const rows: Array<{
+      performance_id: string;
+      contact_id: string | null;
+      counterparty_id: string | null;
+    }> = [];
+    for (const id of data.contactIds)
+      rows.push({ performance_id: data.performanceId, contact_id: id, counterparty_id: null });
+    for (const id of data.counterpartyIds)
+      rows.push({ performance_id: data.performanceId, contact_id: null, counterparty_id: id });
+
+    if (rows.length > 0) {
+      const { error: aErr } = await supabase
+        .from("performance_assignments")
+        .insert(rows);
+      if (aErr) throw new Error(aErr.message);
+    }
+
+    return { id: data.performanceId };
+  });
+
+export const findCounterpartyLinkForOrg = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        ownerOrgId: z.string().uuid(),
+        counterpartyOrgId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: link, error } = await supabase
+      .from("counterparty_links")
+      .select("id")
+      .eq("owner_kind", "organization")
+      .eq("owner_org_id", data.ownerOrgId)
+      .eq("counterparty_org_id", data.counterpartyOrgId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { linkId: link?.id ?? null };
+  });
