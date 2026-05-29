@@ -540,7 +540,7 @@ export default
       "members": "Członkowie",
       "contacts": "Kontakty",
       "counterparties": "Kontrahenci",
-      "events": "Koncerty",
+      "events": "Występy",
       "budget": "Budżet",
       "skrzynki": "Skrzynki pocztowe",
       "correspondence": "Korespondencja",
@@ -550,11 +550,82 @@ export default
       "pending_expenses": "Niezrealizowane wydatki: {{count}}"
     },
     "events": {
-      "title": "Koncerty",
-      "subtitle": "Planuj i zarządzaj koncertami tej organizacji.",
-      "empty": "Brak zaplanowanych koncertów. Moduł zarządzania koncertami pojawi się tutaj wkrótce.",
+      "title": "Występy",
+      "subtitle": "Planuj i zarządzaj występami tej organizacji.",
+      "empty": "Brak zaplanowanych występów.",
       "coming_soon": "Wkrótce"
     },
+    "performances": {
+      "title": "Występy",
+      "subtitle": "Planuj i zarządzaj występami tej organizacji.",
+      "add": "Dodaj występ",
+      "empty_title": "Brak występów",
+      "empty": "Dodaj pierwszy występ klikając przycisk powyżej.",
+      "col": {
+        "date": "Data",
+        "status": "Status",
+        "name": "Nazwa",
+        "city": "Miejscowość",
+        "assignments": "Przypisania",
+        "visibility": "Widoczność"
+      },
+      "status": {
+        "inquiry": "Zapytanie",
+        "tentative": "Wstępna rezerwacja",
+        "confirmed_signing": "Potwierdzony (w trakcie podpisywania umowy)",
+        "confirmed_signed": "Potwierdzony (umowa podpisana)"
+      },
+      "visibility": {
+        "private": "Tylko dla mnie",
+        "members_date": "Pokaż członkom tylko datę",
+        "members_full": "Pokaż członkom wszystko",
+        "public_date": "Upublicznij na stronie tylko datę",
+        "public_full": "Upublicznij na stronie wszystko"
+      },
+      "fields": {
+        "date": "Data występu",
+        "date_placeholder": "Wybierz datę",
+        "status": "Status",
+        "status_placeholder": "Wybierz status",
+        "visibility": "Widoczność",
+        "visibility_hint": "„Wszystko" obejmuje datę, nazwę występu oraz miejsce występu.",
+        "name": "Nazwa występu",
+        "city": "Miejscowość",
+        "postal_code": "Kod pocztowy",
+        "street": "Ulica",
+        "street_number": "Numer",
+        "google_maps_url": "Pinezka Google (URL)",
+        "google_maps_url_hint": "Wymagana tylko gdy widoczność = „Upublicznij na stronie wszystko"."
+      },
+      "assignments": {
+        "title": "Przypisania",
+        "contacts": "Kontakty",
+        "counterparties": "Kontrahenci",
+        "empty": "Brak przypisań",
+        "assign_contact": "Przypisz kontakt",
+        "assign_counterparty": "Przypisz kontrahenta",
+        "add_contact": "Dodaj kontakt",
+        "add_counterparty": "Dodaj kontrahenta"
+      },
+      "dialog": {
+        "title": "Nowy występ",
+        "submit": "Zapisz występ"
+      },
+      "actions": {
+        "assign": "Przypisz"
+      },
+      "toasts": {
+        "created": "Występ został dodany",
+        "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
+        "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?"
+      },
+      "errors": {
+        "date_required": "Data występu jest wymagana",
+        "status_required": "Status jest wymagany",
+        "required": "Pole wymagane"
+      }
+    },
+
     "budget": {
       "title": "Budżet",
       "intro": "Planuj swoje wydatki oraz budżet.",
