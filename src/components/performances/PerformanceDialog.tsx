@@ -646,14 +646,22 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
                     </span>
                   ) : (
                     contacts.map((c) => (
-                      <Badge key={c.id} variant="secondary" className="gap-1">
-                        {c.name}
+                      <Badge key={c.id} variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80">
+                        <button
+                          type="button"
+                          onClick={() => setDetailsContactId(c.id)}
+                          className="hover:underline"
+                          title={t("organizations.performances.actions.open_details")}
+                        >
+                          {c.name}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
                             setContacts((prev) => prev.filter((x) => x.id !== c.id))
                           }
                           className="hover:text-destructive"
+                          aria-label={t("common.remove")}
                         >
                           <X className="h-3 w-3" />
                         </button>
