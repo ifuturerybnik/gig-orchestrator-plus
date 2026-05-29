@@ -367,7 +367,11 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>{t("organizations.performances.dialog.title")}</DialogTitle>
+            <DialogTitle>
+              {isEdit
+                ? t("organizations.performances.dialog.title_edit")
+                : t("organizations.performances.dialog.title")}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
