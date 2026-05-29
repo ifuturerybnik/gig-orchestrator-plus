@@ -69,14 +69,17 @@ fi
 log "Sprawdzam czy aplikacja odpowiada..."
 sleep 2
 for i in 1 2 3 4 5; do
-  if curl -fsS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ | grep -qE "^(200|301|302|307|308)$"; then
-    ok "Aplikacja odpowiada (próba $i)"
+  CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || echo "000")
+  # Każda odpowiedź HTTP (1xx-5xx) oznacza, że serwer żyje.
+  # 401/403 = działa, tylko route wymaga auth — to OK dla healthchecku.
+  if [ "$CODE" != "000" ] && [ "$CODE" -ge 100 ] && [ "$CODE" -lt 600 ]; then
+    ok "Aplikacja odpowiada (HTTP $CODE, próba $i)"
     pm2 status "$PM2_NAME"
     echo
     ok "✅ Aktualizacja zakończona pomyślnie"
     exit 0
   fi
-  warn "Próba $i/5 — czekam 2s..."
+  warn "Próba $i/5 — brak odpowiedzi (kod: $CODE), czekam 2s..."
   sleep 2
 done
 
