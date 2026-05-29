@@ -34,6 +34,7 @@ import type { SocialPlatformId } from "@/lib/social-platforms";
 import { XSetupInstructions } from "./XSetupInstructions";
 import { LinkedInSetupInstructions } from "./LinkedInSetupInstructions";
 import { MetaSetupInstructions } from "./MetaSetupInstructions";
+import { YouTubeSetupInstructions } from "./YouTubeSetupInstructions";
 
 
 /**
@@ -181,6 +182,8 @@ export function AppCredentialsForm({
               <LinkedInSetupInstructions callbackUrl={callbackUrl} />
             ) : platform === "facebook" || platform === "instagram" ? (
               <MetaSetupInstructions callbackUrl={callbackUrl} />
+            ) : platform === "youtube" ? (
+              <YouTubeSetupInstructions callbackUrl={callbackUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t("social.setup.instructions_coming_soon")}

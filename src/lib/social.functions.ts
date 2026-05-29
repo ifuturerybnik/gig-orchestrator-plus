@@ -1343,6 +1343,23 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         ].join(","),
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
+    } else if (data.platform === "youtube") {
+      // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: [
+          "https://www.googleapis.com/auth/youtube.upload",
+          "https://www.googleapis.com/auth/youtube.readonly",
+          "https://www.googleapis.com/auth/youtube.force-ssl",
+        ].join(" "),
+        state,
+        access_type: "offline",
+        include_granted_scopes: "true",
+        prompt: "consent",
+      });
+      authorizeUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     } else {
       throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
     }

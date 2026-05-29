@@ -11,6 +11,10 @@ import {
   exchangeMetaCode,
   listUserPages,
 } from "./platforms/meta.server";
+import {
+  exchangeGoogleCode,
+  fetchYouTubeChannel,
+} from "./platforms/youtube.server";
 
 
 export async function handleXOAuthCallback(args: {
