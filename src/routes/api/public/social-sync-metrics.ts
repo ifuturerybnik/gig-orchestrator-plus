@@ -28,7 +28,7 @@ async function processTick() {
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as ResultRow[];
 
-  let ok = 0;
+  let okCount = 0;
   let fail = 0;
   for (const r of rows) {
     if (!r.external_post_id || !r.post) continue;
@@ -55,13 +55,13 @@ async function processTick() {
         views: m.views,
         snapshot_at: new Date().toISOString(),
       });
-      ok++;
+      okCount++;
     } catch (e) {
       fail++;
       console.error("[social-sync-metrics]", r.platform, r.post_id, e);
     }
   }
-  return { processed: rows.length, ok, fail };
+  return { processed: rows.length, ok: okCount, fail };
 }
 
 export const Route = createFileRoute("/api/public/social-sync-metrics")({
