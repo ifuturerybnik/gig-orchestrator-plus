@@ -128,7 +128,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
   tiktok: {
     id: "tiktok",
     brandColor: "bg-[#000000]",
-    status: "planned",
+    status: "live",
     requiresAppReview: true,
     requiresPaidApi: false,
     supportsText: false,
@@ -137,7 +137,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: 2200,
     aiTone: "casual",
-    scopes: ["video.upload", "video.publish", "user.info.basic"],
+    scopes: ["user.info.basic", "video.upload", "video.publish", "video.list"],
     envClientIdKey: "TIKTOK_CLIENT_KEY",
   },
   spotify_artists: {

@@ -15,6 +15,10 @@ import {
   exchangeGoogleCode,
   fetchYouTubeChannel,
 } from "./platforms/youtube.server";
+import {
+  exchangeTikTokCode,
+  fetchTikTokUserInfo,
+} from "./platforms/tiktok.server";
 
 
 export async function handleXOAuthCallback(args: {
