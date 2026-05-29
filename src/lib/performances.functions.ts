@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const PERFORMANCE_STATUSES = [
   "inquiry",
   "tentative",
+  "confirmed",
   "confirmed_signing",
   "confirmed_signed",
 ] as const;
