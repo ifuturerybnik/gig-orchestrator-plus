@@ -102,7 +102,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
   twitter: {
     id: "twitter",
     brandColor: "bg-[#000000]",
-    status: "planned",
+    status: "live",
     requiresAppReview: false,
     requiresPaidApi: true,
     supportsText: true,
@@ -111,7 +111,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: 280,
     aiTone: "short",
-    scopes: ["tweet.read", "tweet.write", "users.read"],
+    scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"],
     envClientIdKey: "TWITTER_CLIENT_ID",
   },
   tiktok: {

@@ -23,6 +23,8 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
 import { Route as AuthenticatedContactsIndexRouteImport } from './routes/_authenticated.contacts.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
+import { Route as ApiPublicSocialSyncMetricsRouteImport } from './routes/api/public/social-sync-metrics'
+import { Route as ApiPublicSocialSyncInboxRouteImport } from './routes/api/public/social-sync-inbox'
 import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/api/public/social-publish-scheduled'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
@@ -118,6 +120,18 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicSocialSyncMetricsRoute =
+  ApiPublicSocialSyncMetricsRouteImport.update({
+    id: '/api/public/social-sync-metrics',
+    path: '/api/public/social-sync-metrics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicSocialSyncInboxRoute =
+  ApiPublicSocialSyncInboxRouteImport.update({
+    id: '/api/public/social-sync-inbox',
+    path: '/api/public/social-sync-inbox',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSocialPublishScheduledRoute =
   ApiPublicSocialPublishScheduledRouteImport.update({
     id: '/api/public/social-publish-scheduled',
@@ -275,6 +289,8 @@ export interface FileRoutesByFullPath {
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
+  '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
+  '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -310,6 +326,8 @@ export interface FileRoutesByTo {
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
+  '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
+  '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
@@ -350,6 +368,8 @@ export interface FileRoutesById {
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
+  '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
+  '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -390,6 +410,8 @@ export interface FileRouteTypes {
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
     | '/api/public/social-publish-scheduled'
+    | '/api/public/social-sync-inbox'
+    | '/api/public/social-sync-metrics'
     | '/admin/'
     | '/contacts/'
     | '/organizations/'
@@ -425,6 +447,8 @@ export interface FileRouteTypes {
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
     | '/api/public/social-publish-scheduled'
+    | '/api/public/social-sync-inbox'
+    | '/api/public/social-sync-metrics'
     | '/admin'
     | '/contacts'
     | '/organizations'
@@ -464,6 +488,8 @@ export interface FileRouteTypes {
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
     | '/api/public/social-publish-scheduled'
+    | '/api/public/social-sync-inbox'
+    | '/api/public/social-sync-metrics'
     | '/_authenticated/admin/'
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
@@ -494,6 +520,8 @@ export interface RootRouteChildren {
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
+  ApiPublicSocialSyncInboxRoute: typeof ApiPublicSocialSyncInboxRoute
+  ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
 }
 
@@ -596,6 +624,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/social-sync-metrics': {
+      id: '/api/public/social-sync-metrics'
+      path: '/api/public/social-sync-metrics'
+      fullPath: '/api/public/social-sync-metrics'
+      preLoaderRoute: typeof ApiPublicSocialSyncMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/social-sync-inbox': {
+      id: '/api/public/social-sync-inbox'
+      path: '/api/public/social-sync-inbox'
+      fullPath: '/api/public/social-sync-inbox'
+      preLoaderRoute: typeof ApiPublicSocialSyncInboxRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/social-publish-scheduled': {
       id: '/api/public/social-publish-scheduled'
@@ -875,6 +917,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
+  ApiPublicSocialSyncInboxRoute: ApiPublicSocialSyncInboxRoute,
+  ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
 }
 export const routeTree = rootRouteImport
