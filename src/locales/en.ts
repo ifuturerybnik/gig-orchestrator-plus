@@ -606,13 +606,18 @@ export default
       },
       "dialog": {
         "title": "New event",
-        "submit": "Save event"
+        "title_edit": "Edit event",
+        "submit": "Save event",
+        "submit_edit": "Save changes"
       },
       "actions": {
-        "assign": "Assign"
+        "assign": "Assign",
+        "click_to_edit": "Click to edit",
+        "open_details": "Open details"
       },
       "toasts": {
         "created": "Event added",
+        "updated": "Changes saved",
         "linked_cp_suggest": "Linked counterparty: {{name}} — assign too?",
         "linked_contact_suggest": "Linked contact: {{name}} — assign too?",
         "past_date_warning": "You picked a past date ({{date}}) — make sure this is intentional."
@@ -626,7 +631,8 @@ export default
         "date_required": "Event date is required",
         "status_required": "Status is required",
         "event_kind_required": "Event type is required",
-        "required": "Required field"
+        "required": "Required field",
+        "cp_link_missing": "Cannot open counterparty details — no link in this organization."
       }
     },
 
