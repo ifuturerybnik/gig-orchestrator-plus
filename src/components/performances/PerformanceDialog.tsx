@@ -174,6 +174,44 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addCpOpen, setAddCpOpen] = useState(false);
 
+  // Details dialogs triggered from assigned badges
+  const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
+  const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
+
+  // Prefill state when editing
+  useEffect(() => {
+    if (!open || !initial) return;
+    const [y, m, d] = initial.performance_date.split("-").map(Number);
+    setDate(new Date(y, m - 1, d));
+    setStatus(initial.status);
+    setVisibility(initial.visibility);
+    setEventKindSelection(initial.event_kind);
+    setEventKindCustom("");
+    setName(initial.name ?? "");
+    setCity(initial.city ?? "");
+    setPostalCode(initial.postal_code ?? "");
+    setStreet(initial.street ?? "");
+    setStreetNumber(initial.street_number ?? "");
+    setGoogleMapsUrl(initial.google_maps_url ?? "");
+    setNotes(initial.notes ?? "");
+    setContacts(initial.assignments.contacts.map((c) => ({ id: c.id, name: c.name })));
+    setCounterparties(initial.assignments.counterparties.map((c) => ({ id: c.id, name: c.name })));
+    setSuggestedContacts([]);
+    setSuggestedCounterparties([]);
+  }, [open, initial]);
+
+  const openCounterpartyDetails = async (cpOrgId: string) => {
+    try {
+      const res = await findCpLink({
+        data: { ownerOrgId: organizationId, counterpartyOrgId: cpOrgId },
+      });
+      if (res.linkId) setDetailsCpLinkId(res.linkId);
+      else toast.error(t("organizations.performances.errors.cp_link_missing"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   const isConfirmed = status && CONFIRMED.includes(status as PerformanceStatus);
   const isPublicFull = visibility === "public_full";
   const isCustomKind = eventKindSelection === "__custom__";
