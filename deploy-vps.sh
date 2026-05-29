@@ -70,7 +70,7 @@ server {
     server_name _;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -82,7 +82,7 @@ server {
     }
 
     location /assets/ {
-        proxy_pass http://127.0.0.1:3000/assets/;
+        proxy_pass http://127.0.0.1:3001/assets/;
         proxy_cache_valid 200 1y;
         add_header Cache-Control "public, immutable";
     }
