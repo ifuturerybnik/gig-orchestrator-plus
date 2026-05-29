@@ -143,7 +143,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
   spotify_artists: {
     id: "spotify_artists",
     brandColor: "bg-[#1DB954]",
-    status: "planned",
+    status: "live",
     requiresAppReview: false,
     requiresPaidApi: false,
     supportsText: false,
@@ -152,7 +152,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: null,
     aiTone: "professional",
-    scopes: ["user-read-private", "user-top-read"],
+    scopes: ["user-read-private", "user-read-email", "user-top-read"],
     envClientIdKey: "SPOTIFY_CLIENT_ID",
   },
 };

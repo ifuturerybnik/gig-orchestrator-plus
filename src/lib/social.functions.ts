@@ -1240,7 +1240,13 @@ export const deleteAppCredentials = createServerFn({ method: "POST" })
 function getCallbackUrl(platform: string, request: Request): string {
   const url = new URL(request.url);
   // Facebook + Instagram dzielą jeden flow Meta i wspólny callback.
-  const slug = platform === "facebook" || platform === "instagram" ? "meta" : platform;
+  // Spotify używa skróconego sluga "spotify" zamiast "spotify_artists".
+  const slug =
+    platform === "facebook" || platform === "instagram"
+      ? "meta"
+      : platform === "spotify_artists"
+        ? "spotify"
+        : platform;
   return `${url.origin}/api/public/social/${slug}-callback`;
 }
 
@@ -1369,6 +1375,16 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
       });
       authorizeUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
+    } else if (data.platform === "spotify_artists") {
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: "user-read-private user-read-email user-top-read",
+        state,
+        show_dialog: "true",
+      });
+      authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
     } else {
       throw new Error(`OAuth dla platformy ${data.platform} nie jest jeszcze zaimplementowany.`);
     }
