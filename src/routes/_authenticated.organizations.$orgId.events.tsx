@@ -201,6 +201,7 @@ function OrganizationPerformancesPage() {
                       title={t("organizations.performances.actions.click_to_edit")}
                     >
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
+                      <TableCell>{renderEventKind(p.event_kind)}</TableCell>
                       <TableCell>
                         <Badge variant={statusVariant[p.status as PerformanceStatus]}>
                           {t(`organizations.performances.status.${p.status}`)}
