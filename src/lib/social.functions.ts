@@ -1,0 +1,647 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+// ---------- Typy / stałe ----------
+
+const PLATFORM_IDS = [
+  "facebook",
+  "instagram",
+  "youtube",
+  "linkedin",
+  "twitter",
+  "tiktok",
+  "spotify_artists",
+] as const;
+const platformSchema = z.enum(PLATFORM_IDS);
+
+export type SocialAccountRow = {
+  id: string;
+  organization_id: string;
+  platform: string;
+  external_account_id: string;
+  account_name: string;
+  account_avatar_url: string | null;
+  scopes: string[];
+  token_expires_at: string | null;
+  last_sync_at: string | null;
+  status: string;
+  last_error: string | null;
+  connected_by: string;
+  connected_at: string;
+  updated_at: string;
+};
+
+export type SocialPostRow = {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  target_platforms: string[];
+  content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }>;
+  linked_event_id: string | null;
+  status: string;
+  scheduled_at: string | null;
+  published_at: string | null;
+  ai_generated: boolean;
+  ai_scenariusz: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ---------- Listing kont ----------
+
+export const listSocialAccounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ items: SocialAccountRow[] }> => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("social_accounts")
+      .select(
+        "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("connected_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { items: (rows ?? []) as SocialAccountRow[] };
+  });
+
+export const disconnectSocialAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        accountId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("social_accounts")
+      .delete()
+      .eq("id", data.accountId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Wizard: sprawdzenie gotowości platformy (czy mamy client_id) ----------
+
+export const checkPlatformReadiness = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ platform: platformSchema }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const envMap: Record<string, string> = {
+      facebook: "META_APP_ID",
+      instagram: "META_APP_ID",
+      youtube: "GOOGLE_CLIENT_ID",
+      linkedin: "LINKEDIN_CLIENT_ID",
+      twitter: "TWITTER_CLIENT_ID",
+      tiktok: "TIKTOK_CLIENT_KEY",
+      spotify_artists: "SPOTIFY_CLIENT_ID",
+    };
+    const envKey = envMap[data.platform];
+    const hasClientId = !!process.env[envKey];
+    return { platform: data.platform, hasClientId, envKey };
+  });
+
+// ---------- Posty: CRUD ----------
+
+const contentSchema = z.record(
+  z.string().min(1).max(40),
+  z.object({
+    text: z.string().max(64000).optional(),
+    hashtags: z.array(z.string().max(60)).max(50).optional(),
+    media_urls: z.array(z.string().url().max(2000)).max(20).optional(),
+  }),
+);
+
+const createPostInput = z.object({
+  organizationId: z.string().uuid(),
+  targetPlatforms: z.array(platformSchema).min(1).max(10),
+  contentPerPlatform: contentSchema,
+  linkedEventId: z.string().uuid().nullable().optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  status: z.enum(["draft", "scheduled"]).default("draft"),
+  aiGenerated: z.boolean().optional(),
+  aiScenariusz: z.string().max(64).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+export const listSocialPosts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        status: z
+          .enum(["draft", "scheduled", "publishing", "published", "failed", "cancelled"])
+          .optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ items: SocialPostRow[] }> => {
+    const { supabase } = context;
+    let q = supabase
+      .from("social_posts")
+      .select(
+        "id, organization_id, created_by, target_platforms, content_per_platform, linked_event_id, status, scheduled_at, published_at, ai_generated, ai_scenariusz, notes, created_at, updated_at",
+      )
+      .eq("organization_id", data.organizationId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (data.status) q = q.eq("status", data.status);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return { items: (rows ?? []) as SocialPostRow[] };
+  });
+
+export const createSocialPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => createPostInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const status =
+      data.status === "scheduled" && data.scheduledAt ? "scheduled" : "draft";
+    const { data: row, error } = await supabase
+      .from("social_posts")
+      .insert({
+        organization_id: data.organizationId,
+        created_by: userId,
+        target_platforms: data.targetPlatforms,
+        content_per_platform: data.contentPerPlatform,
+        linked_event_id: data.linkedEventId ?? null,
+        scheduled_at: data.scheduledAt ?? null,
+        status,
+        ai_generated: data.aiGenerated ?? false,
+        ai_scenariusz: data.aiScenariusz ?? null,
+        notes: data.notes ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const updateSocialPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    createPostInput
+      .extend({ postId: z.string().uuid() })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const status =
+      data.status === "scheduled" && data.scheduledAt ? "scheduled" : "draft";
+    const { error } = await supabase
+      .from("social_posts")
+      .update({
+        target_platforms: data.targetPlatforms,
+        content_per_platform: data.contentPerPlatform,
+        linked_event_id: data.linkedEventId ?? null,
+        scheduled_at: data.scheduledAt ?? null,
+        status,
+        notes: data.notes ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteSocialPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        postId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("social_posts")
+      .delete()
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- AI: generatory postów ----------
+
+const PLATFORM_AI_HINTS: Record<string, string> = {
+  facebook:
+    "Facebook: post 80-300 słów, ciepły konwersacyjny ton, 0-3 hashtagi, emoji ok, opis korzyści i wezwanie do działania na końcu.",
+  instagram:
+    "Instagram: 50-150 słów, dużo emoji, 15-25 trafnych hashtagów na końcu, atrakcyjny pierwszy wiersz, hook.",
+  youtube:
+    "YouTube (opis filmu): 100-300 słów, opis treści, timestampy jeśli pasują, linki do social mediów, 3-8 hashtagów po opisie.",
+  linkedin:
+    "LinkedIn: 100-250 słów, profesjonalny ale ludzki ton, akapity 1-2 zdania, story-format, 3-5 hashtagów profesjonalnych.",
+  twitter: "Twitter/X: MAKSYMALNIE 280 znaków razem z hashtagami. Treściwie, hook, 1-2 hashtagi.",
+  tiktok:
+    "TikTok (opis): 50-150 znaków, hook, 3-5 hashtagów trendowych, mocno emocjonalny i krótki.",
+  spotify_artists: "Spotify Artists nie obsługuje publikacji postów — pomiń.",
+};
+
+function buildEventContext(args: {
+  name: string;
+  date: string;
+  city?: string | null;
+  street?: string | null;
+  notes?: string | null;
+  artists?: string[];
+  eventKind?: string | null;
+}): string {
+  const lines: string[] = [`Nazwa wydarzenia: ${args.name}`, `Data: ${args.date}`];
+  if (args.eventKind) lines.push(`Rodzaj: ${args.eventKind}`);
+  if (args.city) lines.push(`Miasto: ${args.city}`);
+  if (args.street) lines.push(`Adres: ${args.street}`);
+  if (args.artists?.length) lines.push(`Artyści/wykonawcy: ${args.artists.join(", ")}`);
+  if (args.notes) lines.push(`Dodatkowe notatki: ${args.notes}`);
+  return lines.join("\n");
+}
+
+async function callAiInternal(args: {
+  userId: string;
+  userEmail: string | null;
+  scenariusz: string;
+  systemPrompt: string;
+  userPrompt: string;
+  maxTokens?: number;
+}): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Brak OPENAI_API_KEY w konfiguracji serwera.");
+
+  const { data: konf } = await supabaseAdmin
+    .from("ai_konfiguracja")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+  type Cfg = {
+    enabled?: boolean;
+    monthly_limit_usd?: number;
+    scenariusz_model?: Record<string, string>;
+    default_model?: string;
+    system_prompt?: string | null;
+    temperature?: number;
+    max_tokens?: number | null;
+  };
+  const cfg = (konf ?? {}) as Cfg;
+  if (cfg.enabled === false) throw new Error("Integracja AI jest wyłączona przez administratora.");
+
+  const monthlyLimit = Number(cfg.monthly_limit_usd ?? 50);
+  const startMonth = new Date();
+  startMonth.setUTCDate(1);
+  startMonth.setUTCHours(0, 0, 0, 0);
+  const { data: used } = await supabaseAdmin
+    .from("ai_uzycie")
+    .select("cost_usd")
+    .gte("created_at", startMonth.toISOString());
+  const monthlyUsed = (used ?? []).reduce(
+    (s, r) => s + Number((r as { cost_usd: number }).cost_usd || 0),
+    0,
+  );
+  if (monthlyUsed >= monthlyLimit) {
+    throw new Error(
+      `Przekroczono miesięczny limit AI ${monthlyLimit} USD (wykorzystano ${monthlyUsed.toFixed(4)} USD).`,
+    );
+  }
+
+  const scenMap = cfg.scenariusz_model ?? {};
+  const model =
+    scenMap[args.scenariusz] || cfg.default_model || "gpt-4o-mini";
+
+  const messages: Array<{ role: "system" | "user"; content: string }> = [];
+  if (cfg.system_prompt) messages.push({ role: "system", content: cfg.system_prompt });
+  messages.push({ role: "system", content: args.systemPrompt });
+  messages.push({ role: "user", content: args.userPrompt });
+
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature: cfg.temperature ?? 0.7,
+  };
+  const maxTok = args.maxTokens ?? cfg.max_tokens ?? 1500;
+  if (maxTok) body.max_completion_tokens = maxTok;
+
+  const startedAt = Date.now();
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const duration = Date.now() - startedAt;
+  const text = await resp.text();
+  let payload: {
+    error?: { message?: string };
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    choices?: Array<{ message?: { content?: string } }>;
+  } | null = null;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    // ignore
+  }
+
+  if (!resp.ok) {
+    const errMsg = payload?.error?.message || text.slice(0, 300) || `OpenAI ${resp.status}`;
+    await supabaseAdmin.from("ai_uzycie").insert({
+      user_id: args.userId,
+      user_email: args.userEmail,
+      scenariusz: args.scenariusz,
+      model,
+      status: "error",
+      error: errMsg.slice(0, 500),
+      duration_ms: duration,
+    });
+    throw new Error(errMsg);
+  }
+
+  const tIn = Number(payload?.usage?.prompt_tokens ?? 0);
+  const tOut = Number(payload?.usage?.completion_tokens ?? 0);
+  const PRICING: Record<string, { in: number; out: number }> = {
+    "gpt-5": { in: 1.25, out: 10 },
+    "gpt-5-mini": { in: 0.25, out: 2 },
+    "gpt-5-nano": { in: 0.05, out: 0.4 },
+    "gpt-4o": { in: 2.5, out: 10 },
+    "gpt-4o-mini": { in: 0.15, out: 0.6 },
+    "gpt-4.1": { in: 2, out: 8 },
+    "gpt-4.1-mini": { in: 0.4, out: 1.6 },
+    "gpt-4.1-nano": { in: 0.1, out: 0.4 },
+    "o3-mini": { in: 1.1, out: 4.4 },
+  };
+  const p = PRICING[model];
+  const cost = p ? (tIn / 1_000_000) * p.in + (tOut / 1_000_000) * p.out : 0;
+
+  await supabaseAdmin.from("ai_uzycie").insert({
+    user_id: args.userId,
+    user_email: args.userEmail,
+    scenariusz: args.scenariusz,
+    model,
+    tokens_in: tIn,
+    tokens_out: tOut,
+    cost_usd: cost,
+    duration_ms: duration,
+    status: "ok",
+  });
+
+  return payload?.choices?.[0]?.message?.content ?? "";
+}
+
+/**
+ * AI: wygeneruj post(y) dla wybranych platform — z opcjonalnym kontekstem wydarzenia
+ * lub z dowolnego promptu użytkownika.
+ */
+export const aiGenerateSocialPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platforms: z.array(platformSchema).min(1).max(7),
+        eventId: z.string().uuid().nullable().optional(),
+        prompt: z.string().max(4000).optional(),
+        tone: z.enum(["informational", "promotional", "celebratory", "behind_the_scenes"]).optional(),
+        language: z.enum(["pl", "en"]).default("pl"),
+      })
+      .parse(input),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      perPlatform: Record<string, { text: string; hashtags: string[] }>;
+      bestTimeHint: string | null;
+    }> => {
+      const { supabase, userId, userEmail } = context;
+
+      // Kontekst wydarzenia jeśli przekazany
+      let eventCtx: string | null = null;
+      if (data.eventId) {
+        const { data: perf, error: pErr } = await supabase
+          .from("performances")
+          .select(
+            "id, name, performance_date, event_kind, city, street, street_number, notes",
+          )
+          .eq("id", data.eventId)
+          .maybeSingle();
+        if (pErr) throw new Error(pErr.message);
+        if (perf) {
+          const { data: ass } = await supabase
+            .from("performance_assignments")
+            .select("contact_id, counterparty_id")
+            .eq("performance_id", data.eventId);
+          const contactIds = (ass ?? [])
+            .map((a) => (a as { contact_id: string | null }).contact_id)
+            .filter(Boolean) as string[];
+          const cpIds = (ass ?? [])
+            .map((a) => (a as { counterparty_id: string | null }).counterparty_id)
+            .filter(Boolean) as string[];
+          const [cRes, oRes] = await Promise.all([
+            contactIds.length
+              ? supabase.from("contacts").select("id, display_name").in("id", contactIds)
+              : Promise.resolve({ data: [] }),
+            cpIds.length
+              ? supabaseAdmin.from("organizations").select("id, name").in("id", cpIds)
+              : Promise.resolve({ data: [] }),
+          ]);
+          const artists = [
+            ...((cRes.data ?? []) as Array<{ display_name: string }>).map((c) => c.display_name),
+            ...((oRes.data ?? []) as Array<{ name: string }>).map((o) => o.name),
+          ];
+          const p = perf as {
+            name: string;
+            performance_date: string;
+            event_kind: string | null;
+            city: string | null;
+            street: string | null;
+            street_number: string | null;
+            notes: string | null;
+          };
+          eventCtx = buildEventContext({
+            name: p.name,
+            date: p.performance_date,
+            city: p.city,
+            street: [p.street, p.street_number].filter(Boolean).join(" ") || null,
+            notes: p.notes,
+            artists,
+            eventKind: p.event_kind,
+          });
+        }
+      }
+
+      const platformHints = data.platforms
+        .map((id) => `- ${id.toUpperCase()}: ${PLATFORM_AI_HINTS[id] ?? ""}`)
+        .join("\n");
+
+      const langName = data.language === "pl" ? "polski" : "angielski";
+      const toneText =
+        {
+          informational: "informacyjny, neutralny",
+          promotional: "promocyjny, zachęcający do zakupu biletów",
+          celebratory: "świąteczny, świętujący osiągnięcie",
+          behind_the_scenes: "kulisowy, pokazujący proces przygotowań",
+        }[data.tone ?? "promotional"];
+
+      const userPrompt = [
+        eventCtx ? `Kontekst wydarzenia:\n${eventCtx}\n` : null,
+        data.prompt ? `Dodatkowe wytyczne od użytkownika:\n${data.prompt}` : null,
+        `Wygeneruj posty w języku: ${langName}.`,
+        `Ton: ${toneText}.`,
+        `Wymagane platformy i ich zasady:`,
+        platformHints,
+        `\nZwróć WYŁĄCZNIE poprawny JSON w formacie:`,
+        `{ "platforms": { "<platform_id>": { "text": "...", "hashtags": ["...","..."] } }, "best_time_hint": "..." }`,
+        `Nie dodawaj żadnego tekstu poza JSON. "best_time_hint" to krótka sugestia kiedy publikować (np. "wtorek 18:00").`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      const systemPrompt =
+        "Jesteś doświadczonym specjalistą social media menadżerem dla branży eventowej/koncertowej. Tworzysz angażujące, autentyczne posty dostosowane do specyfiki każdej platformy. Zwracasz dane WYŁĄCZNIE jako poprawny JSON.";
+
+      const raw = await callAiInternal({
+        userId,
+        userEmail,
+        scenariusz: data.eventId
+          ? "social_post_from_event"
+          : data.platforms.length > 1
+            ? "social_post_adapt_platforms"
+            : "social_post_from_prompt",
+        systemPrompt,
+        userPrompt,
+        maxTokens: 2000,
+      });
+
+      // Parsuj JSON (z tolerancją na ```json bloki)
+      let cleaned = raw.trim();
+      const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fence) cleaned = fence[1].trim();
+      let parsed: {
+        platforms?: Record<string, { text?: string; hashtags?: string[] }>;
+        best_time_hint?: string;
+      };
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        throw new Error(
+          "AI zwróciła odpowiedź w nieprawidłowym formacie. Spróbuj ponownie lub zmień prompt.",
+        );
+      }
+
+      const perPlatform: Record<string, { text: string; hashtags: string[] }> = {};
+      for (const pid of data.platforms) {
+        const p = parsed.platforms?.[pid];
+        if (p && typeof p.text === "string") {
+          perPlatform[pid] = {
+            text: p.text,
+            hashtags: Array.isArray(p.hashtags) ? p.hashtags.slice(0, 50) : [],
+          };
+        }
+      }
+      return {
+        perPlatform,
+        bestTimeHint: parsed.best_time_hint ?? null,
+      };
+    },
+  );
+
+/**
+ * AI: analiza engagement na podstawie zebranych statystyk postów.
+ */
+export const aiAnalyzeEngagement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ summary: string }> => {
+    const { supabase, userId, userEmail } = context;
+
+    const { data: posts } = await supabase
+      .from("social_posts")
+      .select("id, target_platforms, status, published_at")
+      .eq("organization_id", data.organizationId)
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(50);
+    const postIds = (posts ?? []).map((p) => (p as { id: string }).id);
+
+    let metricsRows: Array<{
+      post_id: string;
+      platform: string;
+      likes: number;
+      comments: number;
+      shares: number;
+      views: number;
+    }> = [];
+    if (postIds.length) {
+      const { data: m } = await supabase
+        .from("social_post_metrics")
+        .select("post_id, platform, likes, comments, shares, views")
+        .in("post_id", postIds);
+      metricsRows = (m ?? []) as typeof metricsRows;
+    }
+
+    if (metricsRows.length === 0) {
+      return {
+        summary:
+          "Brak danych statystycznych do analizy. Statystyki pojawią się po podłączeniu kont SM i opublikowaniu pierwszych postów.",
+      };
+    }
+
+    const aggByPlatform: Record<
+      string,
+      { likes: number; comments: number; shares: number; views: number; count: number }
+    > = {};
+    for (const r of metricsRows) {
+      const agg = aggByPlatform[r.platform] ?? {
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        views: 0,
+        count: 0,
+      };
+      agg.likes += r.likes;
+      agg.comments += r.comments;
+      agg.shares += r.shares;
+      agg.views += r.views;
+      agg.count += 1;
+      aggByPlatform[r.platform] = agg;
+    }
+
+    const userPrompt = `Statystyki postów organizacji (zsumowane per platforma):\n${JSON.stringify(
+      aggByPlatform,
+      null,
+      2,
+    )}\n\nWykonaj krótką analizę (max 250 słów): co działa lepiej, co warto zmienić, kiedy publikować, jakie formaty rozwijać.`;
+
+    const summary = await callAiInternal({
+      userId,
+      userEmail,
+      scenariusz: "social_engagement_analysis",
+      systemPrompt:
+        "Jesteś analitykiem mediów społecznościowych. Tworzysz zwięzłe, praktyczne raporty z konkretnych liczb.",
+      userPrompt,
+      maxTokens: 800,
+    });
+
+    return { summary };
+  });
