@@ -87,6 +87,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   initial?: PerformanceInitial | null;
+  /** Optional ISO date (yyyy-MM-dd) to prefill when creating a new event. */
+  initialDate?: string | null;
 }
 
 type ContactRef = { id: string; name: string };
@@ -94,7 +96,7 @@ type CounterpartyRef = { id: string; name: string };
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
 
-export function PerformanceDialog({ open, onOpenChange, organizationId, initial }: Props) {
+export function PerformanceDialog({ open, onOpenChange, organizationId, initial, initialDate }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
@@ -199,6 +201,13 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial 
     setSuggestedContacts([]);
     setSuggestedCounterparties([]);
   }, [open, initial]);
+
+  // Prefill date only when creating from calendar click
+  useEffect(() => {
+    if (!open || initial || !initialDate) return;
+    const [y, m, d] = initialDate.split("-").map(Number);
+    setDate(new Date(y, m - 1, d));
+  }, [open, initial, initialDate]);
 
   const openCounterpartyDetails = async (cpOrgId: string) => {
     try {
