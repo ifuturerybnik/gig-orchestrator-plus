@@ -1340,16 +1340,16 @@ export default
         "tip_label": "Wskazówka",
         "tip_body": "Client Secret X pokazywany jest TYLKO RAZ podczas tworzenia. Jeśli go zgubisz, musisz wygenerować nowy (Regenerate) w ustawieniach aplikacji.",
         "steps": [
-          "Zaloguj się na <strong>developer.x.com</strong> swoim kontem X. Jeśli nie masz konta developerskiego, kliknij „Sign up" i wypełnij formularz (poziom <strong>Free</strong> wystarczy do startu — testowanie i podstawowe funkcje).",
-          "W panelu kliknij <strong>+ Create Project</strong>. Nazwa: np. „Concertivo — [nazwa Twojej organizacji]". Use case: wybierz <em>Making a bot</em> lub <em>Publishing tools</em>. Opis: „Publikacja postów i odczyt komentarzy dla organizacji muzycznej".",
-          "Wewnątrz projektu utwórz <strong>App</strong> (np. „concertivo-prod"). Po utworzeniu zobaczysz <em>API Key</em>, <em>API Secret</em>, <em>Bearer Token</em> — <strong>ZIGNORUJ je</strong> (to OAuth 1.0a). Potrzebujemy OAuth 2.0.",
+          "Zaloguj się na <strong>developer.x.com</strong> swoim kontem X. Jeśli nie masz konta developerskiego, kliknij „Sign up\" i wypełnij formularz (poziom <strong>Free</strong> wystarczy do startu — testowanie i podstawowe funkcje).",
+          "W panelu kliknij <strong>+ Create Project</strong>. Nazwa: np. „Concertivo — [nazwa Twojej organizacji]\". Use case: wybierz <em>Making a bot</em> lub <em>Publishing tools</em>. Opis: „Publikacja postów i odczyt komentarzy dla organizacji muzycznej\".",
+          "Wewnątrz projektu utwórz <strong>App</strong> (np. „concertivo-prod\"). Po utworzeniu zobaczysz <em>API Key</em>, <em>API Secret</em>, <em>Bearer Token</em> — <strong>ZIGNORUJ je</strong> (to OAuth 1.0a). Potrzebujemy OAuth 2.0.",
           "Wejdź w zakładkę <strong>Settings</strong> aplikacji → sekcja <strong>User authentication settings</strong> → kliknij <strong>Set up</strong> (lub Edit).",
           "<strong>App permissions</strong>: zaznacz <strong>Read and write and Direct message</strong>.<br/><strong>Type of App</strong>: wybierz <strong>Web App, Automated App or Bot</strong> (Confidential client).",
           "<strong>Callback URI / Redirect URL</strong>: wklej dokładnie ten adres: {CALLBACK_URL}<br/>Możesz dodać wiele callbacków (np. dev + prod) — każdy w osobnej linii.",
           "<strong>Website URL</strong>: wpisz adres strony Twojej organizacji (np. https://twoja-domena.pl). To wymagane pole.",
           "Kliknij <strong>Save</strong>. Pojawi się ekran z <strong>OAuth 2.0 Client ID</strong> i <strong>Client Secret</strong>. <strong>Skopiuj OBA</strong> — Client Secret pokazywany jest tylko raz!",
           "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
-          "Po zapisaniu przejdź do ostatniego kroku „Połączenie" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta."
+          "Po zapisaniu przejdź do ostatniego kroku „Połączenie\" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta."
         ]
       }
     },
