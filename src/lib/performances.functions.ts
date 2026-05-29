@@ -97,14 +97,14 @@ export const createPerformance = createServerFn({ method: "POST" })
     const kind = data.eventKind.trim();
     const isPreset = (PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind);
     if (!isPreset) {
-      // Upsert-by-unique; ignore conflict (already present).
-      await supabase
-        .from("performance_event_kinds")
-        .insert({ organization_id: data.organizationId, label: kind, created_by: userId })
-        .select("id")
-        .maybeSingle()
-        .then(() => undefined)
-        .catch(() => undefined);
+      // Best-effort insert; ignore duplicate-key conflict (already present).
+      try {
+        await supabase
+          .from("performance_event_kinds")
+          .insert({ organization_id: data.organizationId, label: kind, created_by: userId });
+      } catch {
+        /* ignore */
+      }
     }
 
     const { data: perf, error } = await supabase
