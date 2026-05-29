@@ -35,6 +35,7 @@ import { XSetupInstructions } from "./XSetupInstructions";
 import { LinkedInSetupInstructions } from "./LinkedInSetupInstructions";
 import { MetaSetupInstructions } from "./MetaSetupInstructions";
 import { YouTubeSetupInstructions } from "./YouTubeSetupInstructions";
+import { TikTokSetupInstructions } from "./TikTokSetupInstructions";
 
 
 /**
@@ -184,6 +185,8 @@ export function AppCredentialsForm({
               <MetaSetupInstructions callbackUrl={callbackUrl} />
             ) : platform === "youtube" ? (
               <YouTubeSetupInstructions callbackUrl={callbackUrl} />
+            ) : platform === "tiktok" ? (
+              <TikTokSetupInstructions callbackUrl={callbackUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t("social.setup.instructions_coming_soon")}
