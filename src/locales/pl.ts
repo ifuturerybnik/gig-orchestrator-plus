@@ -1201,6 +1201,59 @@ export default
         "yes": "Tak",
         "partial": "Częściowo",
         "no": "Brak"
+      },
+      "tura2_badge": "Tryb lokalny — OAuth od Tury 3",
+      "seed_demo": "Wczytaj dane demo",
+      "unknown_author": "Anonim",
+      "select_hint": "Wybierz komentarz z listy po lewej, aby zobaczyć szczegóły i odpowiedzieć.",
+      "open_original": "Otwórz oryginał",
+      "status": {
+        "new": "Nowe",
+        "replied": "Odpowiedziane",
+        "hidden": "Ukryte",
+        "deleted": "Usunięte",
+        "spam": "Spam",
+        "archived": "Zarchiwizowane",
+        "all": "Wszystkie"
+      },
+      "sentiment": {
+        "positive": "Pozytywny",
+        "neutral": "Neutralny",
+        "negative": "Negatywny"
+      },
+      "actions": {
+        "ai_moderate": "AI: oceń",
+        "hide": "Ukryj",
+        "spam": "Spam",
+        "archive": "Archiwizuj",
+        "delete": "Usuń"
+      },
+      "ai_panel": {
+        "sentiment": "Sentyment",
+        "flags": "Flagi"
+      },
+      "reply": {
+        "title": "Odpowiedz",
+        "ai_tone": "AI ton",
+        "suggest": "Zaproponuj",
+        "ai_variants": "Warianty AI — kliknij aby wstawić",
+        "placeholder": "Napisz odpowiedź…",
+        "pending_oauth_note": "Wysyłka do platformy aktywuje się po podłączeniu OAuth.",
+        "send": "Wyślij"
+      },
+      "tones": {
+        "warm": "Ciepły",
+        "formal": "Formalny",
+        "short": "Krótki"
+      },
+      "toast": {
+        "seeded": "Wczytano {{count}} komentarzy demo.",
+        "hide": "Komentarz ukryty.",
+        "delete": "Komentarz usunięty.",
+        "mark_spam": "Oznaczono jako spam.",
+        "archive": "Zarchiwizowano.",
+        "replied": "Odpowiedź zapisana.",
+        "ai_moderated": "AI: sentyment {{sentiment}}."
       }
     },
     "intro": {
@@ -1334,7 +1387,10 @@ export default
       "calendar_title": "Kalendarz publikacji",
       "list_title": "Zaplanowane wpisy",
       "list_subtitle": "Lista postów oczekujących na publikację oraz historia.",
-      "empty": "Brak zaplanowanych wpisów."
+      "empty": "Brak zaplanowanych wpisów.",
+      "cron_info": "Cron uruchamia publikację co minutę. Realne wysłanie do platformy aktywuje się po OAuth.",
+      "publish_now": "Publikuj teraz",
+      "publish_now_result": "Próba publikacji: {{summary}}"
     },
     "stats": {
       "title": "Statystyki",

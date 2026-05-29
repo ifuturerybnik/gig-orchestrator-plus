@@ -1181,6 +1181,59 @@ export default
         "yes": "Yes",
         "partial": "Partial",
         "no": "None"
+      },
+      "tura2_badge": "Local mode — OAuth from Round 3",
+      "seed_demo": "Load demo data",
+      "unknown_author": "Anonymous",
+      "select_hint": "Select a comment from the list on the left to see details and reply.",
+      "open_original": "Open original",
+      "status": {
+        "new": "New",
+        "replied": "Replied",
+        "hidden": "Hidden",
+        "deleted": "Deleted",
+        "spam": "Spam",
+        "archived": "Archived",
+        "all": "All"
+      },
+      "sentiment": {
+        "positive": "Positive",
+        "neutral": "Neutral",
+        "negative": "Negative"
+      },
+      "actions": {
+        "ai_moderate": "AI: rate",
+        "hide": "Hide",
+        "spam": "Spam",
+        "archive": "Archive",
+        "delete": "Delete"
+      },
+      "ai_panel": {
+        "sentiment": "Sentiment",
+        "flags": "Flags"
+      },
+      "reply": {
+        "title": "Reply",
+        "ai_tone": "AI tone",
+        "suggest": "Suggest",
+        "ai_variants": "AI variants — click to insert",
+        "placeholder": "Write a reply…",
+        "pending_oauth_note": "Sending to the platform activates after OAuth is connected.",
+        "send": "Send"
+      },
+      "tones": {
+        "warm": "Warm",
+        "formal": "Formal",
+        "short": "Short"
+      },
+      "toast": {
+        "seeded": "Loaded {{count}} demo comments.",
+        "hide": "Comment hidden.",
+        "delete": "Comment deleted.",
+        "mark_spam": "Marked as spam.",
+        "archive": "Archived.",
+        "replied": "Reply saved.",
+        "ai_moderated": "AI: sentiment {{sentiment}}."
       }
     },
     "intro": {
@@ -1314,7 +1367,10 @@ export default
       "calendar_title": "Publishing calendar",
       "list_title": "Scheduled posts",
       "list_subtitle": "Posts waiting to be published and history.",
-      "empty": "No scheduled posts."
+      "empty": "No scheduled posts.",
+      "cron_info": "Cron runs publishing every minute. Real send to the platform activates after OAuth.",
+      "publish_now": "Publish now",
+      "publish_now_result": "Publish attempt: {{summary}}"
     },
     "stats": {
       "title": "Stats",
