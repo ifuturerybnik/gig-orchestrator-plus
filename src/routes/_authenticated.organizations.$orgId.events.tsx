@@ -130,8 +130,31 @@ function OrganizationPerformancesPage() {
 
   const items = data?.items ?? [];
 
-  const openCreate = () => {
+  // Build a map: yyyy-MM-dd -> events for that day
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, typeof items>();
+    for (const p of items) {
+      const arr = map.get(p.performance_date) ?? [];
+      arr.push(p);
+      map.set(p.performance_date, arr);
+    }
+    return map;
+  }, [items]);
+
+  const eventDates = useMemo(
+    () =>
+      Array.from(eventsByDate.keys()).map((iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }),
+    [eventsByDate],
+  );
+
+  const popoverItems = popoverDate ? eventsByDate.get(popoverDate) ?? [] : [];
+
+  const openCreate = (iso?: string) => {
     setEditing(null);
+    setCreateDate(iso ?? null);
     setOpen(true);
   };
 
@@ -151,7 +174,19 @@ function OrganizationPerformancesPage() {
       notes: p.notes,
       assignments: p.assignments,
     });
+    setCreateDate(null);
     setOpen(true);
+  };
+
+  const handleDayClick = (day: Date, _mods: unknown, e: React.MouseEvent) => {
+    const iso = format(day, "yyyy-MM-dd");
+    const dayEvents = eventsByDate.get(iso) ?? [];
+    if (dayEvents.length === 0) {
+      openCreate(iso);
+      return;
+    }
+    setPopoverDate(iso);
+    setPopoverAnchor({ x: e.clientX, y: e.clientY });
   };
 
   const openCpDetails = async (cpOrgId: string) => {
