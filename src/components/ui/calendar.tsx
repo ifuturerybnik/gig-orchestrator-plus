@@ -3,10 +3,19 @@
 import * as React from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
+import { pl, enUS } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 
+/**
+ * Global calendar conventions (see mem://design/calendar-conventions):
+ * - Week starts on Monday (Sunday displayed at the right edge, next to Saturday).
+ * - Saturdays and Sundays rendered in red.
+ * - Month/day names localized to the active i18n language (pl/en).
+ * Apply these defaults to every calendar in the system — do not roll your own.
+ */
 function Calendar({
   className,
   classNames,
@@ -15,15 +24,36 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  locale,
+  weekStartsOn,
+  modifiers,
+  modifiersClassNames,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
 }) {
   const defaultClassNames = getDefaultClassNames();
+  const { i18n } = useTranslation();
+  const resolvedLocale =
+    locale ?? (i18n.language?.toLowerCase().startsWith("pl") ? pl : enUS);
+  const resolvedWeekStartsOn = weekStartsOn ?? 1;
+
+  const mergedModifiers = {
+    weekend: { dayOfWeek: [0, 6] },
+    ...(modifiers ?? {}),
+  } as typeof modifiers;
+  const mergedModifiersClassNames = {
+    weekend: "text-red-600 dark:text-red-400",
+    ...(modifiersClassNames ?? {}),
+  } as typeof modifiersClassNames;
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      locale={resolvedLocale}
+      weekStartsOn={resolvedWeekStartsOn}
+      modifiers={mergedModifiers}
+      modifiersClassNames={mergedModifiersClassNames}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -32,11 +62,20 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
+        formatMonthDropdown: (date) =>
+          date.toLocaleString(resolvedLocale.code ?? "default", { month: "short" }),
+        formatWeekdayName: (date) => {
+          const name = date.toLocaleString(resolvedLocale.code ?? "default", {
+            weekday: "short",
+          });
+          // Capitalize and strip trailing dot for cleaner display (e.g. "pon." -> "Pon")
+          const trimmed = name.replace(/\.$/, "");
+          return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        },
         ...formatters,
       }}
       classNames={{
-        root: cn("w-fit", defaultClassNames.root),
+        root: cn(defaultClassNames.root),
         months: cn("relative flex flex-col gap-4 md:flex-row", defaultClassNames.months),
         month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
         nav: cn(
