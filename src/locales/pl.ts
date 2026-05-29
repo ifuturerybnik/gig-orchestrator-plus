@@ -151,6 +151,12 @@ export default
     "pl": "Polski",
     "en": "English"
   },
+  "theme": {
+    "label": "Motyw",
+    "light": "Dzień",
+    "dark": "Noc",
+    "auto": "Auto"
+  },
   "footer": {
     "operator": "Operator: i-Future",
     "privacy": "Polityka prywatności",
