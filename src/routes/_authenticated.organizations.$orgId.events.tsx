@@ -73,13 +73,39 @@ function OrganizationPerformancesPage() {
   const [editing, setEditing] = useState<PerformanceInitial | null>(null);
   const [detailsContactId, setDetailsContactId] = useState<string | null>(null);
   const [detailsCpLinkId, setDetailsCpLinkId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
+  const qc = useQueryClient();
   const fetchList = useServerFn(listPerformances);
   const findCpLink = useServerFn(findCounterpartyLinkForOrg);
+  const removePerformance = useServerFn(deletePerformance);
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
   });
+
+  const renderEventKind = (kind: string) => {
+    if ((PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind)) {
+      return t(`organizations.performances.event_kind.${kind}`);
+    }
+    return kind;
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await removePerformance({ data: { organizationId: orgId, performanceId: deleteId } });
+      toast.success(t("organizations.performances.toasts.deleted"));
+      setDeleteId(null);
+      await qc.invalidateQueries({ queryKey: ["performances", orgId] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const items = data?.items ?? [];
 
