@@ -71,9 +71,8 @@ log "Sprawdzam czy aplikacja odpowiada..."
 sleep 2
 for i in 1 2 3 4 5; do
   CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/" || echo "000")
-  # Każda odpowiedź HTTP (1xx-5xx) oznacza, że serwer żyje.
-  # 401/403 = działa, tylko route wymaga auth — to OK dla healthchecku.
-  if [ "$CODE" != "000" ] && [ "$CODE" -ge 100 ] && [ "$CODE" -lt 600 ]; then
+  # 2xx/3xx/401/403 = serwer działa. 5xx oznacza błąd aplikacji i NIE jest OK.
+  if [ "$CODE" != "000" ] && { [ "$CODE" -lt 400 ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; }; then
     ok "Aplikacja odpowiada (HTTP $CODE, próba $i)"
     pm2 status "$PM2_NAME"
     echo
