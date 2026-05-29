@@ -1140,5 +1140,156 @@ export default
       "odbicia": "Bounces",
       "empty": "No entries."
     }
+  },
+  "social": {
+    "title": "Social Hub",
+    "subtitle": "Connect your social media accounts to this organization and manage publishing in one place.",
+    "tabs": {
+      "accounts": "Connected accounts",
+      "ai_studio": "AI Studio",
+      "schedule": "Schedule",
+      "stats": "Stats"
+    },
+    "intro": {
+      "title": "How it works",
+      "body": "Connect your organization's accounts (Facebook, Instagram, LinkedIn, etc.), generate post copy with AI using event context, schedule at best times and review results."
+    },
+    "status": {
+      "connected": "Connected",
+      "coming_soon": "Coming soon",
+      "planned": "Planned"
+    },
+    "caps": {
+      "text": "Text posts",
+      "images": "Images",
+      "video": "Video",
+      "metrics": "Analytics",
+      "paid_api": "Requires paid API"
+    },
+    "actions": {
+      "connect": "Connect",
+      "learn_more": "Learn more"
+    },
+    "connected_at": "Connected",
+    "post_status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "failed": "Failed"
+    },
+    "wizard": {
+      "title": "Connect {{platform}}",
+      "step_indicator": "Step {{current}} of {{total}}",
+      "what_you_get": "What you get",
+      "limits": "Limits",
+      "requires_app_review": "Requires provider review",
+      "requires_paid_api": "Paid API",
+      "max_chars": "Max {{count}} chars",
+      "checklist_intro": "Before clicking \"Connect\", make sure you have everything ready:",
+      "permissions_intro": "Concertivo will request the following permissions:",
+      "scopes_requested": "Required scopes",
+      "permissions_explanation": "Permissions are used only to publish and read analytics of your own content. We do not read private messages or other users' data.",
+      "ready_to_connect": "Everything is ready — click below to open the provider's login window.",
+      "continue_to_provider": "Continue to {{platform}}",
+      "not_ready_title": "Integration not active yet",
+      "not_ready_body": "OAuth for this platform will be enabled after the app credentials ({{envKey}}) are configured in environment secrets.",
+      "for_admin": "For admins",
+      "for_admin_body": "Create a {{platform}} developer app, get the Client ID and Secret, then add them in Lovable as the {{envKey}} secrets.",
+      "not_ready_toast": "Integration is not ready yet.",
+      "oauth_redirect_coming_soon": "OAuth redirect will be enabled in the next iteration."
+    },
+    "platforms": {
+      "facebook": {
+        "name": "Facebook",
+        "tagline": "Company Pages",
+        "benefits": ["Publish posts to your organization's Page", "Schedule posts ahead of time", "Reach and reaction analytics", "AI tunes length and tone for FB"],
+        "checklist": ["I'm an admin of the Page", "The Page is published (not draft)", "I have a personal FB profile linked to the role"]
+      },
+      "instagram": {
+        "name": "Instagram",
+        "tagline": "Business / Creator account",
+        "benefits": ["Publish photos and carousels", "Reach and saves analytics", "AI generates hashtags and CTA"],
+        "checklist": ["IG account is Business/Creator", "IG account is linked to a FB Page", "I have admin access to that FB Page"]
+      },
+      "youtube": {
+        "name": "YouTube",
+        "tagline": "Channel + videos",
+        "benefits": ["Manage video descriptions and tags", "Views and subscriber analytics", "AI suggests SEO titles and descriptions"],
+        "checklist": ["I have channel owner access", "Channel is verified", "Google account has the API enabled"]
+      },
+      "linkedin": {
+        "name": "LinkedIn",
+        "tagline": "Company Page",
+        "benefits": ["Publish posts to your Company Page", "Impression and click analytics", "AI tunes tone for professional B2B"],
+        "checklist": ["I'm a Super Admin of the Company Page", "Page has completed profile (logo, description)", "Personal account is active and linked"]
+      },
+      "twitter": {
+        "name": "X (Twitter)",
+        "tagline": "Company account",
+        "benefits": ["Publish short posts (up to 280 chars)", "Impression and engagement analytics", "AI trims content to X limit"],
+        "checklist": ["I have an X developer account", "I have an active Basic or Pro plan (API is paid)", "App has Read+Write permissions"]
+      },
+      "tiktok": {
+        "name": "TikTok",
+        "tagline": "Business account",
+        "benefits": ["Schedule video publishing", "View analytics", "AI suggests captions and hashtags"],
+        "checklist": ["I have a TikTok Business account", "I have an approved app in TikTok Developers", "I have access to the Content Posting API"]
+      },
+      "spotify_artists": {
+        "name": "Spotify for Artists",
+        "tagline": "Analytics only",
+        "benefits": ["Stream analytics", "Listener demographics", "AI analyzes popularity trends"],
+        "checklist": ["I have a verified Spotify for Artists profile", "I'm signed in as a Team admin", "API is only available to selected partners"]
+      }
+    },
+    "ai": {
+      "form": {
+        "title": "AI content generator",
+        "subtitle": "Pick an event or describe a topic, and AI will prepare versions of the post for every platform.",
+        "event": "Event (optional)",
+        "no_event": "None — I'll enter a topic manually",
+        "prompt": "Topic or extra instructions",
+        "prompt_placeholder": "E.g. \"Announcement of the autumn tour\"",
+        "tone": "Tone of voice",
+        "platforms": "Target platforms"
+      },
+      "tones": {
+        "informational": "Informational",
+        "promotional": "Promotional",
+        "celebratory": "Celebratory",
+        "behind_the_scenes": "Behind the scenes"
+      },
+      "actions": {
+        "generate": "Generate content",
+        "edit": "Edit",
+        "save_draft": "Save as draft"
+      },
+      "empty": "Generated content will appear here. Pick platforms and click \"Generate content\".",
+      "best_time": "Suggested best time to publish",
+      "edit_title": "Edit version for: {{platform}}",
+      "edit_subtitle": "You can fine-tune the content and hashtags before saving.",
+      "hashtags": "Hashtags",
+      "errors": {
+        "no_platforms": "Pick at least one platform."
+      },
+      "toast": {
+        "generated": "Content generated.",
+        "saved_draft": "Saved as draft."
+      }
+    },
+    "schedule": {
+      "calendar_title": "Publishing calendar",
+      "list_title": "Scheduled posts",
+      "list_subtitle": "Posts waiting to be published and history.",
+      "empty": "No scheduled posts."
+    },
+    "stats": {
+      "title": "Stats",
+      "subtitle": "Reach, reactions and click-through of published content.",
+      "empty_state": "Stats will appear after your first posts go live.",
+      "ai_analysis_title": "AI analysis",
+      "ai_analysis_subtitle": "AI will analyze results and suggest optimization directions.",
+      "run_analysis": "Run analysis"
+    }
   }
 } as const;
