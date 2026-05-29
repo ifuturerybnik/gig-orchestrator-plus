@@ -6,6 +6,7 @@ import { PlatformsTab } from "@/components/social/PlatformsTab";
 import { AiStudioTab } from "@/components/social/AiStudioTab";
 import { ScheduleTab } from "@/components/social/ScheduleTab";
 import { StatsTab } from "@/components/social/StatsTab";
+import { InboxTab } from "@/components/social/InboxTab";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/social",
