@@ -8,6 +8,7 @@ set -Eeuo pipefail
 APP_DIR="/var/www/concertivo"
 PM2_NAME="concertivo"
 BRANCH="${BRANCH:-main}"
+PORT="${PORT:-3001}"
 
 log()  { printf "\033[1;34m[update]\033[0m %s\n" "$*"; }
 ok()   { printf "\033[1;32m[ ok ]\033[0m %s\n" "$*"; }
@@ -59,8 +60,8 @@ if pm2 describe "$PM2_NAME" > /dev/null 2>&1; then
   pm2 reload "$PM2_NAME" --update-env
   ok "PM2 reload OK"
 else
-  warn "Proces PM2 '$PM2_NAME' nie istnieje — startuję od zera"
-  pm2 start vps/server.mjs --name "$PM2_NAME" --update-env
+  warn "Proces PM2 '$PM2_NAME' nie istnieje — startuję od zera na porcie $PORT"
+  PORT="$PORT" pm2 start vps/server.mjs --name "$PM2_NAME" --update-env
   pm2 save
   ok "PM2 start OK"
 fi
@@ -69,7 +70,7 @@ fi
 log "Sprawdzam czy aplikacja odpowiada..."
 sleep 2
 for i in 1 2 3 4 5; do
-  CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || echo "000")
+  CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/" || echo "000")
   # Każda odpowiedź HTTP (1xx-5xx) oznacza, że serwer żyje.
   # 401/403 = działa, tylko route wymaga auth — to OK dla healthchecku.
   if [ "$CODE" != "000" ] && [ "$CODE" -ge 100 ] && [ "$CODE" -lt 600 ]; then
@@ -83,6 +84,6 @@ for i in 1 2 3 4 5; do
   sleep 2
 done
 
-err "Aplikacja NIE odpowiada na http://127.0.0.1:3000 po 5 próbach"
+err "Aplikacja NIE odpowiada na http://127.0.0.1:${PORT} po 5 próbach"
 err "Sprawdź logi:  pm2 logs $PM2_NAME --lines 50"
 exit 1
