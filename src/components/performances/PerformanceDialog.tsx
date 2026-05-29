@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { CalendarIcon, X, UserPlus, Building2 } from "lucide-react";
@@ -39,6 +39,7 @@ import { ContactForm } from "@/components/contacts/ContactForm";
 
 import {
   createPerformance,
+  listPerformances,
   PERFORMANCE_STATUSES,
   PERFORMANCE_VISIBILITIES,
   type PerformanceStatus,
@@ -64,8 +65,43 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   const { t } = useTranslation();
   const qc = useQueryClient();
   const create = useServerFn(createPerformance);
+  const fetchList = useServerFn(listPerformances);
   const fetchLinkedCps = useServerFn(listLinkedCounterpartiesForContact);
   const fetchLinkedContacts = useServerFn(listLinkedContactsForCounterparty);
+
+  const { data: existingList } = useQuery({
+    queryKey: ["performances", organizationId],
+    queryFn: () => fetchList({ data: { organizationId } }),
+    enabled: open,
+    staleTime: 30_000,
+  });
+
+  // Map ISO date (yyyy-MM-dd) -> list of event labels for that day
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of existingList?.items ?? []) {
+      const label = p.name?.trim() || t(`organizations.performances.status.${p.status}`);
+      const arr = map.get(p.performance_date) ?? [];
+      arr.push(label);
+      map.set(p.performance_date, arr);
+    }
+    return map;
+  }, [existingList, t]);
+
+  const eventDates = useMemo(
+    () =>
+      Array.from(eventsByDate.keys()).map((iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }),
+    [eventsByDate],
+  );
+
+  const todayMidnight = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<PerformanceStatus | "">("");
@@ -212,7 +248,12 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{t("organizations.performances.dialog.title")}</DialogTitle>
           </DialogHeader>
@@ -243,13 +284,58 @@ export function PerformanceDialog({ open, onOpenChange, organizationId }: Props)
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={(d) => {
+                      setDate(d);
+                      if (d && d < todayMidnight) {
+                        toast.warning(
+                          t("organizations.performances.toasts.past_date_warning", {
+                            date: format(d, "yyyy-MM-dd"),
+                          }),
+                        );
+                      }
+                    }}
                     initialFocus
+                    modifiers={{
+                      past: { before: todayMidnight },
+                      hasEvent: eventDates,
+                    }}
+                    modifiersClassNames={{
+                      past: "text-destructive",
+                      hasEvent:
+                        "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                    }}
+                    components={{
+                      DayButton: ({ day, modifiers, ...props }) => {
+                        const iso = format(day.date, "yyyy-MM-dd");
+                        const events = eventsByDate.get(iso);
+                        const title = events
+                          ? `${t("organizations.performances.calendar.day_events_title", { date: iso })}\n• ${events.join("\n• ")}`
+                          : undefined;
+                        return (
+                          <button
+                            {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+                            title={title}
+                          />
+                        );
+                      },
+                    }}
                     className="p-3 pointer-events-auto"
                   />
+                  <div className="flex items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
+                      {t("organizations.performances.calendar.legend_past")}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+                      {t("organizations.performances.calendar.legend_event")}
+                    </span>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
+
+
 
             {/* Status */}
             <div className="space-y-2">

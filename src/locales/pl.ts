@@ -617,7 +617,13 @@ export default
       "toasts": {
         "created": "Występ został dodany",
         "linked_cp_suggest": "Powiązany kontrahent: {{name}} — przypisać też?",
-        "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?"
+        "linked_contact_suggest": "Powiązany kontakt: {{name}} — przypisać też?",
+        "past_date_warning": "Wybrałeś datę wsteczną ({{date}}) — upewnij się, że to celowe."
+      },
+      "calendar": {
+        "legend_past": "Data przeszła",
+        "legend_event": "Zaplanowany występ",
+        "day_events_title": "Występy w dniu {{date}}:"
       },
       "errors": {
         "date_required": "Data występu jest wymagana",
