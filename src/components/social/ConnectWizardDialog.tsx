@@ -82,7 +82,7 @@ export function ConnectWizardDialog({
   const currentIdx = steps.indexOf(step);
   const allChecked = checklist.every(Boolean);
   const ready = !!readinessQ.data?.hasClientId;
-  const isXPlatform = platform === "twitter";
+  const isLivePlatform = meta.status === "live";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -202,7 +202,7 @@ export function ConnectWizardDialog({
 
         {step === "connect" && (
           <div className="space-y-4">
-            {ready && isXPlatform ? (
+            {ready && isLivePlatform ? (
               <>
                 <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/40">
                   <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-100">
