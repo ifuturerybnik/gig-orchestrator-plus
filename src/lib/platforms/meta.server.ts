@@ -404,36 +404,64 @@ export const facebookAdapter: PlatformAdapter = {
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
     const pageId = account.external_account_id;
     const token = account.access_token;
-    const fields =
+    const safeLimit = Math.min(Math.max(limit, 1), 25);
+
+    // Próbujemy najpierw z pełnymi polami (w tym attachments).
+    // FB Graph zwraca code:1 "Please reduce the amount of data..." gdy posty
+    // mają dużo załączników/komentarzy — wtedy retry z minimalnym zestawem pól.
+    const fullFields =
       "id,message,story,created_time,permalink_url,full_picture,attachments{media,subattachments,type,url}";
-    const params = new URLSearchParams({
-      fields,
-      limit: String(Math.min(Math.max(limit, 1), 100)),
-      access_token: token,
-    });
-    const j = await graphJson<{
-      data: Array<{
-        id: string;
-        message?: string;
-        story?: string;
-        created_time: string;
-        permalink_url?: string;
-        full_picture?: string;
-        attachments?: {
-          data?: Array<{
-            type?: string;
-            url?: string;
-            media?: { image?: { src?: string } };
-            subattachments?: {
-              data?: Array<{ media?: { image?: { src?: string } } }>;
-            };
-          }>;
-        };
-      }>;
-    }>(
-      `${GRAPH}/${encodeURIComponent(pageId)}/posts?${params.toString()}`,
-      { context: "FB /posts (list)" },
-    );
+    const minimalFields = "id,message,story,created_time,permalink_url,full_picture";
+
+    type PostRow = {
+      id: string;
+      message?: string;
+      story?: string;
+      created_time: string;
+      permalink_url?: string;
+      full_picture?: string;
+      attachments?: {
+        data?: Array<{
+          type?: string;
+          url?: string;
+          media?: { image?: { src?: string } };
+          subattachments?: {
+            data?: Array<{ media?: { image?: { src?: string } } }>;
+          };
+        }>;
+      };
+    };
+
+    const fetchWith = async (fields: string, lim: number) => {
+      const params = new URLSearchParams({
+        fields,
+        limit: String(lim),
+        access_token: token,
+      });
+      return graphJson<{ data: PostRow[] }>(
+        `${GRAPH}/${encodeURIComponent(pageId)}/posts?${params.toString()}`,
+        { context: "FB /posts (list)" },
+      );
+    };
+
+    let j: { data: PostRow[] };
+    try {
+      j = await fetchWith(fullFields, safeLimit);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // "reduce the amount of data" / code:1 → retry z minimalnym zestawem i mniejszym limitem
+      if (/reduce the amount of data|"code":1\b/i.test(msg)) {
+        try {
+          j = await fetchWith(minimalFields, Math.min(safeLimit, 10));
+        } catch {
+          // ostatnia próba: tylko ID + timestamp, limit 5
+          j = await fetchWith("id,message,created_time,permalink_url", 5);
+        }
+      } else {
+        throw e;
+      }
+    }
+
     return (j.data ?? []).map((p) => {
       const mediaUrls: string[] = [];
       if (p.full_picture) mediaUrls.push(p.full_picture);
