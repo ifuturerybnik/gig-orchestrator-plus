@@ -202,8 +202,11 @@ export const listSocialPosts = createServerFn({ method: "GET" })
         "id, organization_id, created_by, target_platforms, content_per_platform, linked_event_id, status, scheduled_at, published_at, ai_generated, ai_scenariusz, notes, source, created_at, updated_at",
       )
       .eq("organization_id", data.organizationId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("scheduled_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(500);
+
     if (data.status) q = q.eq("status", data.status);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
