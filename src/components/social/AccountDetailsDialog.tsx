@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ExternalLink, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Trash2, AlertCircle, CheckCircle2, Download, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { disconnectSocialAccount, type SocialAccountRow } from "@/lib/social.functions";
+import {
+  disconnectSocialAccount,
+  importPostsFromAccountFn,
+  type SocialAccountRow,
+} from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
 
 function externalUrlFor(account: SocialAccountRow): string | null {
@@ -61,8 +65,11 @@ export function AccountDetailsDialog({
   const { t } = useTranslation();
   const qc = useQueryClient();
   const disconnectFn = useServerFn(disconnectSocialAccount);
+  const importFn = useServerFn(importPostsFromAccountFn);
   const meta = SOCIAL_PLATFORMS[account.platform as SocialPlatformId];
   const externalUrl = externalUrlFor(account);
+  const supportsImport =
+    account.platform === "facebook" || account.platform === "instagram";
 
   const disconnectM = useMutation({
     mutationFn: () =>
@@ -76,6 +83,28 @@ export function AccountDetailsDialog({
       toast.success(t("social.account_details.disconnect_success"));
       qc.invalidateQueries({ queryKey: ["social-accounts", account.organization_id] });
       onClose();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const importM = useMutation({
+    mutationFn: () =>
+      importFn({
+        data: {
+          organizationId: account.organization_id,
+          platform: account.platform as SocialPlatformId,
+          limit: 25,
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(
+        t("social.account_details.import_success", {
+          inserted: res.inserted,
+          fetched: res.fetched,
+        }),
+      );
+      qc.invalidateQueries({ queryKey: ["social-posts", account.organization_id] });
     },
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : String(e)),
