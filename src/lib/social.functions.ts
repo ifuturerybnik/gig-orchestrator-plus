@@ -131,6 +131,13 @@ function maskClientId(s: string): string {
   return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
 }
 
+// Meta: Instagram dzieli aplikację z Facebookiem — credentials zapisujemy
+// zawsze pod platformą "facebook", niezależnie od karty w UI.
+function credPlatform(p: string): string {
+  return p === "instagram" ? "facebook" : p;
+}
+
+
 // ---------- Posty: CRUD ----------
 
 const contentSchema = z.record(
