@@ -14,10 +14,12 @@ import {
   Clock,
   Sparkles,
   DollarSign,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { listSocialAccounts } from "@/lib/social.functions";
 import {
   SOCIAL_PLATFORM_ORDER,
@@ -25,6 +27,7 @@ import {
   type SocialPlatformId,
 } from "@/lib/social-platforms";
 import { ConnectWizardDialog } from "./ConnectWizardDialog";
+import { PlatformInfoDialog } from "./PlatformInfoDialog";
 
 const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
