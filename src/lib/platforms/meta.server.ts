@@ -24,6 +24,7 @@ import type {
   PlatformMetrics,
   PlatformPostContent,
   PlatformPublishResult,
+  PlatformRecentPost,
   PlatformReplyResult,
 } from "./types";
 
@@ -375,6 +376,62 @@ export const facebookAdapter: PlatformAdapter = {
     );
     return { externalCommentId: j.id };
   },
+
+  async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
+    const pageId = account.external_account_id;
+    const token = account.access_token;
+    const fields =
+      "id,message,story,created_time,permalink_url,full_picture,attachments{media,subattachments,type,url}";
+    const params = new URLSearchParams({
+      fields,
+      limit: String(Math.min(Math.max(limit, 1), 100)),
+      access_token: token,
+    });
+    const j = await graphJson<{
+      data: Array<{
+        id: string;
+        message?: string;
+        story?: string;
+        created_time: string;
+        permalink_url?: string;
+        full_picture?: string;
+        attachments?: {
+          data?: Array<{
+            type?: string;
+            url?: string;
+            media?: { image?: { src?: string } };
+            subattachments?: {
+              data?: Array<{ media?: { image?: { src?: string } } }>;
+            };
+          }>;
+        };
+      }>;
+    }>(
+      `${GRAPH}/${encodeURIComponent(pageId)}/posts?${params.toString()}`,
+      { context: "FB /posts (list)" },
+    );
+    return (j.data ?? []).map((p) => {
+      const mediaUrls: string[] = [];
+      if (p.full_picture) mediaUrls.push(p.full_picture);
+      const atts = p.attachments?.data ?? [];
+      for (const a of atts) {
+        const src = a.media?.image?.src;
+        if (src && !mediaUrls.includes(src)) mediaUrls.push(src);
+        const subs = a.subattachments?.data ?? [];
+        for (const s of subs) {
+          const sub = s.media?.image?.src;
+          if (sub && !mediaUrls.includes(sub)) mediaUrls.push(sub);
+        }
+      }
+      return {
+        externalPostId: p.id,
+        externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
+        text: p.message ?? p.story ?? "",
+        mediaUrls,
+        postedAt: p.created_time,
+      };
+    });
+  },
 };
 
 // =============================================================================
@@ -562,5 +619,57 @@ export const instagramAdapter: PlatformAdapter = {
       { method: "POST", body: params, context: "IG reply" },
     );
     return { externalCommentId: j.id };
+  },
+
+  async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
+    const igId = account.external_account_id;
+    const token = account.access_token;
+    const params = new URLSearchParams({
+      fields:
+        "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{media_url,thumbnail_url,media_type}",
+      limit: String(Math.min(Math.max(limit, 1), 100)),
+      access_token: token,
+    });
+    const j = await graphJson<{
+      data: Array<{
+        id: string;
+        caption?: string;
+        media_type?: string;
+        media_url?: string;
+        thumbnail_url?: string;
+        permalink?: string;
+        timestamp: string;
+        children?: {
+          data?: Array<{
+            media_url?: string;
+            thumbnail_url?: string;
+            media_type?: string;
+          }>;
+        };
+      }>;
+    }>(
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media?${params.toString()}`,
+      { context: "IG /media (list)" },
+    );
+    return (j.data ?? []).map((m) => {
+      const mediaUrls: string[] = [];
+      const children = m.children?.data ?? [];
+      if (children.length > 0) {
+        for (const c of children) {
+          const url = c.media_url ?? c.thumbnail_url;
+          if (url) mediaUrls.push(url);
+        }
+      } else {
+        const url = m.media_url ?? m.thumbnail_url;
+        if (url) mediaUrls.push(url);
+      }
+      return {
+        externalPostId: m.id,
+        externalUrl: m.permalink ?? null,
+        text: m.caption ?? "",
+        mediaUrls,
+        postedAt: m.timestamp,
+      };
+    });
   },
 };
