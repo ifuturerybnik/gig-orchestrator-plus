@@ -92,22 +92,41 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                       {t(`social.platforms.${pid}.tagline`)}
                     </CardDescription>
                   </div>
-                  {isConnected ? (
-                    <Badge variant="default" className="bg-emerald-600">
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
-                      {t("social.status.connected")}
-                    </Badge>
-                  ) : meta.status === "coming_soon" ? (
-                    <Badge variant="secondary">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {t("social.status.coming_soon")}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <AlertCircle className="mr-1 h-3 w-3" />
-                      {t("social.status.planned")}
-                    </Badge>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {isConnected ? (
+                      <Badge variant="default" className="bg-emerald-600">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        {t("social.status.connected")}
+                      </Badge>
+                    ) : meta.status === "coming_soon" ? (
+                      <Badge variant="secondary">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {t("social.status.coming_soon")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        {t("social.status.planned")}
+                      </Badge>
+                    )}
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setInfoPlatform(pid)}
+                            aria-label={t("social.info_dialog.aria_open", { platform: meta.brandColor ? t(`social.platforms.${pid}.name`) : pid })}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {t("social.info_dialog.tooltip")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-3">
