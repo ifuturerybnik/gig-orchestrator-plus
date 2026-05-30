@@ -1262,8 +1262,22 @@ export const deleteAppCredentials = createServerFn({ method: "POST" })
 // Na razie wspieramy tylko X (Twitter) OAuth 2.0 z PKCE. Kolejne platformy
 // dodajemy w startSocialOAuth w nowych case'ach.
 
+function getPublicOrigin(request: Request): string {
+  // Za reverse proxy (nginx na VPS) request.url ma http://127.0.0.1:3001/...,
+  // więc origin trzeba odtworzyć z nagłówków X-Forwarded-*.
+  const h = request.headers;
+  const xfHost = h.get("x-forwarded-host") ?? h.get("host");
+  const xfProto = h.get("x-forwarded-proto");
+  if (xfHost) {
+    // Jeśli host wygląda na publiczną domenę (nie localhost / 127.x), wymuś https.
+    const isLocal = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?)/i.test(xfHost);
+    const proto = xfProto ?? (isLocal ? "http" : "https");
+    return `${proto}://${xfHost}`;
+  }
+  return new URL(request.url).origin;
+}
+
 function getCallbackUrl(platform: string, request: Request): string {
-  const url = new URL(request.url);
   // Facebook + Instagram dzielą jeden flow Meta i wspólny callback.
   // Spotify używa skróconego sluga "spotify" zamiast "spotify_artists".
   const slug =
@@ -1272,7 +1286,7 @@ function getCallbackUrl(platform: string, request: Request): string {
       : platform === "spotify_artists"
         ? "spotify"
         : platform;
-  return `${url.origin}/api/public/social/${slug}-callback`;
+  return `${getPublicOrigin(request)}/api/public/social/${slug}-callback`;
 }
 
 function base64UrlEncode(buf: Buffer): string {

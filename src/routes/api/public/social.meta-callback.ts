@@ -42,7 +42,11 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
             false,
           );
         }
-        const callbackUrl = `${url.origin}/api/public/social/meta-callback`;
+        const xfHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+        const xfProto =
+          request.headers.get("x-forwarded-proto") ??
+          (/^(localhost|127\.|0\.0\.0\.0|\[?::1\]?)/i.test(xfHost) ? "http" : "https");
+        const callbackUrl = `${xfProto}://${xfHost}/api/public/social/meta-callback`;
         try {
           const res = await handleMetaOAuthCallback({ code, state, callbackUrl });
           const back = res.redirectBack ?? `/organizations/${res.orgId}/social`;
