@@ -180,9 +180,22 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                   >
                     <div className="font-medium truncate">{account.account_name}</div>
                     <div className="text-muted-foreground">
-                      {t("social.connected_at")}:{" "}
-                      {new Date(account.connected_at).toLocaleDateString()}
+                      {account.status === "demo" ? (
+                        <span className="text-amber-700 dark:text-amber-400">
+                          Wpis testowy (seed) — rozłącz i połącz prawdziwie
+                        </span>
+                      ) : (
+                        <>
+                          {t("social.connected_at")}:{" "}
+                          {new Date(account.connected_at).toLocaleDateString()}
+                        </>
+                      )}
                     </div>
+                    <div className="mt-1 text-[11px] text-primary">
+                      {t("social.account_details.open_link")} →
+                    </div>
+                  </button>
+                ) : (
                     <div className="mt-1 text-[11px] text-primary">
                       {t("social.account_details.open_link")} →
                     </div>
