@@ -1398,7 +1398,7 @@ export default
           "what_to_arrange": [
             "Strona firmowa na Facebooku (Pages) — jeśli nie masz, najpierw załóż na facebook.com/pages/create.",
             "Twoje prywatne konto FB musi mieć rolę \"Administrator\" tej Strony (Ustawienia Strony → Role na Stronie).",
-            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi uprawnieniami: pages_show_list, pages_manage_posts, pages_read_engagement (to robimy my, jednorazowo).",
+            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi minimalnymi uprawnieniami: pages_show_list, pages_read_engagement, instagram_basic, instagram_content_publish.",
             "Strona musi być opublikowana — tryb roboczy uniemożliwia publikację przez API."
           ],
           "time_estimate": "Samo połączenie: ~2 minuty.\n\nJeśli aplikacja Concertivo w Meta jeszcze nie przeszła \"App Review\" Mety — w trybie deweloperskim działa od razu, ale tylko dla wskazanych testerów. Pełny App Review Mety dla advanced permissions: 3–14 dni roboczych po naszej stronie (jednorazowo dla całej platformy, nie dla każdego klienta)."
