@@ -141,7 +141,7 @@ export default
       "code_label": "6-cyfrowy kod z aplikacji",
       "verify": "Zweryfikuj i włącz",
       "warning_aria": "Brak 2FA — zalecane włączenie",
-      "warning_tooltip": "Twoje konto pełni odpowiedzialną rolę (administrator aplikacji lub właściciel organizacji), a nie ma włączonej weryfikacji dwuetapowej. Brak 2FA znacznie zwiększa ryzyko przejęcia konta i dostępu osób trzecich do danych Twoich i Twojej organizacji. Włącz 2FA w sekcji \"Profil → Bezpieczeństwo\".\"
+      "warning_tooltip": "Twoje konto pełni odpowiedzialną rolę (administrator aplikacji lub właściciel organizacji), a nie ma włączonej weryfikacji dwuetapowej. Brak 2FA znacznie zwiększa ryzyko przejęcia konta i dostępu osób trzecich do danych Twoich i Twojej organizacji. Włącz 2FA w sekcji \"Profil → Bezpieczeństwo\".",
     }
   },
 
