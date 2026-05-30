@@ -1449,3 +1449,43 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
   });
 
 
+// ============================================================================
+// IMPORT POSTÓW Z PLATFORMY (historia + bieżąca synchronizacja)
+// ============================================================================
+// Pobiera ostatnie N postów opublikowanych bezpośrednio na platformie
+// (np. na Fanpage'u FB) i zapisuje je w social_posts (source='imported')
+// + social_post_results. Crony social-sync-metrics i social-sync-inbox
+// automatycznie zaczynają je obsługiwać.
+
+export const importPostsFromAccountFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema,
+        limit: z.number().int().min(1).max(100).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // Sprawdź członkostwo (RLS na social_accounts już to zrobi, ale lepsza komunikacja).
+    const { supabase } = context;
+    const { data: acct, error: acctErr } = await supabase
+      .from("social_accounts")
+      .select("id")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    if (acctErr) throw new Error(acctErr.message);
+    if (!acct) throw new Error("Konto tej platformy nie jest podłączone.");
+
+    const { importPostsFromAccount } = await import("./social-import.server");
+    const result = await importPostsFromAccount({
+      organizationId: data.organizationId,
+      platform: data.platform,
+      limit: data.limit ?? 25,
+    });
+    return result;
+  });
+
