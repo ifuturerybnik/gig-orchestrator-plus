@@ -1578,7 +1578,12 @@ export default
       "empty": "Brak zaplanowanych wpisów.",
       "cron_info": "Cron uruchamia publikację co minutę. Realne wysłanie do platformy aktywuje się po OAuth.",
       "publish_now": "Publikuj teraz",
-      "publish_now_result": "Próba publikacji: {{summary}}"
+      "publish_now_result": "Próba publikacji: {{summary}}",
+      "source_imported": "Zaimportowany",
+      "open_original": "Otwórz oryginał",
+      "sync_now": "Synchronizuj",
+      "sync_done": "Zsynchronizowano: metryki {{metrics}}, nowe komentarze {{comments}}",
+      "new_comments": "{{count}} nowych"
     },
     "stats": {
       "title": "Statystyki",
