@@ -191,6 +191,8 @@ export type MetaPage = {
   name: string;
   access_token: string;
   picture?: string | null;
+  business?: { id: string; name: string } | null;
+  tasks?: string[];
   instagram?: {
     id: string;
     username: string;
@@ -200,7 +202,7 @@ export type MetaPage = {
 
 export async function listUserPages(userAccessToken: string): Promise<MetaPage[]> {
   const url =
-    `${GRAPH}/me/accounts?fields=id,name,access_token,picture{url},` +
+    `${GRAPH}/me/accounts?fields=id,name,access_token,picture{url},tasks,business{id,name},` +
     `instagram_business_account{id,username,profile_picture_url}&limit=100`;
   const j = await graphJson<{
     data: Array<{
@@ -208,6 +210,8 @@ export async function listUserPages(userAccessToken: string): Promise<MetaPage[]
       name: string;
       access_token: string;
       picture?: { data?: { url?: string } };
+      tasks?: string[];
+      business?: { id: string; name: string };
       instagram_business_account?: {
         id: string;
         username: string;
@@ -223,6 +227,8 @@ export async function listUserPages(userAccessToken: string): Promise<MetaPage[]
     name: p.name,
     access_token: p.access_token,
     picture: p.picture?.data?.url ?? null,
+    business: p.business ? { id: p.business.id, name: p.business.name } : null,
+    tasks: p.tasks ?? [],
     instagram: p.instagram_business_account
       ? {
           id: p.instagram_business_account.id,
