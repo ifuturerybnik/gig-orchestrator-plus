@@ -407,7 +407,7 @@ export async function handleMetaOAuthCallback(args: {
     const hint =
       missing.length > 0
         ? `Brakuje przyznanych uprawnień: ${missing.join(", ")}.`
-        : "Wszystkie uprawnienia zostały przyznane, ale Meta nie zwróciła żadnej strony — najczęściej znaczy to, że w oknie autoryzacji nie wybrałeś konkretnej strony (kliknij „Edytuj dostęp" → „Wybierz strony" i zaznacz LzyPL) albo że Twoje konto nie ma roli administratora tej strony w Business Managerze.";
+        : 'Wszystkie uprawnienia zostały przyznane, ale Meta nie zwróciła żadnej strony — najczęściej znaczy to, że w oknie autoryzacji nie wybrałeś konkretnej strony (kliknij "Edytuj dostęp" → "Wybierz strony" i zaznacz właściwy Fanpage) albo że Twoje konto nie ma roli administratora tej strony w Business Managerze.';
     throw new Error(
       `Nie znaleziono żadnej strony Facebook na tym koncie. ${hint} Granted: [${perms.granted.join(", ") || "—"}]. Declined: [${perms.declined.join(", ") || "—"}].`,
     );
