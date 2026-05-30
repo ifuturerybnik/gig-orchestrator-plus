@@ -1552,6 +1552,12 @@ export const importPostsFromAccountFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    console.error("[social-import] importPostsFromAccountFn called", {
+      organizationId: data.organizationId,
+      platform: data.platform,
+      limit: data.limit ?? 25,
+    });
+
     // Sprawdź członkostwo (RLS na social_accounts już to zrobi, ale lepsza komunikacja).
     const { supabase } = context;
     const { data: acct, error: acctErr } = await supabase
@@ -1564,12 +1570,26 @@ export const importPostsFromAccountFn = createServerFn({ method: "POST" })
     if (!acct) throw new Error("Konto tej platformy nie jest podłączone.");
 
     const { importPostsFromAccount } = await import("./social-import.server");
-    const result = await importPostsFromAccount({
-      organizationId: data.organizationId,
-      platform: data.platform,
-      limit: data.limit ?? 25,
-    });
-    return result;
+    try {
+      const result = await importPostsFromAccount({
+        organizationId: data.organizationId,
+        platform: data.platform,
+        limit: data.limit ?? 25,
+      });
+      console.error("[social-import] importPostsFromAccountFn finished", {
+        organizationId: data.organizationId,
+        platform: data.platform,
+        ...result,
+      });
+      return result;
+    } catch (e) {
+      console.error("[social-import] importPostsFromAccountFn failed", {
+        organizationId: data.organizationId,
+        platform: data.platform,
+        message: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
   });
 
 // ============================================================================
