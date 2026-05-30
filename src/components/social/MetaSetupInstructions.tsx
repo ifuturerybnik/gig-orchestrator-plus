@@ -39,16 +39,15 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           której właścicielem jest osoba autoryzująca aplikację.
         </li>
         <li>
-          Dla MVP Instagram prosimy tylko o minimalne uprawnienia: publikacja na IG + odczyt Strony FB powiązanej z kontem IG.
+          Dla MVP Instagram prosimy tylko o minimalne uprawnienia: podstawowy profil IG + publikacja treści na IG.
           W trybie deweloperskim działa dla administratorów/testerów aplikacji; dla użytkowników zewnętrznych Meta wymaga App Review.
         </li>
         <li>
-          Kliknij <b>„Połącz z Meta"</b> — wybierzesz, które strony Facebook udostępniasz; my zapiszemy pierwszą stronę i
-          powiązany z nią profil IG (jeśli istnieje).
+          Kliknij <b>„Połącz z Meta"</b> — dla Instagrama otworzy się logowanie Instagram Business, a Concertivo zapisze profil IG.
         </li>
       </ol>
       <p className="text-xs text-muted-foreground">
-        Wymagane uprawnienia (scopes): <code>pages_show_list, pages_read_engagement, instagram_basic, instagram_content_publish</code>
+        Wymagane uprawnienia (scopes): <code>instagram_business_basic, instagram_business_content_publish</code>
       </p>
     </div>
   );
