@@ -14,10 +14,12 @@ import {
   Clock,
   Sparkles,
   DollarSign,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { listSocialAccounts } from "@/lib/social.functions";
 import {
   SOCIAL_PLATFORM_ORDER,
@@ -25,6 +27,7 @@ import {
   type SocialPlatformId,
 } from "@/lib/social-platforms";
 import { ConnectWizardDialog } from "./ConnectWizardDialog";
+import { PlatformInfoDialog } from "./PlatformInfoDialog";
 
 const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
@@ -39,6 +42,7 @@ const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?:
 export function PlatformsTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const [wizardPlatform, setWizardPlatform] = useState<SocialPlatformId | null>(null);
+  const [infoPlatform, setInfoPlatform] = useState<SocialPlatformId | null>(null);
 
   const fetchAccounts = useServerFn(listSocialAccounts);
   const accountsQ = useQuery({
@@ -88,22 +92,41 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                       {t(`social.platforms.${pid}.tagline`)}
                     </CardDescription>
                   </div>
-                  {isConnected ? (
-                    <Badge variant="default" className="bg-emerald-600">
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
-                      {t("social.status.connected")}
-                    </Badge>
-                  ) : meta.status === "coming_soon" ? (
-                    <Badge variant="secondary">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {t("social.status.coming_soon")}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <AlertCircle className="mr-1 h-3 w-3" />
-                      {t("social.status.planned")}
-                    </Badge>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {isConnected ? (
+                      <Badge variant="default" className="bg-emerald-600">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        {t("social.status.connected")}
+                      </Badge>
+                    ) : meta.status === "coming_soon" ? (
+                      <Badge variant="secondary">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {t("social.status.coming_soon")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        {t("social.status.planned")}
+                      </Badge>
+                    )}
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setInfoPlatform(pid)}
+                            aria-label={t("social.info_dialog.aria_open", { platform: t(`social.platforms.${pid}.name`) })}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {t("social.info_dialog.tooltip")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-3">
@@ -171,6 +194,14 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
           orgId={orgId}
           open={!!wizardPlatform}
           onClose={() => setWizardPlatform(null)}
+        />
+      )}
+
+      {infoPlatform && (
+        <PlatformInfoDialog
+          platform={infoPlatform}
+          open={!!infoPlatform}
+          onClose={() => setInfoPlatform(null)}
         />
       )}
     </div>
