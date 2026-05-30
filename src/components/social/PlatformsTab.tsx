@@ -28,6 +28,7 @@ import {
 } from "@/lib/social-platforms";
 import { ConnectWizardDialog } from "./ConnectWizardDialog";
 import { PlatformInfoDialog } from "./PlatformInfoDialog";
+import { AccountDetailsDialog } from "./AccountDetailsDialog";
 
 const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
@@ -43,6 +44,7 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const [wizardPlatform, setWizardPlatform] = useState<SocialPlatformId | null>(null);
   const [infoPlatform, setInfoPlatform] = useState<SocialPlatformId | null>(null);
+  const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
 
   const fetchAccounts = useServerFn(listSocialAccounts);
   const accountsQ = useQuery({
@@ -164,13 +166,20 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                 </div>
 
                 {isConnected && account ? (
-                  <div className="mt-auto rounded-md border bg-muted/30 px-2 py-1.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDetailsAccountId(account.id)}
+                    className="mt-auto rounded-md border bg-muted/30 px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
                     <div className="font-medium truncate">{account.account_name}</div>
                     <div className="text-muted-foreground">
                       {t("social.connected_at")}:{" "}
                       {new Date(account.connected_at).toLocaleDateString()}
                     </div>
-                  </div>
+                    <div className="mt-1 text-[11px] text-primary">
+                      {t("social.account_details.open_link")} →
+                    </div>
+                  </button>
                 ) : (
                   <Button
                     variant={meta.status === "coming_soon" ? "default" : "outline"}
@@ -204,6 +213,18 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
           onClose={() => setInfoPlatform(null)}
         />
       )}
+
+      {detailsAccountId && (() => {
+        const acc = (accountsQ.data?.items ?? []).find((a) => a.id === detailsAccountId);
+        if (!acc) return null;
+        return (
+          <AccountDetailsDialog
+            account={acc}
+            open={!!detailsAccountId}
+            onClose={() => setDetailsAccountId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
