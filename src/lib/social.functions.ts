@@ -1280,19 +1280,26 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook)
-    const credLookupPlatform =
-      data.platform === "instagram" ? "facebook" : data.platform;
-    const { data: credRow, error: credErr } = await supabase
+    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook).
+    //    Fallback: jeśli ktoś zapisał pod "instagram" w starszej wersji UI,
+    //    spróbuj odczytać też z tej platformy.
+    const lookupCandidates =
+      data.platform === "instagram" || data.platform === "facebook"
+        ? ["facebook", "instagram"]
+        : [data.platform];
+    const { data: credRows, error: credErr } = await supabase
       .from("social_app_credentials")
-      .select("client_id")
+      .select("client_id, platform")
       .eq("organization_id", data.organizationId)
-      .eq("platform", credLookupPlatform)
-      .maybeSingle();
+      .in("platform", lookupCandidates);
     if (credErr) throw new Error(credErr.message);
+    const credRow =
+      (credRows ?? []).find((r) => r.platform === "facebook") ??
+      (credRows ?? [])[0];
     if (!credRow) {
       throw new Error("Brak skonfigurowanej aplikacji dla tej platformy. Najpierw wklej Client ID i Client Secret.");
     }
+
     const clientId = (credRow as { client_id: string }).client_id;
 
     // 2) wygeneruj state + PKCE
