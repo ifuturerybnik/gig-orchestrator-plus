@@ -1276,6 +1276,20 @@ export default
       "connect": "Połącz",
       "learn_more": "Dowiedz się więcej"
     },
+    "info_dialog": {
+      "title": "{{platform}} — jak to działa?",
+      "tooltip": "Pokaż szczegóły integracji",
+      "aria_open": "Pokaż informacje o integracji {{platform}}",
+      "close": "Zamknij",
+      "sections": {
+        "description": "Co dostajesz",
+        "benefits": "Korzyści",
+        "how_it_looks": "Jak to wygląda w praktyce",
+        "what_to_arrange": "Co trzeba załatwić",
+        "checklist": "Checklist przed połączeniem",
+        "time_estimate": "Realny czas oczekiwania"
+      }
+    },
     "connected_at": "Połączone",
     "post_status": {
       "draft": "Szkic",
