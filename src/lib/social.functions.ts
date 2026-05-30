@@ -108,14 +108,19 @@ export const checkPlatformReadiness = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: row, error } = await supabase
+    const candidates = credPlatformCandidates(data.platform);
+    const { data: rows, error } = await supabase
       .from("social_app_credentials")
-      .select("id, client_id, configured_at")
+      .select("id, client_id, configured_at, platform")
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform)
-      .maybeSingle();
+      .in("platform", candidates);
+
     if (error) throw new Error(error.message);
-    const r = row as null | { id: string; client_id: string; configured_at: string };
+    const r =
+      ((rows ?? []).find((x) => x.platform === credPlatform(data.platform)) ??
+        (rows ?? [])[0]) as
+        | null
+        | { id: string; client_id: string; configured_at: string };
     return {
       platform: data.platform,
       hasClientId: !!r,
@@ -124,10 +129,24 @@ export const checkPlatformReadiness = createServerFn({ method: "GET" })
     };
   });
 
+
 function maskClientId(s: string): string {
   if (s.length <= 8) return "•".repeat(s.length);
   return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
 }
+
+// Meta: Instagram dzieli aplikację z Facebookiem — credentials zapisujemy
+// zawsze pod platformą "facebook", niezależnie od karty w UI.
+function credPlatform(p: string): string {
+  return p === "instagram" ? "facebook" : p;
+}
+function credPlatformCandidates(p: string): string[] {
+  return p === "instagram" || p === "facebook"
+    ? ["facebook", "instagram"]
+    : [p];
+}
+
+
 
 // ---------- Posty: CRUD ----------
 
@@ -1148,20 +1167,24 @@ export const getAppCredentials = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: row, error } = await supabase
+    const candidates = credPlatformCandidates(data.platform);
+    const { data: rows, error } = await supabase
       .from("social_app_credentials")
-      .select("id, client_id, configured_at, configured_by, updated_at")
+      .select("id, client_id, configured_at, configured_by, updated_at, platform")
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform)
-      .maybeSingle();
+      .in("platform", candidates);
+
     if (error) throw new Error(error.message);
-    const r = row as null | {
-      id: string;
-      client_id: string;
-      configured_at: string;
-      configured_by: string;
-      updated_at: string;
-    };
+    const r =
+      ((rows ?? []).find((x) => x.platform === credPlatform(data.platform)) ??
+        (rows ?? [])[0]) as null | {
+        id: string;
+        client_id: string;
+        configured_at: string;
+        configured_by: string;
+        updated_at: string;
+      };
+
     return {
       exists: !!r,
       clientId: r?.client_id ?? null,
@@ -1198,7 +1221,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
       .upsert(
         {
           organization_id: data.organizationId,
-          platform: data.platform,
+          platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
           configured_by: userId,
@@ -1209,6 +1232,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const deleteAppCredentials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1226,7 +1250,8 @@ export const deleteAppCredentials = createServerFn({ method: "POST" })
       .from("social_app_credentials")
       .delete()
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform);
+      .eq("platform", credPlatform(data.platform));
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -1268,19 +1293,26 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook)
-    const credLookupPlatform =
-      data.platform === "instagram" ? "facebook" : data.platform;
-    const { data: credRow, error: credErr } = await supabase
+    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook).
+    //    Fallback: jeśli ktoś zapisał pod "instagram" w starszej wersji UI,
+    //    spróbuj odczytać też z tej platformy.
+    const lookupCandidates =
+      data.platform === "instagram" || data.platform === "facebook"
+        ? ["facebook", "instagram"]
+        : [data.platform];
+    const { data: credRows, error: credErr } = await supabase
       .from("social_app_credentials")
-      .select("client_id")
+      .select("client_id, platform")
       .eq("organization_id", data.organizationId)
-      .eq("platform", credLookupPlatform)
-      .maybeSingle();
+      .in("platform", lookupCandidates);
     if (credErr) throw new Error(credErr.message);
+    const credRow =
+      (credRows ?? []).find((r) => r.platform === "facebook") ??
+      (credRows ?? [])[0];
     if (!credRow) {
       throw new Error("Brak skonfigurowanej aplikacji dla tej platformy. Najpierw wklej Client ID i Client Secret.");
     }
+
     const clientId = (credRow as { client_id: string }).client_id;
 
     // 2) wygeneruj state + PKCE
