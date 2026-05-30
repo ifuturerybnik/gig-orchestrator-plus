@@ -1376,11 +1376,13 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
     } else if (data.platform === "facebook" || data.platform === "instagram") {
-      // MVP Instagram: prosimy tylko o minimalne uprawnienia wymagane przez IG Graph API.
-      // Dodatkowe scope'y do komentarzy/analityki/FB włączymy dopiero po App Review.
+      // MVP Instagram: Facebook Login for Business musi zostać uruchomiony w trybie
+      // IG_API_ONBOARDING, inaczej Meta traktuje instagram_* jako nieważne scope'y.
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
+        display: "page",
+        extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
         redirect_uri: callbackUrl,
         state,
         scope: [

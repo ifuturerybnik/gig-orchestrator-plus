@@ -21,6 +21,9 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           W panelu aplikacji dodaj produkt <b>Facebook Login for Business</b>.
         </li>
         <li>
+          W sekcji <b>Use cases → Instagram</b> skonfiguruj <b>Business Login for Instagram</b> i dodaj ten sam Redirect URL.
+        </li>
+        <li>
           W <b>App Settings → Basic → App domains</b> dodaj domenę aplikacji, np. <code>concertivo.eu</code>
           (bez <code>https://</code> i bez ścieżki).
         </li>
