@@ -1376,7 +1376,8 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
     } else if (data.platform === "facebook" || data.platform === "instagram") {
-      // Jeden flow Facebook Login dla obu platform; callback zapisuje oba konta.
+      // MVP Instagram: prosimy tylko o minimalne uprawnienia wymagane przez IG Graph API.
+      // Dodatkowe scope'y do komentarzy/analityki/FB włączymy dopiero po App Review.
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
@@ -1384,14 +1385,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
         scope: [
           "pages_show_list",
-          "pages_manage_posts",
           "pages_read_engagement",
-          "pages_manage_engagement",
-          "pages_read_user_content",
           "instagram_basic",
           "instagram_content_publish",
-          "instagram_manage_comments",
-          "business_management",
         ].join(","),
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;

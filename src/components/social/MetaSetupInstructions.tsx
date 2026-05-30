@@ -21,6 +21,10 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           W panelu aplikacji dodaj produkt <b>Facebook Login for Business</b>.
         </li>
         <li>
+          W <b>App Settings → Basic → App domains</b> dodaj domenę aplikacji, np. <code>concertivo.eu</code>
+          (bez <code>https://</code> i bez ścieżki).
+        </li>
+        <li>
           W ustawieniach Facebook Login → <b>Valid OAuth Redirect URIs</b> wklej dokładnie:
           <code className="block bg-muted px-2 py-1 mt-1 rounded text-xs break-all">{callbackUrl}</code>
         </li>
@@ -32,8 +36,8 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           której właścicielem jest osoba autoryzująca aplikację.
         </li>
         <li>
-          Aby uzyskać uprawnienia produkcyjne (pages_manage_posts, instagram_content_publish, …), aplikacja Meta musi przejść
-          <b> App Review</b>. W trybie deweloperskim działa dla administratorów aplikacji bez review.
+          Dla MVP Instagram prosimy tylko o minimalne uprawnienia: publikacja na IG + odczyt Strony FB powiązanej z kontem IG.
+          W trybie deweloperskim działa dla administratorów/testerów aplikacji; dla użytkowników zewnętrznych Meta wymaga App Review.
         </li>
         <li>
           Kliknij <b>„Połącz z Meta"</b> — wybierzesz, które strony Facebook udostępniasz; my zapiszemy pierwszą stronę i
@@ -41,7 +45,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
         </li>
       </ol>
       <p className="text-xs text-muted-foreground">
-        Wymagane uprawnienia (scopes): <code>pages_show_list, pages_manage_posts, pages_read_engagement, pages_manage_engagement, pages_read_user_content, instagram_basic, instagram_content_publish, instagram_manage_comments, business_management</code>
+        Wymagane uprawnienia (scopes): <code>pages_show_list, pages_read_engagement, instagram_basic, instagram_content_publish</code>
       </p>
     </div>
   );

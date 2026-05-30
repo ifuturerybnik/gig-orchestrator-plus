@@ -368,10 +368,7 @@ export async function handleMetaOAuthCallback(args: {
       account_avatar_url: page.picture ?? null,
       scopes: [
         "pages_show_list",
-        "pages_manage_posts",
         "pages_read_engagement",
-        "pages_manage_engagement",
-        "pages_read_user_content",
       ],
       access_token_enc: encryptPii(page.access_token),
       refresh_token_enc: null,
@@ -400,7 +397,6 @@ export async function handleMetaOAuthCallback(args: {
         scopes: [
           "instagram_basic",
           "instagram_content_publish",
-          "instagram_manage_comments",
         ],
         // IG Graph używa PAGE access token (tego samego, którym publikuje FB)
         access_token_enc: encryptPii(page.access_token),
