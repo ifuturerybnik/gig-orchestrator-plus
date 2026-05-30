@@ -140,6 +140,12 @@ function maskClientId(s: string): string {
 function credPlatform(p: string): string {
   return p === "instagram" ? "facebook" : p;
 }
+function credPlatformCandidates(p: string): string[] {
+  return p === "instagram" || p === "facebook"
+    ? ["facebook", "instagram"]
+    : [p];
+}
+
 
 
 // ---------- Posty: CRUD ----------
