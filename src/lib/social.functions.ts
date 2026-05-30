@@ -218,9 +218,10 @@ export const listSocialPosts = createServerFn({ method: "GET" })
         .in("post_id", postIds),
       supabase
         .from("social_post_metrics")
-        .select("post_id, likes, comments, shares, views, snapshot_at")
+        .select("post_id, platform, likes, comments, shares, views, snapshot_at")
         .in("post_id", postIds)
         .order("snapshot_at", { ascending: false }),
+
       supabase
         .from("social_comments")
         .select("post_id, status")
