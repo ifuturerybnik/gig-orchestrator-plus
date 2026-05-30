@@ -52,6 +52,14 @@ export type PlatformReplyResult = {
   externalCommentId: string;
 };
 
+export type PlatformRecentPost = {
+  externalPostId: string;
+  externalUrl: string | null;
+  text: string;
+  mediaUrls: string[];
+  postedAt: string | null;
+};
+
 export interface PlatformAdapter {
   platformId: SocialPlatformId;
 
@@ -89,4 +97,12 @@ export interface PlatformAdapter {
     clientId: string;
     clientSecret: string;
   }): Promise<PlatformReplyResult>;
+
+  /** Pobierz N ostatnio opublikowanych postów z konta (do importu historii / synchronizacji). */
+  listRecentPosts?(args: {
+    account: PlatformAccount;
+    limit: number;
+    clientId: string;
+    clientSecret: string;
+  }): Promise<PlatformRecentPost[]>;
 }
