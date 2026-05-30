@@ -1391,43 +1391,120 @@ export default
         "name": "Facebook",
         "tagline": "Strony firmowe (Pages)",
         "benefits": ["Publikuj posty na Stronie organizacji", "Planowanie wpisów z wyprzedzeniem", "Statystyki zasięgu i reakcji", "AI dopasuje długość i ton do FB"],
-        "checklist": ["Mam rolę administratora Strony", "Strona jest opublikowana (nie tryb roboczy)", "Mam profil osobisty FB powiązany z rolą"]
+        "checklist": ["Mam rolę administratora Strony", "Strona jest opublikowana (nie tryb roboczy)", "Mam profil osobisty FB powiązany z rolą"],
+        "info": {
+          "description": "Bezpośrednie publikowanie postów (tekst, zdjęcia, wideo, linki) na Stronie firmowej Twojej organizacji. Statystyki zasięgu, reakcji, kliknięć i komentarzy spływają z powrotem do Concertivo. Komentarze pod postami pojawiają się w globalnej Skrzynce — możesz odpowiadać bez przełączania się do FB.",
+          "how_it_looks": "1. Klikasz „Połącz" przy Facebooku.\n2. Otwiera się okno logowania Facebooka (Twoje prywatne konto).\n3. Facebook pyta, do których Stron chcesz dać dostęp Concertivo — zaznaczasz Stronę swojej organizacji.\n4. Wracasz do Concertivo z aktywnym połączeniem.\n5. Posty komponujesz w zakładce „AI Studio" lub „Harmonogram", wybierając Facebook jako platformę docelową.",
+          "what_to_arrange": [
+            "Strona firmowa na Facebooku (Pages) — jeśli nie masz, najpierw załóż na facebook.com/pages/create.",
+            "Twoje prywatne konto FB musi mieć rolę „Administrator" tej Strony (Ustawienia Strony → Role na Stronie).",
+            "Aplikacja Concertivo w Meta for Developers musi być w trybie „Live" z zatwierdzonymi uprawnieniami: pages_show_list, pages_manage_posts, pages_read_engagement (to robimy my, jednorazowo).",
+            "Strona musi być opublikowana — tryb roboczy uniemożliwia publikację przez API."
+          ],
+          "time_estimate": "Samo połączenie: ~2 minuty.\n\nJeśli aplikacja Concertivo w Meta jeszcze nie przeszła „App Review" Mety — w trybie deweloperskim działa od razu, ale tylko dla wskazanych testerów. Pełny App Review Mety dla advanced permissions: 3–14 dni roboczych po naszej stronie (jednorazowo dla całej platformy, nie dla każdego klienta)."
+        }
       },
       "instagram": {
         "name": "Instagram",
         "tagline": "Konto firmowe / twórcy",
         "benefits": ["Publikuj zdjęcia i karuzele", "Statystyki zasięgu i zapisów", "AI generuje hashtagi i CTA"],
-        "checklist": ["Konto IG jest typu Business/Creator", "Konto IG jest połączone ze Stroną FB", "Mam dostęp administratora do tej Strony FB"]
+        "checklist": ["Konto IG jest typu Business/Creator", "Konto IG jest połączone ze Stroną FB", "Mam dostęp administratora do tej Strony FB"],
+        "info": {
+          "description": "Publikacja zdjęć, karuzel i Reels na firmowym Instagramie. Statystyki zasięgu, zapisów, udostępnień. Komentarze pod postami i wiadomości DM trafiają do globalnej Skrzynki. Instagram działa przez Graph API Facebooka — dlatego wymaga konta IG typu Biznes/Twórca powiązanego ze Stroną FB.",
+          "how_it_looks": "1. Klikasz „Połącz" przy Instagramie.\n2. UWAGA: logujesz się przez Facebook, nie przez sam Instagram (tak działa Meta API).\n3. Wybierasz Stronę FB powiązaną z Twoim kontem IG.\n4. Autoryzujesz uprawnienia (zarządzanie postami IG + odczyt insightów).\n5. Posty planujesz w „Harmonogramie", z podglądem przed publikacją.",
+          "what_to_arrange": [
+            "Konto IG przełączone na „Biznes" lub „Twórca" (w apce IG → Ustawienia → Konto → Przełącz na konto firmowe).",
+            "Konto IG musi być POŁĄCZONE ze Stroną na Facebooku (w Ustawieniach IG → Połączone konta → Facebook).",
+            "Musisz być administratorem tej Strony FB (jak przy integracji Facebook).",
+            "Ta sama aplikacja Concertivo w Meta — jedna autoryzacja Mety daje dostęp i do FB, i do IG."
+          ],
+          "time_estimate": "Jeśli wszystko (konto firmowe IG + powiązanie ze Stroną FB) jest już ustawione: ~5 minut.\n\nKonfiguracja od zera: 15–30 minut (przełączenie IG na firmowe + utworzenie lub powiązanie Strony FB + dodanie roli)."
+        }
       },
       "youtube": {
         "name": "YouTube",
         "tagline": "Kanał + filmy",
         "benefits": ["Zarządzaj opisami i tagami filmów", "Statystyki obejrzeń i subskrypcji", "AI proponuje tytuły i opisy SEO"],
-        "checklist": ["Mam dostęp właściciela kanału", "Kanał jest zweryfikowany", "Konto Google ma włączone API"]
+        "checklist": ["Mam dostęp właściciela kanału", "Kanał jest zweryfikowany", "Konto Google ma włączone API"],
+        "info": {
+          "description": "Zarządzanie metadanymi filmów (tytuły, opisy, tagi, miniaturki), upload nowych filmów, czytanie statystyk obejrzeń, czasu oglądania i subskrypcji. AI proponuje SEO-friendly tytuły i opisy dopasowane do wydarzenia/koncertu. Komentarze pod filmami trafiają do Skrzynki.",
+          "how_it_looks": "1. Klikasz „Połącz" przy YouTube.\n2. Przekierowanie do logowania Google — wybierasz konto powiązane z kanałem YT.\n3. Google pokazuje listę żądanych uprawnień YouTube Data API v3 — akceptujesz.\n4. Wracasz do Concertivo, kanał jest podpięty.\n5. Filmy zarządzasz w „AI Studio" / „Harmonogramie" wybierając YouTube jako platformę.",
+          "what_to_arrange": [
+            "Musisz być właścicielem kanału lub mieć rolę „Manager" w YouTube Studio → Ustawienia → Uprawnienia.",
+            "Kanał musi być zweryfikowany numerem telefonu (jednorazowo w studio.youtube.com).",
+            "Konto Google musi być w „normalnym" stanie — bez ograniczeń community guidelines.",
+            "Aplikacja Concertivo musi mieć włączone YouTube Data API v3 + (dla uploadu) przejść Google API Audit — robimy to my, jednorazowo dla platformy."
+          ],
+          "time_estimate": "Czytanie statystyk i edycja istniejących filmów: od razu po połączeniu (~3 minuty).\n\nUpload nowych filmów wymaga przejścia Google API Audit — bez audytu działa tryb testowy (max 100 uploadów łącznie, filmy oznaczone jako „prywatne"). Pełny audyt Google YouTube API: 4–8 tygodni po naszej stronie (jednorazowo)."
+        }
       },
       "linkedin": {
         "name": "LinkedIn",
         "tagline": "Strona firmowa (Company Page)",
         "benefits": ["Publikuj posty na Stronie firmowej", "Statystyki impresji i klików", "AI dostosuje ton do profesjonalnego B2B"],
-        "checklist": ["Mam rolę Super Admin Strony firmowej", "Strona ma uzupełniony profil (logo, opis)", "Konto osobiste jest aktywne i powiązane"]
+        "checklist": ["Mam rolę Super Admin Strony firmowej", "Strona ma uzupełniony profil (logo, opis)", "Konto osobiste jest aktywne i powiązane"],
+        "info": {
+          "description": "Publikacja postów (tekst, obrazy, linki, dokumenty PDF) na Stronie firmowej LinkedIn. Statystyki impresji, kliknięć, zaangażowania, obserwujących. AI dostosowuje ton do profesjonalnego B2B i optymalizuje długość pod algorytm LinkedIn.",
+          "how_it_looks": "1. Klikasz „Połącz" przy LinkedIn.\n2. Logujesz się przez LinkedIn swoim prywatnym kontem.\n3. Wybierasz Stronę firmową, którą chcesz podpiąć (musisz być jej Adminem).\n4. Autoryzujesz uprawnienia (w_organization_social, r_organization_social).\n5. Posty komponujesz w „AI Studio", planujesz w „Harmonogramie".",
+          "what_to_arrange": [
+            "Musisz mieć rolę „Super Admin" lub „Content Admin" Strony firmowej (Strona → Administracja → Zarządzaj administratorami).",
+            "Strona firmowa musi mieć uzupełniony profil: logo, opis, branża (LinkedIn blokuje API dla niekompletnych stron).",
+            "Aplikacja Concertivo musi mieć produkty „Share on LinkedIn" + „Marketing Developer Platform" zatwierdzone przez LinkedIn — robimy to my, jednorazowo."
+          ],
+          "time_estimate": "Samo połączenie: ~2 minuty.\n\nZatwierdzenie produktu „Marketing Developer Platform" przez LinkedIn (jednorazowo dla platformy): 2–4 tygodnie po naszej stronie. Bez zatwierdzenia działa tylko podstawowy „Share on LinkedIn" — wystarcza do publikacji."
+        }
       },
       "twitter": {
         "name": "X (Twitter)",
         "tagline": "Konto firmowe",
         "benefits": ["Publikuj krótkie wpisy (do 280 znaków)", "Statystyki wyświetleń i zaangażowania", "AI skraca treści do limitu X"],
-        "checklist": ["Mam konto deweloperskie X", "Mam aktywny plan Basic lub Pro (API jest płatne)", "Aplikacja ma uprawnienia Read+Write"]
+        "checklist": ["Mam konto deweloperskie X", "Mam aktywny plan Basic lub Pro (API jest płatne)", "Aplikacja ma uprawnienia Read+Write"],
+        "info": {
+          "description": "Publikacja krótkich wpisów (do 280 znaków), wątków, retweetów. Statystyki wyświetleń, lajków, retweetów, odpowiedzi. AI automatycznie skraca dłuższe treści do limitu znaków X bez utraty sensu. Odpowiedzi pod tweetami trafiają do Skrzynki.",
+          "how_it_looks": "1. Klikasz „Połącz" przy X.\n2. Logujesz się przez X swoim kontem firmowym.\n3. Autoryzujesz aplikację Concertivo (OAuth 2.0 z PKCE).\n4. Wracasz, konto jest aktywne.\n5. Tweety piszesz w „AI Studio" — gdy treść przekracza 280 znaków, AI od razu proponuje skrócenie lub rozbicie na wątek.",
+          "what_to_arrange": [
+            "API X JEST PŁATNE od 2023 r. — to bezwzględny wymóg.",
+            "Twoja organizacja musi mieć konto deweloperskie X (developer.x.com) z aktywnym planem: Basic (200 USD/mc, 100 tweetów/mc) lub Pro (5000 USD/mc, 1M tweetów/mc).",
+            "Plan Free pozwala tylko na czytanie wybranych endpointów — publikacja jest niemożliwa.",
+            "Aplikacja musi mieć włączone OAuth 2.0 i uprawnienia Read+Write (User authentication settings → Type of App: Web App).",
+            "Trzeba ustawić Callback URL na adres Concertivo (podajemy konkretny URL przy konfiguracji)."
+          ],
+          "time_estimate": "Po opłaceniu planu i konfiguracji aplikacji w X Developer Portal: połączenie ~3 minuty.\n\nAktywacja konta deweloperskiego + plan Basic: ~1 dzień roboczy (X weryfikuje płatność)."
+        }
       },
       "tiktok": {
         "name": "TikTok",
         "tagline": "Konto biznesowe",
         "benefits": ["Planowanie publikacji wideo", "Statystyki obejrzeń", "AI proponuje opisy i hashtagi"],
-        "checklist": ["Mam konto TikTok Business", "Mam zatwierdzoną aplikację w TikTok Developers", "Mam dostęp do Content Posting API"]
+        "checklist": ["Mam konto TikTok Business", "Mam zatwierdzoną aplikację w TikTok Developers", "Mam dostęp do Content Posting API"],
+        "info": {
+          "description": "Planowanie i publikacja wideo (max 10 minut, MP4) na koncie biznesowym TikTok. Statystyki obejrzeń, polubień, udostępnień. AI proponuje opisy, hashtagi i CTA dopasowane do tiktokowego tonu i trendów.",
+          "how_it_looks": "1. Klikasz „Połącz" przy TikTok.\n2. Logujesz się przez TikTok kontem biznesowym.\n3. TikTok pokazuje uprawnienia (video.upload, video.publish, user.info.basic) — akceptujesz.\n4. Wracasz do Concertivo.\n5. Filmy uploadujesz w „AI Studio" — pierwsza publikacja przez API jest oznaczona jako „prywatna" do czasu zatwierdzenia aplikacji przez TikTok (audyt).",
+          "what_to_arrange": [
+            "Konto TikTok musi być przełączone na „Business" (w apce → Ustawienia → Zarządzaj kontem → Przełącz na konto Biznes).",
+            "Aplikacja Concertivo w TikTok for Developers musi mieć zatwierdzony dostęp do Content Posting API — robimy to my, jednorazowo.",
+            "Wymagana weryfikacja domeny aplikacji (TikTok wysyła plik weryfikacyjny do umieszczenia na serwerze) — po naszej stronie.",
+            "Niektóre kraje mają ograniczenia API (np. region UE — sprawdzamy przed publikacją)."
+          ],
+          "time_estimate": "Po zatwierdzeniu aplikacji: połączenie ~3 minuty.\n\nAudyt TikTok Developers dla Content Posting API: 2–6 tygodni po naszej stronie (jednorazowo). Do tego czasu pierwsze posty publikowane są jako „prywatne" — widoczne tylko dla autora."
+        }
       },
       "spotify_artists": {
         "name": "Spotify",
         "tagline": "Profil artysty — tylko statystyki",
         "benefits": ["Liczba obserwujących profilu Spotify", "Popularność i gatunki wykonawcy", "AI analizuje trendy popularności"],
-        "checklist": ["Mam konto Spotify powiązane z profilem artysty", "Założyłem aplikację w Spotify Developer Dashboard", "Dodałem moje konto w sekcji Users and Access"]
+        "checklist": ["Mam konto Spotify powiązane z profilem artysty", "Założyłem aplikację w Spotify Developer Dashboard", "Dodałem moje konto w sekcji Users and Access"],
+        "info": {
+          "description": "WAŻNE: Spotify nie pozwala publikować muzyki przez API — uploadem zajmuje się dystrybutor (DistroKid, TuneCore, CD Baby, Believe). Concertivo czyta TYLKO publiczne statystyki profilu artysty: liczbę obserwujących, popularność (0–100), gatunki, top utwory, dane podstawowe. AI analizuje trendy popularności w czasie.",
+          "how_it_looks": "1. Klikasz „Połącz" przy Spotify.\n2. Logujesz się przez Spotify (konto powiązane z profilem artysty).\n3. Wpisujesz Spotify Artist ID (znajdziesz w linku do swojego profilu: open.spotify.com/artist/XXXXX — XXXXX to ID).\n4. Wracasz do Concertivo.\n5. Statystyki widzisz w zakładce „Statystyki" — odświeżane co godzinę przez cron.",
+          "what_to_arrange": [
+            "Profil artysty na Spotify (czyli muzyka musi być już opublikowana przez dystrybutora i znajdować się w katalogu Spotify).",
+            "Zweryfikowany dostęp do Spotify for Artists — przez dystrybutora muzyki (zwykle automatyczne po pierwszym wydaniu).",
+            "Spotify Artist ID — skopiuj z URL swojego profilu (np. open.spotify.com/artist/4kI8Ie27vjvonwaB2ePh8T → 4kI8Ie27vjvonwaB2ePh8T).",
+            "Concertivo używa Spotify Web API (Client Credentials) — nie wymaga OAuth użytkownika dla podstawowych statystyk publicznych."
+          ],
+          "time_estimate": "Połączenie i wpisanie Artist ID: ~2 minuty.\n\nJeśli nie masz jeszcze zweryfikowanego profilu Spotify for Artists: 1–7 dni po stronie Spotify (po opublikowaniu pierwszego utworu przez dystrybutora)."
+        }
       }
     },
     "ai": {
