@@ -96,10 +96,17 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {isConnected ? (
-                      <Badge variant="default" className="bg-emerald-600">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        {t("social.status.connected")}
-                      </Badge>
+                      account?.status === "demo" ? (
+                        <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+                          <AlertCircle className="mr-1 h-3 w-3" />
+                          Demo
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="bg-emerald-600">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          {t("social.status.connected")}
+                        </Badge>
+                      )
                     ) : meta.status === "coming_soon" ? (
                       <Badge variant="secondary">
                         <Clock className="mr-1 h-3 w-3" />
