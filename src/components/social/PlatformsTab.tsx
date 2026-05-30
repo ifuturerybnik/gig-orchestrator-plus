@@ -196,11 +196,6 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                     </div>
                   </button>
                 ) : (
-                    <div className="mt-1 text-[11px] text-primary">
-                      {t("social.account_details.open_link")} →
-                    </div>
-                  </button>
-                ) : (
                   <Button
                     variant={meta.status === "coming_soon" ? "default" : "outline"}
                     className="mt-auto"
