@@ -65,6 +65,14 @@ export async function importPostsFromAccount(args: {
     await clearAccountError(ctx.account.id);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error("[social-import] listRecentPosts failed", {
+      organizationId: args.organizationId,
+      platform: args.platform,
+      accountId: ctx.account.id,
+      accountName: ctx.account.account_name,
+      externalAccountId: ctx.account.external_account_id,
+      message: msg,
+    });
     await markAccountError(ctx.account.id, msg);
     throw e;
   }
