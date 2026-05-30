@@ -269,6 +269,21 @@ export async function handleLinkedInOAuthCallback(args: {
 // W social_app_credentials credentials żyją pod platform="facebook"; adapter
 // IG też ich używa (patrz getAppCredentialsServer fallback).
 
+export type MetaDiagnostics = {
+  granted: string[];
+  declined: string[];
+  pages: Array<{
+    id: string;
+    name: string;
+    businessId: string | null;
+    businessName: string | null;
+    tasks: string[];
+    hasInstagram: boolean;
+    instagramUsername: string | null;
+    selected: boolean;
+  }>;
+};
+
 export async function handleMetaOAuthCallback(args: {
   code: string;
   state: string;
@@ -278,6 +293,7 @@ export async function handleMetaOAuthCallback(args: {
   facebookPageName: string | null;
   instagramUsername: string | null;
   redirectBack: string | null;
+  diagnostics: MetaDiagnostics | null;
 }> {
   const admin = supabaseAdmin;
 
@@ -379,6 +395,7 @@ export async function handleMetaOAuthCallback(args: {
       facebookPageName: null,
       instagramUsername: profile.username,
       redirectBack,
+      diagnostics: null,
     };
   }
 
@@ -397,10 +414,26 @@ export async function handleMetaOAuthCallback(args: {
     clientSecret,
   });
 
-  // 6) /me/accounts
+  // 6) Diagnostyka: permissions + lista stron
+  const perms = await listUserPermissions(longTok.accessToken);
   const pages = await listUserPages(longTok.accessToken);
+
+  const buildDiag = (selectedId: string | null): MetaDiagnostics => ({
+    granted: perms.granted,
+    declined: perms.declined,
+    pages: pages.map((p) => ({
+      id: p.id,
+      name: p.name,
+      businessId: p.business?.id ?? null,
+      businessName: p.business?.name ?? null,
+      tasks: p.tasks ?? [],
+      hasInstagram: !!p.instagram,
+      instagramUsername: p.instagram?.username ?? null,
+      selected: p.id === selectedId,
+    })),
+  });
+
   if (pages.length === 0) {
-    const perms = await listUserPermissions(longTok.accessToken);
     console.error("[meta-callback] empty /me/accounts. granted=", perms.granted, "declined=", perms.declined);
     const missing = ["pages_show_list", "pages_read_engagement", "business_management"]
       .filter((p) => !perms.granted.includes(p));
@@ -408,9 +441,12 @@ export async function handleMetaOAuthCallback(args: {
       missing.length > 0
         ? `Brakuje przyznanych uprawnień: ${missing.join(", ")}.`
         : 'Wszystkie uprawnienia zostały przyznane, ale Meta nie zwróciła żadnej strony — najczęściej znaczy to, że w oknie autoryzacji nie wybrałeś konkretnej strony (kliknij "Edytuj dostęp" → "Wybierz strony" i zaznacz właściwy Fanpage) albo że Twoje konto nie ma roli administratora tej strony w Business Managerze.';
-    throw new Error(
+    const err = new Error(
       `Nie znaleziono żadnej strony Facebook na tym koncie. ${hint} Granted: [${perms.granted.join(", ") || "—"}]. Declined: [${perms.declined.join(", ") || "—"}].`,
     );
+    // Dołącz diagnostykę do błędu (callback ją odczyta i wyświetli)
+    (err as Error & { diagnostics?: MetaDiagnostics }).diagnostics = buildDiag(null);
+    throw err;
   }
   // Preferuj stronę z podpiętym Instagram Business; fallback: pierwsza.
   const page = pages.find((p) => !!p.instagram) ?? pages[0];
@@ -480,6 +516,7 @@ export async function handleMetaOAuthCallback(args: {
     facebookPageName: page.name,
     instagramUsername: igUsername,
     redirectBack,
+    diagnostics: buildDiag(page.id),
   };
 }
 
