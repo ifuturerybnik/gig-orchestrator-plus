@@ -28,6 +28,7 @@ import {
 } from "@/lib/social-platforms";
 import { ConnectWizardDialog } from "./ConnectWizardDialog";
 import { PlatformInfoDialog } from "./PlatformInfoDialog";
+import { AccountDetailsDialog } from "./AccountDetailsDialog";
 
 const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
