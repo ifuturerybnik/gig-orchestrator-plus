@@ -18,6 +18,43 @@ ok()   { printf "\033[1;32m[ ok ]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[warn]\033[0m %s\n" "$*"; }
 err()  { printf "\033[1;31m[err ]\033[0m %s\n" "$*" >&2; }
 
+print_env_help() {
+  cat >&2 <<'EOF'
+
+Utwórz plik sekretów na VPS jednorazowo:
+
+  cd /var/www/concertivo
+  nano .env.production
+
+Minimalna zawartość:
+
+  VITE_SUPABASE_URL=https://...
+  VITE_SUPABASE_PUBLISHABLE_KEY=...
+  EXT_SUPABASE_SERVICE_ROLE_KEY=...
+  EXT_PII_ENCRYPTION_KEY=...
+  PORT=3001
+  APP_PUBLIC_URL=https://app.concertivo.eu
+  SITE_URL=https://app.concertivo.eu
+  CRON_SECRET=...
+
+Jeśli używasz modułu Poczta/Autokorespondencja na VPS, dopisz też:
+
+  MAIL_PROXY_URL=...
+  MAIL_PROXY_TOKEN=...
+  MAIL_ENCRYPTION_KEY=...
+
+Jeśli używasz AI na VPS, dopisz też:
+
+  OPENAI_API_KEY=...
+
+Potem zabezpiecz plik i uruchom update:
+
+  chmod 600 .env.production
+  bash update.sh
+
+EOF
+}
+
 trap 'err "Krok nieudany w linii $LINENO. Aktualizacja PRZERWANA — stara wersja nadal działa."' ERR
 
 cd "$APP_DIR"
@@ -47,6 +84,7 @@ fi
 
 if [ ! -f "$ENV_FILE" ]; then
   err "Brak $ENV_FILE — utwórz go przed aktualizacją (z VITE_SUPABASE_*, EXT_SUPABASE_SERVICE_ROLE_KEY, EXT_PII_ENCRYPTION_KEY, PORT)."
+  print_env_help
   exit 1
 fi
 
@@ -60,6 +98,7 @@ export PORT
 for REQUIRED_ENV in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY EXT_SUPABASE_SERVICE_ROLE_KEY EXT_PII_ENCRYPTION_KEY; do
   if [ -z "${!REQUIRED_ENV:-}" ]; then
     err "Brak zmiennej $REQUIRED_ENV w .env.production — przerywam przed restartem PM2"
+    print_env_help
     exit 1
   fi
 done
