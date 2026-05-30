@@ -1161,8 +1161,9 @@ export const getAppCredentials = createServerFn({ method: "GET" })
       .from("social_app_credentials")
       .select("id, client_id, configured_at, configured_by, updated_at")
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform)
+      .eq("platform", credPlatform(data.platform))
       .maybeSingle();
+
     if (error) throw new Error(error.message);
     const r = row as null | {
       id: string;
