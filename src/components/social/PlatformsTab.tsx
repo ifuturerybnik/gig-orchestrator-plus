@@ -196,6 +196,14 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
           onClose={() => setWizardPlatform(null)}
         />
       )}
+
+      {infoPlatform && (
+        <PlatformInfoDialog
+          platform={infoPlatform}
+          open={!!infoPlatform}
+          onClose={() => setInfoPlatform(null)}
+        />
+      )}
     </div>
   );
 }
