@@ -1167,21 +1167,24 @@ export const getAppCredentials = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: row, error } = await supabase
+    const candidates = credPlatformCandidates(data.platform);
+    const { data: rows, error } = await supabase
       .from("social_app_credentials")
-      .select("id, client_id, configured_at, configured_by, updated_at")
+      .select("id, client_id, configured_at, configured_by, updated_at, platform")
       .eq("organization_id", data.organizationId)
-      .eq("platform", credPlatform(data.platform))
-      .maybeSingle();
+      .in("platform", candidates);
 
     if (error) throw new Error(error.message);
-    const r = row as null | {
-      id: string;
-      client_id: string;
-      configured_at: string;
-      configured_by: string;
-      updated_at: string;
-    };
+    const r =
+      ((rows ?? []).find((x) => x.platform === credPlatform(data.platform)) ??
+        (rows ?? [])[0]) as null | {
+        id: string;
+        client_id: string;
+        configured_at: string;
+        configured_by: string;
+        updated_at: string;
+      };
+
     return {
       exists: !!r,
       clientId: r?.client_id ?? null,
