@@ -1208,7 +1208,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
       .upsert(
         {
           organization_id: data.organizationId,
-          platform: data.platform,
+          platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
           configured_by: userId,
@@ -1219,6 +1219,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const deleteAppCredentials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
