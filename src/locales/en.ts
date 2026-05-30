@@ -1399,7 +1399,12 @@ export default
       "empty": "No scheduled posts.",
       "cron_info": "Cron runs publishing every minute. Real send to the platform activates after OAuth.",
       "publish_now": "Publish now",
-      "publish_now_result": "Publish attempt: {{summary}}"
+      "publish_now_result": "Publish attempt: {{summary}}",
+      "source_imported": "Imported",
+      "open_original": "Open original",
+      "sync_now": "Sync",
+      "sync_done": "Synced: metrics {{metrics}}, new comments {{comments}}",
+      "new_comments": "{{count}} new"
     },
     "stats": {
       "title": "Stats",
