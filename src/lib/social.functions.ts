@@ -108,12 +108,14 @@ export const checkPlatformReadiness = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const lookupPlatform = credPlatform(data.platform);
     const { data: row, error } = await supabase
       .from("social_app_credentials")
       .select("id, client_id, configured_at")
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform)
+      .eq("platform", lookupPlatform)
       .maybeSingle();
+
     if (error) throw new Error(error.message);
     const r = row as null | { id: string; client_id: string; configured_at: string };
     return {
