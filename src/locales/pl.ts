@@ -1398,7 +1398,7 @@ export default
           "what_to_arrange": [
             "Strona firmowa na Facebooku (Pages) — jeśli nie masz, najpierw załóż na facebook.com/pages/create.",
             "Twoje prywatne konto FB musi mieć rolę \"Administrator\" tej Strony (Ustawienia Strony → Role na Stronie).",
-            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi minimalnymi uprawnieniami: pages_show_list, pages_read_engagement, instagram_basic, instagram_content_publish.",
+            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi minimalnymi uprawnieniami Facebook Pages: pages_show_list, pages_read_engagement.",
             "Strona musi być opublikowana — tryb roboczy uniemożliwia publikację przez API."
           ],
           "time_estimate": "Samo połączenie: ~2 minuty.\n\nJeśli aplikacja Concertivo w Meta jeszcze nie przeszła \"App Review\" Mety — w trybie deweloperskim działa od razu, ale tylko dla wskazanych testerów. Pełny App Review Mety dla advanced permissions: 3–14 dni roboczych po naszej stronie (jednorazowo dla całej platformy, nie dla każdego klienta)."
@@ -1410,8 +1410,8 @@ export default
         "benefits": ["Publikuj zdjęcia i karuzele", "Statystyki zasięgu i zapisów", "AI generuje hashtagi i CTA"],
         "checklist": ["Konto IG jest typu Business/Creator", "Konto IG jest połączone ze Stroną FB", "Mam dostęp administratora do tej Strony FB"],
         "info": {
-          "description": "Publikacja zdjęć, karuzel i Reels na firmowym Instagramie. Statystyki zasięgu, zapisów, udostępnień. Komentarze pod postami i wiadomości DM trafiają do globalnej Skrzynki. Instagram działa przez Graph API Facebooka — dlatego wymaga konta IG typu Biznes/Twórca powiązanego ze Stroną FB.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy Instagramie.\n2. UWAGA: logujesz się przez Facebook, nie przez sam Instagram (tak działa Meta API).\n3. Wybierasz Stronę FB powiązaną z Twoim kontem IG.\n4. Autoryzujesz uprawnienia (zarządzanie postami IG + odczyt insightów).\n5. Posty planujesz w \"Harmonogramie\", z podglądem przed publikacją.",
+          "description": "Publikacja zdjęć, karuzel i Reels na firmowym Instagramie. MVP używa Instagram API with Instagram Login, dlatego wymaga konta IG typu Biznes/Twórca oraz uprawnień instagram_business_basic i instagram_business_content_publish.",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy Instagramie.\n2. Logujesz się przez Instagram Business Login.\n3. Autoryzujesz uprawnienia podstawowego profilu IG i publikacji treści.\n4. Wracasz do Concertivo z aktywnym połączeniem.\n5. Posty planujesz w \"Harmonogramie\", z podglądem przed publikacją.",
           "what_to_arrange": [
             "Konto IG przełączone na \"Biznes\" lub \"Twórca\" (w apce IG → Ustawienia → Konto → Przełącz na konto firmowe).",
             "Konto IG musi być POŁĄCZONE ze Stroną na Facebooku (w Ustawieniach IG → Połączone konta → Facebook).",

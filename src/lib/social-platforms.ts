@@ -69,7 +69,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: 2200,
     aiTone: "hashtag-heavy",
-    scopes: ["pages_show_list", "pages_read_engagement", "instagram_basic", "instagram_content_publish"],
+    scopes: ["instagram_business_basic", "instagram_business_content_publish"],
     envClientIdKey: "META_APP_ID",
   },
   youtube: {
