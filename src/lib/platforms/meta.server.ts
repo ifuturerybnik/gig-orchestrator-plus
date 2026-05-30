@@ -363,7 +363,7 @@ async function waitForIgContainer(args: {
   // Container musi być FINISHED zanim publish. Próbujemy do 10s.
   for (let i = 0; i < 10; i++) {
     const j = await graphJson<{ status_code?: string }>(
-      `${GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
+      `${INSTAGRAM_GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
       { context: "IG container status" },
     );
     if (j.status_code === "FINISHED") return;
@@ -397,7 +397,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: params, context: "IG /media (single)" },
       );
       creationId = j.id;
@@ -411,7 +411,7 @@ export const instagramAdapter: PlatformAdapter = {
           access_token: token,
         });
         const j = await graphJson<{ id: string }>(
-          `${GRAPH}/${encodeURIComponent(igId)}/media`,
+          `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
           { method: "POST", body: p, context: "IG carousel child" },
         );
         childIds.push(j.id);
@@ -423,7 +423,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: p, context: "IG carousel parent" },
       );
       creationId = j.id;
@@ -436,7 +436,7 @@ export const instagramAdapter: PlatformAdapter = {
       access_token: token,
     });
     const pubRes = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media_publish`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media_publish`,
       { method: "POST", body: pub, context: "IG /media_publish" },
     );
     const mediaId = pubRes.id;
@@ -445,7 +445,7 @@ export const instagramAdapter: PlatformAdapter = {
     let permalink: string | null = null;
     try {
       const meta = await graphJson<{ permalink?: string }>(
-        `${GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
+        `${INSTAGRAM_GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
         { context: "IG permalink" },
       );
       permalink = meta.permalink ?? null;
@@ -474,7 +474,7 @@ export const instagramAdapter: PlatformAdapter = {
       const ins = await graphJson<{
         data?: Array<{ name: string; values?: Array<{ value: number }> }>;
       }>(
-        `${GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
         { context: "IG insights" },
       );
       views = ins.data?.find((d) => d.name === "reach")?.values?.[0]?.value ?? 0;
@@ -505,7 +505,7 @@ export const instagramAdapter: PlatformAdapter = {
         replies?: { data?: Array<{ id: string }> };
       }>;
     }>(
-      `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
       { context: "IG /comments" },
     );
     const items = j.data ?? [];
@@ -533,7 +533,7 @@ export const instagramAdapter: PlatformAdapter = {
       access_token: account.access_token,
     });
     const j = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(externalParentCommentId)}/replies`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalParentCommentId)}/replies`,
       { method: "POST", body: params, context: "IG reply" },
     );
     return { externalCommentId: j.id };
