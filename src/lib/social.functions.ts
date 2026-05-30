@@ -1237,7 +1237,8 @@ export const deleteAppCredentials = createServerFn({ method: "POST" })
       .from("social_app_credentials")
       .delete()
       .eq("organization_id", data.organizationId)
-      .eq("platform", data.platform);
+      .eq("platform", credPlatform(data.platform));
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
