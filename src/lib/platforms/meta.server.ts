@@ -192,6 +192,7 @@ export async function listUserPages(userAccessToken: string): Promise<MetaPage[]
   }>(`${url}&access_token=${encodeURIComponent(userAccessToken)}`, {
     context: "Meta /me/accounts",
   });
+  console.log("[meta] /me/accounts pages count =", (j.data ?? []).length);
   return (j.data ?? []).map((p) => ({
     id: p.id,
     name: p.name,
@@ -206,6 +207,30 @@ export async function listUserPages(userAccessToken: string): Promise<MetaPage[]
         }
       : null,
   }));
+}
+
+/** Diagnostyka: lista uprawnień (granted/declined) dla user tokena. */
+export async function listUserPermissions(
+  userAccessToken: string,
+): Promise<{ granted: string[]; declined: string[] }> {
+  try {
+    const j = await graphJson<{
+      data: Array<{ permission: string; status: "granted" | "declined" }>;
+    }>(
+      `${GRAPH}/me/permissions?access_token=${encodeURIComponent(userAccessToken)}`,
+      { context: "Meta /me/permissions" },
+    );
+    const granted: string[] = [];
+    const declined: string[] = [];
+    for (const it of j.data ?? []) {
+      if (it.status === "granted") granted.push(it.permission);
+      else declined.push(it.permission);
+    }
+    return { granted, declined };
+  } catch (e) {
+    console.warn("[meta] /me/permissions failed:", e);
+    return { granted: [], declined: [] };
+  }
 }
 
 // =============================================================================
