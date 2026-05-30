@@ -1404,6 +1404,7 @@ export default
       "open_original": "Open original",
       "sync_now": "Sync",
       "sync_done": "Synced: metrics {{metrics}}, new comments {{comments}}",
+      "sync_meta_limited": "Posts are imported. Meta still blocks metrics and comments until pages_read_engagement / Page Public Content Access is approved.",
       "new_comments": "{{count}} new"
     },
     "stats": {
