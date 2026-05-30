@@ -55,14 +55,23 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
   const handleSync = async (postId: string) => {
     try {
       const res = await syncFn({ data: { organizationId: orgId, postId } });
+      const metaLimitedErrors = res.errors.filter((msg) =>
+        msg.includes("Meta nie udostępnia jeszcze metryk/komentarzy"),
+      );
+      const otherErrors = res.errors.filter((msg) =>
+        !msg.includes("Meta nie udostępnia jeszcze metryk/komentarzy"),
+      );
       toast.success(
         t("social.schedule.sync_done", {
           metrics: res.metricsOk,
           comments: res.commentsInserted,
         }),
       );
-      if (res.errors.length) {
-        toast.warning(res.errors.join("; "));
+      if (metaLimitedErrors.length) {
+        toast.info(t("social.schedule.sync_meta_limited"));
+      }
+      if (otherErrors.length) {
+        toast.warning(otherErrors.join("; "));
       }
       qc.invalidateQueries({ queryKey: ["social-posts", orgId] });
       qc.invalidateQueries({ queryKey: ["inbox-comments", orgId] });
