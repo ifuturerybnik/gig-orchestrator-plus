@@ -82,27 +82,42 @@ if [ -f "$ENV_BACKUP" ]; then
   chmod 600 "$ENV_FILE" || true
 fi
 
+# Akceptuj zarówno .env.production jak i zwykły .env (fallback dla starszych instalacji)
+if [ ! -f "$ENV_FILE" ] && [ -f "$APP_DIR/.env" ]; then
+  warn "Brak .env.production — używam istniejącego .env (fallback)"
+  ENV_FILE="$APP_DIR/.env"
+fi
+
 if [ ! -f "$ENV_FILE" ]; then
-  err "Brak $ENV_FILE — utwórz go przed aktualizacją (z VITE_SUPABASE_*, EXT_SUPABASE_SERVICE_ROLE_KEY, EXT_PII_ENCRYPTION_KEY, PORT)."
+  err "Brak $APP_DIR/.env.production ani $APP_DIR/.env — utwórz jeden z nich przed aktualizacją."
   print_env_help
   exit 1
 fi
 
-log "Ładuję zmienne środowiskowe z .env.production..."
+log "Ładuję zmienne środowiskowe z $(basename "$ENV_FILE")..."
 set -a
 source "$ENV_FILE"
 set +a
 if [ -n "$CLI_PORT" ]; then PORT="$CLI_PORT"; fi
 export PORT
 
-for REQUIRED_ENV in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY EXT_SUPABASE_SERVICE_ROLE_KEY EXT_PII_ENCRYPTION_KEY; do
+# Sprawdzamy tylko zmienne potrzebne do BUILDU (reszta — runtime z PM2 env)
+for REQUIRED_ENV in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
   if [ -z "${!REQUIRED_ENV:-}" ]; then
-    err "Brak zmiennej $REQUIRED_ENV w .env.production — przerywam przed restartem PM2"
+    err "Brak zmiennej $REQUIRED_ENV — wymagana do buildu. Dopisz ją do $(basename "$ENV_FILE")."
     print_env_help
     exit 1
   fi
 done
-ok "Env OK — build i PM2 dostaną wymagane zmienne"
+
+# Runtime sekrety (EXT_*) — ostrzegamy, ale nie blokujemy: mogą siedzieć w env procesu PM2
+for RUNTIME_ENV in EXT_SUPABASE_SERVICE_ROLE_KEY EXT_PII_ENCRYPTION_KEY; do
+  if [ -z "${!RUNTIME_ENV:-}" ]; then
+    warn "$RUNTIME_ENV nie ma w pliku env — zakładam, że PM2 ma to w swoim środowisku (działająca instalacja)"
+  fi
+done
+
+ok "Env OK — kontynuuję build"
 
 # 2) Dependencies
 log "Instaluję zależności (bun install --frozen-lockfile)..."
