@@ -46,9 +46,20 @@ export type SocialPostRow = {
   ai_generated: boolean;
   ai_scenariusz: string | null;
   notes: string | null;
+  source: string;
   created_at: string;
   updated_at: string;
+  // Enriched (z social_post_results / social_post_metrics / social_comments)
+  results: Array<{
+    platform: string;
+    external_post_id: string | null;
+    external_url: string | null;
+    status: string;
+  }>;
+  metrics: { likes: number; comments: number; shares: number; views: number } | null;
+  comment_counts: { total: number; new: number };
 };
+
 
 // ---------- Listing kont ----------
 
@@ -188,7 +199,7 @@ export const listSocialPosts = createServerFn({ method: "GET" })
     let q = supabase
       .from("social_posts")
       .select(
-        "id, organization_id, created_by, target_platforms, content_per_platform, linked_event_id, status, scheduled_at, published_at, ai_generated, ai_scenariusz, notes, created_at, updated_at",
+        "id, organization_id, created_by, target_platforms, content_per_platform, linked_event_id, status, scheduled_at, published_at, ai_generated, ai_scenariusz, notes, source, created_at, updated_at",
       )
       .eq("organization_id", data.organizationId)
       .order("created_at", { ascending: false })
@@ -196,8 +207,76 @@ export const listSocialPosts = createServerFn({ method: "GET" })
     if (data.status) q = q.eq("status", data.status);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return { items: (rows ?? []) as SocialPostRow[] };
+    const baseRows = (rows ?? []) as Array<Omit<SocialPostRow, "results" | "metrics" | "comment_counts">>;
+    if (baseRows.length === 0) return { items: [] };
+    const postIds = baseRows.map((r) => r.id);
+
+    const [resultsRes, metricsRes, commentsRes] = await Promise.all([
+      supabase
+        .from("social_post_results")
+        .select("post_id, platform, external_post_id, external_url, status")
+        .in("post_id", postIds),
+      supabase
+        .from("social_post_metrics")
+        .select("post_id, likes, comments, shares, views, snapshot_at")
+        .in("post_id", postIds)
+        .order("snapshot_at", { ascending: false }),
+      supabase
+        .from("social_comments")
+        .select("post_id, status")
+        .in("post_id", postIds),
+    ]);
+    if (resultsRes.error) throw new Error(resultsRes.error.message);
+    if (metricsRes.error) throw new Error(metricsRes.error.message);
+    if (commentsRes.error) throw new Error(commentsRes.error.message);
+
+    const resultsByPost = new Map<string, SocialPostRow["results"]>();
+    for (const r of (resultsRes.data ?? []) as Array<{
+      post_id: string; platform: string; external_post_id: string | null; external_url: string | null; status: string;
+    }>) {
+      const arr = resultsByPost.get(r.post_id) ?? [];
+      arr.push({ platform: r.platform, external_post_id: r.external_post_id, external_url: r.external_url, status: r.status });
+      resultsByPost.set(r.post_id, arr);
+    }
+
+    // Najnowsza metryka per post (sumujemy po platformach jednego posta)
+    const latestByPost = new Map<string, { likes: number; comments: number; shares: number; views: number }>();
+    const seenPlatform = new Map<string, Set<string>>(); // post_id -> set platforms
+    for (const m of (metricsRes.data ?? []) as Array<{
+      post_id: string; likes: number; comments: number; shares: number; views: number;
+    }> & Array<{ platform?: string }>) {
+      const pid = m.post_id;
+      // pierwszy wpis dla danej platformy w obrębie posta = najnowszy
+      const seen = seenPlatform.get(pid) ?? new Set<string>();
+      const platformKey = (m as { platform?: string }).platform ?? "_";
+      if (seen.has(platformKey)) continue;
+      seen.add(platformKey);
+      seenPlatform.set(pid, seen);
+      const cur = latestByPost.get(pid) ?? { likes: 0, comments: 0, shares: 0, views: 0 };
+      cur.likes += m.likes ?? 0;
+      cur.comments += m.comments ?? 0;
+      cur.shares += m.shares ?? 0;
+      cur.views += m.views ?? 0;
+      latestByPost.set(pid, cur);
+    }
+
+    const commentsByPost = new Map<string, { total: number; new: number }>();
+    for (const c of (commentsRes.data ?? []) as Array<{ post_id: string; status: string }>) {
+      const cur = commentsByPost.get(c.post_id) ?? { total: 0, new: 0 };
+      cur.total++;
+      if (c.status === "new") cur.new++;
+      commentsByPost.set(c.post_id, cur);
+    }
+
+    const items: SocialPostRow[] = baseRows.map((r) => ({
+      ...r,
+      results: resultsByPost.get(r.id) ?? [],
+      metrics: latestByPost.get(r.id) ?? null,
+      comment_counts: commentsByPost.get(r.id) ?? { total: 0, new: 0 },
+    }));
+    return { items };
   });
+
 
 export const createSocialPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
