@@ -210,6 +210,37 @@ export function AccountDetailsDialog({
 
           <Separator />
 
+          {supportsImport && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">
+                    {t("social.account_details.import_title")}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {t("social.account_details.import_desc")}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => importM.mutate()}
+                  disabled={importM.isPending}
+                >
+                  {importM.isPending ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  {t("social.account_details.import_button")}
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {t("social.account_details.import_auto_note")}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground">
               {t("social.account_details.what_now")}
@@ -224,6 +255,7 @@ export function AccountDetailsDialog({
             </ul>
           </div>
         </div>
+
 
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
           <AlertDialog>

@@ -1279,7 +1279,12 @@ export default
       "disconnect": "Disconnect account",
       "disconnect_confirm_title": "Disconnect this account?",
       "disconnect_confirm_desc": "The account \"{{name}}\" will be detached from this organization. Scheduled posts on this platform will not be published. You can reconnect anytime.",
-      "disconnect_success": "Account disconnected."
+      "disconnect_success": "Account disconnected.",
+      "import_title": "Import posts from platform",
+      "import_desc": "Fetches the latest 25 posts published directly on the platform (outside Concertivo) and adds them to Schedule as \"published\". Comments and metrics will sync automatically.",
+      "import_button": "Import 25 posts",
+      "import_auto_note": "The app pulls new posts from this platform every 30 minutes automatically — use manual import only to refresh now or backfill history.",
+      "import_success": "Imported {{inserted}} new posts (checked: {{fetched}})."
     },
     "post_status": {
       "draft": "Draft",
