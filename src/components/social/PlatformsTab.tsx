@@ -96,10 +96,17 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {isConnected ? (
-                      <Badge variant="default" className="bg-emerald-600">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        {t("social.status.connected")}
-                      </Badge>
+                      account?.status === "demo" ? (
+                        <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+                          <AlertCircle className="mr-1 h-3 w-3" />
+                          Demo
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="bg-emerald-600">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          {t("social.status.connected")}
+                        </Badge>
+                      )
                     ) : meta.status === "coming_soon" ? (
                       <Badge variant="secondary">
                         <Clock className="mr-1 h-3 w-3" />
@@ -173,8 +180,16 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                   >
                     <div className="font-medium truncate">{account.account_name}</div>
                     <div className="text-muted-foreground">
-                      {t("social.connected_at")}:{" "}
-                      {new Date(account.connected_at).toLocaleDateString()}
+                      {account.status === "demo" ? (
+                        <span className="text-amber-700 dark:text-amber-400">
+                          Wpis testowy (seed) — rozłącz i połącz prawdziwie
+                        </span>
+                      ) : (
+                        <>
+                          {t("social.connected_at")}:{" "}
+                          {new Date(account.connected_at).toLocaleDateString()}
+                        </>
+                      )}
                     </div>
                     <div className="mt-1 text-[11px] text-primary">
                       {t("social.account_details.open_link")} →
