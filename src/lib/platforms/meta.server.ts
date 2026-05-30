@@ -31,6 +31,27 @@ import type {
 const GRAPH = "https://graph.facebook.com/v20.0";
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
 
+export class MetaPermissionError extends Error {
+  readonly code = "META_PERMISSION_REQUIRED";
+
+  constructor(context: string) {
+    super(
+      `${context}: Meta nie udostępnia jeszcze metryk/komentarzy dla tej aplikacji. ` +
+        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonego pages_read_engagement albo Page Public Content Access w Meta App Review.",
+    );
+    this.name = "MetaPermissionError";
+  }
+}
+
+function isMetaEngagementPermissionError(status: number, body: string): boolean {
+  if (status !== 400 && status !== 403) return false;
+  return (
+    body.includes("pages_read_engagement") &&
+    body.includes("Page Public Content Access") &&
+    (body.includes("(#10)") || body.includes('"code":10'))
+  );
+}
+
 function composeText(content: PlatformPostContent, maxLen: number): string {
   const text = (content.text ?? "").trim();
   const tags = (content.hashtags ?? [])
@@ -49,6 +70,9 @@ async function graphJson<T = unknown>(
   const res = await fetch(url, init);
   const txt = await res.text();
   if (!res.ok) {
+    if (isMetaEngagementPermissionError(res.status, txt)) {
+      throw new MetaPermissionError(ctx);
+    }
     throw new Error(`${ctx} ${res.status}: ${txt.slice(0, 400)}`);
   }
   try {

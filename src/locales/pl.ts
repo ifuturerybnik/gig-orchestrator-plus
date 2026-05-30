@@ -1583,6 +1583,7 @@ export default
       "open_original": "Otwórz oryginał",
       "sync_now": "Synchronizuj",
       "sync_done": "Zsynchronizowano: metryki {{metrics}}, nowe komentarze {{comments}}",
+      "sync_meta_limited": "Posty są zaimportowane. Meta blokuje jeszcze metryki i komentarze do czasu zatwierdzenia uprawnień pages_read_engagement / Page Public Content Access.",
       "new_comments": "{{count}} nowych"
     },
     "stats": {
