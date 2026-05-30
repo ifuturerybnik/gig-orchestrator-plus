@@ -53,10 +53,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     aiTone: "long",
     scopes: [
       "pages_show_list",
-      "pages_manage_posts",
       "pages_read_engagement",
-      "pages_manage_engagement",
-      "pages_read_user_content",
     ],
     envClientIdKey: "META_APP_ID",
   },
@@ -72,7 +69,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     supportsMetrics: true,
     maxTextLength: 2200,
     aiTone: "hashtag-heavy",
-    scopes: ["instagram_basic", "instagram_content_publish", "instagram_manage_comments"],
+    scopes: ["pages_show_list", "pages_read_engagement", "instagram_basic", "instagram_content_publish"],
     envClientIdKey: "META_APP_ID",
   },
   youtube: {
