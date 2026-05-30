@@ -1399,6 +1399,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         scope: [
           "pages_show_list",
           "pages_read_engagement",
+          "pages_manage_posts",
+          "pages_manage_metadata",
+          "business_management",
         ].join(","),
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
