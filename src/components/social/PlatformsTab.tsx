@@ -115,7 +115,7 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
                           <button
                             type="button"
                             onClick={() => setInfoPlatform(pid)}
-                            aria-label={t("social.info_dialog.aria_open", { platform: meta.brandColor ? t(`social.platforms.${pid}.name`) : pid })}
+                            aria-label={t("social.info_dialog.aria_open", { platform: t(`social.platforms.${pid}.name`) })}
                             className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             <HelpCircle className="h-4 w-4" />
