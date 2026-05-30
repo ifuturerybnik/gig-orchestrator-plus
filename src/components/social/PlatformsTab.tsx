@@ -42,6 +42,7 @@ const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?:
 export function PlatformsTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const [wizardPlatform, setWizardPlatform] = useState<SocialPlatformId | null>(null);
+  const [infoPlatform, setInfoPlatform] = useState<SocialPlatformId | null>(null);
 
   const fetchAccounts = useServerFn(listSocialAccounts);
   const accountsQ = useQuery({
