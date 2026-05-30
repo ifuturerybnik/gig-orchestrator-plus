@@ -28,6 +28,7 @@ import type {
 } from "./types";
 
 const GRAPH = "https://graph.facebook.com/v20.0";
+const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
   const text = (content.text ?? "").trim();
@@ -95,6 +96,69 @@ export async function exchangeLongLivedUserToken(args: {
     { context: "Meta long-lived exchange" },
   );
   return { accessToken: j.access_token, expiresIn: j.expires_in ?? null };
+}
+
+export async function exchangeInstagramLoginCode(args: {
+  code: string;
+  redirectUri: string;
+  clientId: string;
+  clientSecret: string;
+}): Promise<{ accessToken: string; userId: string; scopes: string[] }> {
+  const body = new URLSearchParams({
+    client_id: args.clientId,
+    client_secret: args.clientSecret,
+    grant_type: "authorization_code",
+    redirect_uri: args.redirectUri,
+    code: args.code,
+  });
+  const j = await graphJson<{
+    access_token?: string;
+    user_id?: string;
+    permissions?: string;
+    data?: Array<{ access_token?: string; user_id?: string; permissions?: string }>;
+  }>("https://api.instagram.com/oauth/access_token", {
+    method: "POST",
+    body,
+    context: "Instagram token exchange",
+  });
+  const item = j.data?.[0] ?? j;
+  if (!item.access_token || !item.user_id) {
+    throw new Error("Instagram token exchange: brak access_token lub user_id.");
+  }
+  return {
+    accessToken: item.access_token,
+    userId: String(item.user_id),
+    scopes: (item.permissions ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  };
+}
+
+export async function exchangeLongLivedInstagramToken(args: {
+  shortToken: string;
+  clientSecret: string;
+}): Promise<{ accessToken: string; expiresIn: number | null }> {
+  const params = new URLSearchParams({
+    grant_type: "ig_exchange_token",
+    client_secret: args.clientSecret,
+    access_token: args.shortToken,
+  });
+  const j = await graphJson<{ access_token: string; expires_in?: number }>(
+    `https://graph.instagram.com/access_token?${params.toString()}`,
+    { context: "Instagram long-lived exchange" },
+  );
+  return { accessToken: j.access_token, expiresIn: j.expires_in ?? null };
+}
+
+export async function fetchInstagramLoginProfile(accessToken: string): Promise<{ id: string; username: string }> {
+  const j = await graphJson<{
+    user_id?: string;
+    username?: string;
+    data?: Array<{ user_id?: string; username?: string }>;
+  }>(`${INSTAGRAM_GRAPH}/me?fields=user_id,username&access_token=${encodeURIComponent(accessToken)}`, {
+    context: "Instagram /me",
+  });
+  const item = j.data?.[0] ?? j;
+  if (!item.user_id || !item.username) throw new Error("Instagram /me: brak user_id lub username.");
+  return { id: String(item.user_id), username: item.username };
 }
 
 export type MetaPage = {
