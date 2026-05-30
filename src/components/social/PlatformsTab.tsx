@@ -213,6 +213,18 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
           onClose={() => setInfoPlatform(null)}
         />
       )}
+
+      {detailsAccountId && (() => {
+        const acc = (accountsQ.data?.items ?? []).find((a) => a.id === detailsAccountId);
+        if (!acc) return null;
+        return (
+          <AccountDetailsDialog
+            account={acc}
+            open={!!detailsAccountId}
+            onClose={() => setDetailsAccountId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
