@@ -13,6 +13,7 @@ import {
   exchangeMetaCode,
   fetchInstagramLoginProfile,
   listUserPages,
+  listUserPermissions,
 } from "./platforms/meta.server";
 import {
   exchangeGoogleCode,
@@ -399,8 +400,16 @@ export async function handleMetaOAuthCallback(args: {
   // 6) /me/accounts
   const pages = await listUserPages(longTok.accessToken);
   if (pages.length === 0) {
+    const perms = await listUserPermissions(longTok.accessToken);
+    console.error("[meta-callback] empty /me/accounts. granted=", perms.granted, "declined=", perms.declined);
+    const missing = ["pages_show_list", "pages_read_engagement", "business_management"]
+      .filter((p) => !perms.granted.includes(p));
+    const hint =
+      missing.length > 0
+        ? `Brakuje przyznanych uprawnień: ${missing.join(", ")}.`
+        : 'Wszystkie uprawnienia zostały przyznane, ale Meta nie zwróciła żadnej strony — najczęściej znaczy to, że w oknie autoryzacji nie wybrałeś konkretnej strony (kliknij "Edytuj dostęp" → "Wybierz strony" i zaznacz właściwy Fanpage) albo że Twoje konto nie ma roli administratora tej strony w Business Managerze.';
     throw new Error(
-      "Nie znaleziono żadnej strony Facebook na tym koncie. Upewnij się, że autoryzujesz administrator strony.",
+      `Nie znaleziono żadnej strony Facebook na tym koncie. ${hint} Granted: [${perms.granted.join(", ") || "—"}]. Declined: [${perms.declined.join(", ") || "—"}].`,
     );
   }
   // Preferuj stronę z podpiętym Instagram Business; fallback: pierwsza.
