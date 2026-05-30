@@ -5,6 +5,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getAdapter, getValidAccount } from "@/lib/platforms/index.server";
+import { MetaPermissionError } from "@/lib/platforms/meta.server";
 
 type ResultRow = {
   post_id: string;
@@ -30,6 +31,7 @@ async function processTick() {
 
   let okCount = 0;
   let fail = 0;
+  let skippedPermission = 0;
   for (const r of rows) {
     if (!r.external_post_id || !r.post) continue;
     const adapter = getAdapter(r.platform);
@@ -57,11 +59,15 @@ async function processTick() {
       });
       okCount++;
     } catch (e) {
+      if (e instanceof MetaPermissionError) {
+        skippedPermission++;
+        continue;
+      }
       fail++;
       console.error("[social-sync-metrics]", r.platform, r.post_id, e);
     }
   }
-  return { processed: rows.length, ok: okCount, fail };
+  return { processed: rows.length, ok: okCount, fail, skippedPermission };
 }
 
 export const Route = createFileRoute("/api/public/social-sync-metrics")({
