@@ -141,7 +141,7 @@ export default
       "code_label": "6-cyfrowy kod z aplikacji",
       "verify": "Zweryfikuj i włącz",
       "warning_aria": "Brak 2FA — zalecane włączenie",
-      "warning_tooltip": "Twoje konto pełni odpowiedzialną rolę (administrator aplikacji lub właściciel organizacji), a nie ma włączonej weryfikacji dwuetapowej. Brak 2FA znacznie zwiększa ryzyko przejęcia konta i dostępu osób trzecich do danych Twoich i Twojej organizacji. Włącz 2FA w sekcji \"Profil → Bezpieczeństwo\".\"
+      "warning_tooltip": "Twoje konto pełni odpowiedzialną rolę (administrator aplikacji lub właściciel organizacji), a nie ma włączonej weryfikacji dwuetapowej. Brak 2FA znacznie zwiększa ryzyko przejęcia konta i dostępu osób trzecich do danych Twoich i Twojej organizacji. Włącz 2FA w sekcji \"Profil → Bezpieczeństwo\".",
     }
   },
 
@@ -186,7 +186,7 @@ export default
     "title_user": "Moje stopki e-mail",
     "title_org": "Stopki e-mail organizacji",
     "add": "Dodaj stopkę",
-    "empty": "Brak stopek. Kliknij \"Dodaj stopkę\", aby utworzyć pierwszą.\",
+    "empty": "Brak stopek. Kliknij \"Dodaj stopkę\", aby utworzyć pierwszą.",
     "default": "Domyślna",
     "set_default": "Ustaw jako domyślną",
     "set_default_ok": "Ustawiono jako domyślną",
@@ -220,8 +220,8 @@ export default
       "extra_text": "Tekst dodatkowy (np. RODO)",
       "extra_text_ph": "Klauzula RODO, dodatkowe informacje…",
       "label_opt": "etykieta (opc.)",
-      "none_click_add": "Brak. Kliknij \"Dodaj\".\",
-      "none_social": "Brak. Wybierz platformę i kliknij \"Dodaj\".\",
+      "none_click_add": "Brak. Kliknij \"Dodaj\".",
+      "none_social": "Brak. Wybierz platformę i kliknij \"Dodaj\".",
       "none": "brak",
       "upload": "Wgraj",
       "uploading": "Wgrywanie…",
@@ -271,7 +271,7 @@ export default
       "have_account": "Masz już konto?",
       "login_link": "Zaloguj się",
       "check_email": "Wysłaliśmy link aktywacyjny od Concertivo. Sprawdź swoją pocztę e-mail. Jeśli nie widzisz wiadomości w folderze głównym, sprawdź w innych folderach oraz w SPAM.",
-      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji \"Profil → Bezpieczeństwo\". Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych.\",
+      "mfa_recommendation": "🔒 Zalecamy włączenie weryfikacji dwuetapowej (2FA) po założeniu konta — w sekcji \"Profil → Bezpieczeństwo\". Dodatkowy kod z aplikacji znacznie zwiększa bezpieczeństwo Twoich danych.",
       "accept_legal_prefix": "Akceptuję",
       "accept_legal_and": "oraz",
       "accept_marketing": "Chcę otrzymywać informacje o nowych funkcjach, wydarzeniach i ofertach (opcjonalnie — możesz wycofać w każdej chwili)."
@@ -319,7 +319,7 @@ export default
     "new": "Zarejestruj swoją organizację",
     "empty": "Nie masz jeszcze żadnej organizacji. Zarejestruj zespół lub firmę.",
     "delete": "Usuń organizację",
-    "delete_confirm": "Usunąć organizację \"{{name}}\"? Tej operacji nie można cofnąć — usunięte zostaną też powiązane dane.\",
+    "delete_confirm": "Usunąć organizację \"{{name}}\"? Tej operacji nie można cofnąć — usunięte zostaną też powiązane dane.",
     "deleted": "Organizacja usunięta.",
     "type": {
       "label": "Typ organizacji",
@@ -446,10 +446,10 @@ export default
         "continue_soon_tooltip": "",
         "exact_blocks_new": "Istnieje już zarejestrowana organizacja o tej nazwie — dodaj ją z listy zamiast tworzyć duplikat.",
         "step2_title": "Dane kontrahenta",
-        "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". To Twój prywatny kontrahent — zapiszemy go na Twojej liście.\",
-        "artist_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa artysty / zespołu.\",
+        "step2_subtitle": "Uzupełnij dane dla: \"{{name}}\". To Twój prywatny kontrahent — zapiszemy go na Twojej liście.",
+        "artist_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa artysty / zespołu.",
         "artist_name_label": "Nazwa artysty / zespołu",
-        "company_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa firmy.\",
+        "company_name_hint": "Nazwa \"{{name}}\" zostanie zapisana jako nazwa firmy.",
         "company_name_label": "Nazwa firmy",
         "review_hint": "To Twój prywatny kontrahent — dane widzisz tylko Ty (i osoby, którym później udostępnisz tę listę). Administrator aplikacji nie zatwierdza tego wpisu.",
         "submitted_for_review": "Dodano kontrahenta do Twojej listy."
@@ -609,14 +609,14 @@ export default
         "status": "Status",
         "status_placeholder": "Wybierz status",
         "visibility": "Widoczność",
-        "visibility_hint": "\"Wszystko\" obejmuje datę, nazwę wydarzenia oraz miejsce.\",
+        "visibility_hint": "\"Wszystko\" obejmuje datę, nazwę wydarzenia oraz miejsce.",
         "name": "Nazwa wydarzenia",
         "city": "Miejscowość",
         "postal_code": "Kod pocztowy",
         "street": "Ulica",
         "street_number": "Numer",
         "google_maps_url": "Pinezka Google (URL)",
-        "google_maps_url_hint": "Wymagana tylko gdy widoczność = \"Upublicznij na stronie wszystko\".\",
+        "google_maps_url_hint": "Wymagana tylko gdy widoczność = \"Upublicznij na stronie wszystko\".",
         "notes": "Notatki",
         "notes_placeholder": "Dodatkowe informacje o wydarzeniu…"
       },
@@ -777,7 +777,7 @@ export default
 
     "planned": {
       "title": "Przyszłe wydatki",
-      "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz \"Zrealizowano\", aby wykluczyć z podsumowania.\",
+      "subtitle": "Planowane wpływy i wydatki organizacji. Zaznacz \"Zrealizowano\", aby wykluczyć z podsumowania.",
       "add": "Dodaj pozycję",
       "added": "Pozycja dodana",
       "deleted": "Pozycja usunięta",
@@ -788,7 +788,7 @@ export default
       "collapse": "Zwiń listę",
       "pick_date": "Wybierz datę",
       "move_title": "Przenieść do budżetu?",
-      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Tej operacji nie można cofnąć. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?\",
+      "move_description": "Zaznaczyłeś pozycję jako zrealizowaną. Tej operacji nie można cofnąć. Czy przenieść ją do tabeli \"Budżet\" i uwzględnić w podsumowaniu?",
       "move_yes": "Tak, przenieś",
       "move_no": "Nie, tylko oznacz",
       "moved": "Przeniesiono do budżetu",
@@ -918,7 +918,7 @@ export default
       "role_super_admin": "Super admin",
       "role_admin_staff": "Admin",
       "grant_btn": "Nadaj rolę",
-      "revoke_btn": "Odbierz \"{{role}}\"\",
+      "revoke_btn": "Odbierz \"{{role}}\"",
       "granted": "Rola nadana.",
       "revoked": "Rola odebrana.",
       "empty": "Brak administratorów.",
@@ -1305,7 +1305,7 @@ export default
       "requires_app_review": "Wymaga akceptacji dostawcy",
       "requires_paid_api": "Płatne API",
       "max_chars": "Maks. {{count}} znaków",
-      "checklist_intro": "Zanim klikniesz \"Połącz\", upewnij się, że masz wszystko gotowe:\",
+      "checklist_intro": "Zanim klikniesz \"Połącz\", upewnij się, że masz wszystko gotowe:",
       "permissions_intro": "Concertivo poprosi o następujące uprawnienia:",
       "scopes_requested": "Wymagane zakresy",
       "permissions_explanation": "Uprawnienia służą tylko publikowaniu i odczytowi statystyk Twoich treści. Nie czytamy prywatnych wiadomości ani danych innych użytkowników.",
@@ -1318,7 +1318,7 @@ export default
       "not_ready_toast": "Integracja nie jest jeszcze gotowa.",
       "oauth_redirect_coming_soon": "Przekierowanie OAuth zostanie uruchomione w kolejnej turze.",
       "ready_title": "Wszystko gotowe",
-      "not_ready_body_v2": "Brak skonfigurowanej aplikacji deweloperskiej dla tej platformy. Wróć do kroku \"Konfiguracja aplikacji\" i wklej Client ID + Client Secret.\",
+      "not_ready_body_v2": "Brak skonfigurowanej aplikacji deweloperskiej dla tej platformy. Wróć do kroku \"Konfiguracja aplikacji\" i wklej Client ID + Client Secret.",
       "back_to_setup": "Wróć do konfiguracji",
       "platform_coming_soon_title": "Platforma w trakcie wdrożenia",
       "platform_coming_soon_body": "Integracja {{platform}} zostanie udostępniona w kolejnej iteracji. Na razie aktywny jest tylko X (Twitter).",
@@ -1354,16 +1354,16 @@ export default
         "tip_label": "Wskazówka",
         "tip_body": "Client Secret X pokazywany jest TYLKO RAZ podczas tworzenia. Jeśli go zgubisz, musisz wygenerować nowy (Regenerate) w ustawieniach aplikacji.",
         "steps": [
-          "Zaloguj się na <strong>developer.x.com</strong> swoim kontem X. Jeśli nie masz konta developerskiego, kliknij \"Sign up\" i wypełnij formularz (poziom <strong>Free</strong> wystarczy do startu — testowanie i podstawowe funkcje).\",
-          "W panelu kliknij <strong>+ Create Project</strong>. Nazwa: np. \"Concertivo — [nazwa Twojej organizacji]\". Use case: wybierz <em>Making a bot</em> lub <em>Publishing tools</em>. Opis: \"Publikacja postów i odczyt komentarzy dla organizacji muzycznej\".\",
-          "Wewnątrz projektu utwórz <strong>App</strong> (np. \"concertivo-prod\"). Po utworzeniu zobaczysz <em>API Key</em>, <em>API Secret</em>, <em>Bearer Token</em> — <strong>ZIGNORUJ je</strong> (to OAuth 1.0a). Potrzebujemy OAuth 2.0.\",
+          "Zaloguj się na <strong>developer.x.com</strong> swoim kontem X. Jeśli nie masz konta developerskiego, kliknij \"Sign up\" i wypełnij formularz (poziom <strong>Free</strong> wystarczy do startu — testowanie i podstawowe funkcje).",
+          "W panelu kliknij <strong>+ Create Project</strong>. Nazwa: np. \"Concertivo — [nazwa Twojej organizacji]\". Use case: wybierz <em>Making a bot</em> lub <em>Publishing tools</em>. Opis: \"Publikacja postów i odczyt komentarzy dla organizacji muzycznej\".",
+          "Wewnątrz projektu utwórz <strong>App</strong> (np. \"concertivo-prod\"). Po utworzeniu zobaczysz <em>API Key</em>, <em>API Secret</em>, <em>Bearer Token</em> — <strong>ZIGNORUJ je</strong> (to OAuth 1.0a). Potrzebujemy OAuth 2.0.",
           "Wejdź w zakładkę <strong>Settings</strong> aplikacji → sekcja <strong>User authentication settings</strong> → kliknij <strong>Set up</strong> (lub Edit).",
           "<strong>App permissions</strong>: zaznacz <strong>Read and write and Direct message</strong>.<br/><strong>Type of App</strong>: wybierz <strong>Web App, Automated App or Bot</strong> (Confidential client).",
           "<strong>Callback URI / Redirect URL</strong>: wklej dokładnie ten adres: {CALLBACK_URL}<br/>Możesz dodać wiele callbacków (np. dev + prod) — każdy w osobnej linii.",
           "<strong>Website URL</strong>: wpisz adres strony Twojej organizacji (np. https://twoja-domena.pl). To wymagane pole.",
           "Kliknij <strong>Save</strong>. Pojawi się ekran z <strong>OAuth 2.0 Client ID</strong> i <strong>Client Secret</strong>. <strong>Skopiuj OBA</strong> — Client Secret pokazywany jest tylko raz!",
           "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
-          "Po zapisaniu przejdź do ostatniego kroku \"Połączenie\" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta.\"
+          "Po zapisaniu przejdź do ostatniego kroku \"Połączenie\" i kliknij <strong>Przejdź do X</strong> — X poprosi Cię o autoryzację konta, a Concertivo automatycznie zapisze dane konta."
         ]
       },
       "linkedin": {
@@ -1373,7 +1373,7 @@ export default
         "tip_body": "LinkedIn wymaga, aby aplikacja była przypisana do Strony firmowej (Company Page). Jeśli nie masz Strony — utwórz ją najpierw na linkedin.com/company/setup/new/.",
         "steps": [
           "Zaloguj się na <strong>linkedin.com/developers/apps</strong> swoim kontem LinkedIn (musi być właścicielem lub administratorem Strony firmowej).",
-          "Kliknij <strong>Create app</strong>. <em>App name</em>: np. \"Concertivo — [nazwa Twojej organizacji]\". <em>LinkedIn Page</em>: wybierz Stronę firmową swojej organizacji. <em>App logo</em>: wgraj logo (min. 100×100 px).\",
+          "Kliknij <strong>Create app</strong>. <em>App name</em>: np. \"Concertivo — [nazwa Twojej organizacji]\". <em>LinkedIn Page</em>: wybierz Stronę firmową swojej organizacji. <em>App logo</em>: wgraj logo (min. 100×100 px).",
           "Zaakceptuj warunki i kliknij <strong>Create app</strong>. Zostaniesz przekierowany do panelu aplikacji.",
           "Wejdź w zakładkę <strong>Auth</strong>. Skopiuj <strong>Client ID</strong> i <strong>Client Secret</strong> (kliknij ikonę oka, aby pokazać Secret).",
           "Wciąż w zakładce <strong>Auth</strong>, w sekcji <strong>OAuth 2.0 settings → Authorized redirect URLs</strong>, kliknij <strong>+ Add redirect URL</strong> i wklej dokładnie ten adres: {CALLBACK_URL}",
@@ -1381,7 +1381,7 @@ export default
           "Następnie kliknij <strong>Request access</strong> przy produkcie <strong>Share on LinkedIn</strong> (również automatyczne).",
           "Sprawdź w zakładce <strong>Auth → OAuth 2.0 scopes</strong>, czy widzisz aktywne: <code>openid</code>, <code>profile</code>, <code>email</code>, <code>w_member_social</code>. Jeśli któregoś brakuje — wróć do <em>Products</em>.",
           "Wróć do tej karty w Concertivo i wklej skopiowane wartości w pola poniżej. Kliknij <strong>Zapisz klucze</strong>.",
-          "Po zapisaniu przejdź do ostatniego kroku \"Połączenie\" i kliknij <strong>Przejdź do LinkedIn</strong> — LinkedIn poprosi o autoryzację, a Concertivo automatycznie zapisze dane konta.\"
+          "Po zapisaniu przejdź do ostatniego kroku \"Połączenie\" i kliknij <strong>Przejdź do LinkedIn</strong> — LinkedIn poprosi o autoryzację, a Concertivo automatycznie zapisze dane konta."
         ]
       }
     },
@@ -1394,14 +1394,14 @@ export default
         "checklist": ["Mam rolę administratora Strony", "Strona jest opublikowana (nie tryb roboczy)", "Mam profil osobisty FB powiązany z rolą"],
         "info": {
           "description": "Bezpośrednie publikowanie postów (tekst, zdjęcia, wideo, linki) na Stronie firmowej Twojej organizacji. Statystyki zasięgu, reakcji, kliknięć i komentarzy spływają z powrotem do Concertivo. Komentarze pod postami pojawiają się w globalnej Skrzynce — możesz odpowiadać bez przełączania się do FB.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy Facebooku.\n2. Otwiera się okno logowania Facebooka (Twoje prywatne konto).\n3. Facebook pyta, do których Stron chcesz dać dostęp Concertivo — zaznaczasz Stronę swojej organizacji.\n4. Wracasz do Concertivo z aktywnym połączeniem.\n5. Posty komponujesz w zakładce \"AI Studio\" lub \"Harmonogram\", wybierając Facebook jako platformę docelową.\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy Facebooku.\n2. Otwiera się okno logowania Facebooka (Twoje prywatne konto).\n3. Facebook pyta, do których Stron chcesz dać dostęp Concertivo — zaznaczasz Stronę swojej organizacji.\n4. Wracasz do Concertivo z aktywnym połączeniem.\n5. Posty komponujesz w zakładce \"AI Studio\" lub \"Harmonogram\", wybierając Facebook jako platformę docelową.",
           "what_to_arrange": [
             "Strona firmowa na Facebooku (Pages) — jeśli nie masz, najpierw załóż na facebook.com/pages/create.",
-            "Twoje prywatne konto FB musi mieć rolę \"Administrator\" tej Strony (Ustawienia Strony → Role na Stronie).\",
-            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi uprawnieniami: pages_show_list, pages_manage_posts, pages_read_engagement (to robimy my, jednorazowo).\",
+            "Twoje prywatne konto FB musi mieć rolę \"Administrator\" tej Strony (Ustawienia Strony → Role na Stronie).",
+            "Aplikacja Concertivo w Meta for Developers musi być w trybie \"Live\" z zatwierdzonymi uprawnieniami: pages_show_list, pages_manage_posts, pages_read_engagement (to robimy my, jednorazowo).",
             "Strona musi być opublikowana — tryb roboczy uniemożliwia publikację przez API."
           ],
-          "time_estimate": "Samo połączenie: ~2 minuty.\n\nJeśli aplikacja Concertivo w Meta jeszcze nie przeszła \"App Review\" Mety — w trybie deweloperskim działa od razu, ale tylko dla wskazanych testerów. Pełny App Review Mety dla advanced permissions: 3–14 dni roboczych po naszej stronie (jednorazowo dla całej platformy, nie dla każdego klienta).\"
+          "time_estimate": "Samo połączenie: ~2 minuty.\n\nJeśli aplikacja Concertivo w Meta jeszcze nie przeszła \"App Review\" Mety — w trybie deweloperskim działa od razu, ale tylko dla wskazanych testerów. Pełny App Review Mety dla advanced permissions: 3–14 dni roboczych po naszej stronie (jednorazowo dla całej platformy, nie dla każdego klienta)."
         }
       },
       "instagram": {
@@ -1411,9 +1411,9 @@ export default
         "checklist": ["Konto IG jest typu Business/Creator", "Konto IG jest połączone ze Stroną FB", "Mam dostęp administratora do tej Strony FB"],
         "info": {
           "description": "Publikacja zdjęć, karuzel i Reels na firmowym Instagramie. Statystyki zasięgu, zapisów, udostępnień. Komentarze pod postami i wiadomości DM trafiają do globalnej Skrzynki. Instagram działa przez Graph API Facebooka — dlatego wymaga konta IG typu Biznes/Twórca powiązanego ze Stroną FB.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy Instagramie.\n2. UWAGA: logujesz się przez Facebook, nie przez sam Instagram (tak działa Meta API).\n3. Wybierasz Stronę FB powiązaną z Twoim kontem IG.\n4. Autoryzujesz uprawnienia (zarządzanie postami IG + odczyt insightów).\n5. Posty planujesz w \"Harmonogramie\", z podglądem przed publikacją.\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy Instagramie.\n2. UWAGA: logujesz się przez Facebook, nie przez sam Instagram (tak działa Meta API).\n3. Wybierasz Stronę FB powiązaną z Twoim kontem IG.\n4. Autoryzujesz uprawnienia (zarządzanie postami IG + odczyt insightów).\n5. Posty planujesz w \"Harmonogramie\", z podglądem przed publikacją.",
           "what_to_arrange": [
-            "Konto IG przełączone na \"Biznes\" lub \"Twórca\" (w apce IG → Ustawienia → Konto → Przełącz na konto firmowe).\",
+            "Konto IG przełączone na \"Biznes\" lub \"Twórca\" (w apce IG → Ustawienia → Konto → Przełącz na konto firmowe).",
             "Konto IG musi być POŁĄCZONE ze Stroną na Facebooku (w Ustawieniach IG → Połączone konta → Facebook).",
             "Musisz być administratorem tej Strony FB (jak przy integracji Facebook).",
             "Ta sama aplikacja Concertivo w Meta — jedna autoryzacja Mety daje dostęp i do FB, i do IG."
@@ -1428,14 +1428,14 @@ export default
         "checklist": ["Mam dostęp właściciela kanału", "Kanał jest zweryfikowany", "Konto Google ma włączone API"],
         "info": {
           "description": "Zarządzanie metadanymi filmów (tytuły, opisy, tagi, miniaturki), upload nowych filmów, czytanie statystyk obejrzeń, czasu oglądania i subskrypcji. AI proponuje SEO-friendly tytuły i opisy dopasowane do wydarzenia/koncertu. Komentarze pod filmami trafiają do Skrzynki.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy YouTube.\n2. Przekierowanie do logowania Google — wybierasz konto powiązane z kanałem YT.\n3. Google pokazuje listę żądanych uprawnień YouTube Data API v3 — akceptujesz.\n4. Wracasz do Concertivo, kanał jest podpięty.\n5. Filmy zarządzasz w \"AI Studio\" / \"Harmonogramie\" wybierając YouTube jako platformę.\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy YouTube.\n2. Przekierowanie do logowania Google — wybierasz konto powiązane z kanałem YT.\n3. Google pokazuje listę żądanych uprawnień YouTube Data API v3 — akceptujesz.\n4. Wracasz do Concertivo, kanał jest podpięty.\n5. Filmy zarządzasz w \"AI Studio\" / \"Harmonogramie\" wybierając YouTube jako platformę.",
           "what_to_arrange": [
-            "Musisz być właścicielem kanału lub mieć rolę \"Manager\" w YouTube Studio → Ustawienia → Uprawnienia.\",
+            "Musisz być właścicielem kanału lub mieć rolę \"Manager\" w YouTube Studio → Ustawienia → Uprawnienia.",
             "Kanał musi być zweryfikowany numerem telefonu (jednorazowo w studio.youtube.com).",
-            "Konto Google musi być w \"normalnym\" stanie — bez ograniczeń community guidelines.\",
+            "Konto Google musi być w \"normalnym\" stanie — bez ograniczeń community guidelines.",
             "Aplikacja Concertivo musi mieć włączone YouTube Data API v3 + (dla uploadu) przejść Google API Audit — robimy to my, jednorazowo dla platformy."
           ],
-          "time_estimate": "Czytanie statystyk i edycja istniejących filmów: od razu po połączeniu (~3 minuty).\n\nUpload nowych filmów wymaga przejścia Google API Audit — bez audytu działa tryb testowy (max 100 uploadów łącznie, filmy oznaczone jako \"prywatne\"). Pełny audyt Google YouTube API: 4–8 tygodni po naszej stronie (jednorazowo).\"
+          "time_estimate": "Czytanie statystyk i edycja istniejących filmów: od razu po połączeniu (~3 minuty).\n\nUpload nowych filmów wymaga przejścia Google API Audit — bez audytu działa tryb testowy (max 100 uploadów łącznie, filmy oznaczone jako \"prywatne\"). Pełny audyt Google YouTube API: 4–8 tygodni po naszej stronie (jednorazowo)."
         }
       },
       "linkedin": {
@@ -1445,13 +1445,13 @@ export default
         "checklist": ["Mam rolę Super Admin Strony firmowej", "Strona ma uzupełniony profil (logo, opis)", "Konto osobiste jest aktywne i powiązane"],
         "info": {
           "description": "Publikacja postów (tekst, obrazy, linki, dokumenty PDF) na Stronie firmowej LinkedIn. Statystyki impresji, kliknięć, zaangażowania, obserwujących. AI dostosowuje ton do profesjonalnego B2B i optymalizuje długość pod algorytm LinkedIn.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy LinkedIn.\n2. Logujesz się przez LinkedIn swoim prywatnym kontem.\n3. Wybierasz Stronę firmową, którą chcesz podpiąć (musisz być jej Adminem).\n4. Autoryzujesz uprawnienia (w_organization_social, r_organization_social).\n5. Posty komponujesz w \"AI Studio\", planujesz w \"Harmonogramie\".\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy LinkedIn.\n2. Logujesz się przez LinkedIn swoim prywatnym kontem.\n3. Wybierasz Stronę firmową, którą chcesz podpiąć (musisz być jej Adminem).\n4. Autoryzujesz uprawnienia (w_organization_social, r_organization_social).\n5. Posty komponujesz w \"AI Studio\", planujesz w \"Harmonogramie\".",
           "what_to_arrange": [
-            "Musisz mieć rolę \"Super Admin\" lub \"Content Admin\" Strony firmowej (Strona → Administracja → Zarządzaj administratorami).\",
+            "Musisz mieć rolę \"Super Admin\" lub \"Content Admin\" Strony firmowej (Strona → Administracja → Zarządzaj administratorami).",
             "Strona firmowa musi mieć uzupełniony profil: logo, opis, branża (LinkedIn blokuje API dla niekompletnych stron).",
-            "Aplikacja Concertivo musi mieć produkty \"Share on LinkedIn\" + \"Marketing Developer Platform\" zatwierdzone przez LinkedIn — robimy to my, jednorazowo.\"
+            "Aplikacja Concertivo musi mieć produkty \"Share on LinkedIn\" + \"Marketing Developer Platform\" zatwierdzone przez LinkedIn — robimy to my, jednorazowo."
           ],
-          "time_estimate": "Samo połączenie: ~2 minuty.\n\nZatwierdzenie produktu \"Marketing Developer Platform\" przez LinkedIn (jednorazowo dla platformy): 2–4 tygodnie po naszej stronie. Bez zatwierdzenia działa tylko podstawowy \"Share on LinkedIn\" — wystarcza do publikacji.\"
+          "time_estimate": "Samo połączenie: ~2 minuty.\n\nZatwierdzenie produktu \"Marketing Developer Platform\" przez LinkedIn (jednorazowo dla platformy): 2–4 tygodnie po naszej stronie. Bez zatwierdzenia działa tylko podstawowy \"Share on LinkedIn\" — wystarcza do publikacji."
         }
       },
       "twitter": {
@@ -1461,7 +1461,7 @@ export default
         "checklist": ["Mam konto deweloperskie X", "Mam aktywny plan Basic lub Pro (API jest płatne)", "Aplikacja ma uprawnienia Read+Write"],
         "info": {
           "description": "Publikacja krótkich wpisów (do 280 znaków), wątków, retweetów. Statystyki wyświetleń, lajków, retweetów, odpowiedzi. AI automatycznie skraca dłuższe treści do limitu znaków X bez utraty sensu. Odpowiedzi pod tweetami trafiają do Skrzynki.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy X.\n2. Logujesz się przez X swoim kontem firmowym.\n3. Autoryzujesz aplikację Concertivo (OAuth 2.0 z PKCE).\n4. Wracasz, konto jest aktywne.\n5. Tweety piszesz w \"AI Studio\" — gdy treść przekracza 280 znaków, AI od razu proponuje skrócenie lub rozbicie na wątek.\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy X.\n2. Logujesz się przez X swoim kontem firmowym.\n3. Autoryzujesz aplikację Concertivo (OAuth 2.0 z PKCE).\n4. Wracasz, konto jest aktywne.\n5. Tweety piszesz w \"AI Studio\" — gdy treść przekracza 280 znaków, AI od razu proponuje skrócenie lub rozbicie na wątek.",
           "what_to_arrange": [
             "API X JEST PŁATNE od 2023 r. — to bezwzględny wymóg.",
             "Twoja organizacja musi mieć konto deweloperskie X (developer.x.com) z aktywnym planem: Basic (200 USD/mc, 100 tweetów/mc) lub Pro (5000 USD/mc, 1M tweetów/mc).",
@@ -1479,14 +1479,14 @@ export default
         "checklist": ["Mam konto TikTok Business", "Mam zatwierdzoną aplikację w TikTok Developers", "Mam dostęp do Content Posting API"],
         "info": {
           "description": "Planowanie i publikacja wideo (max 10 minut, MP4) na koncie biznesowym TikTok. Statystyki obejrzeń, polubień, udostępnień. AI proponuje opisy, hashtagi i CTA dopasowane do tiktokowego tonu i trendów.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy TikTok.\n2. Logujesz się przez TikTok kontem biznesowym.\n3. TikTok pokazuje uprawnienia (video.upload, video.publish, user.info.basic) — akceptujesz.\n4. Wracasz do Concertivo.\n5. Filmy uploadujesz w \"AI Studio\" — pierwsza publikacja przez API jest oznaczona jako \"prywatna\" do czasu zatwierdzenia aplikacji przez TikTok (audyt).\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy TikTok.\n2. Logujesz się przez TikTok kontem biznesowym.\n3. TikTok pokazuje uprawnienia (video.upload, video.publish, user.info.basic) — akceptujesz.\n4. Wracasz do Concertivo.\n5. Filmy uploadujesz w \"AI Studio\" — pierwsza publikacja przez API jest oznaczona jako \"prywatna\" do czasu zatwierdzenia aplikacji przez TikTok (audyt).",
           "what_to_arrange": [
-            "Konto TikTok musi być przełączone na \"Business\" (w apce → Ustawienia → Zarządzaj kontem → Przełącz na konto Biznes).\",
+            "Konto TikTok musi być przełączone na \"Business\" (w apce → Ustawienia → Zarządzaj kontem → Przełącz na konto Biznes).",
             "Aplikacja Concertivo w TikTok for Developers musi mieć zatwierdzony dostęp do Content Posting API — robimy to my, jednorazowo.",
             "Wymagana weryfikacja domeny aplikacji (TikTok wysyła plik weryfikacyjny do umieszczenia na serwerze) — po naszej stronie.",
             "Niektóre kraje mają ograniczenia API (np. region UE — sprawdzamy przed publikacją)."
           ],
-          "time_estimate": "Po zatwierdzeniu aplikacji: połączenie ~3 minuty.\n\nAudyt TikTok Developers dla Content Posting API: 2–6 tygodni po naszej stronie (jednorazowo). Do tego czasu pierwsze posty publikowane są jako \"prywatne\" — widoczne tylko dla autora.\"
+          "time_estimate": "Po zatwierdzeniu aplikacji: połączenie ~3 minuty.\n\nAudyt TikTok Developers dla Content Posting API: 2–6 tygodni po naszej stronie (jednorazowo). Do tego czasu pierwsze posty publikowane są jako \"prywatne\" — widoczne tylko dla autora."
         }
       },
       "spotify_artists": {
@@ -1496,7 +1496,7 @@ export default
         "checklist": ["Mam konto Spotify powiązane z profilem artysty", "Założyłem aplikację w Spotify Developer Dashboard", "Dodałem moje konto w sekcji Users and Access"],
         "info": {
           "description": "WAŻNE: Spotify nie pozwala publikować muzyki przez API — uploadem zajmuje się dystrybutor (DistroKid, TuneCore, CD Baby, Believe). Concertivo czyta TYLKO publiczne statystyki profilu artysty: liczbę obserwujących, popularność (0–100), gatunki, top utwory, dane podstawowe. AI analizuje trendy popularności w czasie.",
-          "how_it_looks": "1. Klikasz \"Połącz\" przy Spotify.\n2. Logujesz się przez Spotify (konto powiązane z profilem artysty).\n3. Wpisujesz Spotify Artist ID (znajdziesz w linku do swojego profilu: open.spotify.com/artist/XXXXX — XXXXX to ID).\n4. Wracasz do Concertivo.\n5. Statystyki widzisz w zakładce \"Statystyki\" — odświeżane co godzinę przez cron.\",
+          "how_it_looks": "1. Klikasz \"Połącz\" przy Spotify.\n2. Logujesz się przez Spotify (konto powiązane z profilem artysty).\n3. Wpisujesz Spotify Artist ID (znajdziesz w linku do swojego profilu: open.spotify.com/artist/XXXXX — XXXXX to ID).\n4. Wracasz do Concertivo.\n5. Statystyki widzisz w zakładce \"Statystyki\" — odświeżane co godzinę przez cron.",
           "what_to_arrange": [
             "Profil artysty na Spotify (czyli muzyka musi być już opublikowana przez dystrybutora i znajdować się w katalogu Spotify).",
             "Zweryfikowany dostęp do Spotify for Artists — przez dystrybutora muzyki (zwykle automatyczne po pierwszym wydaniu).",
@@ -1514,7 +1514,7 @@ export default
         "event": "Wydarzenie (opcjonalnie)",
         "no_event": "Brak — wpiszę temat ręcznie",
         "prompt": "Temat lub dodatkowe wskazówki",
-        "prompt_placeholder": "Np. \"Zapowiedź jesiennej trasy koncertowej\"\",
+        "prompt_placeholder": "Np. \"Zapowiedź jesiennej trasy koncertowej\"",
         "tone": "Ton wypowiedzi",
         "platforms": "Platformy docelowe"
       },
@@ -1529,7 +1529,7 @@ export default
         "edit": "Edytuj",
         "save_draft": "Zapisz jako szkic"
       },
-      "empty": "Wygenerowane treści pojawią się tutaj. Wybierz platformy i kliknij \"Wygeneruj treści\".\",
+      "empty": "Wygenerowane treści pojawią się tutaj. Wybierz platformy i kliknij \"Wygeneruj treści\".",
       "best_time": "Sugerowany najlepszy czas publikacji",
       "edit_title": "Edytuj wersję dla: {{platform}}",
       "edit_subtitle": "Możesz dostosować treść i hashtagi przed zapisaniem.",
