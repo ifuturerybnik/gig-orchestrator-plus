@@ -13,6 +13,7 @@ import {
   exchangeMetaCode,
   fetchInstagramLoginProfile,
   listUserPages,
+  listUserPermissions,
 } from "./platforms/meta.server";
 import {
   exchangeGoogleCode,
