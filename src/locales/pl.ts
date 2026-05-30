@@ -1313,7 +1313,12 @@ export default
       "disconnect": "Rozłącz konto",
       "disconnect_confirm_title": "Rozłączyć to konto?",
       "disconnect_confirm_desc": "Konto \"{{name}}\" zostanie odłączone od tej organizacji. Zaplanowane posty na tej platformie nie zostaną opublikowane. Możesz je ponownie połączyć w każdej chwili.",
-      "disconnect_success": "Konto zostało rozłączone."
+      "disconnect_success": "Konto zostało rozłączone.",
+      "import_title": "Importuj posty z platformy",
+      "import_desc": "Pobiera ostatnie 25 postów opublikowanych bezpośrednio na platformie (poza Concertivo) i dodaje je do Harmonogramu jako „opublikowane\". Komentarze i metryki będą synchronizowane automatycznie.",
+      "import_button": "Importuj 25 postów",
+      "import_auto_note": "Aplikacja co 30 minut sama zaciąga nowe posty z tej platformy — ręczny import wymuszasz tylko, gdy chcesz odświeżyć teraz lub zaciągnąć historię.",
+      "import_success": "Zaimportowano {{inserted}} nowych postów (sprawdzono: {{fetched}})."
     },
     "post_status": {
       "draft": "Szkic",

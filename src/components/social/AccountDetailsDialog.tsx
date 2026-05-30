@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ExternalLink, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Trash2, AlertCircle, CheckCircle2, Download, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { disconnectSocialAccount, type SocialAccountRow } from "@/lib/social.functions";
+import {
+  disconnectSocialAccount,
+  importPostsFromAccountFn,
+  type SocialAccountRow,
+} from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
 
 function externalUrlFor(account: SocialAccountRow): string | null {
@@ -61,8 +65,11 @@ export function AccountDetailsDialog({
   const { t } = useTranslation();
   const qc = useQueryClient();
   const disconnectFn = useServerFn(disconnectSocialAccount);
+  const importFn = useServerFn(importPostsFromAccountFn);
   const meta = SOCIAL_PLATFORMS[account.platform as SocialPlatformId];
   const externalUrl = externalUrlFor(account);
+  const supportsImport =
+    account.platform === "facebook" || account.platform === "instagram";
 
   const disconnectM = useMutation({
     mutationFn: () =>
@@ -76,6 +83,28 @@ export function AccountDetailsDialog({
       toast.success(t("social.account_details.disconnect_success"));
       qc.invalidateQueries({ queryKey: ["social-accounts", account.organization_id] });
       onClose();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const importM = useMutation({
+    mutationFn: () =>
+      importFn({
+        data: {
+          organizationId: account.organization_id,
+          platform: account.platform as SocialPlatformId,
+          limit: 25,
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(
+        t("social.account_details.import_success", {
+          inserted: res.inserted,
+          fetched: res.fetched,
+        }),
+      );
+      qc.invalidateQueries({ queryKey: ["social-posts", account.organization_id] });
     },
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : String(e)),
@@ -181,6 +210,37 @@ export function AccountDetailsDialog({
 
           <Separator />
 
+          {supportsImport && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">
+                    {t("social.account_details.import_title")}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {t("social.account_details.import_desc")}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => importM.mutate()}
+                  disabled={importM.isPending}
+                >
+                  {importM.isPending ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  {t("social.account_details.import_button")}
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {t("social.account_details.import_auto_note")}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground">
               {t("social.account_details.what_now")}
@@ -195,6 +255,7 @@ export function AccountDetailsDialog({
             </ul>
           </div>
         </div>
+
 
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
           <AlertDialog>
