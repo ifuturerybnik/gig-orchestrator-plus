@@ -8,7 +8,10 @@ import {
 } from "./platforms/linkedin.server";
 import {
   exchangeLongLivedUserToken,
+  exchangeInstagramLoginCode,
+  exchangeLongLivedInstagramToken,
   exchangeMetaCode,
+  fetchInstagramLoginProfile,
   listUserPages,
 } from "./platforms/meta.server";
 import {
@@ -330,6 +333,54 @@ export async function handleMetaOAuthCallback(args: {
   const clientSecret = decryptPii(client_secret_enc);
   if (!clientSecret) throw new Error("Nie udało się odszyfrować Client Secret.");
 
+  if (s.platform === "instagram") {
+    const shortIg = await exchangeInstagramLoginCode({
+      code: args.code,
+      redirectUri: args.callbackUrl,
+      clientId: client_id,
+      clientSecret,
+    });
+    const longIg = await exchangeLongLivedInstagramToken({
+      shortToken: shortIg.accessToken,
+      clientSecret,
+    });
+    const profile = await fetchInstagramLoginProfile(longIg.accessToken);
+    const expiresAt = longIg.expiresIn
+      ? new Date(Date.now() + longIg.expiresIn * 1000).toISOString()
+      : null;
+    const scopes = shortIg.scopes.length > 0
+      ? shortIg.scopes
+      : ["instagram_business_basic", "instagram_business_content_publish"];
+
+    const { error: upIgErr } = await admin.from("social_accounts").upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "instagram",
+        external_account_id: profile.id,
+        account_name: `@${profile.username}`,
+        account_avatar_url: null,
+        scopes,
+        access_token_enc: encryptPii(longIg.accessToken),
+        refresh_token_enc: null,
+        token_expires_at: expiresAt,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+    if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    return {
+      orgId: s.organization_id,
+      facebookPageName: null,
+      instagramUsername: profile.username,
+      redirectBack,
+    };
+  }
+
   // 4) code → short user token
   const shortTok = await exchangeMetaCode({
     code: args.code,
@@ -395,8 +446,8 @@ export async function handleMetaOAuthCallback(args: {
         account_name: `@${page.instagram.username}`,
         account_avatar_url: page.instagram.profile_picture_url ?? null,
         scopes: [
-          "instagram_basic",
-          "instagram_content_publish",
+          "instagram_business_basic",
+          "instagram_business_content_publish",
         ],
         // IG Graph używa PAGE access token (tego samego, którym publikuje FB)
         access_token_enc: encryptPii(page.access_token),

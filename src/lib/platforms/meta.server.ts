@@ -28,6 +28,7 @@ import type {
 } from "./types";
 
 const GRAPH = "https://graph.facebook.com/v20.0";
+const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
   const text = (content.text ?? "").trim();
@@ -95,6 +96,69 @@ export async function exchangeLongLivedUserToken(args: {
     { context: "Meta long-lived exchange" },
   );
   return { accessToken: j.access_token, expiresIn: j.expires_in ?? null };
+}
+
+export async function exchangeInstagramLoginCode(args: {
+  code: string;
+  redirectUri: string;
+  clientId: string;
+  clientSecret: string;
+}): Promise<{ accessToken: string; userId: string; scopes: string[] }> {
+  const body = new URLSearchParams({
+    client_id: args.clientId,
+    client_secret: args.clientSecret,
+    grant_type: "authorization_code",
+    redirect_uri: args.redirectUri,
+    code: args.code,
+  });
+  const j = await graphJson<{
+    access_token?: string;
+    user_id?: string;
+    permissions?: string;
+    data?: Array<{ access_token?: string; user_id?: string; permissions?: string }>;
+  }>("https://api.instagram.com/oauth/access_token", {
+    method: "POST",
+    body,
+    context: "Instagram token exchange",
+  });
+  const item = j.data?.[0] ?? j;
+  if (!item.access_token || !item.user_id) {
+    throw new Error("Instagram token exchange: brak access_token lub user_id.");
+  }
+  return {
+    accessToken: item.access_token,
+    userId: String(item.user_id),
+    scopes: (item.permissions ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  };
+}
+
+export async function exchangeLongLivedInstagramToken(args: {
+  shortToken: string;
+  clientSecret: string;
+}): Promise<{ accessToken: string; expiresIn: number | null }> {
+  const params = new URLSearchParams({
+    grant_type: "ig_exchange_token",
+    client_secret: args.clientSecret,
+    access_token: args.shortToken,
+  });
+  const j = await graphJson<{ access_token: string; expires_in?: number }>(
+    `https://graph.instagram.com/access_token?${params.toString()}`,
+    { context: "Instagram long-lived exchange" },
+  );
+  return { accessToken: j.access_token, expiresIn: j.expires_in ?? null };
+}
+
+export async function fetchInstagramLoginProfile(accessToken: string): Promise<{ id: string; username: string }> {
+  const j = await graphJson<{
+    user_id?: string;
+    username?: string;
+    data?: Array<{ user_id?: string; username?: string }>;
+  }>(`${INSTAGRAM_GRAPH}/me?fields=user_id,username&access_token=${encodeURIComponent(accessToken)}`, {
+    context: "Instagram /me",
+  });
+  const item = j.data?.[0] ?? j;
+  if (!item.user_id || !item.username) throw new Error("Instagram /me: brak user_id lub username.");
+  return { id: String(item.user_id), username: item.username };
 }
 
 export type MetaPage = {
@@ -299,7 +363,7 @@ async function waitForIgContainer(args: {
   // Container musi być FINISHED zanim publish. Próbujemy do 10s.
   for (let i = 0; i < 10; i++) {
     const j = await graphJson<{ status_code?: string }>(
-      `${GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
+      `${INSTAGRAM_GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
       { context: "IG container status" },
     );
     if (j.status_code === "FINISHED") return;
@@ -333,7 +397,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: params, context: "IG /media (single)" },
       );
       creationId = j.id;
@@ -347,7 +411,7 @@ export const instagramAdapter: PlatformAdapter = {
           access_token: token,
         });
         const j = await graphJson<{ id: string }>(
-          `${GRAPH}/${encodeURIComponent(igId)}/media`,
+          `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
           { method: "POST", body: p, context: "IG carousel child" },
         );
         childIds.push(j.id);
@@ -359,7 +423,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: p, context: "IG carousel parent" },
       );
       creationId = j.id;
@@ -372,7 +436,7 @@ export const instagramAdapter: PlatformAdapter = {
       access_token: token,
     });
     const pubRes = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media_publish`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(igId)}/media_publish`,
       { method: "POST", body: pub, context: "IG /media_publish" },
     );
     const mediaId = pubRes.id;
@@ -381,7 +445,7 @@ export const instagramAdapter: PlatformAdapter = {
     let permalink: string | null = null;
     try {
       const meta = await graphJson<{ permalink?: string }>(
-        `${GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
+        `${INSTAGRAM_GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
         { context: "IG permalink" },
       );
       permalink = meta.permalink ?? null;
@@ -410,7 +474,7 @@ export const instagramAdapter: PlatformAdapter = {
       const ins = await graphJson<{
         data?: Array<{ name: string; values?: Array<{ value: number }> }>;
       }>(
-        `${GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
+        `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
         { context: "IG insights" },
       );
       views = ins.data?.find((d) => d.name === "reach")?.values?.[0]?.value ?? 0;
@@ -441,7 +505,7 @@ export const instagramAdapter: PlatformAdapter = {
         replies?: { data?: Array<{ id: string }> };
       }>;
     }>(
-      `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
       { context: "IG /comments" },
     );
     const items = j.data ?? [];
@@ -469,7 +533,7 @@ export const instagramAdapter: PlatformAdapter = {
       access_token: account.access_token,
     });
     const j = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(externalParentCommentId)}/replies`,
+      `${INSTAGRAM_GRAPH}/${encodeURIComponent(externalParentCommentId)}/replies`,
       { method: "POST", body: params, context: "IG reply" },
     );
     return { externalCommentId: j.id };

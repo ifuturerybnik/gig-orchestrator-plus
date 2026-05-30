@@ -1375,21 +1375,30 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
       });
       authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
-    } else if (data.platform === "facebook" || data.platform === "instagram") {
-      // MVP Instagram: Facebook Login for Business musi zostać uruchomiony w trybie
-      // IG_API_ONBOARDING, inaczej Meta traktuje instagram_* jako nieważne scope'y.
+    } else if (data.platform === "instagram") {
+      // MVP Instagram używa nowego Instagram API with Instagram Login.
+      // Starsze scope'y instagram_basic/content_publish są odrzucane w tej konfiguracji.
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
-        display: "page",
-        extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
+        redirect_uri: callbackUrl,
+        state,
+        scope: [
+          "instagram_business_basic",
+          "instagram_business_content_publish",
+        ].join(","),
+      });
+      authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
+    } else if (data.platform === "facebook") {
+      // Facebook Pages — osobny flow, bez scope'ów Instagram.
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: clientId,
         redirect_uri: callbackUrl,
         state,
         scope: [
           "pages_show_list",
           "pages_read_engagement",
-          "instagram_basic",
-          "instagram_content_publish",
         ].join(","),
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
