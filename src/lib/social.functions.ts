@@ -1474,18 +1474,19 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
       // Facebook Pages — osobny flow, bez scope'ów Instagram.
+      const scopes = [
+        "pages_show_list",
+        "pages_read_engagement",
+        "pages_manage_posts",
+        "pages_manage_metadata",
+        "business_management",
+      ].filter((scope) => scope !== "pages_read_user_content");
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
         redirect_uri: callbackUrl,
         state,
-        scope: [
-          "pages_show_list",
-          "pages_read_engagement",
-          "pages_manage_posts",
-          "pages_manage_metadata",
-          "business_management",
-        ].join(","),
+        scope: scopes.join(","),
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
