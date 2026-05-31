@@ -61,14 +61,15 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
       const otherErrors = res.errors.filter((msg) =>
         !msg.includes("Meta nie udostępnia jeszcze metryk/komentarzy"),
       );
-      toast.success(
-        t("social.schedule.sync_done", {
-          metrics: res.metricsOk,
-          comments: res.commentsInserted,
-        }),
-      );
       if (metaLimitedErrors.length) {
         toast.info(t("social.schedule.sync_meta_limited"));
+      } else {
+        toast.success(
+          t("social.schedule.sync_done", {
+            metrics: res.metricsOk,
+            comments: res.commentsInserted,
+          }),
+        );
       }
       if (otherErrors.length) {
         toast.warning(otherErrors.join("; "));
