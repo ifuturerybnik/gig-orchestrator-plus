@@ -37,7 +37,7 @@ export class MetaPermissionError extends Error {
   constructor(context: string) {
     super(
       `${context}: Meta nie udostępnia jeszcze metryk/komentarzy dla tej aplikacji. ` +
-        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonego pages_read_engagement oraz pages_read_user_content w Meta App Review.",
+        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonego pages_read_engagement w Meta App Review.",
     );
     this.name = "MetaPermissionError";
   }
@@ -48,7 +48,6 @@ function isMetaEngagementPermissionError(status: number, body: string): boolean 
   const isCode10 = body.includes("(#10)") || body.includes('"code":10');
   const mentionsRequiredMetaAccess =
     body.includes("pages_read_engagement") ||
-    body.includes("pages_read_user_content") ||
     body.includes("Page Public Content Access");
   return (
     isCode10 && mentionsRequiredMetaAccess
