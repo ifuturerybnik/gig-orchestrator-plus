@@ -54,6 +54,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
     scopes: [
       "pages_show_list",
       "pages_read_engagement",
+      "pages_read_user_content",
     ],
     envClientIdKey: "META_APP_ID",
   },
