@@ -435,7 +435,7 @@ export async function handleMetaOAuthCallback(args: {
 
   if (pages.length === 0) {
     console.error("[meta-callback] empty /me/accounts. granted=", perms.granted, "declined=", perms.declined);
-    const missing = ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "business_management"]
+    const missing = ["pages_show_list", "pages_read_engagement", "business_management"]
       .filter((p) => !perms.granted.includes(p));
     const hint =
       missing.length > 0
@@ -465,7 +465,6 @@ export async function handleMetaOAuthCallback(args: {
       scopes: [
         "pages_show_list",
         "pages_read_engagement",
-        "pages_read_user_content",
       ],
       access_token_enc: encryptPii(page.access_token),
       refresh_token_enc: null,
