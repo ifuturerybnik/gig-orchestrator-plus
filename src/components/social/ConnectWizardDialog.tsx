@@ -47,6 +47,7 @@ export function ConnectWizardDialog({
 }) {
   const { t } = useTranslation();
   const meta = SOCIAL_PLATFORMS[platform];
+  const visibleScopes = meta.scopes.filter((s) => s !== "pages_read_user_content");
   const [step, setStep] = useState<Step>("intro");
   const [checklist, setChecklist] = useState<boolean[]>([false, false, false]);
 
@@ -186,7 +187,7 @@ export function ConnectWizardDialog({
                 {t("social.wizard.scopes_requested")}
               </h4>
               <div className="space-y-1.5">
-                {meta.scopes.map((s) => (
+                {visibleScopes.map((s) => (
                   <div key={s} className="flex items-start gap-2 text-xs">
                     <ListChecks className="mt-0.5 h-3 w-3 text-muted-foreground" />
                     <code className="rounded bg-background px-1.5 py-0.5">{s}</code>
