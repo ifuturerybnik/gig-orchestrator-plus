@@ -35,16 +35,53 @@ function buildClient(opts: {
   });
 }
 
-export function getCentralR2(): {
+type CentralR2Row = {
+  r2_account_id: string | null;
+  r2_access_key_id_enc: string | null;
+  r2_secret_access_key_enc: string | null;
+  r2_bucket: string | null;
+  r2_public_base_url: string | null;
+};
+
+async function loadCentralR2Row(): Promise<CentralR2Row | null> {
+  const { data } = await supabaseAdmin
+    .from("storage_global_config")
+    .select(
+      "r2_account_id, r2_access_key_id_enc, r2_secret_access_key_enc, r2_bucket, r2_public_base_url",
+    )
+    .eq("id", 1)
+    .maybeSingle();
+  return (data as CentralR2Row | null) ?? null;
+}
+
+/**
+ * Pobiera konfigurację centralnego R2.
+ * Priorytet: wartości zapisane w DB (storage_global_config) — pozwala adminowi
+ * wpisać klucze z UI. Fallback: zmienne środowiskowe EXT_R2_*.
+ */
+export async function getCentralR2(): Promise<{
   client: S3Client;
   bucket: string;
   publicBaseUrl: string;
-} {
-  const accountId = process.env.EXT_R2_ACCOUNT_ID;
-  const accessKeyId = process.env.EXT_R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.EXT_R2_SECRET_ACCESS_KEY;
-  const bucket = process.env.EXT_R2_BUCKET;
-  const publicBaseUrl = process.env.EXT_R2_PUBLIC_BASE_URL;
+}> {
+  const row = await loadCentralR2Row();
+  let accountId = row?.r2_account_id ?? null;
+  let accessKeyId = row?.r2_access_key_id_enc
+    ? decryptPii(row.r2_access_key_id_enc)
+    : null;
+  let secretAccessKey = row?.r2_secret_access_key_enc
+    ? decryptPii(row.r2_secret_access_key_enc)
+    : null;
+  let bucket = row?.r2_bucket ?? null;
+  let publicBaseUrl = row?.r2_public_base_url ?? null;
+
+  // Fallback do env
+  accountId ||= process.env.EXT_R2_ACCOUNT_ID ?? null;
+  accessKeyId ||= process.env.EXT_R2_ACCESS_KEY_ID ?? null;
+  secretAccessKey ||= process.env.EXT_R2_SECRET_ACCESS_KEY ?? null;
+  bucket ||= process.env.EXT_R2_BUCKET ?? null;
+  publicBaseUrl ||= process.env.EXT_R2_PUBLIC_BASE_URL ?? null;
+
   if (
     !accountId ||
     !accessKeyId ||
@@ -53,7 +90,7 @@ export function getCentralR2(): {
     !publicBaseUrl
   ) {
     throw new Error(
-      "Centralny Cloudflare R2 nie jest skonfigurowany (brak EXT_R2_*).",
+      "Centralny Cloudflare R2 nie jest skonfigurowany (uzupełnij dane w panelu Administracja → Storage).",
     );
   }
   return {
@@ -67,6 +104,61 @@ export function getCentralR2(): {
   };
 }
 
+export type CentralR2Status = {
+  account_id: boolean;
+  access_key_id: boolean;
+  secret_access_key: boolean;
+  bucket: boolean;
+  public_base_url: boolean;
+  source: "db" | "env" | "mixed" | "none";
+  // jawne, nie-sekretne pola do podglądu w UI
+  preview: {
+    account_id: string | null;
+    bucket: string | null;
+    public_base_url: string | null;
+  };
+};
+
+export async function getCentralR2Status(): Promise<CentralR2Status> {
+  const row = await loadCentralR2Row();
+  const db = {
+    account_id: !!row?.r2_account_id,
+    access_key_id: !!row?.r2_access_key_id_enc,
+    secret_access_key: !!row?.r2_secret_access_key_enc,
+    bucket: !!row?.r2_bucket,
+    public_base_url: !!row?.r2_public_base_url,
+  };
+  const env = {
+    account_id: !!process.env.EXT_R2_ACCOUNT_ID,
+    access_key_id: !!process.env.EXT_R2_ACCESS_KEY_ID,
+    secret_access_key: !!process.env.EXT_R2_SECRET_ACCESS_KEY,
+    bucket: !!process.env.EXT_R2_BUCKET,
+    public_base_url: !!process.env.EXT_R2_PUBLIC_BASE_URL,
+  };
+  const present = {
+    account_id: db.account_id || env.account_id,
+    access_key_id: db.access_key_id || env.access_key_id,
+    secret_access_key: db.secret_access_key || env.secret_access_key,
+    bucket: db.bucket || env.bucket,
+    public_base_url: db.public_base_url || env.public_base_url,
+  };
+  const anyDb = Object.values(db).some(Boolean);
+  const anyEnv = Object.values(env).some(Boolean);
+  const source: CentralR2Status["source"] =
+    anyDb && anyEnv ? "mixed" : anyDb ? "db" : anyEnv ? "env" : "none";
+  return {
+    ...present,
+    source,
+    preview: {
+      account_id: row?.r2_account_id ?? process.env.EXT_R2_ACCOUNT_ID ?? null,
+      bucket: row?.r2_bucket ?? process.env.EXT_R2_BUCKET ?? null,
+      public_base_url:
+        row?.r2_public_base_url ?? process.env.EXT_R2_PUBLIC_BASE_URL ?? null,
+    },
+  };
+}
+
+/** @deprecated używaj getCentralR2Status — zostawione dla wstecznej kompatybilności */
 export function checkCentralSecretsPresence() {
   return {
     EXT_R2_ACCOUNT_ID: !!process.env.EXT_R2_ACCOUNT_ID,
@@ -76,6 +168,7 @@ export function checkCentralSecretsPresence() {
     EXT_R2_PUBLIC_BASE_URL: !!process.env.EXT_R2_PUBLIC_BASE_URL,
   };
 }
+
 
 export type OrgStorageConfigRow = {
   organization_id: string;
