@@ -1731,6 +1731,7 @@ export default
                 "PL/EN title, start date (and optionally end).",
                 "Location – name and address; coordinates only if your site embeds a map.",
                 "Add performers with the \"Add performer\" button.",
+                "Upload the event poster from your disk (drag & drop or click) – the system auto-converts it to WebP, resizes and generates thumbnails.",
                 "Paste the ticket link (Bilet24, eBilet, your own shop).",
                 "Pick the status, toggle \"Publish publicly\", save."
               ]
