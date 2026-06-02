@@ -537,7 +537,8 @@ export default
       "social": "Social Hub",
       "media_web": "Media & Web",
       "web": "Web",
-      "ai_studio": "AI Studio"
+      "ai_studio": "AI Studio",
+      "dysk": "Drive"
     },
     "events": {
       "title": "Performances",

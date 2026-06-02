@@ -17,6 +17,7 @@ import {
   Globe,
   Megaphone,
   Sparkles,
+  HardDrive,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -166,6 +167,12 @@ export function OrgSidebar({
           icon: Globe,
         },
       ],
+    },
+    {
+      kind: "leaf",
+      to: `${base}/dysk`,
+      labelKey: "organizations.sidebar.dysk",
+      icon: HardDrive,
     },
     {
       kind: "leaf",
