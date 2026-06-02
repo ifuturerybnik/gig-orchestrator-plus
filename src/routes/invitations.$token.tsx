@@ -49,6 +49,7 @@ function InvitationAcceptPage() {
     onSuccess: () => {
       setDone("declined");
       toast.success(t("invitations.declined"));
+      navigate({ to: "/dashboard" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
