@@ -562,9 +562,9 @@ function OrganizationPerformancesPage() {
                 <HoverCard key={p.id} openDelay={250} closeDelay={100}>
                   <HoverCardTrigger asChild>
                     <TableRow
-                      onClick={() => openEdit(p)}
-                      className="cursor-pointer"
-                      title={t("organizations.performances.actions.click_to_edit")}
+                      onClick={canEditEvents ? () => openEdit(p) : undefined}
+                      className={canEditEvents ? "cursor-pointer" : ""}
+                      title={canEditEvents ? t("organizations.performances.actions.click_to_edit") : undefined}
                     >
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
                       <TableCell>{renderEventKind(p.event_kind)}</TableCell>
