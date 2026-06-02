@@ -676,11 +676,24 @@ export const setBudgetEntryCompleted = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: entry, error: readError } = await supabase
       .from("organization_budget_entries")
-      .select("id")
+      .select("id, organization_id")
       .eq("id", data.entryId)
       .maybeSingle();
     if (readError) throw new Error(readError.message);
     if (!entry) throw new Error("Forbidden");
+
+    // Jeżeli próbuje ustawić completed=true, sprawdź uprawnienia.
+    if (data.completed) {
+      const perms = await loadEffectivePerms(
+        supabase,
+        userId,
+        (entry as { organization_id: string }).organization_id,
+      );
+      const canComplete =
+        perms.isOrgAdmin ||
+        (perms.modules.includes("budget") && perms.budgetMode === "full");
+      if (!canComplete) throw new Error("Forbidden");
+    }
 
     const { error } = await supabaseAdmin
       .from("organization_budget_entries")
