@@ -8,6 +8,7 @@ import {
   ORG_MODULES,
   ORG_MODULE_GROUPS,
   type BudgetPermissionMode,
+  type EventsPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 
@@ -18,6 +19,8 @@ interface OrgPermissionsFieldsProps {
   onModulesChange: Dispatch<SetStateAction<Set<OrgModuleId>>>;
   budgetMode: BudgetPermissionMode;
   onBudgetModeChange: (value: BudgetPermissionMode) => void;
+  eventsMode: EventsPermissionMode;
+  onEventsModeChange: (value: EventsPermissionMode) => void;
   fieldIdPrefix: string;
 }
 
@@ -28,6 +31,8 @@ export function OrgPermissionsFields({
   onModulesChange,
   budgetMode,
   onBudgetModeChange,
+  eventsMode,
+  onEventsModeChange,
   fieldIdPrefix,
 }: OrgPermissionsFieldsProps) {
   const { t } = useTranslation();
@@ -47,6 +52,28 @@ export function OrgPermissionsFields({
     items: configurable.filter((m) => m.group === g.id),
   }));
   const ungrouped = configurable.filter((m) => !m.group);
+
+  const extraFor = (id: OrgModuleId): ReactNode => {
+    if (id === "budget" && modules.has("budget")) {
+      return (
+        <BudgetSubChoice
+          fieldIdPrefix={`${fieldIdPrefix}-budget`}
+          value={budgetMode}
+          onChange={onBudgetModeChange}
+        />
+      );
+    }
+    if (id === "events" && modules.has("events")) {
+      return (
+        <EventsSubChoice
+          fieldIdPrefix={`${fieldIdPrefix}-events`}
+          value={eventsMode}
+          onChange={onEventsModeChange}
+        />
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-5">
@@ -80,15 +107,7 @@ export function OrgPermissionsFields({
               labelKey={m.labelKey}
               checked={modules.has(m.id)}
               onCheckedChange={(checked) => toggleModule(m.id, checked)}
-              extra={
-                m.id === "budget" && modules.has("budget") ? (
-                  <BudgetSubChoice
-                    fieldIdPrefix={`${fieldIdPrefix}-budget`}
-                    value={budgetMode}
-                    onChange={onBudgetModeChange}
-                  />
-                ) : null
-              }
+              extra={extraFor(m.id)}
             />
           ))}
 
@@ -107,6 +126,7 @@ export function OrgPermissionsFields({
                       labelKey={m.labelKey}
                       checked={modules.has(m.id)}
                       onCheckedChange={(checked) => toggleModule(m.id, checked)}
+                      extra={extraFor(m.id)}
                     />
                   ))}
                 </div>
@@ -190,6 +210,46 @@ function BudgetSubChoice({
       </RadioGroup>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("organizations.permissions.budget.help")}
+      </p>
+    </div>
+  );
+}
+
+function EventsSubChoice({
+  fieldIdPrefix,
+  value,
+  onChange,
+}: {
+  fieldIdPrefix: string;
+  value: EventsPermissionMode;
+  onChange: (value: EventsPermissionMode) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-border bg-background/50 p-2">
+      <RadioGroup
+        value={value}
+        onValueChange={(nextValue) => onChange(nextValue as EventsPermissionMode)}
+        className="space-y-1"
+      >
+        {(["full", "view_only", "view_confirmed_only"] as const).map((opt) => (
+          <div key={opt} className="flex items-start gap-2">
+            <RadioGroupItem
+              id={`${fieldIdPrefix}-${opt}`}
+              value={opt}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor={`${fieldIdPrefix}-${opt}`}
+              className="cursor-pointer text-sm font-normal"
+            >
+              {t(`organizations.permissions.events.${opt}`)}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("organizations.permissions.events.help")}
       </p>
     </div>
   );
