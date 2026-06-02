@@ -236,8 +236,8 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         </p>
       </div>
 
-      {/* Form for own R2 - collapsible */}
-      {data.mode === "own" && (
+      {/* Form for own R2 - expands when user selects "own" radio */}
+      {viewMode === "own" && (
         <>
           <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
