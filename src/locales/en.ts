@@ -1517,8 +1517,9 @@ export default
       "ai_analysis_title": "AI analysis",
       "ai_analysis_subtitle": "AI will analyze results and suggest optimization directions.",
       "run_analysis": "Run analysis"
-    },
-    "web": {
+    }
+  },
+  "web": {
       "subtitle": "Publish content (News, Events, Gallery) on your organization's website.",
       "coming_in_next_step": "Full editor coming in the next step — News and integration setup are live first.",
       "tabs": {
@@ -1914,7 +1915,6 @@ export default
           ]
         }
       }
-    }
   }
 } as const;
 
