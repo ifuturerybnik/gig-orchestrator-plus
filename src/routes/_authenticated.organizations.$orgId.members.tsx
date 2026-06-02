@@ -13,6 +13,7 @@ import { MemberPermissionsDialog } from "@/components/organizations/MemberPermis
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
   type BudgetPermissionMode,
+  type EventsPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 import {
