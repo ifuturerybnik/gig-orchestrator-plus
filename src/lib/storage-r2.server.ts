@@ -242,8 +242,9 @@ export async function getOrgR2Context(
       publicBaseUrl: cfg.r2_public_base_url.replace(/\/$/, ""),
     };
   }
-  const central = getCentralR2();
+  const central = await getCentralR2();
   return { mode: "central", ...central };
+
 }
 
 export async function presignPut(opts: {
