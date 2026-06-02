@@ -1832,7 +1832,268 @@ export default
         "show_secret": "Pokaż sekret",
         "deliveries": "Ostatnie dostarczenia",
         "no_deliveries": "Brak prób dostarczenia."
+      },
+      "instructions": {
+        "news": {
+          "title": "Jak działa moduł Aktualności – instrukcja",
+          "intro": "Aktualności to wpisy publikowane przez API publiczne i embed na stronie organizacji. Każdy wpis ma tytuł, lead, treść (WYSIWYG), zdjęcie główne, opcjonalną galerię zdjęć, tagi oraz autora. Wpisy występują w dwóch językach (PL/EN) – w jednym wpisie wypełniasz oba lub tylko jeden (wtedy strona pokaże język zastępczy).",
+          "sections": [
+            {
+              "heading": "Po co to jest",
+              "body": "Aby utrzymywać sekcję „Aktualności / News” na stronie WWW organizacji bez ręcznego edytowania HTML. Treść tworzysz w Concertivo, a strona pobiera ją automatycznie."
+            },
+            {
+              "heading": "Funkcje",
+              "items": [
+                "WYSIWYG (Tiptap) – pogrubienia, listy, linki, nagłówki, cytaty.",
+                "Wersje językowe PL/EN obok siebie w jednym formularzu.",
+                "Slug (adres URL) generowany automatycznie z tytułu PL – możesz nadpisać ręcznie.",
+                "Status szkic ↔ opublikowane (toggle „Opublikuj publicznie”).",
+                "Tagi do filtrowania na stronie, autor wpisu, galeria zdjęć poniżej treści.",
+                "Wpis opublikowany jest natychmiast dostępny w JSON API, RSS i embed."
+              ]
+            },
+            {
+              "heading": "Jak utworzyć wpis – krok po kroku",
+              "items": [
+                "Kliknij „Dodaj wpis”.",
+                "Wpisz tytuł PL i (opcjonalnie) EN.",
+                "Uzupełnij lead/zajawkę i treść w WYSIWYG.",
+                "Wklej URL zdjęcia głównego (z modułu Dysk lub zewnętrzny URL).",
+                "Dodaj tagi po przecinku (np. „koncert, jazz”).",
+                "Zaznacz „Opublikuj publicznie” i zapisz."
+              ]
+            },
+            {
+              "heading": "Co musi być po stronie WWW",
+              "items": [
+                "Slug organizacji ustawiony w zakładce „Integracja WWW” i włączone publiczne API.",
+                "Po stronie strony WWW – fetch endpointu /api/public/v1/orgs/<slug>/news?lang=pl lub gotowy snippet embed.js.",
+                "Opcjonalnie: czytnik RSS lub statyczny generator (np. Astro/Next) pobierający JSON podczas budowania."
+              ]
+            },
+            {
+              "heading": "Dobre praktyki",
+              "items": [
+                "Trzymaj lead krótki (1–2 zdania) – pojawia się na liście i w meta description.",
+                "Zdjęcia główne 1200×630 px działają najlepiej dla podglądów społecznościowych.",
+                "Slug ustawiaj raz – zmiana zepsuje istniejące linki zewnętrzne."
+              ]
+            }
+          ]
+        },
+        "events": {
+          "title": "Jak działa moduł Wydarzenia – instrukcja",
+          "intro": "Wydarzenia to koncerty, spektakle, festiwale publikowane na stronie organizacji. Mają datę początku/końca, lokalizację, wykonawców, link do biletów i status (zaplanowane / odwołane / przełożone / wyprzedane).",
+          "sections": [
+            {
+              "heading": "Po co to jest",
+              "body": "Aby Twoja strona miała aktualny kalendarz wydarzeń, a użytkownicy mogli dodać wydarzenie do swojego kalendarza jednym kliknięciem (iCal)."
+            },
+            {
+              "heading": "Funkcje",
+              "items": [
+                "Pełny opis WYSIWYG w PL/EN.",
+                "Data, godzina, strefa czasowa (domyślnie Europe/Warsaw), opcjonalny koniec.",
+                "Lokalizacja: nazwa miejsca (i18n), adres, opcjonalnie współrzędne (lat/lng).",
+                "Lista wykonawców z linkami.",
+                "Link do biletów + cena „od” i waluta.",
+                "Statusy wpływają na wygląd na liście (np. „Odwołane” pokazuje się przekreślone).",
+                "Plik iCal (.ics) – jeden plik dla całej organizacji, gotowy do subskrypcji w Google/Apple Calendar."
+              ]
+            },
+            {
+              "heading": "Jak dodać wydarzenie – krok po kroku",
+              "items": [
+                "Kliknij „Dodaj wydarzenie”.",
+                "Tytuł PL/EN, data początku (i opcjonalnie końca).",
+                "Lokalizacja – nazwa i adres; współrzędne tylko jeśli mapa na stronie ich potrzebuje.",
+                "Dodaj wykonawców (przyciskiem „Dodaj wykonawcę”).",
+                "Wklej link do biletów (Bilet24, eBilet, własny sklep).",
+                "Wybierz status, zaznacz „Opublikuj publicznie”, zapisz."
+              ]
+            },
+            {
+              "heading": "Co musi być po stronie WWW",
+              "items": [
+                "Slug organizacji ustawiony w „Integracja WWW”.",
+                "Fetch /api/public/v1/orgs/<slug>/events?lang=pl&filter=upcoming dla nadchodzących lub filter=past dla archiwum.",
+                "Subskrypcja iCal: link /api/public/v1/orgs/<slug>/events.ics można udostępnić użytkownikom („Dodaj do kalendarza”)."
+              ]
+            },
+            {
+              "heading": "Dobre praktyki",
+              "items": [
+                "Ustawiaj datę zakończenia – pomaga oddzielić nadchodzące od archiwalnych.",
+                "Status „Odwołane” zamiast usuwania – stare linki dalej działają i pokazują informację.",
+                "Współrzędne wpisz, gdy używasz mapy (np. Google Maps embed)."
+              ]
+            }
+          ]
+        },
+        "gallery": {
+          "title": "Jak działa moduł Galeria – instrukcja",
+          "intro": "Galeria składa się z albumów. Każdy album zawiera zdjęcia i/lub wideo (z URL). Albumy można powiązać z wydarzeniem – wtedy pojawiają się obok niego na stronie.",
+          "sections": [
+            {
+              "heading": "Po co to jest",
+              "body": "Aby wyświetlać relacje zdjęciowe i wideo z koncertów/wydarzeń w czystej galerii z lightboxem, bez pisania własnego komponentu od zera."
+            },
+            {
+              "heading": "Funkcje",
+              "items": [
+                "Albumy z tytułem i opisem PL/EN, okładką i powiązaniem z wydarzeniem.",
+                "Pozycje: zdjęcia (URL + opcjonalna miniatura) lub wideo (URL pliku MP4 lub strumień).",
+                "Podpisy i autor zdjęcia (© photo credit).",
+                "Sortowanie pozycji w albumie (sort_order).",
+                "Embed gallery: gotowy widget z siatką albumów + lightbox + odtwarzanie wideo, sterowanie klawiaturą (Esc / ← →)."
+              ]
+            },
+            {
+              "heading": "Jak utworzyć album – krok po kroku",
+              "items": [
+                "„Nowy album” → tytuł PL/EN, opis, okładka, opcjonalnie wybierz wydarzenie.",
+                "Zapisz album, wejdź w jego szczegóły.",
+                "„Dodaj plik” → wybierz typ (Zdjęcie / Wideo) i wklej URL.",
+                "Dla wideo polecane: link do pliku .mp4 (np. z Dysku/CDN) – odtwarzacz HTML5 obsługuje wszystko poza YouTube/Vimeo (te wymagają osobnego embeda).",
+                "Zaznacz „Opublikuj publicznie”."
+              ]
+            },
+            {
+              "heading": "Co musi być po stronie WWW",
+              "items": [
+                "Slug organizacji aktywny w „Integracja WWW”.",
+                "Albo embed.js z data-mode=\"gallery\" (najszybciej), albo własny fetch endpointu /api/public/v1/orgs/<slug>/gallery oraz /gallery/<albumSlug>.",
+                "Hosting plików: zdjęcia/wideo muszą być pod publicznym URL (Dysk Concertivo, R2, S3, własny CDN)."
+              ]
+            },
+            {
+              "heading": "Dobre praktyki",
+              "items": [
+                "Wgrywaj zdjęcia ~1600 px po dłuższym boku – ostre w lightboxie, szybko się ładują.",
+                "Dla wideo > 50 MB użyj CDN i miniatury (kolumna „URL miniatury”).",
+                "Powiąż album z wydarzeniem – strona może pokazać album bezpośrednio pod kartą wydarzenia."
+              ]
+            }
+          ]
+        },
+        "integration": {
+          "title": "Jak zintegrować ze stroną WWW – instrukcja",
+          "intro": "Ta zakładka udostępnia treści (Aktualności, Wydarzenia, Galeria) na zewnątrz: przez JSON API, RSS, iCal, sitemap.xml i wklejany embed.js. Wybierasz metodę zależnie od tego, jak zbudowana jest strona organizacji.",
+          "sections": [
+            {
+              "heading": "Krok 1 – konfiguracja podstawowa",
+              "items": [
+                "Ustaw „Publiczny slug organizacji” (np. filharmonia-szczecinska). Pojawi się w każdym adresie API.",
+                "Włącz „Aktywuj publiczne API” – bez tego endpointy zwracają 404.",
+                "Kliknij Zapisz."
+              ]
+            },
+            {
+              "heading": "Wybór metody integracji",
+              "items": [
+                "WordPress / CMS bez własnych szablonów → użyj embed.js (wklej snippet w blok HTML).",
+                "Strona statyczna (Astro, Next, Hugo) → fetch JSON podczas builda + opcjonalnie webhook do automatycznego rebuilda.",
+                "Aplikacja własna (React/Vue) → fetch JSON na froncie + ewentualnie sitemap.xml dla SEO.",
+                "Czytniki / kalendarze → RSS (news/feed.xml) i iCal (events.ics)."
+              ]
+            },
+            {
+              "heading": "Embed (najprostsze)",
+              "items": [
+                "Skopiuj snippet ze stałej sekcji „Snippet do wklejenia”.",
+                "Wklej go w kod strony tam, gdzie ma się pojawić lista (np. blok HTML w WordPressie).",
+                "Widget renderuje się w Shadow DOM – nie konfliktuje ze stylami strony.",
+                "Parametry: data-mode (news/events/gallery), data-lang (pl/en), data-limit (np. 6), data-target (selektor CSS kontenera)."
+              ]
+            },
+            {
+              "heading": "JSON API",
+              "items": [
+                "Wszystkie endpointy zaczynają się od /api/public/v1/orgs/<slug>/...",
+                "Dodaj ?lang=pl albo ?lang=en aby otrzymać treść w konkretnym języku.",
+                "Domyślny limit listy: 20, max 100 (?limit=...).",
+                "Wymagają HTTPS i mogą być cachowane (cache 60 s przeglądarka, 5 min CDN)."
+              ]
+            },
+            {
+              "heading": "Co musi być po stronie strony WWW",
+              "items": [
+                "HTTPS (przeglądarki blokują mieszane treści).",
+                "Jeśli używasz embed.js – nic więcej.",
+                "Jeśli używasz fetch z przeglądarki na innej domenie – dodaj domenę strony w sekcji „Dozwolone domeny (CORS)” poniżej.",
+                "Dla SEO: dodaj /sitemap.xml organizacji do swojego głównego sitemap.xml lub do Google Search Console (z parametrem ?base=https://twoja-domena)."
+              ]
+            },
+            {
+              "heading": "Tokeny API (na przyszłość)",
+              "body": "Obecnie publiczne odczyty nie wymagają tokenu. Tokeny przydają się gdy w kolejnych etapach dodamy prywatne endpointy (np. odczyt szkiców). Token pokazujemy raz przy generowaniu – zapisz go bezpiecznie."
+            }
+          ]
+        },
+        "webhooks": {
+          "title": "Jak działają webhooki – instrukcja",
+          "intro": "Webhook to URL HTTP po Twojej stronie, pod który Concertivo wysyła POST z JSON-em za każdym razem, gdy zmienia się treść (publikacja, edycja, usunięcie). Pozwalają automatycznie odświeżyć stronę WWW, statyczny build, zewnętrzny CMS lub uruchomić workflow w n8n/Zapier.",
+          "sections": [
+            {
+              "heading": "Po co to jest",
+              "body": "Aby strona WWW była zawsze aktualna bez ręcznego odświeżania. Po opublikowaniu wpisu w Concertivo Twój system dostaje powiadomienie i może np. zbudować stronę od nowa albo wyczyścić cache."
+            },
+            {
+              "heading": "Jakie zdarzenia wysyłamy",
+              "items": [
+                "news.published / news.updated / news.deleted",
+                "event.published / event.updated / event.deleted",
+                "album.published / album.updated / album.deleted"
+              ]
+            },
+            {
+              "heading": "Format żądania",
+              "items": [
+                "Metoda: POST, Content-Type: application/json.",
+                "Nagłówki: X-Concertivo-Event: <nazwa>, X-Concertivo-Signature: sha256=<hmac_hex>.",
+                "Body: { \"event\": \"news.published\", \"occurred_at\": \"ISO-8601\", \"data\": { \"id\": \"...\", \"slug\": \"...\", \"organization_id\": \"...\" } }.",
+                "Timeout: 10 sekund. Każda próba trafia do logu „Ostatnie dostarczenia”."
+              ]
+            },
+            {
+              "heading": "Jak dodać webhook – krok po kroku",
+              "items": [
+                "Kliknij „Dodaj webhook”.",
+                "Wpisz nazwę (np. „Rebuild Vercel” lub „n8n – kanał publikacji”).",
+                "Wklej URL endpointu po Twojej stronie (musi obsługiwać POST i być publicznie dostępny przez HTTPS).",
+                "Zaznacz interesujące zdarzenia (domyślnie wszystkie).",
+                "Zapisz – zobaczysz JEDNORAZOWO sekret. Skopiuj go i zapisz po stronie odbiorcy."
+              ]
+            },
+            {
+              "heading": "Weryfikacja po Twojej stronie (BARDZO WAŻNE)",
+              "items": [
+                "Oblicz HMAC-SHA256 z całego raw body żądania, używając zapisanego sekretu.",
+                "Porównaj wynik (hex) z wartością po „sha256=” z nagłówka X-Concertivo-Signature.",
+                "Odrzuć żądanie, jeśli się nie zgadza – inaczej ktoś może podszywać się pod Concertivo."
+              ]
+            },
+            {
+              "heading": "Przykładowe użycie",
+              "items": [
+                "Vercel / Netlify deploy hook – wklej URL deploy hooka, każda publikacja triggeruje rebuild.",
+                "n8n / Zapier – odbierz webhook, dalej rozprowadź (Slack, email, Discord).",
+                "Własny serwer – endpoint który czyści cache strony lub re-fetchuje JSON."
+              ]
+            },
+            {
+              "heading": "Co musi być po Twojej stronie",
+              "items": [
+                "Publiczny URL HTTPS przyjmujący POST z JSON-em.",
+                "Logika weryfikująca podpis HMAC (przykład: Node `crypto.createHmac('sha256', secret).update(rawBody).digest('hex')`).",
+                "Odpowiedź 2xx oznacza sukces; dowolny inny kod lub timeout = błąd w logu."
+              ]
+            }
+          ]
+        }
       }
     }
   }
 } as const;
+
