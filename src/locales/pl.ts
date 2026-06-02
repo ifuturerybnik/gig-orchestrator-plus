@@ -1910,6 +1910,7 @@ export default
                 "Tytuł PL/EN, data początku (i opcjonalnie końca).",
                 "Lokalizacja – nazwa i adres; współrzędne tylko jeśli mapa na stronie ich potrzebuje.",
                 "Dodaj wykonawców (przyciskiem „Dodaj wykonawcę”).",
+                "Wgraj plakat wydarzenia z dysku (drag & drop lub klik) – system automatycznie skonwertuje obraz do WebP, zmniejszy i wygeneruje miniatury.",
                 "Wklej link do biletów (Bilet24, eBilet, własny sklep).",
                 "Wybierz status, zaznacz „Opublikuj publicznie”, zapisz."
               ]
