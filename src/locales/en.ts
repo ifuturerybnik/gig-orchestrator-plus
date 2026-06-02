@@ -480,6 +480,7 @@ export default
       "scheduled_banner": "Deletion scheduled for {{date}}.",
       "banner_title": "This organization is scheduled for deletion",
       "banner_body": "An owner scheduled deletion of this organization. Final deletion will happen on {{date}} unless cancelled."
+    },
     "permissions": {
       "edit": "Edit permissions",
       "title": "Member permissions",
