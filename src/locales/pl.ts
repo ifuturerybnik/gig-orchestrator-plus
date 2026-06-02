@@ -554,7 +554,9 @@ export default
       "autokorespondencja": "Autokorespondencja",
       "back_to_list": "← Wszystkie organizacje",
       "pending_expenses": "Niezrealizowane wydatki: {{count}}",
-      "social": "Organizacja SM"
+      "social": "Organizacja SM",
+      "media_web": "Media & Web",
+      "web": "Web"
     },
     "events": {
       "title": "Występy",
