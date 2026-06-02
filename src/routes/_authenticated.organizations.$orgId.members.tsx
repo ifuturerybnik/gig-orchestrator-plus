@@ -114,8 +114,6 @@ function OrganizationMembersPage() {
   }
 
   const { members, invitations, canManage, isOwner } = detailsQuery.data;
-  void organization; void deletionScheduledForUnused();
-  function deletionScheduledForUnused() { return null; }
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
