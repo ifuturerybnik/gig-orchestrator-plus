@@ -307,7 +307,7 @@ function OrganizationPerformancesPage() {
     const iso = isoFromDate(day);
     const dayEvents = eventsByDate.get(iso) ?? [];
     if (dayEvents.length === 0 && (vacByDate.get(iso)?.length ?? 0) === 0) {
-      openCreate(iso);
+      if (canEditEvents) openCreate(iso);
     }
     // If date is busy, hover already shows popover — click is a no-op
   };
