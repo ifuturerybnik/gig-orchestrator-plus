@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { getMyProfile } from "@/lib/profile.functions";
+import { PendingInvitations } from "@/components/PendingInvitations";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
