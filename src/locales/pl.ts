@@ -496,7 +496,8 @@ export default
       "budget": {
         "full": "Pełny dostęp do budżetu",
         "unrealized_only": "Tylko dodawanie pozycji niezrealizowanych",
-        "help": "W trybie „niezrealizowane” członek dodaje wpisy zawsze ze statusem niezrealizowane i nie może oznaczać ich jako Zrealizowano. Może też dodawać pozycje w tabeli Przyszłe wydatki."
+        "help": "W trybie „niezrealizowane” członek dodaje wpisy zawsze ze statusem niezrealizowane i nie może oznaczać ich jako Zrealizowano. Może też dodawać pozycje w tabeli Przyszłe wydatki.",
+        "cannot_complete": "Nie masz uprawnień do oznaczania pozycji jako Zrealizowano."
       }
     },
     "detail": {
