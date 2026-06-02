@@ -149,7 +149,7 @@ export const declineInvitation = createServerFn({ method: "POST" })
     }
     await supabaseAdmin
       .from("organization_invitations")
-      .update({ status: "cancelled" })
+      .update({ status: "declined" })
       .eq("id", inv.id);
     await supabaseAdmin
       .from("user_notifications")
