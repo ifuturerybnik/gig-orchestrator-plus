@@ -484,8 +484,21 @@ export default
       "invitation_cancelled": "Zaproszenie anulowane",
       "member_removed": "Członek usunięty",
       "no_name": "(bez imienia)",
-      "expires": "Ważne do"
+      "expires": "Ważne do",
+      "invite_as_owner": "Zaproś jako właściciel",
+      "invite_as_owner_help": "Właściciele mają pełen dostęp, mogą zapraszać innych właścicieli oraz zaplanować usunięcie organizacji. Tylko obecny właściciel może wystawić takie zaproszenie."
     },
+    "deletion": {
+      "title": "Strefa niebezpieczna",
+      "description": "Po kliknięciu poniżej organizacja zostanie zaplanowana do usunięcia za 7 dni. Wszyscy członkowie zostaną powiadomieni i będą mogli w tym czasie zarezerwować dane lub poprosić Cię o anulowanie.",
+      "request": "Zaplanuj usunięcie organizacji (za 7 dni)",
+      "request_confirm": "Zaplanować usunięcie organizacji za 7 dni? Możesz anulować w dowolnym momencie w tym okresie.",
+      "requested": "Usunięcie zaplanowane",
+      "cancel": "Anuluj zaplanowane usunięcie",
+      "cancelled": "Usunięcie anulowane",
+      "scheduled_banner": "Usunięcie zaplanowane na {{date}}.",
+      "banner_title": "Ta organizacja zostanie usunięta",
+      "banner_body": "Właściciel zaplanował usunięcie organizacji. Finalne usunięcie nastąpi {{date}}, chyba że właściciel anuluje operację."
     "permissions": {
       "edit": "Edytuj uprawnienia",
       "title": "Uprawnienia członka",
