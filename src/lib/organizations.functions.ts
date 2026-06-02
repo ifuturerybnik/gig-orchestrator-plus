@@ -1141,3 +1141,118 @@ export const getMyOrgPermissions = createServerFn({ method: "GET" })
     const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
     return { permissions: perms };
   });
+
+// ============================================================================
+// MIĘKKIE USUWANIE ORGANIZACJI (7-dniowa karencja)
+// ============================================================================
+
+const DELETION_GRACE_DAYS = 7;
+
+async function notifyMembersOrgDeletion(
+  organizationId: string,
+  kind: "org_deletion_requested" | "org_deletion_cancelled",
+  payload: Record<string, unknown>,
+) {
+  const { data: members } = await supabaseAdmin
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organizationId);
+  const rows = (members ?? [])
+    .map((m) => m.user_id as string | null)
+    .filter((u): u is string => Boolean(u))
+    .map((user_id) => ({ user_id, kind, payload }));
+  if (rows.length) {
+    await supabaseAdmin.from("user_notifications").insert(rows);
+  }
+}
+
+/** Zaplanuj usunięcie organizacji za 7 dni (tylko owner). */
+export const requestOrganizationDeletion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: me } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isAppAdminFlag = await isAppAdmin(supabase, userId);
+    if (me?.role !== "owner" && !isAppAdminFlag) {
+      throw new Error("Only owners can request organization deletion");
+    }
+    const now = new Date();
+    const scheduledFor = new Date(now.getTime() + DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000);
+    const { data: org, error } = await supabaseAdmin
+      .from("organizations")
+      .update({
+        deletion_requested_at: now.toISOString(),
+        deletion_scheduled_for: scheduledFor.toISOString(),
+        deletion_requested_by: userId,
+      })
+      .eq("id", data.organizationId)
+      .select("id, name")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { data: requesterProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("first_name, last_name")
+      .eq("id", userId)
+      .maybeSingle();
+    const requesterName =
+      [requesterProfile?.first_name, requesterProfile?.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || "";
+
+    await notifyMembersOrgDeletion(data.organizationId, "org_deletion_requested", {
+      organization_id: data.organizationId,
+      organization_name: org?.name ?? "",
+      scheduled_for: scheduledFor.toISOString(),
+      requested_by: userId,
+      requester_name: requesterName,
+    });
+    return { ok: true, scheduledFor: scheduledFor.toISOString() };
+  });
+
+/** Anuluj zaplanowane usunięcie organizacji (tylko owner). */
+export const cancelOrganizationDeletion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: me } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isAppAdminFlag = await isAppAdmin(supabase, userId);
+    if (me?.role !== "owner" && !isAppAdminFlag) {
+      throw new Error("Only owners can cancel organization deletion");
+    }
+    const { data: org, error } = await supabaseAdmin
+      .from("organizations")
+      .update({
+        deletion_requested_at: null,
+        deletion_scheduled_for: null,
+        deletion_requested_by: null,
+      })
+      .eq("id", data.organizationId)
+      .select("id, name")
+      .single();
+    if (error) throw new Error(error.message);
+
+    await notifyMembersOrgDeletion(data.organizationId, "org_deletion_cancelled", {
+      organization_id: data.organizationId,
+      organization_name: org?.name ?? "",
+      cancelled_by: userId,
+    });
+    return { ok: true };
+  });
