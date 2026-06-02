@@ -4,18 +4,29 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CountrySelect } from "@/components/country-select";
 import { CurrencySelect } from "@/components/currency-select";
 import { PhoneInput } from "@/components/phone-input";
 import { MUSIC_GENRES } from "@/lib/genres";
 import { currencyForCountry } from "@/lib/currencies";
 import {
+  cancelOrganizationDeletion,
   getOrganizationDetails,
+  requestOrganizationDeletion,
   updateOrganization,
 } from "@/lib/organizations.functions";
 import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
