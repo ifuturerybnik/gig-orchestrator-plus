@@ -1935,7 +1935,7 @@ export default
         },
         "gallery": {
           "title": "Jak działa moduł Galeria – instrukcja",
-          "intro": "Galeria składa się z albumów. Każdy album zawiera zdjęcia i/lub wideo (z URL). Albumy można powiązać z wydarzeniem – wtedy pojawiają się obok niego na stronie.",
+          "intro": "Galeria składa się z albumów. Każdy album zawiera zdjęcia wgrywane bezpośrednio z dysku i/lub wideo (z URL). Albumy można powiązać z wydarzeniem – wtedy pojawiają się obok niego na stronie.",
           "sections": [
             {
               "heading": "Po co to jest",
@@ -1944,8 +1944,10 @@ export default
             {
               "heading": "Funkcje",
               "items": [
-                "Albumy z tytułem i opisem PL/EN, okładką i powiązaniem z wydarzeniem.",
-                "Pozycje: zdjęcia (URL + opcjonalna miniatura) lub wideo (URL pliku MP4 lub strumień).",
+                "Albumy z tytułem i opisem PL/EN, okładką (upload z dysku) i powiązaniem z wydarzeniem.",
+                "Pozycje: zdjęcia wgrywane bezpośrednio z dysku (multi-upload, drag & drop) lub wideo (URL pliku MP4 / YouTube / Vimeo).",
+                "Automatyczna konwersja każdego zdjęcia do WebP, max 2560 px po dłuższym boku, plus wersja średnia 1280 px i miniatura 400 px – wszystko trzymane na Cloudflare R2.",
+                "Stripowanie metadanych EXIF (prywatność) i znaczne zmniejszenie rozmiaru (zwykle 30–70% w stosunku do oryginału).",
                 "Podpisy i autor zdjęcia (© photo credit).",
                 "Sortowanie pozycji w albumie (sort_order).",
                 "Embed gallery: gotowy widget z siatką albumów + lightbox + odtwarzanie wideo, sterowanie klawiaturą (Esc / ← →)."
@@ -1954,10 +1956,10 @@ export default
             {
               "heading": "Jak utworzyć album – krok po kroku",
               "items": [
-                "„Nowy album” → tytuł PL/EN, opis, okładka, opcjonalnie wybierz wydarzenie.",
+                "„Nowy album” → tytuł PL/EN, opis, wgraj okładkę z dysku, opcjonalnie wybierz wydarzenie.",
                 "Zapisz album, wejdź w jego szczegóły.",
-                "„Dodaj plik” → wybierz typ (Zdjęcie / Wideo) i wklej URL.",
-                "Dla wideo polecane: link do pliku .mp4 (np. z Dysku/CDN) – odtwarzacz HTML5 obsługuje wszystko poza YouTube/Vimeo (te wymagają osobnego embeda).",
+                "Aby dodać zdjęcia: użyj sekcji „Wgraj zdjęcia” – możesz przeciągnąć wiele plików naraz, każdy zostanie przetworzony (resize + WebP + miniatury) i zapisany na Twoim dysku organizacji.",
+                "Aby dodać wideo: „Dodaj wideo” → wklej URL pliku .mp4 lub link YouTube/Vimeo.",
                 "Zaznacz „Opublikuj publicznie”."
               ]
             },
@@ -1966,14 +1968,14 @@ export default
               "items": [
                 "Slug organizacji aktywny w „Integracja WWW”.",
                 "Albo embed.js z data-mode=\"gallery\" (najszybciej), albo własny fetch endpointu /api/public/v1/orgs/<slug>/gallery oraz /gallery/<albumSlug>.",
-                "Hosting plików: zdjęcia/wideo muszą być pod publicznym URL (Dysk Concertivo, R2, S3, własny CDN)."
+                "Hosting plików nie jest potrzebny po Twojej stronie – zdjęcia są serwowane z Cloudflare R2 (publiczny URL generowany automatycznie). Wideo z YouTube/Vimeo działa przez embed."
               ]
             },
             {
               "heading": "Dobre praktyki",
               "items": [
-                "Wgrywaj zdjęcia ~1600 px po dłuższym boku – ostre w lightboxie, szybko się ładują.",
-                "Dla wideo > 50 MB użyj CDN i miniatury (kolumna „URL miniatury”).",
+                "Wgrywaj zdjęcia w pełnej rozdzielczości z aparatu – system sam zrobi wersję optymalną i miniatury. Limit pojedynczego pliku to zwykle 25 MB.",
+                "Dla wideo lokalnych użyj zewnętrznego CDN i wklej URL .mp4; dla YouTube/Vimeo wklej standardowy link do filmu.",
                 "Powiąż album z wydarzeniem – strona może pokazać album bezpośrednio pod kartą wydarzenia."
               ]
             }
