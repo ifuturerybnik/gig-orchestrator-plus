@@ -39,6 +39,7 @@ import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
 import { Route as AuthenticatedOrganizationsOrgIdIndexRouteImport } from './routes/_authenticated.organizations.$orgId.index'
+import { Route as ApiPublicV1EmbedDotjsRouteImport } from './routes/api/public/v1.embed[.]js'
 import { Route as ApiPublicSocialYoutubeCallbackRouteImport } from './routes/api/public/social.youtube-callback'
 import { Route as ApiPublicSocialXCallbackRouteImport } from './routes/api/public/social.x-callback'
 import { Route as ApiPublicSocialTiktokCallbackRouteImport } from './routes/api/public/social.tiktok-callback'
@@ -58,6 +59,13 @@ import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './rou
 import { Route as AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport } from './routes/_authenticated.organizations.$orgId.autokorespondencja'
 import { Route as AuthenticatedOrganizationsOrgIdAiStudioRouteImport } from './routes/_authenticated.organizations.$orgId.ai-studio'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
+import { Route as ApiPublicV1OrgsSlugNewsRouteImport } from './routes/api/public/v1.orgs.$slug.news'
+import { Route as ApiPublicV1OrgsSlugGalleryRouteImport } from './routes/api/public/v1.orgs.$slug.gallery'
+import { Route as ApiPublicV1OrgsSlugEventsDoticsRouteImport } from './routes/api/public/v1.orgs.$slug.events[.]ics'
+import { Route as ApiPublicV1OrgsSlugEventsRouteImport } from './routes/api/public/v1.orgs.$slug.events'
+import { Route as ApiPublicV1OrgsSlugNewsFeedDotxmlRouteImport } from './routes/api/public/v1.orgs.$slug.news.feed[.]xml'
+import { Route as ApiPublicV1OrgsSlugNewsItemSlugRouteImport } from './routes/api/public/v1.orgs.$slug.news.$itemSlug'
+import { Route as ApiPublicV1OrgsSlugGalleryAlbumSlugRouteImport } from './routes/api/public/v1.orgs.$slug.gallery.$albumSlug'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -222,6 +230,11 @@ const AuthenticatedOrganizationsOrgIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const ApiPublicV1EmbedDotjsRoute = ApiPublicV1EmbedDotjsRouteImport.update({
+  id: '/api/public/v1/embed.js',
+  path: '/api/public/v1/embed.js',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSocialYoutubeCallbackRoute =
   ApiPublicSocialYoutubeCallbackRouteImport.update({
     id: '/api/public/social/youtube-callback',
@@ -336,6 +349,47 @@ const AuthenticatedContactsOrgOrgIdRoute =
     path: '/org/$orgId',
     getParentRoute: () => AuthenticatedContactsRoute,
   } as any)
+const ApiPublicV1OrgsSlugNewsRoute = ApiPublicV1OrgsSlugNewsRouteImport.update({
+  id: '/api/public/v1/orgs/$slug/news',
+  path: '/api/public/v1/orgs/$slug/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1OrgsSlugGalleryRoute =
+  ApiPublicV1OrgsSlugGalleryRouteImport.update({
+    id: '/api/public/v1/orgs/$slug/gallery',
+    path: '/api/public/v1/orgs/$slug/gallery',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicV1OrgsSlugEventsDoticsRoute =
+  ApiPublicV1OrgsSlugEventsDoticsRouteImport.update({
+    id: '/api/public/v1/orgs/$slug/events.ics',
+    path: '/api/public/v1/orgs/$slug/events.ics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicV1OrgsSlugEventsRoute =
+  ApiPublicV1OrgsSlugEventsRouteImport.update({
+    id: '/api/public/v1/orgs/$slug/events',
+    path: '/api/public/v1/orgs/$slug/events',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicV1OrgsSlugNewsFeedDotxmlRoute =
+  ApiPublicV1OrgsSlugNewsFeedDotxmlRouteImport.update({
+    id: '/feed.xml',
+    path: '/feed.xml',
+    getParentRoute: () => ApiPublicV1OrgsSlugNewsRoute,
+  } as any)
+const ApiPublicV1OrgsSlugNewsItemSlugRoute =
+  ApiPublicV1OrgsSlugNewsItemSlugRouteImport.update({
+    id: '/$itemSlug',
+    path: '/$itemSlug',
+    getParentRoute: () => ApiPublicV1OrgsSlugNewsRoute,
+  } as any)
+const ApiPublicV1OrgsSlugGalleryAlbumSlugRoute =
+  ApiPublicV1OrgsSlugGalleryAlbumSlugRouteImport.update({
+    id: '/$albumSlug',
+    path: '/$albumSlug',
+    getParentRoute: () => ApiPublicV1OrgsSlugGalleryRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -385,7 +439,15 @@ export interface FileRoutesByFullPath {
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
+  '/api/public/v1/embed.js': typeof ApiPublicV1EmbedDotjsRoute
   '/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
+  '/api/public/v1/orgs/$slug/events': typeof ApiPublicV1OrgsSlugEventsRoute
+  '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
+  '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
+  '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
+  '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
+  '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -432,7 +494,15 @@ export interface FileRoutesByTo {
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
+  '/api/public/v1/embed.js': typeof ApiPublicV1EmbedDotjsRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdIndexRoute
+  '/api/public/v1/orgs/$slug/events': typeof ApiPublicV1OrgsSlugEventsRoute
+  '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
+  '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
+  '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
+  '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
+  '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -484,7 +554,15 @@ export interface FileRoutesById {
   '/api/public/social/tiktok-callback': typeof ApiPublicSocialTiktokCallbackRoute
   '/api/public/social/x-callback': typeof ApiPublicSocialXCallbackRoute
   '/api/public/social/youtube-callback': typeof ApiPublicSocialYoutubeCallbackRoute
+  '/api/public/v1/embed.js': typeof ApiPublicV1EmbedDotjsRoute
   '/_authenticated/organizations/$orgId/': typeof AuthenticatedOrganizationsOrgIdIndexRoute
+  '/api/public/v1/orgs/$slug/events': typeof ApiPublicV1OrgsSlugEventsRoute
+  '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
+  '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
+  '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
+  '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
+  '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -536,7 +614,15 @@ export interface FileRouteTypes {
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
+    | '/api/public/v1/embed.js'
     | '/organizations/$orgId/'
+    | '/api/public/v1/orgs/$slug/events'
+    | '/api/public/v1/orgs/$slug/events.ics'
+    | '/api/public/v1/orgs/$slug/gallery'
+    | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
+    | '/api/public/v1/orgs/$slug/news/$itemSlug'
+    | '/api/public/v1/orgs/$slug/news/feed.xml'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -583,7 +669,15 @@ export interface FileRouteTypes {
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
+    | '/api/public/v1/embed.js'
     | '/organizations/$orgId'
+    | '/api/public/v1/orgs/$slug/events'
+    | '/api/public/v1/orgs/$slug/events.ics'
+    | '/api/public/v1/orgs/$slug/gallery'
+    | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
+    | '/api/public/v1/orgs/$slug/news/$itemSlug'
+    | '/api/public/v1/orgs/$slug/news/feed.xml'
   id:
     | '__root__'
     | '/'
@@ -634,7 +728,15 @@ export interface FileRouteTypes {
     | '/api/public/social/tiktok-callback'
     | '/api/public/social/x-callback'
     | '/api/public/social/youtube-callback'
+    | '/api/public/v1/embed.js'
     | '/_authenticated/organizations/$orgId/'
+    | '/api/public/v1/orgs/$slug/events'
+    | '/api/public/v1/orgs/$slug/events.ics'
+    | '/api/public/v1/orgs/$slug/gallery'
+    | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
+    | '/api/public/v1/orgs/$slug/news/$itemSlug'
+    | '/api/public/v1/orgs/$slug/news/feed.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -659,6 +761,11 @@ export interface RootRouteChildren {
   ApiPublicSocialTiktokCallbackRoute: typeof ApiPublicSocialTiktokCallbackRoute
   ApiPublicSocialXCallbackRoute: typeof ApiPublicSocialXCallbackRoute
   ApiPublicSocialYoutubeCallbackRoute: typeof ApiPublicSocialYoutubeCallbackRoute
+  ApiPublicV1EmbedDotjsRoute: typeof ApiPublicV1EmbedDotjsRoute
+  ApiPublicV1OrgsSlugEventsRoute: typeof ApiPublicV1OrgsSlugEventsRoute
+  ApiPublicV1OrgsSlugEventsDoticsRoute: typeof ApiPublicV1OrgsSlugEventsDoticsRoute
+  ApiPublicV1OrgsSlugGalleryRoute: typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
+  ApiPublicV1OrgsSlugNewsRoute: typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -873,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/api/public/v1/embed.js': {
+      id: '/api/public/v1/embed.js'
+      path: '/api/public/v1/embed.js'
+      fullPath: '/api/public/v1/embed.js'
+      preLoaderRoute: typeof ApiPublicV1EmbedDotjsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/social/youtube-callback': {
       id: '/api/public/social/youtube-callback'
       path: '/api/public/social/youtube-callback'
@@ -1006,6 +1120,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContactsOrgOrgIdRouteImport
       parentRoute: typeof AuthenticatedContactsRoute
     }
+    '/api/public/v1/orgs/$slug/news': {
+      id: '/api/public/v1/orgs/$slug/news'
+      path: '/api/public/v1/orgs/$slug/news'
+      fullPath: '/api/public/v1/orgs/$slug/news'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugNewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/orgs/$slug/gallery': {
+      id: '/api/public/v1/orgs/$slug/gallery'
+      path: '/api/public/v1/orgs/$slug/gallery'
+      fullPath: '/api/public/v1/orgs/$slug/gallery'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugGalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/orgs/$slug/events.ics': {
+      id: '/api/public/v1/orgs/$slug/events.ics'
+      path: '/api/public/v1/orgs/$slug/events.ics'
+      fullPath: '/api/public/v1/orgs/$slug/events.ics'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugEventsDoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/orgs/$slug/events': {
+      id: '/api/public/v1/orgs/$slug/events'
+      path: '/api/public/v1/orgs/$slug/events'
+      fullPath: '/api/public/v1/orgs/$slug/events'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/orgs/$slug/news/feed.xml': {
+      id: '/api/public/v1/orgs/$slug/news/feed.xml'
+      path: '/feed.xml'
+      fullPath: '/api/public/v1/orgs/$slug/news/feed.xml'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRouteImport
+      parentRoute: typeof ApiPublicV1OrgsSlugNewsRoute
+    }
+    '/api/public/v1/orgs/$slug/news/$itemSlug': {
+      id: '/api/public/v1/orgs/$slug/news/$itemSlug'
+      path: '/$itemSlug'
+      fullPath: '/api/public/v1/orgs/$slug/news/$itemSlug'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugNewsItemSlugRouteImport
+      parentRoute: typeof ApiPublicV1OrgsSlugNewsRoute
+    }
+    '/api/public/v1/orgs/$slug/gallery/$albumSlug': {
+      id: '/api/public/v1/orgs/$slug/gallery/$albumSlug'
+      path: '/$albumSlug'
+      fullPath: '/api/public/v1/orgs/$slug/gallery/$albumSlug'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRouteImport
+      parentRoute: typeof ApiPublicV1OrgsSlugGalleryRoute
+    }
   }
 }
 
@@ -1121,6 +1284,38 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface ApiPublicV1OrgsSlugGalleryRouteChildren {
+  ApiPublicV1OrgsSlugGalleryAlbumSlugRoute: typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
+}
+
+const ApiPublicV1OrgsSlugGalleryRouteChildren: ApiPublicV1OrgsSlugGalleryRouteChildren =
+  {
+    ApiPublicV1OrgsSlugGalleryAlbumSlugRoute:
+      ApiPublicV1OrgsSlugGalleryAlbumSlugRoute,
+  }
+
+const ApiPublicV1OrgsSlugGalleryRouteWithChildren =
+  ApiPublicV1OrgsSlugGalleryRoute._addFileChildren(
+    ApiPublicV1OrgsSlugGalleryRouteChildren,
+  )
+
+interface ApiPublicV1OrgsSlugNewsRouteChildren {
+  ApiPublicV1OrgsSlugNewsItemSlugRoute: typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
+  ApiPublicV1OrgsSlugNewsFeedDotxmlRoute: typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
+}
+
+const ApiPublicV1OrgsSlugNewsRouteChildren: ApiPublicV1OrgsSlugNewsRouteChildren =
+  {
+    ApiPublicV1OrgsSlugNewsItemSlugRoute: ApiPublicV1OrgsSlugNewsItemSlugRoute,
+    ApiPublicV1OrgsSlugNewsFeedDotxmlRoute:
+      ApiPublicV1OrgsSlugNewsFeedDotxmlRoute,
+  }
+
+const ApiPublicV1OrgsSlugNewsRouteWithChildren =
+  ApiPublicV1OrgsSlugNewsRoute._addFileChildren(
+    ApiPublicV1OrgsSlugNewsRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
@@ -1143,6 +1338,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialTiktokCallbackRoute: ApiPublicSocialTiktokCallbackRoute,
   ApiPublicSocialXCallbackRoute: ApiPublicSocialXCallbackRoute,
   ApiPublicSocialYoutubeCallbackRoute: ApiPublicSocialYoutubeCallbackRoute,
+  ApiPublicV1EmbedDotjsRoute: ApiPublicV1EmbedDotjsRoute,
+  ApiPublicV1OrgsSlugEventsRoute: ApiPublicV1OrgsSlugEventsRoute,
+  ApiPublicV1OrgsSlugEventsDoticsRoute: ApiPublicV1OrgsSlugEventsDoticsRoute,
+  ApiPublicV1OrgsSlugGalleryRoute: ApiPublicV1OrgsSlugGalleryRouteWithChildren,
+  ApiPublicV1OrgsSlugNewsRoute: ApiPublicV1OrgsSlugNewsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
