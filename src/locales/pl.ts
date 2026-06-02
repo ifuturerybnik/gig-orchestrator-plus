@@ -178,6 +178,8 @@ export default
     "edit": "Edytuj",
     "delete": "Usuń",
     "search": "Szukaj",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
     "empty": "Brak danych",
     "error": "Coś poszło nie tak",
     "success": "Gotowe"
