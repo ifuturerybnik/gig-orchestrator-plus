@@ -4,7 +4,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  CONFIGURABLE_MODULE_IDS,
   type BudgetPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
