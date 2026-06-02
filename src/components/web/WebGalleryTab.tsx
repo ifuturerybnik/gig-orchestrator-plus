@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUploader, type UploadedImage } from "@/components/ui/image-uploader";
 import {
   listWebAlbums,
   getWebAlbum,
@@ -318,10 +319,24 @@ function AlbumEditorDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label>{t("web.gallery.cover_url")}</Label>
-              <Input
-                value={form.coverImageUrl}
-                onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
-                placeholder="https://..."
+              <ImageUploader
+                organizationId={orgId}
+                module="web-gallery"
+                value={
+                  form.coverImageUrl
+                    ? ({
+                        originalId: "",
+                        originalUrl: form.coverImageUrl,
+                        mediumUrl: form.coverImageUrl,
+                        thumbUrl: form.coverImageUrl,
+                        width: 0,
+                        height: 0,
+                      } as UploadedImage)
+                    : null
+                }
+                onChange={(img) =>
+                  setForm({ ...form, coverImageUrl: img?.originalUrl ?? "" })
+                }
               />
             </div>
             <div className="space-y-2">
@@ -431,17 +446,24 @@ function AlbumDetail({
   const [newCredit, setNewCredit] = useState("");
 
   const addMut = useMutation({
-    mutationFn: () => {
-      if (!newUrl.trim()) throw new Error(t("web.gallery.item_url_required"));
+    mutationFn: (payload: {
+      url: string;
+      urlThumb: string | null;
+      width: number | null;
+      height: number | null;
+      kind: "image" | "video";
+    }) => {
       const items = (albumQuery.data?.items ?? []) as GalleryItem[];
       const nextOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
       return upsertItemFn({
         data: {
           albumId,
           organizationId: orgId,
-          kind: newKind,
-          url: newUrl.trim(),
-          urlThumb: newThumb.trim() || null,
+          kind: payload.kind,
+          url: payload.url,
+          urlThumb: payload.urlThumb,
+          width: payload.width,
+          height: payload.height,
           captionI18n: newCaption.trim() ? { pl: newCaption.trim(), en: newCaption.trim() } : {},
           photoCredit: newCredit.trim() || null,
           sortOrder: nextOrder,
@@ -497,14 +519,6 @@ function AlbumDetail({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t("web.gallery.item_url")}</Label>
-            <Input value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("web.gallery.thumb_url")}</Label>
-            <Input value={newThumb} onChange={(e) => setNewThumb(e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="space-y-2">
             <Label>{t("web.gallery.credit")}</Label>
             <Input value={newCredit} onChange={(e) => setNewCredit(e.target.value)} />
           </div>
@@ -512,11 +526,63 @@ function AlbumDetail({
             <Label>{t("web.gallery.caption")}</Label>
             <Input value={newCaption} onChange={(e) => setNewCaption(e.target.value)} />
           </div>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={() => addMut.mutate()} disabled={addMut.isPending}>
-            <Plus className="mr-2 h-4 w-4" /> {t("web.gallery.add_item")}
-          </Button>
+          {newKind === "image" ? (
+            <div className="space-y-2 sm:col-span-2">
+              <ImageUploader
+                organizationId={orgId}
+                module="web-gallery"
+                multiple
+                onUploaded={(img) =>
+                  addMut.mutate({
+                    kind: "image",
+                    url: img.originalUrl,
+                    urlThumb: img.thumbUrl,
+                    width: img.width,
+                    height: img.height,
+                  })
+                }
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>{t("web.gallery.item_url")}</Label>
+                <Input
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  placeholder="https://youtube.com/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("web.gallery.thumb_url")}</Label>
+                <Input
+                  value={newThumb}
+                  onChange={(e) => setNewThumb(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="sm:col-span-2 flex justify-end">
+                <Button
+                  onClick={() => {
+                    if (!newUrl.trim()) {
+                      toast.error(t("web.gallery.item_url_required"));
+                      return;
+                    }
+                    addMut.mutate({
+                      kind: "video",
+                      url: newUrl.trim(),
+                      urlThumb: newThumb.trim() || null,
+                      width: null,
+                      height: null,
+                    });
+                  }}
+                  disabled={addMut.isPending}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> {t("web.gallery.add_item")}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
