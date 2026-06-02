@@ -39,7 +39,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { listBudgetEntries } from "@/lib/organizations.functions";
+import { listBudgetEntries, getMyOrgPermissions } from "@/lib/organizations.functions";
+import { hasModuleAccess, type OrgModuleId } from "@/lib/org-modules";
 
 type LeafItem = {
   kind: "leaf";
