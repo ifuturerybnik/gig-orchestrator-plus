@@ -24,6 +24,27 @@ import {
 
 const FOLDER_MIME = "application/x-directory";
 
+// Domyślna struktura folderów systemowych zakładana przy pierwszym wejściu
+// do modułu Dysk dla danej organizacji. Folderów z is_system=true nie można
+// usuwać ani zmieniać nazwy — porządkują przestrzeń dla użytkowników.
+const SYSTEM_FOLDERS: string[] = [
+  "Dokumenty",
+  "Dokumenty/Umowy",
+  "Dokumenty/Faktury",
+  "Dokumenty/Wewnętrzne",
+  "Koncerty",
+  "Artyści",
+  "Kontrahenci",
+  "Marketing",
+  "Marketing/Grafiki",
+  "Marketing/Zdjęcia",
+  "Marketing/Wideo",
+  "Korespondencja",
+  "Korespondencja/Załączniki przychodzące",
+  "Korespondencja/Załączniki wychodzące",
+  "Inne",
+];
+
 // ---------- helpers ----------
 
 async function assertOrgMember(
