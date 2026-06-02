@@ -1681,7 +1681,7 @@ export default
                 "Click \"Add post\".",
                 "Fill the PL title (and optionally EN).",
                 "Fill the lead and content in WYSIWYG.",
-                "Paste the cover image URL (from Drive module or external URL).",
+                "Upload the cover image by drag & drop or click to pick a file – Concertivo automatically converts it to WebP, resizes to max 2560 px on the long side and generates thumbnails (1280 px and 400 px). No more URL pasting.",
                 "Add comma-separated tags (e.g. \"concert, jazz\").",
                 "Toggle \"Publish publicly\" and save."
               ]
@@ -1698,7 +1698,7 @@ export default
               "heading": "Best practices",
               "items": [
                 "Keep the lead short (1–2 sentences) – it shows on the list and as meta description.",
-                "Cover images 1200×630 px work best for social previews.",
+                "Upload cover images at the highest resolution you have – the system creates the optimal version and thumbnails (landscape ratio ~1200×630 px or larger works best for social previews).",
                 "Set the slug once – changing it breaks external links."
               ]
             }
@@ -1731,6 +1731,7 @@ export default
                 "PL/EN title, start date (and optionally end).",
                 "Location – name and address; coordinates only if your site embeds a map.",
                 "Add performers with the \"Add performer\" button.",
+                "Upload the event poster from your disk (drag & drop or click) – the system auto-converts it to WebP, resizes and generates thumbnails.",
                 "Paste the ticket link (Bilet24, eBilet, your own shop).",
                 "Pick the status, toggle \"Publish publicly\", save."
               ]
@@ -1755,7 +1756,7 @@ export default
         },
         "gallery": {
           "title": "How the Gallery module works – guide",
-          "intro": "Gallery consists of albums. Each album contains images and/or videos (by URL). You can link an album to an event so it shows next to it on the website.",
+          "intro": "Gallery consists of albums. Each album contains images uploaded directly from your disk and/or videos (by URL). You can link an album to an event so it shows next to it on the website.",
           "sections": [
             {
               "heading": "Why use it",
@@ -1764,8 +1765,10 @@ export default
             {
               "heading": "Features",
               "items": [
-                "Albums with PL/EN title and description, cover image and event linking.",
-                "Items: images (URL + optional thumbnail) or video (MP4 URL or stream).",
+                "Albums with PL/EN title and description, cover image (upload from disk) and event linking.",
+                "Items: images uploaded directly from disk (multi-upload, drag & drop) or videos (MP4 URL / YouTube / Vimeo).",
+                "Each image auto-converted to WebP, max 2560 px on the long side, plus medium (1280 px) and thumbnail (400 px) variants – all stored on Cloudflare R2.",
+                "EXIF metadata stripped (privacy) and major size reduction (typically 30–70% smaller than the original).",
                 "Captions and photo credit (©).",
                 "Sortable items inside an album.",
                 "Gallery embed: ready-made widget with album grid + lightbox + video playback, keyboard nav (Esc / ← →)."
@@ -1774,10 +1777,10 @@ export default
             {
               "heading": "How to create an album – step by step",
               "items": [
-                "\"New album\" → PL/EN title, description, cover, optionally pick an event.",
+                "\"New album\" → PL/EN title, description, upload a cover from disk, optionally pick an event.",
                 "Save the album and open its details.",
-                "\"Add file\" → pick type (Image / Video) and paste the URL.",
-                "For video, prefer a direct .mp4 link (from Drive/CDN) – the HTML5 player handles everything except YouTube/Vimeo (those need a separate embed).",
+                "To add photos: use the \"Upload images\" section – drop multiple files at once, each is processed (resize + WebP + thumbnails) and saved to your organization disk.",
+                "To add video: \"Add video\" → paste an .mp4 URL or a YouTube/Vimeo link.",
                 "Toggle \"Publish publicly\"."
               ]
             },
@@ -1786,14 +1789,14 @@ export default
               "items": [
                 "Organization slug enabled on \"Web integration\".",
                 "Either embed.js with data-mode=\"gallery\" (fastest) or your own fetch of /api/public/v1/orgs/<slug>/gallery and /gallery/<albumSlug>.",
-                "File hosting: images/videos must be on a public URL (Concertivo Drive, R2, S3, own CDN)."
+                "No file hosting required on your side – images are served from Cloudflare R2 (public URL generated automatically). Videos from YouTube/Vimeo work through the embed."
               ]
             },
             {
               "heading": "Best practices",
               "items": [
-                "Upload images ~1600 px on the long side – sharp in the lightbox, still fast.",
-                "For video > 50 MB use a CDN and a thumbnail (\"Thumbnail URL\" field).",
+                "Upload images at full camera resolution – the system creates the optimal version and thumbnails. Per-file limit is typically 25 MB.",
+                "For local videos use an external CDN and paste the .mp4 URL; for YouTube/Vimeo paste the standard video link.",
                 "Link the album to an event – the site can render the album right under the event card."
               ]
             }
