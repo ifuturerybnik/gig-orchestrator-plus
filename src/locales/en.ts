@@ -1653,8 +1653,269 @@ export default
         "show_secret": "Show secret",
         "deliveries": "Recent deliveries",
         "no_deliveries": "No delivery attempts yet."
+      },
+      "instructions": {
+        "news": {
+          "title": "How the News module works – guide",
+          "intro": "News are posts published via the public API and embed on the organization's website. Each post has a title, lead, content (WYSIWYG), cover image, optional gallery, tags and author. Posts are bilingual (PL/EN) – fill both or just one (the site falls back to the other language).",
+          "sections": [
+            {
+              "heading": "Why use it",
+              "body": "To run the News section on the organization website without manually editing HTML. You write content in Concertivo, the website pulls it automatically."
+            },
+            {
+              "heading": "Features",
+              "items": [
+                "WYSIWYG (Tiptap) – bold, lists, links, headings, quotes.",
+                "Side-by-side PL/EN language versions in one form.",
+                "Slug (URL) auto-generated from the PL title – override anytime.",
+                "Draft ↔ published toggle (\"Publish publicly\").",
+                "Tags for filtering, post author, image gallery below content.",
+                "A published post is instantly available via JSON API, RSS and embed."
+              ]
+            },
+            {
+              "heading": "How to create a post – step by step",
+              "items": [
+                "Click \"Add post\".",
+                "Fill the PL title (and optionally EN).",
+                "Fill the lead and content in WYSIWYG.",
+                "Paste the cover image URL (from Drive module or external URL).",
+                "Add comma-separated tags (e.g. \"concert, jazz\").",
+                "Toggle \"Publish publicly\" and save."
+              ]
+            },
+            {
+              "heading": "What's needed on the website side",
+              "items": [
+                "Organization slug set on the \"Web integration\" tab and the public API enabled.",
+                "On the website – fetch /api/public/v1/orgs/<slug>/news?lang=en or use the embed.js snippet.",
+                "Optionally: an RSS reader or static-site generator (Astro/Next) fetching JSON at build time."
+              ]
+            },
+            {
+              "heading": "Best practices",
+              "items": [
+                "Keep the lead short (1–2 sentences) – it shows on the list and as meta description.",
+                "Cover images 1200×630 px work best for social previews.",
+                "Set the slug once – changing it breaks external links."
+              ]
+            }
+          ]
+        },
+        "events": {
+          "title": "How the Events module works – guide",
+          "intro": "Events are concerts, shows and festivals published on the organization website. They include start/end date, location, performers, ticket link and status (scheduled / cancelled / postponed / sold out).",
+          "sections": [
+            {
+              "heading": "Why use it",
+              "body": "So your website always shows a current event calendar and visitors can add events to their own calendar in one click (iCal)."
+            },
+            {
+              "heading": "Features",
+              "items": [
+                "Full WYSIWYG description in PL/EN.",
+                "Date, time, timezone (default Europe/Warsaw), optional end.",
+                "Location: venue name (i18n), address, optional coordinates (lat/lng).",
+                "Performer list with links.",
+                "Ticket link + \"from\" price and currency.",
+                "Statuses affect list rendering (e.g. \"Cancelled\" is struck through).",
+                "iCal (.ics) file – one feed for the whole organization, ready for Google/Apple Calendar."
+              ]
+            },
+            {
+              "heading": "How to add an event – step by step",
+              "items": [
+                "Click \"Add event\".",
+                "PL/EN title, start date (and optionally end).",
+                "Location – name and address; coordinates only if your site embeds a map.",
+                "Add performers with the \"Add performer\" button.",
+                "Paste the ticket link (Bilet24, eBilet, your own shop).",
+                "Pick the status, toggle \"Publish publicly\", save."
+              ]
+            },
+            {
+              "heading": "What's needed on the website side",
+              "items": [
+                "Organization slug set on \"Web integration\".",
+                "Fetch /api/public/v1/orgs/<slug>/events?lang=en&filter=upcoming for upcoming or filter=past for the archive.",
+                "iCal subscription: expose /api/public/v1/orgs/<slug>/events.ics as an \"Add to calendar\" button."
+              ]
+            },
+            {
+              "heading": "Best practices",
+              "items": [
+                "Set the end date – it helps separating upcoming from past events.",
+                "Prefer \"Cancelled\" status over deletion – old links keep working and show the info.",
+                "Set coordinates when you use a map embed."
+              ]
+            }
+          ]
+        },
+        "gallery": {
+          "title": "How the Gallery module works – guide",
+          "intro": "Gallery consists of albums. Each album contains images and/or videos (by URL). You can link an album to an event so it shows next to it on the website.",
+          "sections": [
+            {
+              "heading": "Why use it",
+              "body": "To display photo/video coverage from concerts and events in a clean grid with a lightbox, without coding your own component."
+            },
+            {
+              "heading": "Features",
+              "items": [
+                "Albums with PL/EN title and description, cover image and event linking.",
+                "Items: images (URL + optional thumbnail) or video (MP4 URL or stream).",
+                "Captions and photo credit (©).",
+                "Sortable items inside an album.",
+                "Gallery embed: ready-made widget with album grid + lightbox + video playback, keyboard nav (Esc / ← →)."
+              ]
+            },
+            {
+              "heading": "How to create an album – step by step",
+              "items": [
+                "\"New album\" → PL/EN title, description, cover, optionally pick an event.",
+                "Save the album and open its details.",
+                "\"Add file\" → pick type (Image / Video) and paste the URL.",
+                "For video, prefer a direct .mp4 link (from Drive/CDN) – the HTML5 player handles everything except YouTube/Vimeo (those need a separate embed).",
+                "Toggle \"Publish publicly\"."
+              ]
+            },
+            {
+              "heading": "What's needed on the website side",
+              "items": [
+                "Organization slug enabled on \"Web integration\".",
+                "Either embed.js with data-mode=\"gallery\" (fastest) or your own fetch of /api/public/v1/orgs/<slug>/gallery and /gallery/<albumSlug>.",
+                "File hosting: images/videos must be on a public URL (Concertivo Drive, R2, S3, own CDN)."
+              ]
+            },
+            {
+              "heading": "Best practices",
+              "items": [
+                "Upload images ~1600 px on the long side – sharp in the lightbox, still fast.",
+                "For video > 50 MB use a CDN and a thumbnail (\"Thumbnail URL\" field).",
+                "Link the album to an event – the site can render the album right under the event card."
+              ]
+            }
+          ]
+        },
+        "integration": {
+          "title": "How to integrate with your website – guide",
+          "intro": "This tab exposes content (News, Events, Gallery) externally: via JSON API, RSS, iCal, sitemap.xml and a pasteable embed.js. Pick the method that fits how your website is built.",
+          "sections": [
+            {
+              "heading": "Step 1 – basic setup",
+              "items": [
+                "Set the \"Public organization slug\" (e.g. filharmonia-szczecinska). It appears in every API URL.",
+                "Enable \"Enable public API\" – without it endpoints return 404.",
+                "Click Save."
+              ]
+            },
+            {
+              "heading": "Choosing the integration method",
+              "items": [
+                "WordPress / CMS without custom templates → use embed.js (paste snippet into an HTML block).",
+                "Static site (Astro, Next, Hugo) → fetch JSON at build time + optional webhook to trigger rebuild.",
+                "Custom SPA (React/Vue) → fetch JSON on the client + sitemap.xml for SEO.",
+                "Readers / calendars → RSS (news/feed.xml) and iCal (events.ics)."
+              ]
+            },
+            {
+              "heading": "Embed (easiest)",
+              "items": [
+                "Copy the snippet from the \"Embed snippet\" section.",
+                "Paste it into the website code where the list should appear (e.g. an HTML block in WordPress).",
+                "The widget renders inside Shadow DOM – it doesn't clash with your styles.",
+                "Attributes: data-mode (news/events/gallery), data-lang (pl/en), data-limit (e.g. 6), data-target (CSS selector for the container)."
+              ]
+            },
+            {
+              "heading": "JSON API",
+              "items": [
+                "All endpoints start with /api/public/v1/orgs/<slug>/...",
+                "Append ?lang=pl or ?lang=en to choose the language.",
+                "Default list limit: 20, max 100 (?limit=...).",
+                "HTTPS required; responses are cacheable (60 s browser, 5 min CDN)."
+              ]
+            },
+            {
+              "heading": "What's needed on the website side",
+              "items": [
+                "HTTPS (browsers block mixed content).",
+                "If you use embed.js – nothing else.",
+                "If you fetch from a browser on another domain – add that domain in \"Allowed domains (CORS)\" below.",
+                "For SEO: add the organization sitemap.xml to your main sitemap or Google Search Console (with ?base=https://your-domain)."
+              ]
+            },
+            {
+              "heading": "API tokens (future use)",
+              "body": "Today public reads do not require a token. Tokens become useful when later phases add private endpoints (e.g. reading drafts). The token is shown once at creation – store it safely."
+            }
+          ]
+        },
+        "webhooks": {
+          "title": "How webhooks work – guide",
+          "intro": "A webhook is an HTTP URL on your side that Concertivo POSTs JSON to whenever content changes (publish, edit, delete). They let you auto-refresh the website, trigger a static rebuild, sync an external CMS or run an n8n/Zapier workflow.",
+          "sections": [
+            {
+              "heading": "Why use it",
+              "body": "So the website stays up to date without manual refresh. After publishing in Concertivo your system gets notified and can e.g. rebuild the site or clear cache."
+            },
+            {
+              "heading": "Events we send",
+              "items": [
+                "news.published / news.updated / news.deleted",
+                "event.published / event.updated / event.deleted",
+                "album.published / album.updated / album.deleted"
+              ]
+            },
+            {
+              "heading": "Request format",
+              "items": [
+                "Method: POST, Content-Type: application/json.",
+                "Headers: X-Concertivo-Event: <name>, X-Concertivo-Signature: sha256=<hmac_hex>.",
+                "Body: { \"event\": \"news.published\", \"occurred_at\": \"ISO-8601\", \"data\": { \"id\": \"...\", \"slug\": \"...\", \"organization_id\": \"...\" } }.",
+                "Timeout: 10 seconds. Every attempt lands in the \"Recent deliveries\" log."
+              ]
+            },
+            {
+              "heading": "How to add a webhook – step by step",
+              "items": [
+                "Click \"Add webhook\".",
+                "Set a name (e.g. \"Rebuild Vercel\" or \"n8n – publish channel\").",
+                "Paste the endpoint URL on your side (must accept POST and be reachable over HTTPS).",
+                "Pick the events you care about (defaults to all).",
+                "Save – you'll see the secret ONCE. Copy it and store it on the receiver."
+              ]
+            },
+            {
+              "heading": "Verification on your side (VERY IMPORTANT)",
+              "items": [
+                "Compute HMAC-SHA256 of the full raw request body using the stored secret.",
+                "Compare the hex result with the value after \"sha256=\" in X-Concertivo-Signature.",
+                "Reject the request when it doesn't match – otherwise someone can impersonate Concertivo."
+              ]
+            },
+            {
+              "heading": "Example use cases",
+              "items": [
+                "Vercel / Netlify deploy hook – paste the deploy-hook URL, every publish triggers a rebuild.",
+                "n8n / Zapier – receive the webhook, forward (Slack, email, Discord).",
+                "Your own server – endpoint that clears the site cache or re-fetches JSON."
+              ]
+            },
+            {
+              "heading": "What's needed on your side",
+              "items": [
+                "Public HTTPS URL accepting POST JSON.",
+                "Code verifying the HMAC signature (e.g. Node `crypto.createHmac('sha256', secret).update(rawBody).digest('hex')`).",
+                "A 2xx response = success; any other status or timeout = error in the log."
+              ]
+            }
+          ]
+        }
       }
     }
   }
 } as const;
+
 
