@@ -15,17 +15,20 @@ const ModuleIdEnum = z.enum(
   CONFIGURABLE_MODULE_IDS as unknown as [OrgModuleId, ...OrgModuleId[]],
 );
 const BudgetModeEnum = z.enum(["full", "unrealized_only"] as const);
-const DEFAULT_INVITATION_MODULES = [...CONFIGURABLE_MODULE_IDS];
+// Domyślnie zaproszony użytkownik nie ma dostępu do żadnego modułu konfigurowalnego.
+// Owner zaproszenia musi świadomie zaznaczyć moduły lub przełącznik administratora.
 const InvitationAccessSchema = z
   .object({
+    asOwner: z.boolean().optional().default(false),
     isOrgAdmin: z.boolean().optional().default(false),
-    modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default(DEFAULT_INVITATION_MODULES),
+    modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default([]),
     budgetMode: BudgetModeEnum.optional().default("full"),
   })
   .optional()
   .default({
+    asOwner: false,
     isOrgAdmin: false,
-    modules: DEFAULT_INVITATION_MODULES,
+    modules: [],
     budgetMode: "full",
   });
 
