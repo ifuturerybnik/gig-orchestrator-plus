@@ -168,7 +168,7 @@ function DyskPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const segments = path ? path.split("/") : [];
+  const segments: string[] = path ? path.split("/") : [];
   const goTo = (p: string) =>
     navigate({ search: { path: p || undefined }, replace: false });
 
