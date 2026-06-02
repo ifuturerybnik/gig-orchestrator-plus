@@ -1063,7 +1063,7 @@ export const getMemberPermissions = createServerFn({ method: "GET" })
 
     const { data: perm } = await supabaseAdmin
       .from("organization_member_permissions")
-      .select("is_org_admin, modules, budget_mode")
+      .select("is_org_admin, modules, budget_mode, events_mode")
       .eq("member_id", data.memberId)
       .maybeSingle();
 
@@ -1074,6 +1074,7 @@ export const getMemberPermissions = createServerFn({ method: "GET" })
             is_org_admin: Boolean(perm.is_org_admin),
             modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
             budget_mode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
+            events_mode: (perm.events_mode as EventsPermissionMode) ?? "full",
           }
         : null,
     };
