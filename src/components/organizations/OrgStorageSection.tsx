@@ -68,6 +68,47 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
   });
   const [initialized, setInitialized] = useState(false);
   const [viewMode, setViewMode] = useState<"central" | "own">("central");
+  const [pendingMode, setPendingMode] = useState<"central" | "own" | null>(null);
+  const [deleteSourceAfter, setDeleteSourceAfter] = useState(false);
+
+  const fetchMigStatus = useServerFn(getOrgStorageMigrationStatus);
+  const migrateFn = useServerFn(migrateOrgStorage);
+  const migStatusKey = ["org-storage-migration", orgId];
+  const migStatusQ = useQuery({
+    queryKey: migStatusKey,
+    queryFn: () => fetchMigStatus({ data: { organization_id: orgId } }),
+  });
+
+  const migrate = useMutation({
+    mutationFn: () =>
+      migrateFn({
+        data: {
+          organization_id: orgId,
+          from_mode: migStatusQ.data!.legacy_mode,
+          to_mode: migStatusQ.data!.active_mode,
+          delete_source: deleteSourceAfter,
+        },
+      }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: migStatusKey });
+      qc.invalidateQueries({ queryKey });
+      if (r.done) {
+        toast.success(`Migracja zakończona. Skopiowano ${r.copied} plików.`);
+      } else {
+        toast.success(
+          `Skopiowano ${r.copied}. Zostało ${r.remaining}. Kliknij ponownie, aby kontynuować.`,
+        );
+      }
+      if (r.skipped_too_big > 0) {
+        toast.warning(`Pominięto ${r.skipped_too_big} plików > 200 MB — skontaktuj się z obsługą.`);
+      }
+      if (r.failed > 0) {
+        toast.error(`Nieudane: ${r.failed}. ${r.errors.join("; ")}`);
+      }
+    },
+    onError: (e: Error) => toast.error(`Migracja: ${e.message}`),
+  });
+
 
   useEffect(() => {
     if (!initialized && data) {
