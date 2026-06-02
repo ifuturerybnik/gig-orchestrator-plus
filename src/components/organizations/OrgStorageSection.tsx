@@ -462,19 +462,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </li>
 
           <li>
-            <strong>Skonfiguruj CORS bucketa.</strong> W bucket → „Settings" → „CORS policy"
-            → „Add CORS policy" i wklej:
-            <pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs">{`[
-  {
-    "AllowedOrigins": ["https://concertivo.eu", "https://*.lovable.app"],
-    "AllowedMethods": ["GET", "PUT", "HEAD"],
-    "AllowedHeaders": ["*"],
-    "ExposeHeaders": ["ETag"],
-    "MaxAgeSeconds": 3600
-  }
-]`}</pre>
-            Bez tego przeglądarka zablokuje upload plików.
-          </li>
+            <strong>Skonfiguruj CORS bucketa.</strong> W bucket → „Settings
 
           <li>
             <strong>Utwórz API token R2.</strong> Wróć do głównej strony R2 → po prawej
