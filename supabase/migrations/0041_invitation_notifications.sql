@@ -35,3 +35,17 @@ create index if not exists user_notifications_user_kind_idx
 
 create index if not exists organization_invitations_email_status_idx
   on public.organization_invitations (lower(email), status);
+
+-- Pomocnik: zwraca user_id z auth.users po znormalizowanym e‑mailu (lower+trim).
+create or replace function public.get_user_id_by_email(_email text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select id from auth.users where lower(email) = lower(btrim(_email)) limit 1;
+$$;
+
+revoke all on function public.get_user_id_by_email(text) from public;
+grant execute on function public.get_user_id_by_email(text) to service_role;
