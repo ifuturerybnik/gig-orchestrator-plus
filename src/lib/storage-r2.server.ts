@@ -256,7 +256,6 @@ export async function presignPut(opts: {
   ctx: R2Context;
   key: string;
   contentType: string;
-  contentLength?: number;
   expiresIn?: number;
 }): Promise<{ uploadUrl: string; publicUrl: string; expiresIn: number }> {
   const expiresIn = opts.expiresIn ?? 900; // 15 min
@@ -264,7 +263,6 @@ export async function presignPut(opts: {
     Bucket: opts.ctx.bucket,
     Key: opts.key,
     ContentType: opts.contentType,
-    ContentLength: opts.contentLength,
   });
   const uploadUrl = await getSignedUrl(opts.ctx.client, cmd, { expiresIn });
   const publicUrl = `${opts.ctx.publicBaseUrl}/${opts.key}`;
