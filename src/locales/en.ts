@@ -465,7 +465,21 @@ export default
       "invitation_cancelled": "Invitation cancelled",
       "member_removed": "Member removed",
       "no_name": "(no name)",
-      "expires": "Expires"
+      "expires": "Expires",
+      "invite_as_owner": "Invite as owner",
+      "invite_as_owner_help": "Owners get full access, can invite other owners and schedule organization deletion. Only a current owner can issue this kind of invitation."
+    },
+    "deletion": {
+      "title": "Danger zone",
+      "description": "Clicking the button below schedules deletion of this organization in 7 days. All members will be notified and can ask you to cancel during that window.",
+      "request": "Schedule organization deletion (in 7 days)",
+      "request_confirm": "Schedule organization deletion in 7 days? You can cancel any time during the grace period.",
+      "requested": "Deletion scheduled",
+      "cancel": "Cancel scheduled deletion",
+      "cancelled": "Deletion cancelled",
+      "scheduled_banner": "Deletion scheduled for {{date}}.",
+      "banner_title": "This organization is scheduled for deletion",
+      "banner_body": "An owner scheduled deletion of this organization. Final deletion will happen on {{date}} unless cancelled."
     },
     "permissions": {
       "edit": "Edit permissions",

@@ -15,17 +15,20 @@ const ModuleIdEnum = z.enum(
   CONFIGURABLE_MODULE_IDS as unknown as [OrgModuleId, ...OrgModuleId[]],
 );
 const BudgetModeEnum = z.enum(["full", "unrealized_only"] as const);
-const DEFAULT_INVITATION_MODULES = [...CONFIGURABLE_MODULE_IDS];
+// Domyślnie zaproszony użytkownik nie ma dostępu do żadnego modułu konfigurowalnego.
+// Owner zaproszenia musi świadomie zaznaczyć moduły lub przełącznik administratora.
 const InvitationAccessSchema = z
   .object({
+    asOwner: z.boolean().optional().default(false),
     isOrgAdmin: z.boolean().optional().default(false),
-    modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default(DEFAULT_INVITATION_MODULES),
+    modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default([]),
     budgetMode: BudgetModeEnum.optional().default("full"),
   })
   .optional()
   .default({
+    asOwner: false,
     isOrgAdmin: false,
-    modules: DEFAULT_INVITATION_MODULES,
+    modules: [],
     budgetMode: "full",
   });
 
@@ -307,15 +310,33 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const modules = Array.from(new Set(data.access.isOrgAdmin ? [] : data.access.modules));
-    const budgetMode = data.access.isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
+    // Sprawdź uprawnienia zapraszającego.
+    const { data: myMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const callerIsOwner = myMembership?.role === "owner";
+    const callerIsAppAdmin = await isAppAdmin(supabase, userId);
+    if (data.access.asOwner && !callerIsOwner && !callerIsAppAdmin) {
+      throw new Error("Only owners can invite other owners");
+    }
+    const asOwner = Boolean(data.access.asOwner);
+    // Owner ma pełen dostęp z definicji; ignoruj pozostałe pola.
+    const isOrgAdmin = asOwner ? true : data.access.isOrgAdmin;
+    const modules = asOwner
+      ? []
+      : Array.from(new Set(isOrgAdmin ? [] : data.access.modules));
+    const budgetMode = asOwner || isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
     const { data: invite, error } = await supabase
       .from("organization_invitations")
       .insert({
         organization_id: data.organizationId,
         email: data.email,
         invited_by: userId,
-        initial_is_org_admin: data.access.isOrgAdmin,
+        initial_role: asOwner ? "owner" : "member",
+        initial_is_org_admin: isOrgAdmin,
         initial_modules: modules,
         initial_budget_mode: budgetMode,
       })
@@ -433,7 +454,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, types, artist_kind, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_building_no, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website, is_shared";
+  "id, types, artist_kind, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_building_no, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website, is_shared, deletion_requested_at, deletion_scheduled_for, deletion_requested_by";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -1119,4 +1140,119 @@ export const getMyOrgPermissions = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
     return { permissions: perms };
+  });
+
+// ============================================================================
+// MIĘKKIE USUWANIE ORGANIZACJI (7-dniowa karencja)
+// ============================================================================
+
+const DELETION_GRACE_DAYS = 7;
+
+async function notifyMembersOrgDeletion(
+  organizationId: string,
+  kind: "org_deletion_requested" | "org_deletion_cancelled",
+  payload: Record<string, unknown>,
+) {
+  const { data: members } = await supabaseAdmin
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organizationId);
+  const rows = (members ?? [])
+    .map((m) => m.user_id as string | null)
+    .filter((u): u is string => Boolean(u))
+    .map((user_id) => ({ user_id, kind, payload }));
+  if (rows.length) {
+    await supabaseAdmin.from("user_notifications").insert(rows);
+  }
+}
+
+/** Zaplanuj usunięcie organizacji za 7 dni (tylko owner). */
+export const requestOrganizationDeletion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: me } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isAppAdminFlag = await isAppAdmin(supabase, userId);
+    if (me?.role !== "owner" && !isAppAdminFlag) {
+      throw new Error("Only owners can request organization deletion");
+    }
+    const now = new Date();
+    const scheduledFor = new Date(now.getTime() + DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000);
+    const { data: org, error } = await supabaseAdmin
+      .from("organizations")
+      .update({
+        deletion_requested_at: now.toISOString(),
+        deletion_scheduled_for: scheduledFor.toISOString(),
+        deletion_requested_by: userId,
+      })
+      .eq("id", data.organizationId)
+      .select("id, name")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { data: requesterProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("first_name, last_name")
+      .eq("id", userId)
+      .maybeSingle();
+    const requesterName =
+      [requesterProfile?.first_name, requesterProfile?.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || "";
+
+    await notifyMembersOrgDeletion(data.organizationId, "org_deletion_requested", {
+      organization_id: data.organizationId,
+      organization_name: org?.name ?? "",
+      scheduled_for: scheduledFor.toISOString(),
+      requested_by: userId,
+      requester_name: requesterName,
+    });
+    return { ok: true, scheduledFor: scheduledFor.toISOString() };
+  });
+
+/** Anuluj zaplanowane usunięcie organizacji (tylko owner). */
+export const cancelOrganizationDeletion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: me } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isAppAdminFlag = await isAppAdmin(supabase, userId);
+    if (me?.role !== "owner" && !isAppAdminFlag) {
+      throw new Error("Only owners can cancel organization deletion");
+    }
+    const { data: org, error } = await supabaseAdmin
+      .from("organizations")
+      .update({
+        deletion_requested_at: null,
+        deletion_scheduled_for: null,
+        deletion_requested_by: null,
+      })
+      .eq("id", data.organizationId)
+      .select("id, name")
+      .single();
+    if (error) throw new Error(error.message);
+
+    await notifyMembersOrgDeletion(data.organizationId, "org_deletion_cancelled", {
+      organization_id: data.organizationId,
+      organization_name: org?.name ?? "",
+      cancelled_by: userId,
+    });
+    return { ok: true };
   });
