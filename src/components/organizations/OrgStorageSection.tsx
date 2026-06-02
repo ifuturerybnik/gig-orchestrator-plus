@@ -462,11 +462,10 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </li>
 
           <li>
-            <strong>Skonfiguruj CORS bucketa.</strong> W bucket → „Settings" → „CORS policy"
-            → „Add CORS policy" i wklej:
+            <strong>Skonfiguruj CORS bucketa.</strong> W bucket → „Settings" → „CORS policy". Jeśli bucket już ma politykę CORS (np. z poprzedniej konfiguracji), kliknij „Edit" i <strong>zastąp całą zawartość</strong> poniższym kodem — nie dopisuj pod spodem.
             <pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs">{`[
   {
-    "AllowedOrigins": ["https://concertivo.eu", "https://*.lovable.app"],
+    "AllowedOrigins": ["https://concertivo.eu", "https://*.lovable.app", "http://localhost:3000", "http://localhost:5173"],
     "AllowedMethods": ["GET", "PUT", "HEAD"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": ["ETag"],
@@ -475,7 +474,6 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
 ]`}</pre>
             Bez tego przeglądarka zablokuje upload plików.
           </li>
-
           <li>
             <strong>Utwórz API token R2.</strong> Wróć do głównej strony R2 → po prawej
             „Manage R2 API Tokens" → „Create API token". Ustaw:
