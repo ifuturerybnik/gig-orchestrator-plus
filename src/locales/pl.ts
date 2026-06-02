@@ -556,7 +556,8 @@ export default
       "pending_expenses": "Niezrealizowane wydatki: {{count}}",
       "social": "Organizacja SM",
       "media_web": "Media & Web",
-      "web": "Web"
+      "web": "Web",
+      "ai_studio": "AI Studio"
     },
     "events": {
       "title": "Występy",
