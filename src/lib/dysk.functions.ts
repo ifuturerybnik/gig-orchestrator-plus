@@ -398,7 +398,7 @@ async function deletePrefix(
   let token: string | undefined = undefined;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const res = await ctx.client.send(
+    const res: ListObjectsV2CommandOutput = await ctx.client.send(
       new ListObjectsV2Command({
         Bucket: ctx.bucket,
         Prefix: prefix,
