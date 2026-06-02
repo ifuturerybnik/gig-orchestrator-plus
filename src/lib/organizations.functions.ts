@@ -303,8 +303,108 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
       .select("id, email, token, expires_at")
       .single();
     if (error) throw new Error(error.message);
-    // TODO: wysyłka maila z linkiem zapraszającym (osobny moduł).
-    return { invitation: invite };
+
+    // Pobierz nazwę organizacji i imię zapraszającego (do treści powiadomienia/maila).
+    const [{ data: org }, { data: inviterProfile }, { data: inviterAuth }] = await Promise.all([
+      supabaseAdmin
+        .from("organizations")
+        .select("id, name")
+        .eq("id", data.organizationId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(userId),
+    ]);
+    const orgName = (org?.name as string) ?? "";
+    const inviterName =
+      [inviterProfile?.first_name, inviterProfile?.last_name].filter(Boolean).join(" ").trim() ||
+      (inviterAuth?.user?.email as string | undefined) ||
+      "";
+
+    const baseUrl = (process.env.APP_BASE_URL || "https://concertivo.eu").replace(/\/+$/, "");
+    const acceptUrl = `${baseUrl}/invitations/${invite.token}`;
+
+    // Jeśli adresat już istnieje w systemie → wrzuć powiadomienie na jego profil.
+    try {
+      const { data: existingUserId } = await supabaseAdmin.rpc("get_user_id_by_email", {
+        _email: data.email,
+      });
+      if (existingUserId) {
+        await supabaseAdmin.from("user_notifications").insert({
+          user_id: existingUserId,
+          kind: "organization_invitation",
+          payload: {
+            invitation_id: invite.id,
+            token: invite.token,
+            organization_id: data.organizationId,
+            organization_name: orgName,
+            inviter_name: inviterName,
+            email: data.email,
+            accept_url: acceptUrl,
+          },
+        });
+      }
+    } catch (e) {
+      console.error("notify existing user failed", e);
+    }
+
+    // Best‑effort wysyłka maila z linkiem zapraszającym.
+    try {
+      // Preferuj wspólną skrzynkę organizacji; potem osobistą zapraszającego.
+      const { data: orgMailbox } = await supabaseAdmin
+        .from("email_skrzynki")
+        .select("id")
+        .eq("typ", "wspolna")
+        .eq("organization_id", data.organizationId)
+        .limit(1)
+        .maybeSingle();
+      let skrzynkaId: string | null = (orgMailbox?.id as string) ?? null;
+      if (!skrzynkaId) {
+        const { data: personal } = await supabaseAdmin
+          .from("email_skrzynki")
+          .select("id")
+          .eq("typ", "osobista")
+          .eq("owner_user_id", userId)
+          .limit(1)
+          .maybeSingle();
+        skrzynkaId = (personal?.id as string) ?? null;
+      }
+      if (skrzynkaId) {
+        const { callMailProxy } = await import("./mail-proxy.server");
+        const subject = orgName
+          ? `Zaproszenie do organizacji „${orgName}” w Concertivo`
+          : "Zaproszenie do organizacji w Concertivo";
+        const safeOrg = orgName.replace(/[<>&]/g, "");
+        const safeInviter = inviterName.replace(/[<>&]/g, "");
+        const html = `
+          <div style="font-family:Arial,sans-serif;font-size:14px;color:#111">
+            <p>Cześć,</p>
+            <p>${safeInviter ? `<strong>${safeInviter}</strong> ` : ""}zaprasza Cię do organizacji
+            ${safeOrg ? `<strong>${safeOrg}</strong>` : "Concertivo"}.</p>
+            <p>Aby przyjąć zaproszenie, kliknij poniższy link:</p>
+            <p><a href="${acceptUrl}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Przyjmij zaproszenie</a></p>
+            <p style="color:#666;font-size:12px">Lub skopiuj adres: ${acceptUrl}</p>
+            <p style="color:#999;font-size:12px;margin-top:24px">Concertivo — zarządzanie koncertami i organizacjami muzycznymi/eventowymi.</p>
+          </div>`;
+        await callMailProxy("send", {
+          skrzynka_id: skrzynkaId,
+          to: [data.email],
+          cc: [],
+          bcc: [],
+          subject,
+          html,
+        });
+      } else {
+        console.warn("[invite] no mailbox available to send invitation email");
+      }
+    } catch (e) {
+      console.error("send invitation email failed", e);
+    }
+
+    return { invitation: invite, acceptUrl };
   });
 
 const ORG_COLUMNS =

@@ -1942,6 +1942,22 @@ export default
     "done": "Done",
     "failed": "Upload failed",
     "not_an_image": "Selected file is not an image"
+  },
+  "invitations": {
+    "title": "Organization invitation",
+    "description": "You have been invited to organization \"{{org}}\".",
+    "for_email": "Invitation issued for: {{email}}",
+    "need_login": "Sign in or create an account using the same email to accept the invitation.",
+    "email_mismatch": "Invitation is for {{expected}}, but you are signed in as {{current}}.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "Invitation accepted",
+    "declined": "Invitation declined",
+    "not_found": "Invitation not found.",
+    "already_processed": "This invitation has already been processed.",
+    "expired": "Invitation expired.",
+    "pending_title": "Pending invitations",
+    "expires_at": "Valid until {{date}}"
   }
 } as const;
 

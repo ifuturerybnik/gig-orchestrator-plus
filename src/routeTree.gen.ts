@@ -16,6 +16,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InvitationsTokenRouteImport } from './routes/invitations.$token'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
@@ -100,6 +101,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
+  id: '/invitations/$token',
+  path: '/invitations/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -409,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/contacts': typeof AuthenticatedContactsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/invitations/$token': typeof InvitationsTokenRoute
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/invitations/$token': typeof InvitationsTokenRoute
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -526,6 +534,7 @@ export interface FileRoutesById {
   '/_authenticated/contacts': typeof AuthenticatedContactsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/invitations/$token': typeof InvitationsTokenRoute
   '/_authenticated/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -587,6 +596,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/profile'
+    | '/invitations/$token'
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
@@ -644,6 +654,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/profile'
+    | '/invitations/$token'
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
@@ -703,6 +714,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/invitations/$token'
     | '/_authenticated/admin/administrators'
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/approvals'
@@ -760,6 +772,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  InvitationsTokenRoute: typeof InvitationsTokenRoute
   ApiPublicAutokorTickRoute: typeof ApiPublicAutokorTickRoute
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
@@ -831,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitations/$token': {
+      id: '/invitations/$token'
+      path: '/invitations/$token'
+      fullPath: '/invitations/$token'
+      preLoaderRoute: typeof InvitationsTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -1345,6 +1365,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  InvitationsTokenRoute: InvitationsTokenRoute,
   ApiPublicAutokorTickRoute: ApiPublicAutokorTickRoute,
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
