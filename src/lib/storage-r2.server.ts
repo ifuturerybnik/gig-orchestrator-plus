@@ -256,7 +256,6 @@ export async function presignPut(opts: {
   ctx: R2Context;
   key: string;
   contentType: string;
-  contentLength?: number;
   expiresIn?: number;
 }): Promise<{ uploadUrl: string; publicUrl: string; expiresIn: number }> {
   const expiresIn = opts.expiresIn ?? 900; // 15 min
