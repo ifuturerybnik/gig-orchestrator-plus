@@ -621,19 +621,21 @@ function OrganizationPerformancesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t("organizations.performances.actions.delete")}
-                          title={t("organizations.performances.actions.delete")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(p.id);
-                          }}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canEditEvents && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t("organizations.performances.actions.delete")}
+                            title={t("organizations.performances.actions.delete")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(p.id);
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   </HoverCardTrigger>
