@@ -13,6 +13,9 @@ import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
@@ -20,6 +23,14 @@ function LoginPage() {
   useForceLightTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { redirect: redirectTo } = Route.useSearch();
+  const goNext = () => {
+    if (redirectTo && redirectTo.startsWith("/")) {
+      window.location.assign(redirectTo);
+    } else {
+      goNext();
+    }
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -46,14 +57,14 @@ function LoginPage() {
       // Trusted device? Skip prompt.
       if (remember && isDeviceTrusted(userId)) {
         setLoading(false);
-        navigate({ to: "/dashboard" });
+        goNext();
         return;
       }
       const factors = await supabase.auth.mfa.listFactors();
       const totp = factors.data?.totp?.find((f) => f.status === "verified");
       setLoading(false);
       if (!totp) {
-        navigate({ to: "/dashboard" });
+        goNext();
         return;
       }
       setMfaStep({ factorId: totp.id, userId });
@@ -61,7 +72,7 @@ function LoginPage() {
     }
 
     setLoading(false);
-    navigate({ to: "/dashboard" });
+    goNext();
   };
 
   const handleMfa = async (e: FormEvent) => {
@@ -85,7 +96,7 @@ function LoginPage() {
       return;
     }
     if (remember) trustDevice(mfaStep.userId);
-    navigate({ to: "/dashboard" });
+    goNext();
   };
 
   return (
