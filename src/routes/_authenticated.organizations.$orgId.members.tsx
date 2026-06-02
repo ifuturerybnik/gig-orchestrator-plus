@@ -8,6 +8,12 @@ import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MemberPermissionsDialog } from "@/components/organizations/MemberPermissionsDialog";
+import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
+import {
+  CONFIGURABLE_MODULE_IDS,
+  type BudgetPermissionMode,
+  type OrgModuleId,
+} from "@/lib/org-modules";
 import {
   cancelInvitation,
   getOrganizationDetails,
@@ -38,11 +44,26 @@ function OrganizationMembersPage() {
   });
 
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteIsOrgAdmin, setInviteIsOrgAdmin] = useState(false);
+  const [inviteModules, setInviteModules] = useState<Set<OrgModuleId>>(
+    () => new Set(CONFIGURABLE_MODULE_IDS),
+  );
+  const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const inviteMutation = useMutation({
-    mutationFn: (email: string) =>
-      inviteFn({ data: { organizationId: orgId, email } }),
+    mutationFn: () =>
+      inviteFn({
+        data: {
+          organizationId: orgId,
+          email: inviteEmail,
+          access: {
+            isOrgAdmin: inviteIsOrgAdmin,
+            modules: Array.from(inviteModules),
+            budgetMode: inviteBudgetMode,
+          },
+        },
+      }),
     onSuccess: () => {
       toast.success(t("organizations.members.invitation_sent"));
       setInviteEmail("");
@@ -89,7 +110,7 @@ function OrganizationMembersPage() {
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
     if (!inviteEmail) return;
-    inviteMutation.mutate(inviteEmail);
+    inviteMutation.mutate();
   };
 
   return (
@@ -160,17 +181,33 @@ function OrganizationMembersPage() {
             {t("organizations.members.pending_invitations")}
           </h2>
 
-          <form onSubmit={handleInvite} className="mt-3 flex gap-2">
-            <Input
-              type="email"
-              placeholder={t("organizations.members.email_placeholder")}
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-            />
-            <Button type="submit" disabled={inviteMutation.isPending}>
-              {t("organizations.members.invite")}
-            </Button>
+          <form onSubmit={handleInvite} className="mt-3 space-y-4 rounded-md border border-border bg-card p-4">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                type="email"
+                placeholder={t("organizations.members.email_placeholder")}
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+              />
+              <Button type="submit" disabled={inviteMutation.isPending}>
+                {t("organizations.members.invite")}
+              </Button>
+            </div>
+            <div>
+              <p className="mb-3 text-sm font-medium text-foreground">
+                {t("organizations.members.initial_access")}
+              </p>
+              <OrgPermissionsFields
+                isOrgAdmin={inviteIsOrgAdmin}
+                onIsOrgAdminChange={setInviteIsOrgAdmin}
+                modules={inviteModules}
+                onModulesChange={setInviteModules}
+                budgetMode={inviteBudgetMode}
+                onBudgetModeChange={setInviteBudgetMode}
+                fieldIdPrefix="invite-permissions"
+              />
+            </div>
           </form>
 
           {invitations.length > 0 && (
