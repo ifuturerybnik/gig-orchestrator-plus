@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   useForceLightTheme();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  
   const { redirect: redirectTo } = Route.useSearch();
   const goNext = () => {
     const target = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
