@@ -466,6 +466,20 @@ export default
       "no_name": "(no name)",
       "expires": "Expires"
     },
+    "permissions": {
+      "edit": "Edit permissions",
+      "title": "Member permissions",
+      "subtitle": "Configure module access for member \"{{name}}\".",
+      "saved": "Permissions saved",
+      "org_admin": "Organization administrator",
+      "org_admin_help": "Full access to all modules (same as owner).",
+      "selective_modules": "Access to selected modules:",
+      "budget": {
+        "full": "Full budget access",
+        "unrealized_only": "Add unrealized entries only",
+        "help": "In 'unrealized only' mode the member can only add entries with status unrealized and cannot mark them as Completed. They can still add to the Planned expenses table."
+      }
+    },
     "detail": {
       "back": "← Back to list",
       "edit": "Edit organization",

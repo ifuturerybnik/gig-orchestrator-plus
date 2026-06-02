@@ -485,6 +485,20 @@ export default
       "no_name": "(bez imienia)",
       "expires": "Ważne do"
     },
+    "permissions": {
+      "edit": "Edytuj uprawnienia",
+      "title": "Uprawnienia członka",
+      "subtitle": "Skonfiguruj dostęp członka „{{name}}” do modułów organizacji.",
+      "saved": "Zapisano uprawnienia",
+      "org_admin": "Administrator organizacji",
+      "org_admin_help": "Pełny dostęp do wszystkich modułów (jak właściciel).",
+      "selective_modules": "Dostęp do wybranych modułów:",
+      "budget": {
+        "full": "Pełny dostęp do budżetu",
+        "unrealized_only": "Tylko dodawanie pozycji niezrealizowanych",
+        "help": "W trybie „niezrealizowane” członek dodaje wpisy zawsze ze statusem niezrealizowane i nie może oznaczać ich jako Zrealizowano. Może też dodawać pozycje w tabeli Przyszłe wydatki."
+      }
+    },
     "detail": {
       "back": "← Wróć do listy",
       "edit": "Edytuj organizację",
