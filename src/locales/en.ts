@@ -1681,7 +1681,7 @@ export default
                 "Click \"Add post\".",
                 "Fill the PL title (and optionally EN).",
                 "Fill the lead and content in WYSIWYG.",
-                "Paste the cover image URL (from Drive module or external URL).",
+                "Upload the cover image by drag & drop or click to pick a file – Concertivo automatically converts it to WebP, resizes to max 2560 px on the long side and generates thumbnails (1280 px and 400 px). No more URL pasting.",
                 "Add comma-separated tags (e.g. \"concert, jazz\").",
                 "Toggle \"Publish publicly\" and save."
               ]
@@ -1698,7 +1698,7 @@ export default
               "heading": "Best practices",
               "items": [
                 "Keep the lead short (1–2 sentences) – it shows on the list and as meta description.",
-                "Cover images 1200×630 px work best for social previews.",
+                "Upload cover images at the highest resolution you have – the system creates the optimal version and thumbnails (landscape ratio ~1200×630 px or larger works best for social previews).",
                 "Set the slug once – changing it breaks external links."
               ]
             }
