@@ -3,6 +3,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
@@ -251,6 +252,65 @@ export async function getOrgR2Context(
   return { mode: "central", ...central };
 
 }
+
+/**
+ * Buduje R2Context wymuszony dla konkretnego trybu (central|own) — niezależnie
+ * od tego, jaki tryb jest "aktywny" w org_storage_config. Wymagane do
+ * migracji plików między bucketami i do operacji (delete/odczyt) na obiektach
+ * pozostałych po wcześniejszym trybie (legacy / read-only fallback).
+ */
+export async function getR2ContextForMode(
+  organizationId: string,
+  mode: StorageMode,
+): Promise<R2Context> {
+  if (mode === "own") {
+    const cfg = await getOrgStorageConfigRow(organizationId);
+    if (
+      !cfg.r2_endpoint ||
+      !cfg.r2_bucket ||
+      !cfg.r2_access_key_id_enc ||
+      !cfg.r2_secret_access_key_enc ||
+      !cfg.r2_public_base_url
+    ) {
+      throw new Error(
+        "Brak konfiguracji własnego R2 dla tej organizacji — nie można odczytać/migrować plików.",
+      );
+    }
+    const accessKeyId = decryptPii(cfg.r2_access_key_id_enc);
+    const secretAccessKey = decryptPii(cfg.r2_secret_access_key_enc);
+    if (!accessKeyId || !secretAccessKey) {
+      throw new Error("Nie udało się odszyfrować kluczy R2 organizacji.");
+    }
+    return {
+      mode: "own",
+      client: buildClient({
+        endpoint: cfg.r2_endpoint,
+        accessKeyId,
+        secretAccessKey,
+      }),
+      bucket: cfg.r2_bucket,
+      publicBaseUrl: cfg.r2_public_base_url.replace(/\/$/, ""),
+    };
+  }
+  const central = await getCentralR2();
+  return { mode: "central", ...central };
+}
+
+export async function presignGet(opts: {
+  ctx: R2Context;
+  key: string;
+  expiresIn?: number;
+}): Promise<string> {
+  const cmd = new GetObjectCommand({
+    Bucket: opts.ctx.bucket,
+    Key: opts.key,
+  });
+  return getSignedUrl(opts.ctx.client, cmd, {
+    expiresIn: opts.expiresIn ?? 900,
+  });
+}
+
+
 
 export async function presignPut(opts: {
   ctx: R2Context;
