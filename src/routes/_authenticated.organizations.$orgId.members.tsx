@@ -102,24 +102,6 @@ function OrganizationMembersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (detailsQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
-  }
-
-  if (detailsQuery.isError || !detailsQuery.data) {
-    return (
-      <p className="text-sm text-destructive">
-        {detailsQuery.error instanceof Error
-          ? detailsQuery.error.message
-          : t("common.error")}
-      </p>
-    );
-  }
-
-  const { members, invitations, canManage, isOwner, organization } = detailsQuery.data;
-  const deletionScheduledFor = (organization as { deletion_scheduled_for?: string | null } | null)
-    ?.deletion_scheduled_for ?? null;
-
   const requestDeletionMutation = useMutation({
     mutationFn: () => requestDeleteFn({ data: { organizationId: orgId } }),
     onSuccess: () => {
@@ -137,6 +119,24 @@ function OrganizationMembersPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (detailsQuery.isLoading) {
+    return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
+  }
+
+  if (detailsQuery.isError || !detailsQuery.data) {
+    return (
+      <p className="text-sm text-destructive">
+        {detailsQuery.error instanceof Error
+          ? detailsQuery.error.message
+          : t("common.error")}
+      </p>
+    );
+  }
+
+  const { members, invitations, canManage, isOwner, organization } = detailsQuery.data;
+  const deletionScheduledFor = (organization as { deletion_scheduled_for?: string | null } | null)
+    ?.deletion_scheduled_for ?? null;
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
