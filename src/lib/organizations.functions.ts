@@ -437,11 +437,12 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
 
     return {
       organization: org,
-      members: membersEnriched,
+      members: membersWithPerms,
       invitations,
       isOwner,
       isAdmin,
       canManage: isOwner || isAdmin,
+      myPermissions,
     };
   });
 
