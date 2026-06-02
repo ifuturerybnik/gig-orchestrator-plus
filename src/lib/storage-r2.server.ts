@@ -308,6 +308,9 @@ export async function presignGet(opts: {
   return getSignedUrl(opts.ctx.client, cmd, {
     expiresIn: opts.expiresIn ?? 900,
   });
+}
+
+
 
 export async function presignPut(opts: {
   ctx: R2Context;
