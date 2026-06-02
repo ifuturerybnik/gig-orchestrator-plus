@@ -5,14 +5,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptPii } from "@/lib/crypto.server";
 import {
-  checkCentralSecretsPresence,
+  getCentralR2Status,
+  getCentralR2,
   getOrgR2Context,
-  
   presignPut,
   deleteObject,
   calculateOrgQuota,
   getGlobalCfg,
 } from "@/lib/storage-r2.server";
+
+
 
 async function assertSuperAdmin(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
@@ -44,8 +46,8 @@ export const getStorageGlobalConfig = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     await assertAppAdmin(supabase, userId);
     const cfg = await getGlobalCfg();
-    const secrets = checkCentralSecretsPresence();
-    return { cfg, secrets };
+    const central = await getCentralR2Status();
+    return { cfg, central };
   });
 
 export const updateStorageGlobalConfig = createServerFn({ method: "POST" })
@@ -71,6 +73,102 @@ export const updateStorageGlobalConfig = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// =====================================================================
+// Centralne R2 — poświadczenia wpisywane z UI
+// =====================================================================
+
+export const setCentralR2 = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        r2_account_id: z.string().trim().min(1).max(120),
+        // Sekrety opcjonalne — jeśli pole puste, zostawiamy aktualną wartość w DB.
+        r2_access_key_id: z.string().trim().max(512).optional().nullable(),
+        r2_secret_access_key: z.string().trim().max(512).optional().nullable(),
+        r2_bucket: z.string().trim().min(1).max(120),
+        r2_public_base_url: z.string().trim().url().max(300),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertSuperAdmin(supabase, userId);
+    const patch: Record<string, unknown> = {
+      r2_account_id: data.r2_account_id,
+      r2_bucket: data.r2_bucket,
+      r2_public_base_url: data.r2_public_base_url.replace(/\/$/, ""),
+      updated_at: new Date().toISOString(),
+      updated_by: userId,
+    };
+    if (data.r2_access_key_id && data.r2_access_key_id.length > 0) {
+      patch.r2_access_key_id_enc = encryptPii(data.r2_access_key_id);
+    }
+    if (data.r2_secret_access_key && data.r2_secret_access_key.length > 0) {
+      patch.r2_secret_access_key_enc = encryptPii(data.r2_secret_access_key);
+    }
+    const { error } = await supabaseAdmin
+      .from("storage_global_config")
+      .update(patch)
+      .eq("id", 1);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const clearCentralR2 = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await assertSuperAdmin(supabase, userId);
+    const { error } = await supabaseAdmin
+      .from("storage_global_config")
+      .update({
+        r2_account_id: null,
+        r2_access_key_id_enc: null,
+        r2_secret_access_key_enc: null,
+        r2_bucket: null,
+        r2_public_base_url: null,
+        updated_at: new Date().toISOString(),
+        updated_by: userId,
+      })
+      .eq("id", 1);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const testCentralR2 = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId);
+    const central = await getCentralR2();
+    const ctx = {
+      mode: "central" as const,
+      client: central.client,
+      bucket: central.bucket,
+      publicBaseUrl: central.publicBaseUrl,
+    };
+    const key = `.concertivo-test/${Date.now()}.txt`;
+    const { uploadUrl } = await presignPut({
+      ctx,
+      key,
+      contentType: "text/plain",
+      contentLength: 12,
+      expiresIn: 60,
+    });
+    const put = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "text/plain" },
+      body: "concertivo!",
+    });
+    if (!put.ok) {
+      throw new Error(`PUT failed: ${put.status} ${await put.text()}`);
+    }
+    await deleteObject(ctx, key);
+    return { ok: true, bucket: ctx.bucket };
+  });
+
 
 // =====================================================================
 // Lista organizacji z trybem, kwotami i zużyciem (admin)
