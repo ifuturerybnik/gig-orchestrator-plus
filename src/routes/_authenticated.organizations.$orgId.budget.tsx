@@ -65,6 +65,7 @@ import {
 import {
   createBudgetEntry,
   deleteBudgetEntry,
+  getMyOrgPermissions,
   getOrganizationDetails,
   listBudgetEntries,
   setBudgetEntryCompleted,
