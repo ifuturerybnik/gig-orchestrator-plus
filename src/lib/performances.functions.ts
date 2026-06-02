@@ -106,6 +106,7 @@ export const createPerformance = createServerFn({ method: "POST" })
   .inputValidator((input) => createInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
 
     // If a custom kind (not in presets), record it in the dictionary for future use.
     const kind = data.eventKind.trim();
@@ -168,8 +169,13 @@ export const listPerformances = createServerFn({ method: "GET" })
     z.object({ organizationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: rows, error } = await supabase
+    const { supabase, userId } = context;
+    const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
+    const onlyConfirmed =
+      !perms.isOrgAdmin &&
+      perms.modules.includes("events") &&
+      perms.eventsMode === "view_confirmed_only";
+    let q = supabase
       .from("performances")
       .select(
         "id, performance_date, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
@@ -177,6 +183,8 @@ export const listPerformances = createServerFn({ method: "GET" })
       .eq("organization_id", data.organizationId)
       .order("performance_date", { ascending: false })
       .limit(500);
+    if (onlyConfirmed) q = q.in("status", CONFIRMED);
+    const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
     const ids = (rows ?? []).map((r) => r.id);
