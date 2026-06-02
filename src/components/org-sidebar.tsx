@@ -93,43 +93,49 @@ export function OrgSidebar({
   const perms = permsQuery.data?.permissions ?? null;
 
   const base = `/organizations/${orgId}`;
-  const items: Item[] = [
+  const allItems: Item[] = [
     {
       kind: "leaf",
       to: base,
       labelKey: "organizations.sidebar.overview",
       icon: LayoutDashboard,
       exact: true,
+      moduleId: "overview",
     },
     {
       kind: "leaf",
       to: `${base}/events`,
       labelKey: "organizations.sidebar.events",
       icon: CalendarDays,
+      moduleId: "events",
     },
     {
       kind: "leaf",
       to: `${base}/budget`,
       labelKey: "organizations.sidebar.budget",
       icon: Wallet,
+      moduleId: "budget",
     },
     {
       kind: "leaf",
       to: `${base}/profile`,
       labelKey: "organizations.sidebar.profile",
       icon: Building2,
+      moduleId: "profile",
     },
     {
       kind: "leaf",
       to: `${base}/contacts`,
       labelKey: "organizations.sidebar.contacts",
       icon: Contact,
+      moduleId: "contacts",
     },
     {
       kind: "leaf",
       to: `${base}/counterparties`,
       labelKey: "organizations.sidebar.counterparties",
       icon: Briefcase,
+      moduleId: "counterparties",
     },
     {
       kind: "group",
@@ -142,12 +148,14 @@ export function OrgSidebar({
           to: `${base}/mail`,
           labelKey: "organizations.sidebar.mail",
           icon: Mail,
+          moduleId: "mail",
         },
         {
           kind: "leaf",
           to: `${base}/autokorespondencja`,
           labelKey: "organizations.sidebar.autokorespondencja",
           icon: Bot,
+          moduleId: "autokorespondencja",
         },
       ],
     },
@@ -162,18 +170,21 @@ export function OrgSidebar({
           to: `${base}/ai-studio`,
           labelKey: "organizations.sidebar.ai_studio",
           icon: Sparkles,
+          moduleId: "ai_studio",
         },
         {
           kind: "leaf",
           to: `${base}/social`,
           labelKey: "organizations.sidebar.social",
           icon: Share2,
+          moduleId: "social",
         },
         {
           kind: "leaf",
           to: `${base}/web`,
           labelKey: "organizations.sidebar.web",
           icon: Globe,
+          moduleId: "web",
         },
       ],
     },
@@ -182,14 +193,28 @@ export function OrgSidebar({
       to: `${base}/dysk`,
       labelKey: "organizations.sidebar.dysk",
       icon: HardDrive,
+      moduleId: "dysk",
     },
     {
       kind: "leaf",
       to: `${base}/members`,
       labelKey: "organizations.sidebar.members",
       icon: Users,
+      moduleId: "members",
     },
   ];
+
+  const canSee = (m?: OrgModuleId) => (m ? hasModuleAccess(perms, m) : true);
+  const items: Item[] = allItems
+    .map((item) => {
+      if (item.kind === "group") {
+        const visibleChildren = item.children.filter((c) => canSee(c.moduleId));
+        if (visibleChildren.length === 0) return null;
+        return { ...item, children: visibleChildren };
+      }
+      return canSee(item.moduleId) ? item : null;
+    })
+    .filter((i): i is Item => i !== null);
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? currentPath === to : currentPath === to || currentPath.startsWith(to + "/");
