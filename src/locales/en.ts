@@ -829,9 +829,6 @@ export default
       "subtitle": "Concertivo central bucket plus per-organization integrations (Model 3).",
       "global": {
         "title": "Global configuration",
-        "secrets_title": "Server secrets",
-        "secret_missing": "missing",
-        "secrets_hint": "Add secrets in Lovable → Project Settings → Secrets, then refresh.",
         "free_quota_gb": "Free quota per organization (GB)",
         "free_quota_gb_hint": "Each org gets this much free storage in central mode.",
         "price_per_extra_gb_pln": "Price per extra GB (PLN / month)",
@@ -843,6 +840,33 @@ export default
         "save": "Save global configuration",
         "saved": "Configuration saved"
       },
+      "central": {
+        "title": "Central Cloudflare R2 (Concertivo account)",
+        "subtitle": "Enter R2 account credentials directly here — keys are encrypted before storage. Leaving secret fields blank keeps the existing values.",
+        "status_ok": "Configured",
+        "status_missing": "Missing data",
+        "source_db": "Source: database",
+        "source_env": "Source: environment",
+        "source_mixed": "Source: db + env",
+        "source_none": "None",
+        "account_id": "Cloudflare Account ID",
+        "account_id_hint": "From R2 → Overview → Account Details → Account ID.",
+        "access_key_id": "Access Key ID",
+        "secret_access_key": "Secret Access Key",
+        "bucket": "Bucket",
+        "public_base_url": "Public base URL",
+        "public_base_url_hint": "Public URL for files — pub-xxx.r2.dev or your custom domain (e.g. https://media.concertivo.eu). No trailing slash.",
+        "kept_secret": "•••••••• (kept as-is)",
+        "save": "Save R2 credentials",
+        "saved": "Central R2 credentials saved",
+        "test": "Test connection",
+        "testing": "Testing…",
+        "test_ok": "OK — bucket: {{bucket}}",
+        "clear": "Clear",
+        "clear_confirm": "Really clear central R2 data? Backend will fall back to EXT_R2_* (if set) or uploads will be unavailable.",
+        "cleared": "Central R2 data cleared"
+      },
+
       "orgs": {
         "title": "Organizations — quotas and integrations",
         "filter_placeholder": "Filter by name…",
