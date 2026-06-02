@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Navigate, Link, useRouterState } from "@tansta
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Shield, CheckSquare, Bot } from "lucide-react";
+import { Shield, CheckSquare, Bot, HardDrive } from "lucide-react";
 import { Header } from "@/components/header";
 import { getMyProfile } from "@/lib/profile.functions";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,12 @@ function AdminLayout() {
       to: "/admin/ai",
       label: t("admin.nav.ai"),
       icon: Bot,
+      show: true,
+    },
+    {
+      to: "/admin/storage",
+      label: t("admin.nav.storage"),
+      icon: HardDrive,
       show: true,
     },
   ];
