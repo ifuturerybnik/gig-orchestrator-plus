@@ -170,6 +170,12 @@ export function OrgSidebar({
     },
     {
       kind: "leaf",
+      to: `${base}/dysk`,
+      labelKey: "organizations.sidebar.dysk",
+      icon: HardDrive,
+    },
+    {
+      kind: "leaf",
       to: `${base}/members`,
       labelKey: "organizations.sidebar.members",
       icon: Users,
