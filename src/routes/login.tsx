@@ -28,7 +28,7 @@ function LoginPage() {
     if (redirectTo && redirectTo.startsWith("/")) {
       window.location.assign(redirectTo);
     } else {
-      navigate({ to: "/dashboard" });
+      goNext();
     }
   };
   const [email, setEmail] = useState("");
@@ -57,14 +57,14 @@ function LoginPage() {
       // Trusted device? Skip prompt.
       if (remember && isDeviceTrusted(userId)) {
         setLoading(false);
-        navigate({ to: "/dashboard" });
+        goNext();
         return;
       }
       const factors = await supabase.auth.mfa.listFactors();
       const totp = factors.data?.totp?.find((f) => f.status === "verified");
       setLoading(false);
       if (!totp) {
-        navigate({ to: "/dashboard" });
+        goNext();
         return;
       }
       setMfaStep({ factorId: totp.id, userId });
@@ -72,7 +72,7 @@ function LoginPage() {
     }
 
     setLoading(false);
-    navigate({ to: "/dashboard" });
+    goNext();
   };
 
   const handleMfa = async (e: FormEvent) => {
@@ -96,7 +96,7 @@ function LoginPage() {
       return;
     }
     if (remember) trustDevice(mfaStep.userId);
-    navigate({ to: "/dashboard" });
+    goNext();
   };
 
   return (
