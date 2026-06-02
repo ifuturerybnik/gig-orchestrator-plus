@@ -121,7 +121,7 @@ export function renderStopkaHtml(stopka: EmailStopkaPelna, options: { preview?: 
 }
 
 function rowWithIcon(color: string, iconHtml: string, content: string): string {
-  return `<tr><td valign="middle" width="28" style="vertical-align:middle;padding:4px 10px 4px 0;width:28px;color:${color};text-align:center;line-height:0;font-size:0;mso-line-height-rule:exactly;">${iconHtml}</td><td valign="middle" style="vertical-align:middle;padding:4px 0;">${content}</td></tr>`;
+  return `<tr><td valign="middle" width="36" style="vertical-align:middle;padding:4px 12px 4px 0;width:36px;color:${color};text-align:center;line-height:0;font-size:0;mso-line-height-rule:exactly;">${iconHtml}</td><td valign="middle" style="vertical-align:middle;padding:4px 0;">${content}</td></tr>`;
 }
 
 function escapeText(s: string): string {
