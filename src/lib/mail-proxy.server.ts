@@ -4,6 +4,49 @@
 
 type ProxyEndpoint = "sync" | "body-sync" | "body" | "send" | "mark";
 
+function stripHtmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .trim();
+}
+
+function normalizeSendPayload(body: Record<string, unknown>): Record<string, unknown> {
+  const html = body.html ?? body.body_html ?? body.bodyHtml;
+  const text = body.text ?? body.body_text ?? body.bodyText;
+  const normalized = { ...body };
+
+  if (typeof html === "string" && html.trim()) {
+    normalized.html = html;
+    normalized.body_html = html;
+    normalized.bodyHtml = html;
+  }
+
+  if (typeof text === "string" && text.trim()) {
+    normalized.text = text;
+    normalized.body_text = text;
+    normalized.bodyText = text;
+  } else if (typeof html === "string" && html.trim()) {
+    const plain = stripHtmlToText(html);
+    normalized.text = plain;
+    normalized.body_text = plain;
+    normalized.bodyText = plain;
+  }
+
+  return normalized;
+}
+
 async function tokenFingerprint(token: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
   return Array.from(new Uint8Array(digest))
@@ -42,6 +85,7 @@ export async function callMailProxy<T = unknown>(
 ): Promise<T> {
   const base = getBase();
   const token = getToken();
+  const payload = endpoint === "send" ? normalizeSendPayload(body) : body;
   const res = await fetch(`${getBase()}/${endpoint}`, {
     method: "POST",
     headers: {
@@ -49,7 +93,7 @@ export async function callMailProxy<T = unknown>(
       "X-Proxy-Token": token,
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
   let parsed: unknown = null;
