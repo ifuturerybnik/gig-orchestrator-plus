@@ -153,49 +153,39 @@ export function renderEmailStopkaIconSvg(
 }
 
 /**
- * Email-safe ikona: tabela + okrąg + unicode glyph. Działa w Gmail/Outlook,
- * gdzie inline SVG ani mask-image nie są kolorowane.
+ * Bazowy absolutny URL do hostingu ikon stopek mailowych. Hardkodujemy
+ * produkcyjną domenę, żeby raz wyrenderowana stopka działała niezależnie
+ * od tego, gdzie powstała (preview, dev, prod) i gdzie zostanie później
+ * odczytana przez klienta pocztowego.
+ */
+const EMAIL_ICON_BASE_URL = 'https://concertivo.eu';
+
+/** Białe sylwetki PNG dla emaila — kładziemy na akcentowym tle. */
+const EMAIL_FIELD_ICON_WHITE_URL: Record<StopkaIconField, string> = {
+  telefon: '/email-icons/telefon-white.png',
+  email: '/email-icons/email-white.png',
+  www: '/email-icons/www-white.png',
+  adres: '/email-icons/adres-white.png',
+};
+
+/**
+ * Email-safe ikona: tabela z kolorowym tłem + biała ikona PNG.
+ * Działa w Gmail/Outlook/Apple Mail, bo używa wyłącznie `bgcolor`, `<img>`
+ * i inline-styles. `border-radius` jest tylko bonusem (gdzie wspierane).
  */
 export function renderEmailStopkaIconHtml(
   key: string | null | undefined,
   fallbackField: StopkaIconField,
   color: string,
-  outputSize = 24,
+  outputSize = 28,
 ): string {
-  const safeColor = escapeAttr(color || '#1e40af');
-  const symbol = emailSafeIconSymbol(key, fallbackField);
-  const fontSize = symbol.length > 2 ? Math.max(7, Math.round(outputSize * 0.32)) : Math.max(12, Math.round(outputSize * 0.58));
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${outputSize}" height="${outputSize}" style="border-collapse:collapse;border-spacing:0;width:${outputSize}px;height:${outputSize}px;margin:0;"><tr><td width="${outputSize}" height="${outputSize}" align="center" valign="middle" style="width:${outputSize}px;height:${outputSize}px;min-width:${outputSize}px;max-width:${outputSize}px;border:2px solid ${safeColor};border-radius:50%;color:${safeColor};font-family:Arial,Helvetica,sans-serif;font-size:${fontSize}px;font-weight:bold;line-height:${outputSize - 4}px;text-align:center;vertical-align:middle;mso-line-height-rule:exactly;text-decoration:none;">${symbol}</td></tr></table>`;
-}
-
-function emailSafeIconSymbol(key: string | null | undefined, fallbackField: StopkaIconField): string {
   const normalizedKey = normalizeEmailStopkaIconKey(key, fallbackField);
   const icon = ICON_META_BY_KEY.get(normalizedKey);
-  const field = icon?.field ?? fallbackField;
-  const glyph = icon?.glyph ?? '';
-  if (field === 'telefon') {
-    if (glyph.includes('mobile')) return '&#9633;';
-    if (glyph.includes('headset') || glyph.includes('headphones')) return '&#9835;';
-    if (glyph.includes('fax')) return 'FX';
-    if (glyph.includes('plus')) return '+';
-    return '&#9742;&#65038;';
-  }
-  if (field === 'email') {
-    if (glyph.includes('at')) return '@';
-    if (glyph.includes('send') || glyph.includes('plane')) return '&#9658;';
-    if (glyph.includes('check')) return '&#10003;';
-    return '&#9993;&#65038;';
-  }
-  if (field === 'www') {
-    if (glyph.includes('link')) return '&#8734;';
-    if (glyph.includes('cursor') || glyph.includes('arrow') || glyph.includes('external')) return '&#8599;';
-    if (glyph.includes('www') || glyph.includes('dot-com')) return 'www';
-    return '&#9711;';
-  }
-  if (glyph.includes('house') || glyph.includes('office') || glyph.includes('building') || glyph.includes('hq') || glyph.includes('shop')) return '&#8962;';
-  if (glyph.includes('map') || glyph.includes('route')) return '&#9636;';
-  if (glyph.includes('flag')) return '&#9873;&#65038;';
-  return '&#9679;';
+  const field: StopkaIconField = icon?.field ?? fallbackField;
+  const safeColor = escapeAttr(color || '#1e40af');
+  const iconUrl = escapeAttr(`${EMAIL_ICON_BASE_URL}${EMAIL_FIELD_ICON_WHITE_URL[field]}`);
+  const innerSize = Math.round(outputSize * 0.55);
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${outputSize}" height="${outputSize}" bgcolor="${safeColor}" style="border-collapse:collapse;border-spacing:0;width:${outputSize}px;height:${outputSize}px;background-color:${safeColor};border-radius:${outputSize}px;"><tr><td width="${outputSize}" height="${outputSize}" align="center" valign="middle" bgcolor="${safeColor}" style="width:${outputSize}px;height:${outputSize}px;background-color:${safeColor};border-radius:${outputSize}px;text-align:center;vertical-align:middle;line-height:${outputSize}px;mso-line-height-rule:exactly;"><img src="${iconUrl}" width="${innerSize}" height="${innerSize}" alt="" style="display:inline-block;width:${innerSize}px;height:${innerSize}px;border:0;outline:none;vertical-align:middle;" /></td></tr></table>`;
 }
 
 function renderIconBody(field: StopkaIconField, glyph: string): string {

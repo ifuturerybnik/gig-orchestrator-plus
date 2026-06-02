@@ -175,6 +175,19 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
             onSignatureHtmlChange={setSignatureHtml}
             orgId={orgId}
           />
+          {signatureHtml && (
+            <div className="grid gap-2">
+              <Label className="text-xs text-muted-foreground">
+                {t("correspondence.mail.composer.signature_preview", "Podgląd stopki")}
+              </Label>
+              <div
+                className="rounded-md border bg-white p-4 overflow-x-auto"
+                // Stopka jest zaufanym HTML-em renderowanym przez renderStopkaHtml
+                // (StopkaPicker), nie pochodzi od użytkownika z zewnątrz.
+                dangerouslySetInnerHTML={{ __html: signatureHtml }}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={sending}>
