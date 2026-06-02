@@ -3,6 +3,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  CONFIGURABLE_MODULE_IDS,
+  type BudgetPermissionMode,
+  type OrgModuleId,
+} from "@/lib/org-modules";
 
 const TokenSchema = z.object({ token: z.string().min(8).max(128) });
 
@@ -12,7 +17,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id")
+      .select("id, email, status, expires_at, organization_id, initial_is_org_admin, initial_modules, initial_budget_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -40,7 +45,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id")
+      .select("id, email, status, expires_at, organization_id, initial_is_org_admin, initial_modules, initial_budget_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -64,15 +69,49 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       .eq("organization_id", inv.organization_id)
       .eq("user_id", userId)
       .maybeSingle();
+    let memberId = existing?.id as string | undefined;
     if (!existing) {
-      const { error: memErr } = await supabaseAdmin
+      const { data: newMember, error: memErr } = await supabaseAdmin
         .from("organization_members")
         .insert({
           organization_id: inv.organization_id,
           user_id: userId,
           role: "member",
-        });
+        })
+        .select("id")
+        .single();
       if (memErr) throw new Error(memErr.message);
+      memberId = newMember.id as string;
+    }
+
+    const invAccess = inv as typeof inv & {
+      initial_is_org_admin?: boolean | null;
+      initial_modules?: unknown;
+      initial_budget_mode?: string | null;
+    };
+    const invitationModules = Array.isArray(invAccess.initial_modules)
+      ? (invAccess.initial_modules as OrgModuleId[])
+      : CONFIGURABLE_MODULE_IDS;
+    const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
+    const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
+    const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
+    if (memberId) {
+      const { error: permErr } = await supabaseAdmin
+        .from("organization_member_permissions")
+        .upsert(
+          {
+            member_id: memberId,
+            organization_id: inv.organization_id,
+            user_id: userId,
+            is_org_admin: isOrgAdmin,
+            modules,
+            budget_mode: isOrgAdmin || !modules.includes("budget") ? "full" : budgetMode,
+            updated_at: new Date().toISOString(),
+            updated_by: userId,
+          },
+          { onConflict: "member_id" },
+        );
+      if (permErr) throw new Error(permErr.message);
     }
 
     await supabaseAdmin
@@ -108,10 +147,11 @@ export const declineInvitation = createServerFn({ method: "POST" })
     if (userEmail !== String(inv.email).toLowerCase().trim()) {
       throw new Error("Email mismatch");
     }
-    await supabaseAdmin
+    const { error: declineErr } = await supabaseAdmin
       .from("organization_invitations")
       .update({ status: "declined" })
       .eq("id", inv.id);
+    if (declineErr) throw new Error(declineErr.message);
     await supabaseAdmin
       .from("user_notifications")
       .update({ read_at: new Date().toISOString() })
