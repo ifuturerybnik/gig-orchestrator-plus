@@ -16,6 +16,7 @@ import {
   Share2,
   Globe,
   Megaphone,
+  Sparkles,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -146,6 +147,12 @@ export function OrgSidebar({
       labelKey: "organizations.sidebar.media_web",
       icon: Megaphone,
       children: [
+        {
+          kind: "leaf",
+          to: `${base}/ai-studio`,
+          labelKey: "organizations.sidebar.ai_studio",
+          icon: Sparkles,
+        },
         {
           kind: "leaf",
           to: `${base}/social`,
