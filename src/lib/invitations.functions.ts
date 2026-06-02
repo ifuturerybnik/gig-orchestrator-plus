@@ -84,12 +84,17 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       memberId = newMember.id as string;
     }
 
-    const invitationModules = Array.isArray(inv.initial_modules)
-      ? (inv.initial_modules as OrgModuleId[])
+    const invAccess = inv as typeof inv & {
+      initial_is_org_admin?: boolean | null;
+      initial_modules?: unknown;
+      initial_budget_mode?: string | null;
+    };
+    const invitationModules = Array.isArray(invAccess.initial_modules)
+      ? (invAccess.initial_modules as OrgModuleId[])
       : CONFIGURABLE_MODULE_IDS;
-    const isOrgAdmin = Boolean(inv.initial_is_org_admin);
+    const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
     const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
-    const budgetMode = (inv.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
+    const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
     if (memberId) {
       const { error: permErr } = await supabaseAdmin
         .from("organization_member_permissions")
