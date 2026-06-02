@@ -235,12 +235,15 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           value={viewMode}
           onValueChange={(v) => {
             const next = v as "central" | "own";
-            setViewMode(next);
             if (next === "central" && data.mode === "own") {
-              setMode.mutate("central");
+              // Realny powrót z 'own' do 'central' — wymaga potwierdzenia
+              // (legacy pliki w bucketcie usera + ostrzeżenie o linkach).
+              setPendingMode("central");
+              return;
             }
-            // For "own": just expand panel locally. Actual activation happens
-            // via "Zapisz i aktywuj" after user fills in credentials.
+            setViewMode(next);
+            // Dla "own": tylko rozwijamy panel lokalnie. Aktywacja przez
+            // "Zapisz i aktywuj" po wypełnieniu danych.
           }}
           className="grid gap-2 sm:grid-cols-2"
         >
