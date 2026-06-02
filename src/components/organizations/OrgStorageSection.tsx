@@ -54,6 +54,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
     r2_public_base_url: "",
   });
   const [initialized, setInitialized] = useState(false);
+  const [viewMode, setViewMode] = useState<"central" | "own">("central");
 
   useEffect(() => {
     if (!initialized && data) {
@@ -64,6 +65,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         r2_bucket: data.r2_bucket ?? "",
         r2_public_base_url: data.r2_public_base_url ?? "",
       });
+      setViewMode(data.mode);
       setInitialized(true);
     }
   }, [data, initialized]);
@@ -176,8 +178,16 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
       <div>
         <Label className="mb-2 block">Tryb przechowywania</Label>
         <RadioGroup
-          value={data.mode}
-          onValueChange={(v) => setMode.mutate(v as "central" | "own")}
+          value={viewMode}
+          onValueChange={(v) => {
+            const next = v as "central" | "own";
+            setViewMode(next);
+            if (next === "central" && data.mode === "own") {
+              setMode.mutate("central");
+            }
+            // For "own": just expand panel locally. Actual activation happens
+            // via "Zapisz i aktywuj" after user fills in credentials.
+          }}
           className="grid gap-2 sm:grid-cols-2"
         >
           <label
@@ -196,22 +206,15 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </label>
           <label
             htmlFor="mode-own"
-            className={`flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 ${
-              !data.r2_bucket ? "opacity-60" : ""
-            }`}
+            className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40"
           >
-            <RadioGroupItem
-              id="mode-own"
-              value="own"
-              className="mt-0.5"
-              disabled={!data.r2_bucket}
-            />
+            <RadioGroupItem id="mode-own" value="own" className="mt-0.5" />
             <div>
               <div className="flex items-center gap-2 text-sm font-medium">
                 <HardDrive className="h-4 w-4" /> Własne Cloudflare R2
               </div>
               <p className="text-xs text-muted-foreground">
-                Pliki trafiają wyłącznie do Twojego konta. Najpierw uzupełnij dane poniżej i przetestuj.
+                Pliki trafiają wyłącznie do Twojego konta. Rozwiń, uzupełnij dane i przetestuj — aktywacja po zapisie.
               </p>
             </div>
           </label>
@@ -233,8 +236,8 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         </p>
       </div>
 
-      {/* Form for own R2 - collapsible */}
-      {data.mode === "own" && (
+      {/* Form for own R2 - expands when user selects "own" radio */}
+      {viewMode === "own" && (
         <>
           <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
