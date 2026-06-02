@@ -85,6 +85,13 @@ export function OrgSidebar({
         (e as { completed?: boolean }).completed === false,
     ).length ?? 0;
 
+  const fetchPerms = useServerFn(getMyOrgPermissions);
+  const permsQuery = useQuery({
+    queryKey: ["org-my-permissions", orgId],
+    queryFn: () => fetchPerms({ data: { organizationId: orgId } }),
+  });
+  const perms = permsQuery.data?.permissions ?? null;
+
   const base = `/organizations/${orgId}`;
   const items: Item[] = [
     {
