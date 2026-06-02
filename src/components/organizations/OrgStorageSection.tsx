@@ -54,6 +54,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
     r2_public_base_url: "",
   });
   const [initialized, setInitialized] = useState(false);
+  const [viewMode, setViewMode] = useState<"central" | "own">("central");
 
   useEffect(() => {
     if (!initialized && data) {
@@ -64,6 +65,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         r2_bucket: data.r2_bucket ?? "",
         r2_public_base_url: data.r2_public_base_url ?? "",
       });
+      setViewMode(data.mode);
       setInitialized(true);
     }
   }, [data, initialized]);
