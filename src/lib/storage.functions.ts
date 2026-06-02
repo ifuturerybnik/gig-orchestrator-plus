@@ -335,9 +335,3 @@ export const getOrgQuota = createServerFn({ method: "POST" })
     return calculateOrgQuota(data.organization_id);
   });
 
-// Re-export typu (przyda się komponentom)
-export type { AdminOrgStorageRow as _T };
-// Helper do importu w komponencie
-export async function _noop() {
-  return getOrgStorageConfigRow;
-}
