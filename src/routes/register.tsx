@@ -17,6 +17,9 @@ import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 
 export const Route = createFileRoute("/register")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+  }),
   component: RegisterPage,
 });
 
