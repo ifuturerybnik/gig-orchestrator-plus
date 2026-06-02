@@ -221,7 +221,28 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
             <Copy className="mr-2 h-4 w-4" /> {t("common.copy")}
           </Button>
         </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Gallery embed</p>
+          <p className="text-xs text-muted-foreground">{t("web.integration.embed_gallery_help")}</p>
+          <pre className="overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-xs">
+{embedGallerySnippet}
+          </pre>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(embedGallerySnippet);
+              toast.success(t("common.copied"));
+            }}
+          >
+            <Copy className="mr-2 h-4 w-4" /> {t("common.copy")}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("web.integration.sitemap_help")}</p>
       </section>
+
 
       {/* TOKENS */}
       <section className="space-y-3 rounded-md border border-border bg-card p-4">
