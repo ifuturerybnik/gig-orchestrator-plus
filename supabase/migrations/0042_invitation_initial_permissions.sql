@@ -1,3 +1,5 @@
+alter type public.invitation_status add value if not exists 'declined';
+
 alter table public.organization_invitations
   add column if not exists initial_is_org_admin boolean not null default false,
   add column if not exists initial_modules jsonb not null default '["events","budget","contacts","counterparties","mail","autokorespondencja","ai_studio","social","web","dysk"]'::jsonb,
