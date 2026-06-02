@@ -27,6 +27,7 @@ import {
   addWebDomain,
   removeWebDomain,
 } from "@/lib/web.functions";
+import { WebTabInstructions } from "@/components/web/WebTabInstructions";
 
 function slugify(s: string) {
   return s
@@ -155,7 +156,9 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-6">
+      <WebTabInstructions tab="integration" />
       {/* SETTINGS */}
+
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <div>
           <h2 className="text-lg font-semibold">{t("web.integration.title")}</h2>

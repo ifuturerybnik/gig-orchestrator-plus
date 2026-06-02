@@ -25,6 +25,7 @@ import {
   revealWebWebhookSecret,
   WEB_WEBHOOK_EVENTS,
 } from "@/lib/web.functions";
+import { WebTabInstructions } from "@/components/web/WebTabInstructions";
 
 type Hook = {
   id: string;
