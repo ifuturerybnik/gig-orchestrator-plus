@@ -145,8 +145,10 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
   const galleryEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/gallery`;
   const rssEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/news/feed.xml`;
   const icalEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/events.ics`;
+  const sitemapEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/sitemap.xml`;
   const embedJsUrl = `${baseUrl}/api/public/v1/embed.js`;
   const embedSnippet = `<div id="concertivo-feed"></div>\n<script async src="${embedJsUrl}"\n  data-org="${publicSlug || "<slug>"}" data-mode="news" data-lang="pl" data-limit="6"\n  data-target="#concertivo-feed"></script>`;
+  const embedGallerySnippet = `<div id="concertivo-gallery"></div>\n<script async src="${embedJsUrl}"\n  data-org="${publicSlug || "<slug>"}" data-mode="gallery" data-lang="pl" data-limit="12"\n  data-target="#concertivo-gallery"></script>`;
 
   const tokens = tokensQuery.data?.tokens ?? [];
   const domains = domainsQuery.data?.domains ?? [];
@@ -193,6 +195,7 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
           <EndpointRow label="Gallery (JSON)" url={galleryEndpoint} />
           <EndpointRow label="RSS (news)" url={rssEndpoint} />
           <EndpointRow label="iCal (events)" url={icalEndpoint} />
+          <EndpointRow label="Sitemap (SEO)" url={sitemapEndpoint} />
           <EndpointRow label="embed.js" url={embedJsUrl} />
         </div>
         <Alert>
