@@ -393,29 +393,33 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
 async function deletePrefix(
   ctx: Awaited<ReturnType<typeof getOrgR2Context>>,
   prefix: string,
-) {
-  let ContinuationToken: string | undefined = undefined;
-  do {
-    const res = await ctx.client.send(
-      new ListObjectsV2Command({
-        Bucket: ctx.bucket,
-        Prefix: prefix,
-        ContinuationToken,
-      }),
-    );
-    const keys = (res.Contents ?? [])
-      .map((o) => o.Key)
-      .filter((k): k is string => !!k);
+): Promise<void> {
+  let token: string | undefined = undefined;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const res: Awaited<ReturnType<typeof ctx.client.send<ListObjectsV2Command>>> =
+      await ctx.client.send(
+        new ListObjectsV2Command({
+          Bucket: ctx.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      );
+    const keys: string[] = (res.Contents ?? [])
+      .map((o: { Key?: string }) => o.Key)
+      .filter((k: string | undefined): k is string => !!k);
     if (keys.length > 0) {
       await ctx.client.send(
         new DeleteObjectsCommand({
           Bucket: ctx.bucket,
-          Delete: { Objects: keys.map((Key) => ({ Key })) },
+          Delete: { Objects: keys.map((Key: string) => ({ Key })) },
         }),
       );
     }
-    ContinuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
-  } while (ContinuationToken);
+    if (!res.IsTruncated) break;
+    token = res.NextContinuationToken;
+    if (!token) break;
+  }
 }
 
 // ---------- quota (re-export shortcut) ----------
