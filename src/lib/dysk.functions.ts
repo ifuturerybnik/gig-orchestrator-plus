@@ -422,7 +422,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
     if (data.object_id) {
       const { data: obj, error } = await supabaseAdmin
         .from("org_storage_objects")
-        .select("id, object_key, mime, organization_id, bucket")
+        .select("id, object_key, mime, organization_id, bucket, is_system")
         .eq("id", data.object_id)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -433,9 +433,13 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
         mime: string | null;
         organization_id: string;
         bucket: string;
+        is_system: boolean | null;
       };
       if (row.organization_id !== data.organization_id) {
         throw new Error("Forbidden");
+      }
+      if (row.is_system) {
+        throw new Error("Folder systemowy — nie można go usunąć.");
       }
       if (row.mime === FOLDER_MIME) {
         // skasuj wszystkie obiekty z prefixem (folder marker + zawartość)
@@ -462,6 +466,21 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       const path = normalizePath(data.folder_path);
       if (!path) throw new Error("Brak ścieżki folderu");
       const prefix = buildPrefix(data.organization_id, path);
+
+      // sprawdź czy folder (lub jakikolwiek jego podfolder systemowy) nie jest systemowy
+      const { data: sysCheck } = await supabaseAdmin
+        .from("org_storage_objects")
+        .select("id")
+        .eq("organization_id", data.organization_id)
+        .eq("module", "dysk")
+        .eq("is_system", true)
+        .neq("status", "deleted")
+        .like("object_key", `${prefix}%`)
+        .limit(1);
+      if ((sysCheck ?? []).length > 0) {
+        throw new Error("Folder systemowy — nie można go usunąć.");
+      }
+
       await deletePrefix(ctx, prefix);
       const { error: dErr } = await supabaseAdmin
         .from("org_storage_objects")
@@ -472,6 +491,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       if (dErr) throw new Error(dErr.message);
       return { ok: true };
     }
+
 
     throw new Error("Podaj object_id albo folder_path");
   });
