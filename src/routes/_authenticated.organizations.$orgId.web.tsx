@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Globe, Newspaper, CalendarDays, Images, Cable } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WebNewsTab } from "@/components/web/WebNewsTab";
+import { WebEventsTab } from "@/components/web/WebEventsTab";
+import { WebGalleryTab } from "@/components/web/WebGalleryTab";
 import { WebIntegrationTab } from "@/components/web/WebIntegrationTab";
 
 export const Route = createFileRoute(
@@ -53,10 +55,10 @@ function WebPage() {
           <WebNewsTab orgId={orgId} />
         </TabsContent>
         <TabsContent value="events">
-          <ComingSoon label={t("web.tabs.events")} />
+          <WebEventsTab orgId={orgId} />
         </TabsContent>
         <TabsContent value="gallery">
-          <ComingSoon label={t("web.tabs.gallery")} />
+          <WebGalleryTab orgId={orgId} />
         </TabsContent>
         <TabsContent value="integration">
           <WebIntegrationTab orgId={orgId} />
