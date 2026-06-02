@@ -499,6 +499,7 @@ export default
       "scheduled_banner": "Usunięcie zaplanowane na {{date}}.",
       "banner_title": "Ta organizacja zostanie usunięta",
       "banner_body": "Właściciel zaplanował usunięcie organizacji. Finalne usunięcie nastąpi {{date}}, chyba że właściciel anuluje operację."
+    },
     "permissions": {
       "edit": "Edytuj uprawnienia",
       "title": "Uprawnienia członka",
