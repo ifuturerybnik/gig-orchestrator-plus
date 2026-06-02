@@ -446,17 +446,24 @@ function AlbumDetail({
   const [newCredit, setNewCredit] = useState("");
 
   const addMut = useMutation({
-    mutationFn: () => {
-      if (!newUrl.trim()) throw new Error(t("web.gallery.item_url_required"));
+    mutationFn: (payload: {
+      url: string;
+      urlThumb: string | null;
+      width: number | null;
+      height: number | null;
+      kind: "image" | "video";
+    }) => {
       const items = (albumQuery.data?.items ?? []) as GalleryItem[];
       const nextOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
       return upsertItemFn({
         data: {
           albumId,
           organizationId: orgId,
-          kind: newKind,
-          url: newUrl.trim(),
-          urlThumb: newThumb.trim() || null,
+          kind: payload.kind,
+          url: payload.url,
+          urlThumb: payload.urlThumb,
+          width: payload.width,
+          height: payload.height,
           captionI18n: newCaption.trim() ? { pl: newCaption.trim(), en: newCaption.trim() } : {},
           photoCredit: newCredit.trim() || null,
           sortOrder: nextOrder,
