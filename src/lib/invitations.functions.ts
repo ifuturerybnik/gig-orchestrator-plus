@@ -68,6 +68,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       initial_is_org_admin?: boolean | null;
       initial_modules?: unknown;
       initial_budget_mode?: string | null;
+      initial_events_mode?: string | null;
     };
     const initialRole: "owner" | "member" =
       invAccess.initial_role === "owner" ? "owner" : "member";
