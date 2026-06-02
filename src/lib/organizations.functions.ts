@@ -310,15 +310,33 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const modules = Array.from(new Set(data.access.isOrgAdmin ? [] : data.access.modules));
-    const budgetMode = data.access.isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
+    // Sprawdź uprawnienia zapraszającego.
+    const { data: myMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", data.organizationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const callerIsOwner = myMembership?.role === "owner";
+    const callerIsAppAdmin = await isAppAdmin(supabase, userId);
+    if (data.access.asOwner && !callerIsOwner && !callerIsAppAdmin) {
+      throw new Error("Only owners can invite other owners");
+    }
+    const asOwner = Boolean(data.access.asOwner);
+    // Owner ma pełen dostęp z definicji; ignoruj pozostałe pola.
+    const isOrgAdmin = asOwner ? true : data.access.isOrgAdmin;
+    const modules = asOwner
+      ? []
+      : Array.from(new Set(isOrgAdmin ? [] : data.access.modules));
+    const budgetMode = asOwner || isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
     const { data: invite, error } = await supabase
       .from("organization_invitations")
       .insert({
         organization_id: data.organizationId,
         email: data.email,
         invited_by: userId,
-        initial_is_org_admin: data.access.isOrgAdmin,
+        initial_role: asOwner ? "owner" : "member",
+        initial_is_org_admin: isOrgAdmin,
         initial_modules: modules,
         initial_budget_mode: budgetMode,
       })
