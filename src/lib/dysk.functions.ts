@@ -96,6 +96,44 @@ function buildPrefix(orgId: string, path: string): string {
   return path ? `dysk/${orgId}/${path}/` : `dysk/${orgId}/`;
 }
 
+// ---------- system folders ----------
+
+async function ensureSystemFolders(
+  organizationId: string,
+  userId: string,
+): Promise<void> {
+  // sprawdź czy już są
+  const { data: existing } = await supabaseAdmin
+    .from("org_storage_objects")
+    .select("object_key")
+    .eq("organization_id", organizationId)
+    .eq("module", "dysk")
+    .eq("is_system", true)
+    .neq("status", "deleted")
+    .limit(1);
+  if ((existing ?? []).length > 0) return;
+
+  const ctx = await getOrgR2Context(organizationId);
+  const rows = SYSTEM_FOLDERS.map((path) => ({
+    organization_id: organizationId,
+    mode: ctx.mode,
+    bucket: ctx.bucket,
+    object_key: `${buildPrefix(organizationId, "")}${path}/`,
+    size_bytes: 0,
+    mime: FOLDER_MIME,
+    module: "dysk",
+    status: "ready",
+    is_system: true,
+    created_by: userId,
+  }));
+  // upsert na (organization_id, object_key) — gdyby istniał wcześniej taki sam katalog
+  // utworzony ręcznie przez użytkownika, po prostu pomijamy.
+  await supabaseAdmin
+    .from("org_storage_objects")
+    .insert(rows)
+    .select("id");
+}
+
 // ---------- list ----------
 
 export type DyskEntry = {
@@ -107,6 +145,7 @@ export type DyskEntry = {
   mime: string | null;
   public_url: string | null;
   created_at: string;
+  is_system: boolean;
 };
 
 export const listDysk = createServerFn({ method: "POST" })
