@@ -264,7 +264,6 @@ export async function presignPut(opts: {
     Bucket: opts.ctx.bucket,
     Key: opts.key,
     ContentType: opts.contentType,
-    ContentLength: opts.contentLength,
   });
   const uploadUrl = await getSignedUrl(opts.ctx.client, cmd, { expiresIn });
   const publicUrl = `${opts.ctx.publicBaseUrl}/${opts.key}`;
