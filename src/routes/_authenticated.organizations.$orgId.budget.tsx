@@ -91,7 +91,15 @@ function OrganizationBudgetPage() {
   const fetchEntries = useServerFn(listBudgetEntries);
   const createFn = useServerFn(createBudgetEntry);
   const deleteFn = useServerFn(deleteBudgetEntry);
-  const toggleFn = useServerFn(setBudgetEntryCompleted);
+  const fetchPerms = useServerFn(getMyOrgPermissions);
+  const permsQuery = useQuery({
+    queryKey: ["org-my-permissions", orgId],
+    queryFn: () => fetchPerms({ data: { organizationId: orgId } }),
+  });
+  const myPerms = permsQuery.data?.permissions ?? null;
+  const canCompleteBudget =
+    !myPerms || myPerms.isOrgAdmin || myPerms.budgetMode === "full";
+
 
 
   const detailsQuery = useQuery({
