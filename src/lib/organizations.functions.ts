@@ -339,6 +339,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
       ? []
       : Array.from(new Set(isOrgAdmin ? [] : data.access.modules));
     const budgetMode = asOwner || isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
+    const eventsMode = asOwner || isOrgAdmin || !modules.includes("events") ? "full" : data.access.eventsMode;
     const { data: invite, error } = await supabase
       .from("organization_invitations")
       .insert({
@@ -349,6 +350,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
         initial_is_org_admin: isOrgAdmin,
         initial_modules: modules,
         initial_budget_mode: budgetMode,
+        initial_events_mode: eventsMode,
       })
       .select("id, email, token, expires_at")
       .single();
