@@ -30,7 +30,7 @@ export const Route = createFileRoute(
 
 function OrganizationMembersPage() {
   const { orgId } = Route.useParams();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
