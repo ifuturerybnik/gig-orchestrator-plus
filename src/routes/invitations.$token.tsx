@@ -95,10 +95,10 @@ function InvitationAcceptPage() {
                 </p>
                 <div className="flex gap-2">
                   <Link to="/login" search={{ redirect: `/invitations/${token}` }}>
-                    <Button>{t("auth.login")}</Button>
+                    <Button>{t("nav.login")}</Button>
                   </Link>
                   <Link to="/register" search={{ redirect: `/invitations/${token}` }}>
-                    <Button variant="outline">{t("auth.register")}</Button>
+                    <Button variant="outline">{t("nav.register")}</Button>
                   </Link>
                 </div>
               </div>
