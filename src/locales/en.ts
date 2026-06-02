@@ -479,7 +479,12 @@ export default
       "cancelled": "Deletion cancelled",
       "scheduled_banner": "Deletion scheduled for {{date}}.",
       "banner_title": "This organization is scheduled for deletion",
-      "banner_body": "An owner scheduled deletion of this organization. Final deletion will happen on {{date}} unless cancelled."
+      "banner_body": "An owner scheduled deletion of this organization. Final deletion will happen on {{date}} unless cancelled.",
+      "request_short": "Delete organization",
+      "dialog_info": "This organization will be scheduled for deletion in 7 days. You can cancel any time during that window.",
+      "dialog_members_info": "All organization members will be notified about the scheduled deletion.",
+      "password_label": "Enter your login password to confirm:",
+      "confirm": "Confirm deletion"
     },
     "permissions": {
       "edit": "Edit permissions",
