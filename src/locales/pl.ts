@@ -557,7 +557,8 @@ export default
       "social": "Organizacja SM",
       "media_web": "Media & Web",
       "web": "Web",
-      "ai_studio": "AI Studio"
+      "ai_studio": "AI Studio",
+      "dysk": "Dysk"
     },
     "events": {
       "title": "Występy",
