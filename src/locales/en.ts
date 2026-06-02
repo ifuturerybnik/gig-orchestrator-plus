@@ -534,7 +534,9 @@ export default
       "autokorespondencja": "Auto-correspondence",
       "back_to_list": "← All organizations",
       "pending_expenses": "Pending expenses: {{count}}",
-      "social": "Social Hub"
+      "social": "Social Hub",
+      "media_web": "Media & Web",
+      "web": "Web"
     },
     "events": {
       "title": "Performances",
