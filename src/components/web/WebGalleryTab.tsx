@@ -519,14 +519,6 @@ function AlbumDetail({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t("web.gallery.item_url")}</Label>
-            <Input value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("web.gallery.thumb_url")}</Label>
-            <Input value={newThumb} onChange={(e) => setNewThumb(e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="space-y-2">
             <Label>{t("web.gallery.credit")}</Label>
             <Input value={newCredit} onChange={(e) => setNewCredit(e.target.value)} />
           </div>
@@ -534,11 +526,63 @@ function AlbumDetail({
             <Label>{t("web.gallery.caption")}</Label>
             <Input value={newCaption} onChange={(e) => setNewCaption(e.target.value)} />
           </div>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={() => addMut.mutate()} disabled={addMut.isPending}>
-            <Plus className="mr-2 h-4 w-4" /> {t("web.gallery.add_item")}
-          </Button>
+          {newKind === "image" ? (
+            <div className="space-y-2 sm:col-span-2">
+              <ImageUploader
+                organizationId={orgId}
+                module="web-gallery"
+                multiple
+                onUploaded={(img) =>
+                  addMut.mutate({
+                    kind: "image",
+                    url: img.originalUrl,
+                    urlThumb: img.thumbUrl,
+                    width: img.width,
+                    height: img.height,
+                  })
+                }
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>{t("web.gallery.item_url")}</Label>
+                <Input
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  placeholder="https://youtube.com/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("web.gallery.thumb_url")}</Label>
+                <Input
+                  value={newThumb}
+                  onChange={(e) => setNewThumb(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="sm:col-span-2 flex justify-end">
+                <Button
+                  onClick={() => {
+                    if (!newUrl.trim()) {
+                      toast.error(t("web.gallery.item_url_required"));
+                      return;
+                    }
+                    addMut.mutate({
+                      kind: "video",
+                      url: newUrl.trim(),
+                      urlThumb: newThumb.trim() || null,
+                      width: null,
+                      height: null,
+                    });
+                  }}
+                  disabled={addMut.isPending}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> {t("web.gallery.add_item")}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
