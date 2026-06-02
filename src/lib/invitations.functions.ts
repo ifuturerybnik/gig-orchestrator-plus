@@ -17,7 +17,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id, initial_is_org_admin, initial_modules, initial_budget_mode")
+      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -33,6 +33,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
         email: inv.email,
         status: inv.status as string,
         expires_at: inv.expires_at as string,
+        initial_role: (inv as { initial_role?: string }).initial_role ?? "member",
         organization: org ? { id: org.id, name: org.name, types: org.types } : null,
       },
     };
