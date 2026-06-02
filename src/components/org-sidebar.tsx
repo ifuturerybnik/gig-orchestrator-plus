@@ -48,6 +48,7 @@ type LeafItem = {
   labelKey: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
+  moduleId?: OrgModuleId;
 };
 
 type GroupItem = {
