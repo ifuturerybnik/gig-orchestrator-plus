@@ -40,7 +40,7 @@ function RegisterPage() {
   useForceLightTheme();
   const { t, i18n } = useTranslation();
   const recordConsents = useServerFn(recordSignupConsents);
-  const [step, setStep] = useState(1);
+  const { redirect: redirectTo } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
