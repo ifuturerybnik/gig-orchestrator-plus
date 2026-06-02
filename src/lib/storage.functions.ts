@@ -36,6 +36,43 @@ async function assertAppAdmin(supabase: SupabaseClient, userId: string) {
   }
 }
 
+/**
+ * Pozwala: app admin (super_admin/admin_staff) LUB owner/admin w danej organizacji
+ * LUB twórca organizacji (created_by). Używane do zarządzania własnym R2 per-org.
+ */
+async function assertOrgManager(
+  supabase: SupabaseClient,
+  userId: string,
+  organizationId: string,
+) {
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  const isAppAdmin = ((roles ?? []) as Array<{ role: string }>).some(
+    (r) => r.role === "super_admin" || r.role === "admin_staff",
+  );
+  if (isAppAdmin) return;
+
+  const { data: mem } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (mem && (mem.role === "owner" || mem.role === "admin")) return;
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("created_by")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (org && (org as { created_by?: string }).created_by === userId) return;
+
+  throw new Error("Forbidden");
+}
+
+
 // =====================================================================
 // Konfiguracja globalna R2
 // =====================================================================
