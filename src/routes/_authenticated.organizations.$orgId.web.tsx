@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Globe, Newspaper, CalendarDays, Images, Cable } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WebNewsTab } from "@/components/web/WebNewsTab";
+import { WebIntegrationTab } from "@/components/web/WebIntegrationTab";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/web",
@@ -10,9 +12,11 @@ export const Route = createFileRoute(
 });
 
 function WebPage() {
+  const { orgId } = Route.useParams();
   const { t } = useTranslation();
+
   return (
-    <div className="container mx-auto max-w-4xl p-6">
+    <div className="container mx-auto max-w-6xl p-6">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Globe className="h-5 w-5" />
@@ -21,29 +25,55 @@ function WebPage() {
           <h1 className="text-2xl font-semibold">
             {t("organizations.sidebar.web")}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.web.subtitle", {
-              defaultValue:
-                "Zarządzaj stronami internetowymi tej organizacji — wkrótce.",
-            })}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("web.subtitle")}</p>
         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {t("organizations.web.coming_soon", {
-              defaultValue: "Wkrótce",
-            })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {t("organizations.web.placeholder", {
-            defaultValue:
-              "Tu pojawi się moduł zarządzania stronami WWW (kreator, integracje, SEO, domeny).",
-          })}
-        </CardContent>
-      </Card>
+
+      <Tabs defaultValue="news">
+        <TabsList className="mb-6">
+          <TabsTrigger value="news" className="gap-2">
+            <Newspaper className="h-4 w-4" />
+            {t("web.tabs.news")}
+          </TabsTrigger>
+          <TabsTrigger value="events" className="gap-2">
+            <CalendarDays className="h-4 w-4" />
+            {t("web.tabs.events")}
+          </TabsTrigger>
+          <TabsTrigger value="gallery" className="gap-2">
+            <Images className="h-4 w-4" />
+            {t("web.tabs.gallery")}
+          </TabsTrigger>
+          <TabsTrigger value="integration" className="gap-2">
+            <Cable className="h-4 w-4" />
+            {t("web.tabs.integration")}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="news">
+          <WebNewsTab orgId={orgId} />
+        </TabsContent>
+        <TabsContent value="events">
+          <ComingSoon label={t("web.tabs.events")} />
+        </TabsContent>
+        <TabsContent value="gallery">
+          <ComingSoon label={t("web.tabs.gallery")} />
+        </TabsContent>
+        <TabsContent value="integration">
+          <WebIntegrationTab orgId={orgId} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ComingSoon({ label }: { label: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-dashed border-border p-12 text-center">
+      <p className="text-sm font-medium">{label}</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {t("web.coming_in_next_step")}
+      </p>
     </div>
   );
 }
