@@ -230,20 +230,39 @@ function OrganizationMembersPage() {
                 {t("organizations.members.invite")}
               </Button>
             </div>
-            <div>
-              <p className="mb-3 text-sm font-medium text-foreground">
-                {t("organizations.members.initial_access")}
-              </p>
-              <OrgPermissionsFields
-                isOrgAdmin={inviteIsOrgAdmin}
-                onIsOrgAdminChange={setInviteIsOrgAdmin}
-                modules={inviteModules}
-                onModulesChange={setInviteModules}
-                budgetMode={inviteBudgetMode}
-                onBudgetModeChange={setInviteBudgetMode}
-                fieldIdPrefix="invite-permissions"
-              />
-            </div>
+            {isOwner && (
+              <div className="flex items-center justify-between rounded-md border border-border bg-card/40 p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="invite-as-owner" className="cursor-pointer">
+                    {t("organizations.members.invite_as_owner")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("organizations.members.invite_as_owner_help")}
+                  </p>
+                </div>
+                <Switch
+                  id="invite-as-owner"
+                  checked={inviteAsOwner}
+                  onCheckedChange={setInviteAsOwner}
+                />
+              </div>
+            )}
+            {!inviteAsOwner && (
+              <div>
+                <p className="mb-3 text-sm font-medium text-foreground">
+                  {t("organizations.members.initial_access")}
+                </p>
+                <OrgPermissionsFields
+                  isOrgAdmin={inviteIsOrgAdmin}
+                  onIsOrgAdminChange={setInviteIsOrgAdmin}
+                  modules={inviteModules}
+                  onModulesChange={setInviteModules}
+                  budgetMode={inviteBudgetMode}
+                  onBudgetModeChange={setInviteBudgetMode}
+                  fieldIdPrefix="invite-permissions"
+                />
+              </div>
+            )}
           </form>
 
           {invitations.length > 0 && (
