@@ -536,7 +536,8 @@ export default
       "pending_expenses": "Pending expenses: {{count}}",
       "social": "Social Hub",
       "media_web": "Media & Web",
-      "web": "Web"
+      "web": "Web",
+      "ai_studio": "AI Studio"
     },
     "events": {
       "title": "Performances",
