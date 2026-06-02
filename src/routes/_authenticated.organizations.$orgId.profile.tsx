@@ -131,6 +131,32 @@ function OrganizationProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+
+  const requestDeletionMutation = useMutation({
+    mutationFn: (password: string) =>
+      requestDeleteFn({ data: { organizationId: orgId, password } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.requested"));
+      setDeleteOpen(false);
+      setDeletePassword("");
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: () => cancelDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.cancelled"));
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (detailsQuery.isLoading || !initialized) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
