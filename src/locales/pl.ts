@@ -1860,7 +1860,7 @@ export default
                 "Kliknij „Dodaj wpis”.",
                 "Wpisz tytuł PL i (opcjonalnie) EN.",
                 "Uzupełnij lead/zajawkę i treść w WYSIWYG.",
-                "Wklej URL zdjęcia głównego (z modułu Dysk lub zewnętrzny URL).",
+                "Wgraj zdjęcie główne metodą drag & drop lub kliknij, aby wybrać plik z dysku – Concertivo automatycznie skonwertuje je do WebP, zmniejszy do max 2560 px po dłuższym boku i wygeneruje miniatury (1280 px i 400 px). Nie musisz już podawać URL-a.",
                 "Dodaj tagi po przecinku (np. „koncert, jazz”).",
                 "Zaznacz „Opublikuj publicznie” i zapisz."
               ]
