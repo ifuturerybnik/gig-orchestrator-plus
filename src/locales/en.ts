@@ -1515,6 +1515,65 @@ export default
       "ai_analysis_title": "AI analysis",
       "ai_analysis_subtitle": "AI will analyze results and suggest optimization directions.",
       "run_analysis": "Run analysis"
+    },
+    "web": {
+      "subtitle": "Publish content (News, Events, Gallery) on your organization's website.",
+      "coming_in_next_step": "Full editor coming in the next step — News and integration setup are live first.",
+      "tabs": {
+        "news": "News",
+        "events": "Events",
+        "gallery": "Gallery",
+        "integration": "Web integration"
+      },
+      "news": {
+        "title": "News",
+        "subtitle": "Posts published on the organization's website.",
+        "add": "Add post",
+        "edit": "Edit post",
+        "empty": "No posts yet. Click the button above to add the first one.",
+        "published": "Published",
+        "draft": "Draft",
+        "publish": "Publish publicly",
+        "publish_help": "When enabled, this post is exposed via the public API and embed.",
+        "cover_url": "Cover image URL",
+        "slug": "Slug (URL)",
+        "slug_placeholder": "auto from title if empty",
+        "author": "Author (optional)",
+        "tags": "Tags (comma separated)",
+        "tags_placeholder": "concert, jazz, festival",
+        "title_field": "Title",
+        "excerpt": "Lead / excerpt",
+        "content": "Content",
+        "saved": "Post saved.",
+        "deleted": "Post deleted.",
+        "delete_title": "Delete post?",
+        "delete_desc": "This action cannot be undone."
+      },
+      "integration": {
+        "title": "Web integration",
+        "subtitle": "Publish this organization's content on your own website via JSON API, RSS, iCal or embed.",
+        "slug": "Public organization slug",
+        "slug_help": "Used in API URLs, e.g. /api/public/v1/orgs/<slug>/news",
+        "publish": "Enable public API",
+        "saved": "Settings saved.",
+        "endpoints": "API endpoints",
+        "endpoints_help": "Paste these URLs into your website code or RSS/calendar readers.",
+        "lang_param_title": "Content language",
+        "lang_param_desc": "Append ?lang=pl or ?lang=en to choose the language. Defaults to pl.",
+        "tokens": "API tokens",
+        "tokens_help": "Read-only. We show the token once — save it in a safe place.",
+        "create_token": "Generate",
+        "token_name_placeholder": "Name, e.g. Main website",
+        "no_tokens": "No tokens.",
+        "revoked": "revoked",
+        "token_revoked": "Token revoked.",
+        "token_created_title": "Token generated",
+        "token_created_desc": "Copy the token NOW — you won't see it again.",
+        "domains": "Allowed domains (CORS)",
+        "domains_help": "Domains that can call the API from a browser. Empty = no restriction.",
+        "add_domain": "Add",
+        "no_domains": "No domain restrictions."
+      }
     }
   }
 } as const;
