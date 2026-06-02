@@ -492,36 +492,38 @@ function OrganizationPerformancesPage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  const iso = popoverDate;
-                  setPopoverDate(null);
-                  setPopoverAnchor(null);
-                  if (iso) openCreate(iso);
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("organizations.performances.add")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  const iso = popoverDate;
-                  setPopoverDate(null);
-                  setPopoverAnchor(null);
-                  if (iso) openVacCreate(iso);
-                }}
-              >
-                <Plane className="h-3.5 w-3.5" />
-                {t("organizations.vacations.add")}
-              </Button>
-            </div>
+            {canEditEvents && (
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const iso = popoverDate;
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    if (iso) openCreate(iso);
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("organizations.performances.add")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const iso = popoverDate;
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    if (iso) openVacCreate(iso);
+                  }}
+                >
+                  <Plane className="h-3.5 w-3.5" />
+                  {t("organizations.vacations.add")}
+                </Button>
+              </div>
+            )}
           </div>
         </PopoverContent>
       </Popover>
