@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Globe, Newspaper, CalendarDays, Images, Cable } from "lucide-react";
+import { Globe, Newspaper, CalendarDays, Images, Cable, Webhook } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WebNewsTab } from "@/components/web/WebNewsTab";
 import { WebEventsTab } from "@/components/web/WebEventsTab";
 import { WebGalleryTab } from "@/components/web/WebGalleryTab";
 import { WebIntegrationTab } from "@/components/web/WebIntegrationTab";
+import { WebWebhooksTab } from "@/components/web/WebWebhooksTab";
+
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/web",
@@ -49,6 +51,10 @@ function WebPage() {
             <Cable className="h-4 w-4" />
             {t("web.tabs.integration")}
           </TabsTrigger>
+          <TabsTrigger value="webhooks" className="gap-2">
+            <Webhook className="h-4 w-4" />
+            {t("web.tabs.webhooks")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="news">
@@ -63,8 +69,12 @@ function WebPage() {
         <TabsContent value="integration">
           <WebIntegrationTab orgId={orgId} />
         </TabsContent>
+        <TabsContent value="webhooks">
+          <WebWebhooksTab orgId={orgId} />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
 

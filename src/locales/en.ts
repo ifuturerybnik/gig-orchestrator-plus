@@ -1525,7 +1525,8 @@ export default
         "news": "News",
         "events": "Events",
         "gallery": "Gallery",
-        "integration": "Web integration"
+        "integration": "Web integration",
+        "webhooks": "Webhooks"
       },
       "news": {
         "title": "News",
@@ -1632,8 +1633,28 @@ export default
         "add_domain": "Add",
         "no_domains": "No domain restrictions.",
         "embed_snippet": "Embed snippet for your website",
-        "embed_snippet_help": "Paste this code on your site – it renders the news list in a lightweight widget (Shadow DOM)."
+        "embed_snippet_help": "Paste this code on your site – it renders the news list in a lightweight widget (Shadow DOM).",
+        "embed_gallery_help": "Gallery mode renders an album grid with lightbox and video playback.",
+        "sitemap_help": "Sitemap covers news, events and albums. Add ?base=https://your-domain to get absolute URLs."
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "subtitle": "Notify external systems (CMS, static site generator, n8n, Zapier) when content changes.",
+        "add": "Add webhook",
+        "empty": "No webhooks.",
+        "inactive": "inactive",
+        "active": "Active",
+        "url": "URL (POST)",
+        "events": "Events",
+        "events_count": "events",
+        "form_help": "Each request is signed with X-Concertivo-Signature: sha256=<hmac>. The secret is shown only once on creation.",
+        "secret_title": "Webhook secret",
+        "secret_desc": "Keep this secret safe. Use it to verify the X-Concertivo-Signature header on your side.",
+        "show_secret": "Show secret",
+        "deliveries": "Recent deliveries",
+        "no_deliveries": "No delivery attempts yet."
       }
     }
   }
 } as const;
+
