@@ -162,7 +162,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           <p className="font-medium text-foreground">Twoja prywatność</p>
           <p className="text-muted-foreground">
             Pliki przechowywane w <strong>Concertivo Storage</strong> nie są przeglądane,
-            udostępniane ani wykorzystywane przez operatora aplikacji (i-Future).
+            udostępniane ani wykorzystywane przez operatora aplikacji Concertivo.
             Dostęp do nich mają wyłącznie członkowie Twojej organizacji.
             Jeśli mimo to chcesz mieć <strong>absolutną kontrolę i pewność</strong> —
             załóż własne konto Cloudflare i podłącz swój bucket R2 poniżej.
@@ -233,8 +233,10 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         </p>
       </div>
 
-      {/* Form for own R2 */}
-      <div className="space-y-4 rounded-md border border-border bg-background p-4">
+      {/* Form for own R2 - collapsible */}
+      {data.mode === "own" && (
+        <>
+          <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <HardDrive className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Dane Twojego Cloudflare R2</h3>
@@ -455,6 +457,19 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </ul>
         </div>
       </details>
+      </>)}
+
+      {data.mode === "central" && (
+        <div className="flex gap-3 rounded-md border border-border bg-background p-4 text-sm">
+          <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">Storage centralny Concertivo</p>
+            <p className="text-muted-foreground">
+              Korzystasz z naszej infrastruktury. Jeśli chcesz przełączyć się na własne konto Cloudflare R2 — wybierz tryb „Własne Cloudflare R2" powyżej, a panel konfiguracji się rozwinie.
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
