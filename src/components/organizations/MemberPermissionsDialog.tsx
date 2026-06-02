@@ -52,6 +52,7 @@ export function MemberPermissionsDialog({
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [modules, setModules] = useState<Set<OrgModuleId>>(new Set());
   const [budgetMode, setBudgetMode] = useState<BudgetPermissionMode>("full");
+  const [eventsMode, setEventsMode] = useState<EventsPermissionMode>("full");
 
   useEffect(() => {
     if (!open) return;
@@ -61,11 +62,12 @@ export function MemberPermissionsDialog({
         setIsOrgAdmin(p.is_org_admin);
         setModules(new Set(p.modules));
         setBudgetMode(p.budget_mode);
+        setEventsMode((p as { events_mode?: EventsPermissionMode }).events_mode ?? "full");
       } else {
-        // brak wpisu = traktujemy jak org admin (kompatybilność)
         setIsOrgAdmin(true);
         setModules(new Set());
         setBudgetMode("full");
+        setEventsMode("full");
       }
     }
   }, [open, query.data]);
@@ -78,6 +80,7 @@ export function MemberPermissionsDialog({
           isOrgAdmin,
           modules: Array.from(modules),
           budgetMode,
+          eventsMode,
         },
       }),
     onSuccess: () => {
