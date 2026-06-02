@@ -92,16 +92,10 @@ function InvitationAcceptPage() {
                   {t("invitations.need_login")}
                 </p>
                 <div className="flex gap-2">
-                  <Link
-                    to="/login"
-                    search={{ returnTo } as never}
-                  >
+                  <Link to="/login">
                     <Button>{t("auth.login")}</Button>
                   </Link>
-                  <Link
-                    to="/register"
-                    search={{ email: inv.email, returnTo } as never}
-                  >
+                  <Link to="/register">
                     <Button variant="outline">{t("auth.register")}</Button>
                   </Link>
                 </div>
