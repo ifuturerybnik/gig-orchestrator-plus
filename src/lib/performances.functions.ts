@@ -35,6 +35,18 @@ export type PerformanceEventKindPreset = (typeof PERFORMANCE_EVENT_KIND_PRESETS)
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
 
+async function assertCanEditEvents(
+  supabase: Parameters<typeof loadEffectivePerms>[0],
+  userId: string,
+  organizationId: string,
+) {
+  const perms = await loadEffectivePerms(supabase, userId, organizationId);
+  if (perms.isOrgAdmin) return;
+  if (!perms.modules.includes("events") || perms.eventsMode !== "full") {
+    throw new Error("forbidden: events module is read-only for this user");
+  }
+}
+
 const createInput = z
   .object({
     organizationId: z.string().uuid(),
