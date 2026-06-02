@@ -79,7 +79,7 @@ export function OrgSidebar({
     queryFn: () => fetchEntries({ data: { organizationId: orgId } }),
   });
   const pendingExpenseCount =
-    budgetQuery.data?.entries.filter(
+    budgetQuery.data?.entries?.filter(
       (e) =>
         e.kind === "expense" &&
         (e as { completed?: boolean }).completed === false,
