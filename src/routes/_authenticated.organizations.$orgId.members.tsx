@@ -113,20 +113,15 @@ function OrganizationMembersPage() {
     );
   }
 
-  const { members, invitations, canManage, isOwner, organization } = detailsQuery.data;
-  const deletionScheduledFor = (organization as { deletion_scheduled_for?: string | null } | null)
-    ?.deletion_scheduled_for ?? null;
+  const { members, invitations, canManage, isOwner } = detailsQuery.data;
+  void organization; void deletionScheduledForUnused();
+  function deletionScheduledForUnused() { return null; }
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
     if (!inviteEmail) return;
     inviteMutation.mutate();
   };
-
-  const dateFmt = new Intl.DateTimeFormat(i18n.language || "pl", {
-    dateStyle: "long",
-    timeStyle: "short",
-  });
 
   return (
     <div className="space-y-10">
