@@ -1694,6 +1694,65 @@ export default
       "ai_analysis_title": "Analiza AI",
       "ai_analysis_subtitle": "AI przeanalizuje wyniki i zaproponuje kierunki optymalizacji.",
       "run_analysis": "Uruchom analizę"
+    },
+    "web": {
+      "subtitle": "Publikuj treści (Aktualności, Wydarzenia, Galeria) na swojej stronie WWW.",
+      "coming_in_next_step": "Pełen edytor pojawi się w kolejnym kroku — najpierw uruchamiamy Aktualności i konfigurację integracji.",
+      "tabs": {
+        "news": "Aktualności",
+        "events": "Wydarzenia",
+        "gallery": "Galeria",
+        "integration": "Integracja WWW"
+      },
+      "news": {
+        "title": "Aktualności",
+        "subtitle": "Wpisy publikowane na stronie organizacji.",
+        "add": "Dodaj wpis",
+        "edit": "Edytuj wpis",
+        "empty": "Brak wpisów. Dodaj pierwszy klikając przycisk powyżej.",
+        "published": "Opublikowane",
+        "draft": "Szkic",
+        "publish": "Opublikuj publicznie",
+        "publish_help": "Po włączeniu wpis będzie widoczny przez publiczne API i embed.",
+        "cover_url": "URL zdjęcia głównego",
+        "slug": "Slug (URL)",
+        "slug_placeholder": "auto z tytułu, jeśli puste",
+        "author": "Autor (opcjonalnie)",
+        "tags": "Tagi (po przecinku)",
+        "tags_placeholder": "koncert, jazz, festiwal",
+        "title_field": "Tytuł",
+        "excerpt": "Lead / zajawka",
+        "content": "Treść",
+        "saved": "Wpis zapisany.",
+        "deleted": "Wpis usunięty.",
+        "delete_title": "Usunąć wpis?",
+        "delete_desc": "Operacja jest nieodwracalna."
+      },
+      "integration": {
+        "title": "Integracja WWW",
+        "subtitle": "Publikuj treści tej organizacji na własnej stronie poprzez JSON API, RSS, iCal lub embed.",
+        "slug": "Publiczny slug organizacji",
+        "slug_help": "Pojawi się w adresach API, np. /api/public/v1/orgs/<slug>/news",
+        "publish": "Aktywuj publiczne API",
+        "saved": "Ustawienia zapisane.",
+        "endpoints": "Adresy API",
+        "endpoints_help": "Wklej te adresy w kodzie strony lub do czytników RSS/kalendarza.",
+        "lang_param_title": "Język treści",
+        "lang_param_desc": "Dodaj ?lang=pl lub ?lang=en aby otrzymać treść w wybranym języku. Domyślnie pl.",
+        "tokens": "Tokeny API",
+        "tokens_help": "Tylko do odczytu. Token pokazujemy raz — zapisz go w bezpiecznym miejscu.",
+        "create_token": "Wygeneruj",
+        "token_name_placeholder": "Nazwa, np. Strona główna",
+        "no_tokens": "Brak tokenów.",
+        "revoked": "unieważniony",
+        "token_revoked": "Token unieważniony.",
+        "token_created_title": "Token wygenerowany",
+        "token_created_desc": "Skopiuj token TERAZ — nie zobaczysz go ponownie.",
+        "domains": "Dozwolone domeny (CORS)",
+        "domains_help": "Domeny, z których można wywoływać API z przeglądarki. Puste = bez ograniczeń.",
+        "add_domain": "Dodaj",
+        "no_domains": "Brak ograniczeń domenowych."
+      }
     }
   }
 } as const;
