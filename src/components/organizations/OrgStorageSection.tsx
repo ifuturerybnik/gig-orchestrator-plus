@@ -235,7 +235,8 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
 
       {/* Form for own R2 - collapsible */}
       {data.mode === "own" && (
-      <div className="space-y-4 rounded-md border border-border bg-background p-4">
+        <>
+          <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <HardDrive className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Dane Twojego Cloudflare R2</h3>
