@@ -382,6 +382,42 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
       (r) => r.role === "super_admin" || r.role === "admin_staff",
     );
 
+    // Uprawnienia poszczególnych członków (do wyświetlenia owneorowi/adminowi).
+    const memberIds = membersEnriched.map((m) => m.id);
+    let permsByMember = new Map<string, {
+      is_org_admin: boolean;
+      modules: OrgModuleId[];
+      budget_mode: BudgetPermissionMode;
+    }>();
+    if (memberIds.length) {
+      const { data: permRows } = await supabaseAdmin
+        .from("organization_member_permissions")
+        .select("member_id, is_org_admin, modules, budget_mode")
+        .in("member_id", memberIds);
+      permsByMember = new Map(
+        ((permRows ?? []) as Array<{
+          member_id: string;
+          is_org_admin: boolean;
+          modules: unknown;
+          budget_mode: BudgetPermissionMode;
+        }>).map((r) => [
+          r.member_id,
+          {
+            is_org_admin: Boolean(r.is_org_admin),
+            modules: Array.isArray(r.modules) ? (r.modules as OrgModuleId[]) : [],
+            budget_mode: (r.budget_mode as BudgetPermissionMode) ?? "full",
+          },
+        ]),
+      );
+    }
+    const membersWithPerms = membersEnriched.map((m) => ({
+      ...m,
+      permissions: permsByMember.get(m.id) ?? null,
+    }));
+
+    // Efektywne uprawnienia bieżącego usera.
+    const myPermissions = await loadEffectivePerms(supabase, userId, data.organizationId);
+
     let invitations: Array<{
       id: string;
       email: string;
