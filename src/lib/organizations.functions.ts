@@ -1093,6 +1093,7 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
         isOrgAdmin: z.boolean(),
         modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length),
         budgetMode: BudgetModeEnum,
+        eventsMode: EventsModeEnum,
       })
       .parse(input),
   )
@@ -1124,6 +1125,9 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
     // Deduplikacja modułów
     const modules = Array.from(new Set(data.modules));
 
+    const budgetMode = data.isOrgAdmin || !modules.includes("budget") ? "full" : data.budgetMode;
+    const eventsMode = data.isOrgAdmin || !modules.includes("events") ? "full" : data.eventsMode;
+
     const { error } = await supabaseAdmin
       .from("organization_member_permissions")
       .upsert(
@@ -1133,7 +1137,8 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
           user_id: member.user_id,
           is_org_admin: data.isOrgAdmin,
           modules,
-          budget_mode: data.budgetMode,
+          budget_mode: budgetMode,
+          events_mode: eventsMode,
           updated_at: new Date().toISOString(),
           updated_by: userId,
         },
