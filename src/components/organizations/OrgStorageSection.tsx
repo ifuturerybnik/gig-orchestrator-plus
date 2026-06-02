@@ -162,7 +162,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           <p className="font-medium text-foreground">Twoja prywatność</p>
           <p className="text-muted-foreground">
             Pliki przechowywane w <strong>Concertivo Storage</strong> nie są przeglądane,
-            udostępniane ani wykorzystywane przez operatora aplikacji (i-Future).
+            udostępniane ani wykorzystywane przez operatora aplikacji Concertivo.
             Dostęp do nich mają wyłącznie członkowie Twojej organizacji.
             Jeśli mimo to chcesz mieć <strong>absolutną kontrolę i pewność</strong> —
             załóż własne konto Cloudflare i podłącz swój bucket R2 poniżej.
@@ -233,7 +233,8 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
         </p>
       </div>
 
-      {/* Form for own R2 */}
+      {/* Form for own R2 - collapsible */}
+      {data.mode === "own" && (
       <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <HardDrive className="h-4 w-4 text-primary" />
