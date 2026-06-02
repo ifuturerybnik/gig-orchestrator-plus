@@ -211,6 +211,13 @@ function OrganizationMembersPage() {
           )}
         </section>
       )}
+
+      <MemberPermissionsDialog
+        memberId={permMember?.id ?? null}
+        memberLabel={permMember?.label ?? ""}
+        organizationId={orgId}
+        onClose={() => setPermMember(null)}
+      />
     </div>
   );
 }
