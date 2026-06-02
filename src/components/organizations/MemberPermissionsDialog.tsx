@@ -113,6 +113,8 @@ export function MemberPermissionsDialog({
             onModulesChange={setModules}
             budgetMode={budgetMode}
             onBudgetModeChange={setBudgetMode}
+            eventsMode={eventsMode}
+            onEventsModeChange={setEventsMode}
             fieldIdPrefix={`member-permissions-${memberId ?? "new"}`}
           />
         )}
