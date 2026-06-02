@@ -453,6 +453,7 @@ export default
       "title": "Members",
       "invite": "Invite",
       "email_placeholder": "email@example.com",
+      "initial_access": "Initial access level",
       "invitation_sent": "Invitation sent",
       "pending_invitations": "Pending invitations",
       "owner": "Owner",
