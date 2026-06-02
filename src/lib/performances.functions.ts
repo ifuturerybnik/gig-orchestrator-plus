@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { loadEffectivePerms } from "@/lib/organizations.functions";
 
 export const PERFORMANCE_STATUSES = [
   "inquiry",
@@ -33,6 +34,18 @@ export const PERFORMANCE_EVENT_KIND_PRESETS = [
 export type PerformanceEventKindPreset = (typeof PERFORMANCE_EVENT_KIND_PRESETS)[number];
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
+
+async function assertCanEditEvents(
+  supabase: Parameters<typeof loadEffectivePerms>[0],
+  userId: string,
+  organizationId: string,
+) {
+  const perms = await loadEffectivePerms(supabase, userId, organizationId);
+  if (perms.isOrgAdmin) return;
+  if (!perms.modules.includes("events") || perms.eventsMode !== "full") {
+    throw new Error("forbidden: events module is read-only for this user");
+  }
+}
 
 const createInput = z
   .object({
@@ -93,6 +106,7 @@ export const createPerformance = createServerFn({ method: "POST" })
   .inputValidator((input) => createInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
 
     // If a custom kind (not in presets), record it in the dictionary for future use.
     const kind = data.eventKind.trim();
@@ -155,8 +169,13 @@ export const listPerformances = createServerFn({ method: "GET" })
     z.object({ organizationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: rows, error } = await supabase
+    const { supabase, userId } = context;
+    const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
+    const onlyConfirmed =
+      !perms.isOrgAdmin &&
+      perms.modules.includes("events") &&
+      perms.eventsMode === "view_confirmed_only";
+    let q = supabase
       .from("performances")
       .select(
         "id, performance_date, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
@@ -164,6 +183,8 @@ export const listPerformances = createServerFn({ method: "GET" })
       .eq("organization_id", data.organizationId)
       .order("performance_date", { ascending: false })
       .limit(500);
+    if (onlyConfirmed) q = q.in("status", CONFIRMED);
+    const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
     const ids = (rows ?? []).map((r) => r.id);
@@ -298,6 +319,9 @@ export const updatePerformance = createServerFn({ method: "POST" })
   .inputValidator((input) => updateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
+
+
 
     const kind = data.eventKind.trim();
     const isPreset = (PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind);
@@ -391,7 +415,8 @@ export const deletePerformance = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
     const { error } = await supabase
       .from("performances")
       .delete()

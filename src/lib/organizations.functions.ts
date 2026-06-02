@@ -50,7 +50,7 @@ async function isAppAdmin(supabase: { from: (t: string) => any }, userId: string
   );
 }
 
-async function loadEffectivePerms(
+export async function loadEffectivePerms(
   supabase: { from: (t: string) => any },
   userId: string,
   organizationId: string,

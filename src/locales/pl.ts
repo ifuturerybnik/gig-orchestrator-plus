@@ -518,6 +518,12 @@ export default
         "unrealized_only": "Tylko dodawanie pozycji niezrealizowanych",
         "help": "W trybie „niezrealizowane” członek dodaje wpisy zawsze ze statusem niezrealizowane i nie może oznaczać ich jako Zrealizowano. Może też dodawać pozycje w tabeli Przyszłe wydatki.",
         "cannot_complete": "Nie masz uprawnień do oznaczania pozycji jako Zrealizowano."
+      },
+      "events": {
+        "full": "Pełny dostęp",
+        "view_only": "Tylko podgląd",
+        "view_confirmed_only": "Tylko podgląd wydarzeń potwierdzonych",
+        "help": "„Pełny dostęp” pozwala dodawać, edytować i usuwać wydarzenia. „Tylko podgląd” – wyłącznie odczyt. „Tylko podgląd wydarzeń potwierdzonych” – widoczne są jedynie wydarzenia o statusie potwierdzonym."
       }
     },
     "detail": {

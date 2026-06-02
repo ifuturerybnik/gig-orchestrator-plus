@@ -67,6 +67,7 @@ import {
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
 import { listVacations } from "@/lib/vacations.functions";
+import { getMyOrgPermissions } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/events",
@@ -154,6 +155,14 @@ function OrganizationPerformancesPage() {
   const fetchVacations = useServerFn(listVacations);
   const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const removePerformance = useServerFn(deletePerformance);
+  const fetchPerms = useServerFn(getMyOrgPermissions);
+  const permsQuery = useQuery({
+    queryKey: ["org-my-permissions", orgId],
+    queryFn: () => fetchPerms({ data: { organizationId: orgId } }),
+  });
+  const myPerms = permsQuery.data?.permissions ?? null;
+  const canEditEvents =
+    !myPerms || myPerms.isOrgAdmin || myPerms.eventsMode === "full";
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
@@ -298,7 +307,7 @@ function OrganizationPerformancesPage() {
     const iso = isoFromDate(day);
     const dayEvents = eventsByDate.get(iso) ?? [];
     if (dayEvents.length === 0 && (vacByDate.get(iso)?.length ?? 0) === 0) {
-      openCreate(iso);
+      if (canEditEvents) openCreate(iso);
     }
     // If date is busy, hover already shows popover — click is a no-op
   };
@@ -327,14 +336,18 @@ function OrganizationPerformancesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => openVacCreate()}>
-            <Plane className="h-4 w-4" />
-            {t("organizations.vacations.add")}
-          </Button>
-          <Button onClick={() => openCreate()}>
-            <Plus className="h-4 w-4" />
-            {t("organizations.performances.add")}
-          </Button>
+          {canEditEvents && (
+            <>
+              <Button variant="outline" onClick={() => openVacCreate()}>
+                <Plane className="h-4 w-4" />
+                {t("organizations.vacations.add")}
+              </Button>
+              <Button onClick={() => openCreate()}>
+                <Plus className="h-4 w-4" />
+                {t("organizations.performances.add")}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -419,7 +432,7 @@ function OrganizationPerformancesPage() {
                     onClick={() => {
                       setPopoverDate(null);
                       setPopoverAnchor(null);
-                      openVacEdit(v);
+                      if (canEditEvents) openVacEdit(v);
                     }}
                     className="flex w-full items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-left text-xs transition-colors hover:bg-amber-500/20"
                   >
@@ -452,7 +465,7 @@ function OrganizationPerformancesPage() {
                     onClick={() => {
                       setPopoverDate(null);
                       setPopoverAnchor(null);
-                      openEdit(p);
+                      if (canEditEvents) openEdit(p);
                     }}
                     className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
                   >
@@ -479,36 +492,38 @@ function OrganizationPerformancesPage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  const iso = popoverDate;
-                  setPopoverDate(null);
-                  setPopoverAnchor(null);
-                  if (iso) openCreate(iso);
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("organizations.performances.add")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  const iso = popoverDate;
-                  setPopoverDate(null);
-                  setPopoverAnchor(null);
-                  if (iso) openVacCreate(iso);
-                }}
-              >
-                <Plane className="h-3.5 w-3.5" />
-                {t("organizations.vacations.add")}
-              </Button>
-            </div>
+            {canEditEvents && (
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const iso = popoverDate;
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    if (iso) openCreate(iso);
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("organizations.performances.add")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const iso = popoverDate;
+                    setPopoverDate(null);
+                    setPopoverAnchor(null);
+                    if (iso) openVacCreate(iso);
+                  }}
+                >
+                  <Plane className="h-3.5 w-3.5" />
+                  {t("organizations.vacations.add")}
+                </Button>
+              </div>
+            )}
           </div>
         </PopoverContent>
       </Popover>
@@ -547,9 +562,9 @@ function OrganizationPerformancesPage() {
                 <HoverCard key={p.id} openDelay={250} closeDelay={100}>
                   <HoverCardTrigger asChild>
                     <TableRow
-                      onClick={() => openEdit(p)}
-                      className="cursor-pointer"
-                      title={t("organizations.performances.actions.click_to_edit")}
+                      onClick={canEditEvents ? () => openEdit(p) : undefined}
+                      className={canEditEvents ? "cursor-pointer" : ""}
+                      title={canEditEvents ? t("organizations.performances.actions.click_to_edit") : undefined}
                     >
                       <TableCell className="font-medium">{p.performance_date}</TableCell>
                       <TableCell>{renderEventKind(p.event_kind)}</TableCell>
@@ -606,19 +621,21 @@ function OrganizationPerformancesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t("organizations.performances.actions.delete")}
-                          title={t("organizations.performances.actions.delete")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(p.id);
-                          }}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canEditEvents && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t("organizations.performances.actions.delete")}
+                            title={t("organizations.performances.actions.delete")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(p.id);
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   </HoverCardTrigger>

@@ -499,6 +499,12 @@ export default
         "unrealized_only": "Add unrealized entries only",
         "help": "In 'unrealized only' mode the member can only add entries with status unrealized and cannot mark them as Completed. They can still add to the Planned expenses table.",
         "cannot_complete": "You don't have permission to mark entries as Completed."
+      },
+      "events": {
+        "full": "Full access",
+        "view_only": "View only",
+        "view_confirmed_only": "View confirmed events only",
+        "help": "'Full access' allows adding, editing and deleting events. 'View only' is read-only. 'View confirmed events only' restricts visibility to events with a confirmed status."
       }
     },
     "detail": {
