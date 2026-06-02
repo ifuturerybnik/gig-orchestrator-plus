@@ -498,7 +498,12 @@ export default
       "cancelled": "Usunięcie anulowane",
       "scheduled_banner": "Usunięcie zaplanowane na {{date}}.",
       "banner_title": "Ta organizacja zostanie usunięta",
-      "banner_body": "Właściciel zaplanował usunięcie organizacji. Finalne usunięcie nastąpi {{date}}, chyba że właściciel anuluje operację."
+      "banner_body": "Właściciel zaplanował usunięcie organizacji. Finalne usunięcie nastąpi {{date}}, chyba że właściciel anuluje operację.",
+      "request_short": "Usuń organizację",
+      "dialog_info": "Organizacja zostanie zaplanowana do usunięcia za 7 dni. W tym czasie możesz w każdej chwili anulować operację.",
+      "dialog_members_info": "Wszyscy członkowie organizacji otrzymają powiadomienie o zaplanowanym usunięciu.",
+      "password_label": "Aby potwierdzić, wpisz swoje hasło logowania:",
+      "confirm": "Potwierdź usunięcie"
     },
     "permissions": {
       "edit": "Edytuj uprawnienia",
