@@ -8,6 +8,7 @@ import { normalizeNip } from "@/lib/nip";
 import {
   CONFIGURABLE_MODULE_IDS,
   type BudgetPermissionMode,
+  type EventsPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 
@@ -15,6 +16,11 @@ const ModuleIdEnum = z.enum(
   CONFIGURABLE_MODULE_IDS as unknown as [OrgModuleId, ...OrgModuleId[]],
 );
 const BudgetModeEnum = z.enum(["full", "unrealized_only"] as const);
+const EventsModeEnum = z.enum([
+  "full",
+  "view_only",
+  "view_confirmed_only",
+] as const);
 // Domyślnie zaproszony użytkownik nie ma dostępu do żadnego modułu konfigurowalnego.
 // Owner zaproszenia musi świadomie zaznaczyć moduły lub przełącznik administratora.
 const InvitationAccessSchema = z
@@ -23,6 +29,7 @@ const InvitationAccessSchema = z
     isOrgAdmin: z.boolean().optional().default(false),
     modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default([]),
     budgetMode: BudgetModeEnum.optional().default("full"),
+    eventsMode: EventsModeEnum.optional().default("full"),
   })
   .optional()
   .default({
@@ -30,6 +37,7 @@ const InvitationAccessSchema = z
     isOrgAdmin: false,
     modules: [],
     budgetMode: "full",
+    eventsMode: "full",
   });
 
 async function isAppAdmin(supabase: { from: (t: string) => any }, userId: string) {
