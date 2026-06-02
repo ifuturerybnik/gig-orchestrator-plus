@@ -456,6 +456,19 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </ul>
         </div>
       </details>
+      )}
+
+      {data.mode === "central" && (
+        <div className="flex gap-3 rounded-md border border-border bg-background p-4 text-sm">
+          <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">Storage centralny Concertivo</p>
+            <p className="text-muted-foreground">
+              Korzystasz z naszej infrastruktury. Jeśli chcesz przełączyć się na własne konto Cloudflare R2 — wybierz tryb „Własne Cloudflare R2" powyżej, a panel konfiguracji się rozwinie.
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
