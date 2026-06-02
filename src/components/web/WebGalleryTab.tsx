@@ -319,10 +319,24 @@ function AlbumEditorDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label>{t("web.gallery.cover_url")}</Label>
-              <Input
-                value={form.coverImageUrl}
-                onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
-                placeholder="https://..."
+              <ImageUploader
+                organizationId={orgId}
+                module="web-gallery"
+                value={
+                  form.coverImageUrl
+                    ? ({
+                        originalId: "",
+                        originalUrl: form.coverImageUrl,
+                        mediumUrl: form.coverImageUrl,
+                        thumbUrl: form.coverImageUrl,
+                        width: 0,
+                        height: 0,
+                      } as UploadedImage)
+                    : null
+                }
+                onChange={(img) =>
+                  setForm({ ...form, coverImageUrl: img?.originalUrl ?? "" })
+                }
               />
             </div>
             <div className="space-y-2">
