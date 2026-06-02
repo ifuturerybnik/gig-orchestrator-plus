@@ -46,7 +46,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id, initial_is_org_admin, initial_modules, initial_budget_mode")
+      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -63,10 +63,19 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       throw new Error("Email mismatch");
     }
 
-    // Dodaj jako członek (idempotent).
+    const invAccess = inv as typeof inv & {
+      initial_role?: string | null;
+      initial_is_org_admin?: boolean | null;
+      initial_modules?: unknown;
+      initial_budget_mode?: string | null;
+    };
+    const initialRole: "owner" | "member" =
+      invAccess.initial_role === "owner" ? "owner" : "member";
+
+    // Dodaj jako członek (idempotent). Jeśli zaproszenie było jako owner — promuj.
     const { data: existing } = await supabaseAdmin
       .from("organization_members")
-      .select("id")
+      .select("id, role")
       .eq("organization_id", inv.organization_id)
       .eq("user_id", userId)
       .maybeSingle();
@@ -77,26 +86,27 @@ export const acceptInvitation = createServerFn({ method: "POST" })
         .insert({
           organization_id: inv.organization_id,
           user_id: userId,
-          role: "member",
+          role: initialRole,
         })
         .select("id")
         .single();
       if (memErr) throw new Error(memErr.message);
       memberId = newMember.id as string;
+    } else if (initialRole === "owner" && existing.role !== "owner") {
+      await supabaseAdmin
+        .from("organization_members")
+        .update({ role: "owner" })
+        .eq("id", existing.id);
     }
 
-    const invAccess = inv as typeof inv & {
-      initial_is_org_admin?: boolean | null;
-      initial_modules?: unknown;
-      initial_budget_mode?: string | null;
-    };
-    const invitationModules = Array.isArray(invAccess.initial_modules)
-      ? (invAccess.initial_modules as OrgModuleId[])
-      : CONFIGURABLE_MODULE_IDS;
-    const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
-    const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
-    const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
-    if (memberId) {
+    // Owner ma pełen dostęp z definicji — nie wpisujemy permissions.
+    if (memberId && initialRole !== "owner") {
+      const invitationModules = Array.isArray(invAccess.initial_modules)
+        ? (invAccess.initial_modules as OrgModuleId[])
+        : [];
+      const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
+      const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
+      const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
       const { error: permErr } = await supabaseAdmin
         .from("organization_member_permissions")
         .upsert(
