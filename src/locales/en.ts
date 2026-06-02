@@ -1915,6 +1915,15 @@ export default
           ]
         }
       }
+  },
+  "upload": {
+    "drop_here": "Drag & drop an image or click to choose",
+    "formats_hint": "JPG, PNG, WebP — auto-converted with thumbnails",
+    "processing": "Processing image…",
+    "uploading": "Uploading to storage…",
+    "done": "Done",
+    "failed": "Upload failed",
+    "not_an_image": "Selected file is not an image"
   }
 } as const;
 
