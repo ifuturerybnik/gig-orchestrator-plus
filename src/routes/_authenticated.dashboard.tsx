@@ -46,6 +46,7 @@ function DashboardPage() {
             </Link>
           )}
         </div>
+        <PendingInvitations />
       </main>
     </div>
   );
