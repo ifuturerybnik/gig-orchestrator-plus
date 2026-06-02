@@ -67,6 +67,7 @@ import {
   type PerformanceVisibility,
 } from "@/lib/performances.functions";
 import { listVacations } from "@/lib/vacations.functions";
+import { getMyOrgPermissions } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/events",
@@ -154,6 +155,14 @@ function OrganizationPerformancesPage() {
   const fetchVacations = useServerFn(listVacations);
   const findCpLink = useServerFn(findCounterpartyLinkForOrg);
   const removePerformance = useServerFn(deletePerformance);
+  const fetchPerms = useServerFn(getMyOrgPermissions);
+  const permsQuery = useQuery({
+    queryKey: ["org-my-permissions", orgId],
+    queryFn: () => fetchPerms({ data: { organizationId: orgId } }),
+  });
+  const myPerms = permsQuery.data?.permissions ?? null;
+  const canEditEvents =
+    !myPerms || myPerms.isOrgAdmin || myPerms.eventsMode === "full";
   const { data, isLoading } = useQuery({
     queryKey: ["performances", orgId],
     queryFn: () => fetchList({ data: { organizationId: orgId } }),
