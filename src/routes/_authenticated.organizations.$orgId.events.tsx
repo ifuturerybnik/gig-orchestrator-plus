@@ -432,7 +432,7 @@ function OrganizationPerformancesPage() {
                     onClick={() => {
                       setPopoverDate(null);
                       setPopoverAnchor(null);
-                      openVacEdit(v);
+                      if (canEditEvents) openVacEdit(v);
                     }}
                     className="flex w-full items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-left text-xs transition-colors hover:bg-amber-500/20"
                   >
@@ -465,7 +465,7 @@ function OrganizationPerformancesPage() {
                     onClick={() => {
                       setPopoverDate(null);
                       setPopoverAnchor(null);
-                      openEdit(p);
+                      if (canEditEvents) openEdit(p);
                     }}
                     className="flex w-full items-start gap-2 rounded-md border border-border bg-background p-2 text-left text-xs transition-colors hover:bg-accent"
                   >
