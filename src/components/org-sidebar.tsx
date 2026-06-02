@@ -141,10 +141,24 @@ export function OrgSidebar({
       ],
     },
     {
-      kind: "leaf",
-      to: `${base}/social`,
-      labelKey: "organizations.sidebar.social",
-      icon: Share2,
+      kind: "group",
+      id: "media_web",
+      labelKey: "organizations.sidebar.media_web",
+      icon: Megaphone,
+      children: [
+        {
+          kind: "leaf",
+          to: `${base}/social`,
+          labelKey: "organizations.sidebar.social",
+          icon: Share2,
+        },
+        {
+          kind: "leaf",
+          to: `${base}/web`,
+          labelKey: "organizations.sidebar.web",
+          icon: Globe,
+        },
+      ],
     },
     {
       kind: "leaf",
