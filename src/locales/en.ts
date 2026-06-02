@@ -477,7 +477,8 @@ export default
       "budget": {
         "full": "Full budget access",
         "unrealized_only": "Add unrealized entries only",
-        "help": "In 'unrealized only' mode the member can only add entries with status unrealized and cannot mark them as Completed. They can still add to the Planned expenses table."
+        "help": "In 'unrealized only' mode the member can only add entries with status unrealized and cannot mark them as Completed. They can still add to the Planned expenses table.",
+        "cannot_complete": "You don't have permission to mark entries as Completed."
       }
     },
     "detail": {

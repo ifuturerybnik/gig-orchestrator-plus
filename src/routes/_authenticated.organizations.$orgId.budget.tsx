@@ -65,6 +65,7 @@ import {
 import {
   createBudgetEntry,
   deleteBudgetEntry,
+  getMyOrgPermissions,
   getOrganizationDetails,
   listBudgetEntries,
   setBudgetEntryCompleted,
@@ -91,6 +92,16 @@ function OrganizationBudgetPage() {
   const createFn = useServerFn(createBudgetEntry);
   const deleteFn = useServerFn(deleteBudgetEntry);
   const toggleFn = useServerFn(setBudgetEntryCompleted);
+  const fetchPerms = useServerFn(getMyOrgPermissions);
+  const permsQuery = useQuery({
+    queryKey: ["org-my-permissions", orgId],
+    queryFn: () => fetchPerms({ data: { organizationId: orgId } }),
+  });
+  const myPerms = permsQuery.data?.permissions ?? null;
+  const canCompleteBudget =
+    !myPerms || myPerms.isOrgAdmin || myPerms.budgetMode === "full";
+
+
 
 
   const detailsQuery = useQuery({
@@ -481,12 +492,24 @@ function OrganizationBudgetPage() {
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="completed"
-                    checked={form.completed}
+                    checked={canCompleteBudget ? form.completed : false}
+                    disabled={!canCompleteBudget}
                     onCheckedChange={(v) =>
                       setForm((f) => ({ ...f, completed: Boolean(v) }))
                     }
                   />
-                  <Label htmlFor="completed" className="cursor-pointer">
+                  <Label
+                    htmlFor="completed"
+                    className={cn(
+                      "cursor-pointer",
+                      !canCompleteBudget && "cursor-not-allowed text-muted-foreground",
+                    )}
+                    title={
+                      !canCompleteBudget
+                        ? t("organizations.permissions.budget.cannot_complete")
+                        : undefined
+                    }
+                  >
                     {t("organizations.budget.col.completed")}
                   </Label>
                 </div>
@@ -810,10 +833,15 @@ function OrganizationBudgetPage() {
                         aria-label={t("organizations.budget.col.completed")}
                         className="h-5 w-5"
                         checked={completed}
-                        disabled={completed || toggleMutation.isPending}
+                        disabled={completed || toggleMutation.isPending || !canCompleteBudget}
+                        title={
+                          !canCompleteBudget
+                            ? t("organizations.permissions.budget.cannot_complete")
+                            : undefined
+                        }
                         onClick={(event) => event.stopPropagation()}
                         onCheckedChange={(v) => {
-                          if (completed) return;
+                          if (completed || !canCompleteBudget) return;
                           if (Boolean(v)) setCompleteCandidate(e.id);
                         }}
                       />
