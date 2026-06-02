@@ -147,10 +147,11 @@ export const declineInvitation = createServerFn({ method: "POST" })
     if (userEmail !== String(inv.email).toLowerCase().trim()) {
       throw new Error("Email mismatch");
     }
-    await supabaseAdmin
+    const { error: declineErr } = await supabaseAdmin
       .from("organization_invitations")
       .update({ status: "declined" })
       .eq("id", inv.id);
+    if (declineErr) throw new Error(declineErr.message);
     await supabaseAdmin
       .from("user_notifications")
       .update({ read_at: new Date().toISOString() })
