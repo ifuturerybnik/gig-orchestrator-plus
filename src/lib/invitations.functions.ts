@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   type BudgetPermissionMode,
+  type EventsPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 
@@ -16,7 +17,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode")
+      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode, initial_events_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -45,7 +46,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode")
+      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode, initial_events_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -67,6 +68,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       initial_is_org_admin?: boolean | null;
       initial_modules?: unknown;
       initial_budget_mode?: string | null;
+      initial_events_mode?: string | null;
     };
     const initialRole: "owner" | "member" =
       invAccess.initial_role === "owner" ? "owner" : "member";
@@ -106,6 +108,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
       const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
       const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
+      const eventsMode = (invAccess.initial_events_mode as EventsPermissionMode | null) ?? "full";
       const { error: permErr } = await supabaseAdmin
         .from("organization_member_permissions")
         .upsert(
@@ -116,6 +119,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
             is_org_admin: isOrgAdmin,
             modules,
             budget_mode: isOrgAdmin || !modules.includes("budget") ? "full" : budgetMode,
+            events_mode: isOrgAdmin || !modules.includes("events") ? "full" : eventsMode,
             updated_at: new Date().toISOString(),
             updated_by: userId,
           },

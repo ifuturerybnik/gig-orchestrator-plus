@@ -65,12 +65,14 @@ export const CONFIGURABLE_MODULE_IDS: OrgModuleId[] = ORG_MODULES
   .map((m) => m.id);
 
 export type BudgetPermissionMode = "full" | "unrealized_only";
+export type EventsPermissionMode = "full" | "view_only" | "view_confirmed_only";
 
 export interface EffectiveOrgPermissions {
   isOrgAdmin: boolean;
   /** Zbiór id modułów, do których user ma dostęp (oprócz alwaysVisible). */
   modules: OrgModuleId[];
   budgetMode: BudgetPermissionMode;
+  eventsMode: EventsPermissionMode;
 }
 
 /** Czy user ma dostęp do danego modułu (uwzględnia alwaysVisible i org admin). */
@@ -81,3 +83,12 @@ export function hasModuleAccess(perms: EffectiveOrgPermissions | null | undefine
   if (perms.isOrgAdmin) return true;
   return perms.modules.includes(moduleId);
 }
+
+/** Czy user może edytować/dodawać/usuwać wydarzenia. */
+export function canEditEvents(perms: EffectiveOrgPermissions | null | undefined): boolean {
+  if (!perms) return true;
+  if (perms.isOrgAdmin) return true;
+  if (!perms.modules.includes("events")) return false;
+  return perms.eventsMode === "full";
+}
+
