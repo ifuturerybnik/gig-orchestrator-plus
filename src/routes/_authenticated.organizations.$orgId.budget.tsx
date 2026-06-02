@@ -833,10 +833,15 @@ function OrganizationBudgetPage() {
                         aria-label={t("organizations.budget.col.completed")}
                         className="h-5 w-5"
                         checked={completed}
-                        disabled={completed || toggleMutation.isPending}
+                        disabled={completed || toggleMutation.isPending || !canCompleteBudget}
+                        title={
+                          !canCompleteBudget
+                            ? t("organizations.permissions.budget.cannot_complete")
+                            : undefined
+                        }
                         onClick={(event) => event.stopPropagation()}
                         onCheckedChange={(v) => {
-                          if (completed) return;
+                          if (completed || !canCompleteBudget) return;
                           if (Boolean(v)) setCompleteCandidate(e.id);
                         }}
                       />
