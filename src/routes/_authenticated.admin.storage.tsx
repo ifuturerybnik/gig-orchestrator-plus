@@ -150,7 +150,7 @@ function GlobalConfigSection({ canEdit }: { canEdit: boolean }) {
       toast.error(e instanceof Error ? e.message : String(e)),
   });
 
-  const secrets = q.data?.secrets;
+  const central = q.data?.central;
 
   return (
     <Card>
@@ -161,35 +161,14 @@ function GlobalConfigSection({ canEdit }: { canEdit: boolean }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-          <p className="mb-2 text-sm font-medium">
-            {t("admin.storage.global.secrets_title")}
-          </p>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {secrets &&
-              Object.entries(secrets).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm"
-                >
-                  <code className="text-xs">{k}</code>
-                  {v ? (
-                    <span className="flex items-center gap-1 text-emerald-600">
-                      <CheckCircle2 className="h-4 w-4" /> OK
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-destructive">
-                      <XCircle className="h-4 w-4" />{" "}
-                      {t("admin.storage.global.secret_missing")}
-                    </span>
-                  )}
-                </div>
-              ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t("admin.storage.global.secrets_hint")}
-          </p>
-        </div>
+        <CentralR2Form
+          status={central}
+          canEdit={canEdit}
+          onChanged={() =>
+            queryClient.invalidateQueries({ queryKey: ["storage-global-config"] })
+          }
+        />
+
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
