@@ -1,30 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/ai-studio",
 )({
-  component: WebPage,
+  component: AiStudioPage,
 });
 
-function WebPage() {
+function AiStudioPage() {
   const { t } = useTranslation();
+  const { orgId } = Route.useParams();
+  void orgId;
   return (
-    <div className="container mx-auto max-w-4xl p-6">
+    <div className="container mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Globe className="h-5 w-5" />
+          <Sparkles className="h-5 w-5" />
         </div>
         <div>
           <h1 className="text-2xl font-semibold">
-            {t("organizations.sidebar.web")}
+            {t("organizations.sidebar.ai_studio")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t("organizations.web.subtitle", {
+            {t("organizations.ai_studio.subtitle", {
               defaultValue:
-                "Zarządzaj stronami internetowymi tej organizacji — wkrótce.",
+                "Twórz wpisy raz i publikuj je we wszystkich kanałach — social media oraz strony WWW.",
             })}
           </p>
         </div>
@@ -32,15 +34,15 @@ function WebPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {t("organizations.web.coming_soon", {
+            {t("organizations.ai_studio.coming_soon", {
               defaultValue: "Wkrótce",
             })}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          {t("organizations.web.placeholder", {
+          {t("organizations.ai_studio.placeholder", {
             defaultValue:
-              "Tu pojawi się moduł zarządzania stronami WWW (kreator, integracje, SEO, domeny).",
+              "Tu pojawi się uniwersalny generator treści (AI) z eksportem do Facebook, Instagram, TikTok, X, LinkedIn, YouTube oraz na stronę WWW (Aktualności, Wydarzenia, Galeria).",
           })}
         </CardContent>
       </Card>

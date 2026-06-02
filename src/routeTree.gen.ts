@@ -54,6 +54,7 @@ import { Route as AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport } fro
 import { Route as AuthenticatedOrganizationsOrgIdContactsRouteImport } from './routes/_authenticated.organizations.$orgId.contacts'
 import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './routes/_authenticated.organizations.$orgId.budget'
 import { Route as AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport } from './routes/_authenticated.organizations.$orgId.autokorespondencja'
+import { Route as AuthenticatedOrganizationsOrgIdAiStudioRouteImport } from './routes/_authenticated.organizations.$orgId.ai-studio'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -309,6 +310,12 @@ const AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute =
     path: '/autokorespondencja',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdAiStudioRoute =
+  AuthenticatedOrganizationsOrgIdAiStudioRouteImport.update({
+    id: '/ai-studio',
+    path: '/ai-studio',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedContactsOrgOrgIdRoute =
   AuthenticatedContactsOrgOrgIdRouteImport.update({
     id: '/org/$orgId',
@@ -345,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
   '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
   '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -438,6 +447,7 @@ export interface FileRoutesById {
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
+  '/_authenticated/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
   '/_authenticated/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/_authenticated/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/_authenticated/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/contacts/'
     | '/organizations/'
     | '/contacts/org/$orgId'
+    | '/organizations/$orgId/ai-studio'
     | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
@@ -531,6 +542,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/organizations'
     | '/contacts/org/$orgId'
+    | '/organizations/$orgId/ai-studio'
     | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
@@ -579,6 +591,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
     | '/_authenticated/contacts/org/$orgId'
+    | '/_authenticated/organizations/$orgId/ai-studio'
     | '/_authenticated/organizations/$orgId/autokorespondencja'
     | '/_authenticated/organizations/$orgId/budget'
     | '/_authenticated/organizations/$orgId/contacts'
@@ -939,6 +952,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/ai-studio': {
+      id: '/_authenticated/organizations/$orgId/ai-studio'
+      path: '/ai-studio'
+      fullPath: '/organizations/$orgId/ai-studio'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdAiStudioRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/contacts/org/$orgId': {
       id: '/_authenticated/contacts/org/$orgId'
       path: '/org/$orgId'
@@ -984,6 +1004,7 @@ const AuthenticatedContactsRouteWithChildren =
   )
 
 interface AuthenticatedOrganizationsOrgIdRouteChildren {
+  AuthenticatedOrganizationsOrgIdAiStudioRoute: typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
   AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   AuthenticatedOrganizationsOrgIdBudgetRoute: typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   AuthenticatedOrganizationsOrgIdContactsRoute: typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -999,6 +1020,8 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
 
 const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOrgIdRouteChildren =
   {
+    AuthenticatedOrganizationsOrgIdAiStudioRoute:
+      AuthenticatedOrganizationsOrgIdAiStudioRoute,
     AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute:
       AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute,
     AuthenticatedOrganizationsOrgIdBudgetRoute:
@@ -1079,13 +1102,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
