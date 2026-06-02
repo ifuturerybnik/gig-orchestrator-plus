@@ -742,3 +742,240 @@ function OwnR2Dialog({
     </Dialog>
   );
 }
+
+// =====================================================================
+// Centralne R2 — formularz poświadczeń (DB; fallback do env w backendzie)
+// =====================================================================
+
+function CentralR2Form({
+  status,
+  canEdit,
+  onChanged,
+}: {
+  status:
+    | {
+        account_id: boolean;
+        access_key_id: boolean;
+        secret_access_key: boolean;
+        bucket: boolean;
+        public_base_url: boolean;
+        source: "db" | "env" | "mixed" | "none";
+        preview: {
+          account_id: string | null;
+          bucket: string | null;
+          public_base_url: string | null;
+        };
+      }
+    | undefined;
+  canEdit: boolean;
+  onChanged: () => void;
+}) {
+  const { t } = useTranslation();
+  const saveFn = useServerFn(setCentralR2);
+  const clearFn = useServerFn(clearCentralR2);
+  const testFn = useServerFn(testCentralR2);
+
+  const [accountId, setAccountId] = useState("");
+  const [accessKeyId, setAccessKeyId] = useState("");
+  const [secretAccessKey, setSecretAccessKey] = useState("");
+  const [bucket, setBucket] = useState("");
+  const [publicBaseUrl, setPublicBaseUrl] = useState("");
+
+  useEffect(() => {
+    if (!status) return;
+    setAccountId(status.preview.account_id ?? "");
+    setBucket(status.preview.bucket ?? "");
+    setPublicBaseUrl(status.preview.public_base_url ?? "");
+    // sekrety zostawiamy puste — wpisanie nowych nadpisze
+    setAccessKeyId("");
+    setSecretAccessKey("");
+  }, [status?.preview.account_id, status?.preview.bucket, status?.preview.public_base_url]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      saveFn({
+        data: {
+          r2_account_id: accountId.trim(),
+          r2_access_key_id: accessKeyId.trim() || null,
+          r2_secret_access_key: secretAccessKey.trim() || null,
+          r2_bucket: bucket.trim(),
+          r2_public_base_url: publicBaseUrl.trim(),
+        },
+      }),
+    onSuccess: () => {
+      toast.success(t("admin.storage.central.saved"));
+      setAccessKeyId("");
+      setSecretAccessKey("");
+      onChanged();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const clear = useMutation({
+    mutationFn: () => clearFn(),
+    onSuccess: () => {
+      toast.success(t("admin.storage.central.cleared"));
+      onChanged();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const test = useMutation({
+    mutationFn: () => testFn(),
+    onSuccess: (r: { bucket: string }) =>
+      toast.success(t("admin.storage.central.test_ok", { bucket: r.bucket })),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const allPresent =
+    status?.account_id &&
+    status?.access_key_id &&
+    status?.secret_access_key &&
+    status?.bucket &&
+    status?.public_base_url;
+
+  return (
+    <div className="space-y-4 rounded-md border p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">
+            {t("admin.storage.central.title")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("admin.storage.central.subtitle")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {allPresent ? (
+            <Badge variant="outline" className="text-emerald-600">
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              {t("admin.storage.central.status_ok")}
+            </Badge>
+          ) : (
+            <Badge variant="destructive">
+              <XCircle className="mr-1 h-3.5 w-3.5" />
+              {t("admin.storage.central.status_missing")}
+            </Badge>
+          )}
+          {status && status.source !== "none" && (
+            <Badge variant="secondary" className="text-xs">
+              {t(`admin.storage.central.source_${status.source}`)}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div>
+          <Label>{t("admin.storage.central.account_id")}</Label>
+          <Input
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            placeholder="ded0..."
+            disabled={!canEdit}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("admin.storage.central.account_id_hint")}
+          </p>
+        </div>
+        <div>
+          <Label>{t("admin.storage.central.bucket")}</Label>
+          <Input
+            value={bucket}
+            onChange={(e) => setBucket(e.target.value)}
+            placeholder="concertivo-media"
+            disabled={!canEdit}
+          />
+        </div>
+        <div>
+          <Label>{t("admin.storage.central.access_key_id")}</Label>
+          <Input
+            value={accessKeyId}
+            onChange={(e) => setAccessKeyId(e.target.value)}
+            placeholder={
+              status?.access_key_id
+                ? t("admin.storage.central.kept_secret")
+                : ""
+            }
+            disabled={!canEdit}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+        <div>
+          <Label>{t("admin.storage.central.secret_access_key")}</Label>
+          <Input
+            type="password"
+            value={secretAccessKey}
+            onChange={(e) => setSecretAccessKey(e.target.value)}
+            placeholder={
+              status?.secret_access_key
+                ? t("admin.storage.central.kept_secret")
+                : ""
+            }
+            disabled={!canEdit}
+            autoComplete="new-password"
+            spellCheck={false}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Label>{t("admin.storage.central.public_base_url")}</Label>
+          <Input
+            value={publicBaseUrl}
+            onChange={(e) => setPublicBaseUrl(e.target.value)}
+            placeholder="https://pub-xxxxx.r2.dev"
+            disabled={!canEdit}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("admin.storage.central.public_base_url_hint")}
+          </p>
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (
+                confirm(t("admin.storage.central.clear_confirm"))
+              ) {
+                clear.mutate();
+              }
+            }}
+            disabled={clear.isPending}
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            {t("admin.storage.central.clear")}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => test.mutate()}
+            disabled={test.isPending || !allPresent}
+          >
+            <PlugZap className="mr-1 h-4 w-4" />
+            {test.isPending
+              ? t("admin.storage.central.testing")
+              : t("admin.storage.central.test")}
+          </Button>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={
+              save.isPending ||
+              !accountId.trim() ||
+              !bucket.trim() ||
+              !publicBaseUrl.trim()
+            }
+          >
+            {save.isPending
+              ? t("common.saving")
+              : t("admin.storage.central.save")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
