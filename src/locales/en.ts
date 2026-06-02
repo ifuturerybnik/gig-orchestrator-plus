@@ -153,6 +153,8 @@ export default
     "edit": "Edit",
     "delete": "Delete",
     "search": "Search",
+    "copy": "Copy",
+    "copied": "Copied",
     "empty": "No data",
     "error": "Something went wrong",
     "success": "Done"
