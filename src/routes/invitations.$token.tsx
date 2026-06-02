@@ -56,7 +56,8 @@ function InvitationAcceptPage() {
   const inv = invQuery.data?.invitation;
   const orgName = inv?.organization?.name ?? "";
 
-  const returnTo = `/invitations/${token}`;
+
+
 
   return (
     <div className="min-h-screen bg-background">
