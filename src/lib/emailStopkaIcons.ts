@@ -153,25 +153,11 @@ export function renderEmailStopkaIconSvg(
 }
 
 /**
- * Bazowy absolutny URL do hostingu ikon stopek mailowych. Hardkodujemy
- * produkcyjną domenę, żeby raz wyrenderowana stopka działała niezależnie
- * od tego, gdzie powstała (preview, dev, prod) i gdzie zostanie później
- * odczytana przez klienta pocztowego.
- */
-const EMAIL_ICON_BASE_URL = 'https://concertivo.eu';
-
-/** Białe sylwetki PNG dla emaila — kładziemy na akcentowym tle. */
-const EMAIL_FIELD_ICON_WHITE_URL: Record<StopkaIconField, string> = {
-  telefon: '/email-icons/telefon-white.png',
-  email: '/email-icons/email-white.png',
-  www: '/email-icons/www-white.png',
-  adres: '/email-icons/adres-white.png',
-};
-
-/**
- * Email-safe ikona: tabela z kolorowym tłem + biała ikona PNG.
- * Działa w Gmail/Outlook/Apple Mail, bo używa wyłącznie `bgcolor`, `<img>`
- * i inline-styles. `border-radius` jest tylko bonusem (gdzie wspierane).
+ * Email-safe ikona — outline (bez wypełnienia tła) w kolorze akcentu.
+ * Używamy inline SVG: Gmail (web/mobile), Apple Mail, Thunderbird i
+ * iOS Mail renderują je natywnie. Outlook desktop ignoruje SVG, ale tam
+ * po prostu nic się nie wyświetli zamiast brzydkiego pełnego kółka.
+ * To świadomy trade-off — preferowana estetyka > 100% kompatybilność.
  */
 export function renderEmailStopkaIconHtml(
   key: string | null | undefined,
@@ -179,13 +165,8 @@ export function renderEmailStopkaIconHtml(
   color: string,
   outputSize = 28,
 ): string {
-  const normalizedKey = normalizeEmailStopkaIconKey(key, fallbackField);
-  const icon = ICON_META_BY_KEY.get(normalizedKey);
-  const field: StopkaIconField = icon?.field ?? fallbackField;
   const safeColor = escapeAttr(color || '#1e40af');
-  const iconUrl = escapeAttr(`${EMAIL_ICON_BASE_URL}${EMAIL_FIELD_ICON_WHITE_URL[field]}`);
-  const innerSize = Math.round(outputSize * 0.55);
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${outputSize}" height="${outputSize}" bgcolor="${safeColor}" style="border-collapse:collapse;border-spacing:0;width:${outputSize}px;height:${outputSize}px;background-color:${safeColor};border-radius:${outputSize}px;"><tr><td width="${outputSize}" height="${outputSize}" align="center" valign="middle" bgcolor="${safeColor}" style="width:${outputSize}px;height:${outputSize}px;background-color:${safeColor};border-radius:${outputSize}px;text-align:center;vertical-align:middle;line-height:${outputSize}px;mso-line-height-rule:exactly;"><img src="${iconUrl}" width="${innerSize}" height="${innerSize}" alt="" style="display:inline-block;width:${innerSize}px;height:${innerSize}px;border:0;outline:none;vertical-align:middle;" /></td></tr></table>`;
+  return `<span style="display:inline-block;line-height:0;color:${safeColor};font-size:0;">${renderEmailStopkaIconSvg(key, fallbackField, outputSize)}</span>`;
 }
 
 function renderIconBody(field: StopkaIconField, glyph: string): string {
