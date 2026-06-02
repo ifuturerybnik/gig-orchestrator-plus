@@ -546,11 +546,12 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
       is_org_admin: boolean;
       modules: OrgModuleId[];
       budget_mode: BudgetPermissionMode;
+      events_mode: EventsPermissionMode;
     }>();
     if (memberIds.length) {
       const { data: permRows } = await supabaseAdmin
         .from("organization_member_permissions")
-        .select("member_id, is_org_admin, modules, budget_mode")
+        .select("member_id, is_org_admin, modules, budget_mode, events_mode")
         .in("member_id", memberIds);
       permsByMember = new Map(
         ((permRows ?? []) as Array<{
@@ -558,12 +559,14 @@ export const getOrganizationDetails = createServerFn({ method: "GET" })
           is_org_admin: boolean;
           modules: unknown;
           budget_mode: BudgetPermissionMode;
+          events_mode: EventsPermissionMode;
         }>).map((r) => [
           r.member_id,
           {
             is_org_admin: Boolean(r.is_org_admin),
             modules: Array.isArray(r.modules) ? (r.modules as OrgModuleId[]) : [],
             budget_mode: (r.budget_mode as BudgetPermissionMode) ?? "full",
+            events_mode: (r.events_mode as EventsPermissionMode) ?? "full",
           },
         ]),
       );
