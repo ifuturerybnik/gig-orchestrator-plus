@@ -5,14 +5,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptPii } from "@/lib/crypto.server";
 import {
-  checkCentralSecretsPresence,
+  getCentralR2Status,
+  getCentralR2,
   getOrgR2Context,
-  
   presignPut,
   deleteObject,
   calculateOrgQuota,
   getGlobalCfg,
 } from "@/lib/storage-r2.server";
+import { supabaseAdmin as _supabaseAdmin } from "@/integrations/supabase/client.server";
+
 
 async function assertSuperAdmin(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
