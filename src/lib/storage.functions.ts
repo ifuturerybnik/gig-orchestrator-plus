@@ -154,7 +154,6 @@ export const testCentralR2 = createServerFn({ method: "POST" })
       ctx,
       key,
       contentType: "text/plain",
-      contentLength: 12,
       expiresIn: 60,
     });
     const put = await fetch(uploadUrl, {
@@ -387,7 +386,6 @@ export const testOrgR2 = createServerFn({ method: "POST" })
       ctx,
       key,
       contentType: "text/plain",
-      contentLength: 12,
       expiresIn: 60,
     });
     const put = await fetch(uploadUrl, {
