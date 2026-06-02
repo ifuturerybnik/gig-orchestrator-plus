@@ -422,11 +422,11 @@ function DyskPage() {
               {toDelete?.kind === "folder"
                 ? t("organizations.dysk.delete_confirm_folder", {
                     defaultValue:
-                      "Spowoduje to usunięcie folderu „{{name}}" wraz z całą zawartością.",
+                      "Spowoduje to usunięcie folderu „{{name}}” wraz z całą zawartością.",
                     name: toDelete?.name,
                   })
                 : t("organizations.dysk.delete_confirm_file", {
-                    defaultValue: "Plik „{{name}}" zostanie trwale usunięty.",
+                    defaultValue: "Plik „{{name}}” zostanie trwale usunięty.",
                     name: toDelete?.name,
                   })}
             </AlertDialogDescription>
