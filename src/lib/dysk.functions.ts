@@ -24,6 +24,27 @@ import {
 
 const FOLDER_MIME = "application/x-directory";
 
+// Domyślna struktura folderów systemowych zakładana przy pierwszym wejściu
+// do modułu Dysk dla danej organizacji. Folderów z is_system=true nie można
+// usuwać ani zmieniać nazwy — porządkują przestrzeń dla użytkowników.
+const SYSTEM_FOLDERS: string[] = [
+  "Dokumenty",
+  "Dokumenty/Umowy",
+  "Dokumenty/Faktury",
+  "Dokumenty/Wewnętrzne",
+  "Koncerty",
+  "Artyści",
+  "Kontrahenci",
+  "Marketing",
+  "Marketing/Grafiki",
+  "Marketing/Zdjęcia",
+  "Marketing/Wideo",
+  "Korespondencja",
+  "Korespondencja/Załączniki przychodzące",
+  "Korespondencja/Załączniki wychodzące",
+  "Inne",
+];
+
 // ---------- helpers ----------
 
 async function assertOrgMember(
@@ -75,6 +96,44 @@ function buildPrefix(orgId: string, path: string): string {
   return path ? `dysk/${orgId}/${path}/` : `dysk/${orgId}/`;
 }
 
+// ---------- system folders ----------
+
+async function ensureSystemFolders(
+  organizationId: string,
+  userId: string,
+): Promise<void> {
+  // sprawdź czy już są
+  const { data: existing } = await supabaseAdmin
+    .from("org_storage_objects")
+    .select("object_key")
+    .eq("organization_id", organizationId)
+    .eq("module", "dysk")
+    .eq("is_system", true)
+    .neq("status", "deleted")
+    .limit(1);
+  if ((existing ?? []).length > 0) return;
+
+  const ctx = await getOrgR2Context(organizationId);
+  const rows = SYSTEM_FOLDERS.map((path) => ({
+    organization_id: organizationId,
+    mode: ctx.mode,
+    bucket: ctx.bucket,
+    object_key: `${buildPrefix(organizationId, "")}${path}/`,
+    size_bytes: 0,
+    mime: FOLDER_MIME,
+    module: "dysk",
+    status: "ready",
+    is_system: true,
+    created_by: userId,
+  }));
+  // upsert na (organization_id, object_key) — gdyby istniał wcześniej taki sam katalog
+  // utworzony ręcznie przez użytkownika, po prostu pomijamy.
+  await supabaseAdmin
+    .from("org_storage_objects")
+    .insert(rows)
+    .select("id");
+}
+
 // ---------- list ----------
 
 export type DyskEntry = {
@@ -86,6 +145,7 @@ export type DyskEntry = {
   mime: string | null;
   public_url: string | null;
   created_at: string;
+  is_system: boolean;
 };
 
 export const listDysk = createServerFn({ method: "POST" })
@@ -102,11 +162,17 @@ export const listDysk = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertOrgMember(supabase, userId, data.organization_id);
     const path = normalizePath(data.path);
+
+    // foldery systemowe — załóż przy pierwszym wejściu do roota
+    if (!path) {
+      await ensureSystemFolders(data.organization_id, userId);
+    }
+
     const prefix = buildPrefix(data.organization_id, path);
 
     const { data: rows, error } = await supabaseAdmin
       .from("org_storage_objects")
-      .select("id, object_key, size_bytes, mime, public_url, created_at, status")
+      .select("id, object_key, size_bytes, mime, public_url, created_at, status, is_system")
       .eq("organization_id", data.organization_id)
       .eq("module", "dysk")
       .neq("status", "deleted")
@@ -114,10 +180,7 @@ export const listDysk = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
-    const entries: DyskEntry[] = [];
-    const seenFolders = new Set<string>();
-
-    for (const r of (rows ?? []) as Array<{
+    type Row = {
       id: string;
       object_key: string;
       size_bytes: number;
@@ -125,7 +188,26 @@ export const listDysk = createServerFn({ method: "POST" })
       public_url: string | null;
       created_at: string;
       status: string;
-    }>) {
+      is_system: boolean | null;
+    };
+    const allRows = (rows ?? []) as Row[];
+
+    // policz rozmiary podfolderów (rekurencyjnie): dla każdego pliku ready
+    // w głębszych ścieżkach dolicz do top-segmentu.
+    const folderSizes = new Map<string, number>();
+    for (const r of allRows) {
+      if (r.status !== "ready") continue;
+      if (r.mime === FOLDER_MIME) continue;
+      const rel = r.object_key.slice(prefix.length);
+      if (!rel || !rel.includes("/")) continue;
+      const top = rel.split("/")[0];
+      folderSizes.set(top, (folderSizes.get(top) ?? 0) + Number(r.size_bytes ?? 0));
+    }
+
+    const entries: DyskEntry[] = [];
+    const seenFolders = new Set<string>();
+
+    for (const r of allRows) {
       const rel = r.object_key.slice(prefix.length);
       if (!rel) continue;
       // folder marker = "{folderName}/"
@@ -138,10 +220,11 @@ export const listDysk = createServerFn({ method: "POST" })
             kind: "folder",
             name,
             path: path ? `${path}/${name}` : name,
-            size_bytes: 0,
+            size_bytes: folderSizes.get(name) ?? 0,
             mime: FOLDER_MIME,
             public_url: null,
             created_at: r.created_at,
+            is_system: !!r.is_system,
           });
         }
         continue;
@@ -157,6 +240,7 @@ export const listDysk = createServerFn({ method: "POST" })
           mime: r.mime,
           public_url: r.public_url,
           created_at: r.created_at,
+          is_system: !!r.is_system,
         });
       } else {
         // głębszy plik -> wyciągnij wirtualny folder jeśli brak markera
@@ -168,10 +252,11 @@ export const listDysk = createServerFn({ method: "POST" })
             kind: "folder",
             name: firstSeg,
             path: path ? `${path}/${firstSeg}` : firstSeg,
-            size_bytes: 0,
+            size_bytes: folderSizes.get(firstSeg) ?? 0,
             mime: FOLDER_MIME,
             public_url: null,
             created_at: r.created_at,
+            is_system: false,
           });
         }
       }
@@ -337,7 +422,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
     if (data.object_id) {
       const { data: obj, error } = await supabaseAdmin
         .from("org_storage_objects")
-        .select("id, object_key, mime, organization_id, bucket")
+        .select("id, object_key, mime, organization_id, bucket, is_system")
         .eq("id", data.object_id)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -348,9 +433,13 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
         mime: string | null;
         organization_id: string;
         bucket: string;
+        is_system: boolean | null;
       };
       if (row.organization_id !== data.organization_id) {
         throw new Error("Forbidden");
+      }
+      if (row.is_system) {
+        throw new Error("Folder systemowy — nie można go usunąć.");
       }
       if (row.mime === FOLDER_MIME) {
         // skasuj wszystkie obiekty z prefixem (folder marker + zawartość)
@@ -377,6 +466,21 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       const path = normalizePath(data.folder_path);
       if (!path) throw new Error("Brak ścieżki folderu");
       const prefix = buildPrefix(data.organization_id, path);
+
+      // sprawdź czy folder (lub jakikolwiek jego podfolder systemowy) nie jest systemowy
+      const { data: sysCheck } = await supabaseAdmin
+        .from("org_storage_objects")
+        .select("id")
+        .eq("organization_id", data.organization_id)
+        .eq("module", "dysk")
+        .eq("is_system", true)
+        .neq("status", "deleted")
+        .like("object_key", `${prefix}%`)
+        .limit(1);
+      if ((sysCheck ?? []).length > 0) {
+        throw new Error("Folder systemowy — nie można go usunąć.");
+      }
+
       await deletePrefix(ctx, prefix);
       const { error: dErr } = await supabaseAdmin
         .from("org_storage_objects")
@@ -387,6 +491,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       if (dErr) throw new Error(dErr.message);
       return { ok: true };
     }
+
 
     throw new Error("Podaj object_id albo folder_path");
   });

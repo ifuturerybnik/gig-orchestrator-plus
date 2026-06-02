@@ -325,11 +325,19 @@ function DyskPage() {
                       className="flex flex-1 items-center gap-3 text-left"
                       onClick={() => goTo(e.path)}
                     >
-                      <Folder className="h-5 w-5 text-amber-500" />
+                      <Folder className={`h-5 w-5 ${e.is_system ? "text-primary" : "text-amber-500"}`} />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{e.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">{e.name}</span>
+                          {e.is_system && (
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                              {t("organizations.dysk.system", { defaultValue: "Systemowy" })}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {t("organizations.dysk.folder", { defaultValue: "Folder" })}
+                          {e.size_bytes > 0 ? ` · ${formatBytes(e.size_bytes)}` : ""}
                         </div>
                       </div>
                     </button>
@@ -357,14 +365,16 @@ function DyskPage() {
                       </a>
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setToDelete(e)}
-                    title={t("common.delete", { defaultValue: "Usuń" })}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {!e.is_system && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setToDelete(e)}
+                      title={t("common.delete", { defaultValue: "Usuń" })}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
