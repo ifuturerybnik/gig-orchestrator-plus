@@ -537,6 +537,9 @@ export const upsertWebAlbum = createServerFn({ method: "POST" })
         .update(payload)
         .eq("id", data.id);
       if (error) throw new Error(error.message);
+      await notifyWebhooks(data.organizationId, data.isPublic ? "album.published" : "album.updated", {
+        id: data.id, slug, organization_id: data.organizationId,
+      });
       return { id: data.id };
     }
     const { data: inserted, error } = await supabase
@@ -545,6 +548,9 @@ export const upsertWebAlbum = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await notifyWebhooks(data.organizationId, data.isPublic ? "album.published" : "album.updated", {
+      id: inserted.id, slug, organization_id: data.organizationId,
+    });
     return { id: inserted.id };
   });
 
@@ -553,10 +559,18 @@ export const deleteWebAlbum = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { data: row } = await supabase
+      .from("web_gallery_albums").select("organization_id, slug").eq("id", data.id).maybeSingle();
     const { error } = await supabase.from("web_gallery_albums").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (row?.organization_id) {
+      await notifyWebhooks(row.organization_id as string, "album.deleted", {
+        id: data.id, slug: row.slug, organization_id: row.organization_id,
+      });
+    }
     return { ok: true };
   });
+
 
 const itemUpsertInput = z.object({
   id: z.string().uuid().optional(),
