@@ -36,6 +36,43 @@ async function assertAppAdmin(supabase: SupabaseClient, userId: string) {
   }
 }
 
+/**
+ * Pozwala: app admin (super_admin/admin_staff) LUB owner/admin w danej organizacji
+ * LUB twórca organizacji (created_by). Używane do zarządzania własnym R2 per-org.
+ */
+async function assertOrgManager(
+  supabase: SupabaseClient,
+  userId: string,
+  organizationId: string,
+) {
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  const isAppAdmin = ((roles ?? []) as Array<{ role: string }>).some(
+    (r) => r.role === "super_admin" || r.role === "admin_staff",
+  );
+  if (isAppAdmin) return;
+
+  const { data: mem } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (mem && (mem.role === "owner" || mem.role === "admin")) return;
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("created_by")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (org && (org as { created_by?: string }).created_by === userId) return;
+
+  throw new Error("Forbidden");
+}
+
+
 // =====================================================================
 // Konfiguracja globalna R2
 // =====================================================================
@@ -295,7 +332,7 @@ export const setOrgStorageMode = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await assertAppAdmin(supabase, userId);
+    await assertOrgManager(supabase, userId, data.organization_id);
     const { error } = await supabaseAdmin
       .from("org_storage_config")
       .upsert(
@@ -316,33 +353,38 @@ export const setOrgOwnR2 = createServerFn({ method: "POST" })
     z
       .object({
         organization_id: z.string().uuid(),
-        r2_account_id: z.string().min(1).max(120),
-        r2_access_key_id: z.string().min(1).max(512),
-        r2_secret_access_key: z.string().min(1).max(512),
-        r2_bucket: z.string().min(1).max(120),
-        r2_endpoint: z.string().url().max(300),
-        r2_public_base_url: z.string().url().max(300),
+        r2_account_id: z.string().trim().min(1).max(120),
+        // sekrety opcjonalne — puste pole = nie nadpisuj (przy edycji)
+        r2_access_key_id: z.string().trim().max(512).optional().nullable(),
+        r2_secret_access_key: z.string().trim().max(512).optional().nullable(),
+        r2_bucket: z.string().trim().min(1).max(120),
+        r2_endpoint: z.string().trim().url().max(300),
+        r2_public_base_url: z.string().trim().url().max(300),
+        activate: z.boolean().optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await assertAppAdmin(supabase, userId);
+    await assertOrgManager(supabase, userId, data.organization_id);
+    const patch: Record<string, unknown> = {
+      organization_id: data.organization_id,
+      r2_account_id: data.r2_account_id,
+      r2_bucket: data.r2_bucket,
+      r2_endpoint: data.r2_endpoint.replace(/\/$/, ""),
+      r2_public_base_url: data.r2_public_base_url.replace(/\/$/, ""),
+      updated_at: new Date().toISOString(),
+    };
+    if (data.r2_access_key_id && data.r2_access_key_id.length > 0) {
+      patch.r2_access_key_id_enc = encryptPii(data.r2_access_key_id);
+    }
+    if (data.r2_secret_access_key && data.r2_secret_access_key.length > 0) {
+      patch.r2_secret_access_key_enc = encryptPii(data.r2_secret_access_key);
+    }
+    if (data.activate) patch.mode = "own";
     const { error } = await supabaseAdmin
       .from("org_storage_config")
-      .upsert(
-        {
-          organization_id: data.organization_id,
-          r2_account_id: data.r2_account_id,
-          r2_access_key_id_enc: encryptPii(data.r2_access_key_id),
-          r2_secret_access_key_enc: encryptPii(data.r2_secret_access_key),
-          r2_bucket: data.r2_bucket,
-          r2_endpoint: data.r2_endpoint,
-          r2_public_base_url: data.r2_public_base_url,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "organization_id" },
-      );
+      .upsert(patch, { onConflict: "organization_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -354,7 +396,7 @@ export const clearOrgOwnR2 = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await assertAppAdmin(supabase, userId);
+    await assertOrgManager(supabase, userId, data.organization_id);
     const { error } = await supabaseAdmin
       .from("org_storage_config")
       .update({
@@ -379,7 +421,7 @@ export const testOrgR2 = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await assertAppAdmin(supabase, userId);
+    await assertOrgManager(supabase, userId, data.organization_id);
     const ctx = await getOrgR2Context(data.organization_id);
     const key = `.concertivo-test/${Date.now()}.txt`;
     const { uploadUrl } = await presignPut({
@@ -398,6 +440,38 @@ export const testOrgR2 = createServerFn({ method: "POST" })
     }
     await deleteObject(ctx, key);
     return { ok: true, mode: ctx.mode, bucket: ctx.bucket };
+  });
+
+// =====================================================================
+// Pobranie ustawień storage (mode + zamaskowane dane R2) dla org managera
+// =====================================================================
+
+export const getOrgStorageSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organization_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertOrgManager(supabase, userId, data.organization_id);
+    const { data: row } = await supabaseAdmin
+      .from("org_storage_config")
+      .select(
+        "mode, r2_account_id, r2_bucket, r2_endpoint, r2_public_base_url, r2_access_key_id_enc, r2_secret_access_key_enc",
+      )
+      .eq("organization_id", data.organization_id)
+      .maybeSingle();
+    const quota = await calculateOrgQuota(data.organization_id);
+    return {
+      mode: ((row?.mode as "central" | "own") ?? "central"),
+      r2_account_id: row?.r2_account_id ?? null,
+      r2_bucket: row?.r2_bucket ?? null,
+      r2_endpoint: row?.r2_endpoint ?? null,
+      r2_public_base_url: row?.r2_public_base_url ?? null,
+      has_access_key: !!row?.r2_access_key_id_enc,
+      has_secret_key: !!row?.r2_secret_access_key_enc,
+      quota,
+    };
   });
 
 // =====================================================================
@@ -430,4 +504,5 @@ export const getOrgQuota = createServerFn({ method: "POST" })
     }
     return calculateOrgQuota(data.organization_id);
   });
+
 
