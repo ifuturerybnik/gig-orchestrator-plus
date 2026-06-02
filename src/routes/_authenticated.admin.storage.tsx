@@ -41,6 +41,9 @@ import { getMyProfile } from "@/lib/profile.functions";
 import {
   getStorageGlobalConfig,
   updateStorageGlobalConfig,
+  setCentralR2,
+  clearCentralR2,
+  testCentralR2,
   listAdminOrgStorage,
   grantOrgStorageBonus,
   setOrgStorageMode,
@@ -49,6 +52,7 @@ import {
   testOrgR2,
   type AdminOrgStorageRow,
 } from "@/lib/storage.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/storage")({
   component: StoragePage,
