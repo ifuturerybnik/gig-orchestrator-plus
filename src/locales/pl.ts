@@ -1807,7 +1807,9 @@ export default
         "domains": "Dozwolone domeny (CORS)",
         "domains_help": "Domeny, z których można wywoływać API z przeglądarki. Puste = bez ograniczeń.",
         "add_domain": "Dodaj",
-        "no_domains": "Brak ograniczeń domenowych."
+        "no_domains": "Brak ograniczeń domenowych.",
+        "embed_snippet": "Snippet do wklejenia na stronę",
+        "embed_snippet_help": "Wklej ten kod na stronę – wyświetli listę aktualności w lekkim widgecie (Shadow DOM)."
       }
     }
   }

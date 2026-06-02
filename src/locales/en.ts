@@ -1628,7 +1628,9 @@ export default
         "domains": "Allowed domains (CORS)",
         "domains_help": "Domains that can call the API from a browser. Empty = no restriction.",
         "add_domain": "Add",
-        "no_domains": "No domain restrictions."
+        "no_domains": "No domain restrictions.",
+        "embed_snippet": "Embed snippet for your website",
+        "embed_snippet_help": "Paste this code on your site – it renders the news list in a lightweight widget (Shadow DOM)."
       }
     }
   }
