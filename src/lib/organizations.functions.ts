@@ -15,6 +15,19 @@ const ModuleIdEnum = z.enum(
   CONFIGURABLE_MODULE_IDS as unknown as [OrgModuleId, ...OrgModuleId[]],
 );
 const BudgetModeEnum = z.enum(["full", "unrealized_only"] as const);
+const DEFAULT_INVITATION_MODULES = [...CONFIGURABLE_MODULE_IDS];
+const InvitationAccessSchema = z
+  .object({
+    isOrgAdmin: z.boolean().optional().default(false),
+    modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length).optional().default(DEFAULT_INVITATION_MODULES),
+    budgetMode: BudgetModeEnum.optional().default("full"),
+  })
+  .optional()
+  .default({
+    isOrgAdmin: false,
+    modules: DEFAULT_INVITATION_MODULES,
+    budgetMode: "full",
+  });
 
 async function isAppAdmin(supabase: { from: (t: string) => any }, userId: string) {
   const { data: roles } = await supabase
@@ -288,17 +301,23 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
       .object({
         organizationId: z.string().uuid(),
         email: z.string().trim().toLowerCase().email().max(255),
+        access: InvitationAccessSchema,
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const modules = Array.from(new Set(data.access.isOrgAdmin ? [] : data.access.modules));
+    const budgetMode = data.access.isOrgAdmin || !modules.includes("budget") ? "full" : data.access.budgetMode;
     const { data: invite, error } = await supabase
       .from("organization_invitations")
       .insert({
         organization_id: data.organizationId,
         email: data.email,
         invited_by: userId,
+        initial_is_org_admin: data.access.isOrgAdmin,
+        initial_modules: modules,
+        initial_budget_mode: budgetMode,
       })
       .select("id, email, token, expires_at")
       .single();

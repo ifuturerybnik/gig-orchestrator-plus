@@ -472,6 +472,7 @@ export default
       "title": "Członkowie",
       "invite": "Zaproś",
       "email_placeholder": "email@example.com",
+      "initial_access": "Wstępny poziom dostępu",
       "invitation_sent": "Wysłano zaproszenie",
       "pending_invitations": "Zaproszenia oczekujące",
       "owner": "Właściciel",
