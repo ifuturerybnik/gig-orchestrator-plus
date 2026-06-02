@@ -25,7 +25,7 @@ export function renderStopkaHtml(stopka: EmailStopkaPelna, options: { preview?: 
 
   const fieldIcon = (field: 'telefon' | 'email' | 'www' | 'adres') => options.preview
     ? renderStopkaFieldIconPreview(field, accent)
-    : renderEmailStopkaIconHtml(defaultStopkaIconKey(field), field, accent, 24);
+    : renderEmailStopkaIconHtml(defaultStopkaIconKey(field), field, accent, 28);
 
   const polaSocial = stopka.pola.filter(p => p.typ === 'social' && !!p.wartosc?.trim());
   let socials: Array<{ url: string; label: string; svg: string }>;
