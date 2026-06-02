@@ -25,11 +25,10 @@ function LoginPage() {
   const navigate = useNavigate();
   const { redirect: redirectTo } = Route.useSearch();
   const goNext = () => {
-    if (redirectTo && redirectTo.startsWith("/")) {
-      window.location.assign(redirectTo);
-    } else {
-      goNext();
-    }
+    const target = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+    // Twardy reload — gwarantuje że AuthProvider odczyta świeżą sesję z localStorage
+    // przed renderem chronionej strony (eliminuje flash ekranu logowania).
+    window.location.assign(target);
   };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
