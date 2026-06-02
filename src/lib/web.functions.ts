@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { notifyWebhooks } from "@/lib/web-webhooks.server";
+
 
 // ============================================================
 // Helpers
@@ -279,6 +281,11 @@ export const upsertWebNews = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabase.from("web_news").update(payload).eq("id", data.id);
       if (error) throw new Error(error.message);
+      await notifyWebhooks(data.organizationId, data.isPublic ? "news.published" : "news.updated", {
+        id: data.id,
+        slug,
+        organization_id: data.organizationId,
+      });
       return { id: data.id };
     }
     const { data: inserted, error } = await supabase
@@ -287,6 +294,11 @@ export const upsertWebNews = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await notifyWebhooks(data.organizationId, data.isPublic ? "news.published" : "news.updated", {
+      id: inserted.id,
+      slug,
+      organization_id: data.organizationId,
+    });
     return { id: inserted.id };
   });
 
@@ -295,8 +307,20 @@ export const deleteWebNews = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { data: row } = await supabase
+      .from("web_news")
+      .select("organization_id, slug")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabase.from("web_news").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (row?.organization_id) {
+      await notifyWebhooks(row.organization_id as string, "news.deleted", {
+        id: data.id,
+        slug: row.slug,
+        organization_id: row.organization_id,
+      });
+    }
     return { ok: true };
   });
 
@@ -403,6 +427,9 @@ export const upsertWebEvent = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabase.from("web_events").update(payload).eq("id", data.id);
       if (error) throw new Error(error.message);
+      await notifyWebhooks(data.organizationId, data.isPublic ? "event.published" : "event.updated", {
+        id: data.id, slug, organization_id: data.organizationId, starts_at: data.startsAt,
+      });
       return { id: data.id };
     }
     const { data: inserted, error } = await supabase
@@ -411,6 +438,9 @@ export const upsertWebEvent = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await notifyWebhooks(data.organizationId, data.isPublic ? "event.published" : "event.updated", {
+      id: inserted.id, slug, organization_id: data.organizationId, starts_at: data.startsAt,
+    });
     return { id: inserted.id };
   });
 
@@ -419,10 +449,18 @@ export const deleteWebEvent = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { data: row } = await supabase
+      .from("web_events").select("organization_id, slug").eq("id", data.id).maybeSingle();
     const { error } = await supabase.from("web_events").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (row?.organization_id) {
+      await notifyWebhooks(row.organization_id as string, "event.deleted", {
+        id: data.id, slug: row.slug, organization_id: row.organization_id,
+      });
+    }
     return { ok: true };
   });
+
 
 // ============================================================
 // GALLERY — Albumy + pozycje
@@ -499,6 +537,9 @@ export const upsertWebAlbum = createServerFn({ method: "POST" })
         .update(payload)
         .eq("id", data.id);
       if (error) throw new Error(error.message);
+      await notifyWebhooks(data.organizationId, data.isPublic ? "album.published" : "album.updated", {
+        id: data.id, slug, organization_id: data.organizationId,
+      });
       return { id: data.id };
     }
     const { data: inserted, error } = await supabase
@@ -507,6 +548,9 @@ export const upsertWebAlbum = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await notifyWebhooks(data.organizationId, data.isPublic ? "album.published" : "album.updated", {
+      id: inserted.id, slug, organization_id: data.organizationId,
+    });
     return { id: inserted.id };
   });
 
@@ -515,10 +559,18 @@ export const deleteWebAlbum = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { data: row } = await supabase
+      .from("web_gallery_albums").select("organization_id, slug").eq("id", data.id).maybeSingle();
     const { error } = await supabase.from("web_gallery_albums").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (row?.organization_id) {
+      await notifyWebhooks(row.organization_id as string, "album.deleted", {
+        id: data.id, slug: row.slug, organization_id: row.organization_id,
+      });
+    }
     return { ok: true };
   });
+
 
 const itemUpsertInput = z.object({
   id: z.string().uuid().optional(),
@@ -578,4 +630,109 @@ export const deleteWebGalleryItem = createServerFn({ method: "POST" })
     const { error } = await supabase.from("web_gallery_items").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ============================================================
+// WEBHOOKS
+// ============================================================
+
+function randomSecret(): string {
+  const arr = new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export const WEB_WEBHOOK_EVENTS = [
+  "news.published","news.updated","news.deleted",
+  "event.published","event.updated","event.deleted",
+  "album.published","album.updated","album.deleted",
+] as const;
+
+export const listWebWebhooks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { organizationId: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: hooks, error } = await supabase
+      .from("web_webhooks")
+      .select("id, name, target_url, events, is_active, created_at, updated_at")
+      .eq("organization_id", data.organizationId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { hooks: hooks ?? [] };
+  });
+
+const webhookUpsertInput = z.object({
+  id: z.string().uuid().optional(),
+  organizationId: z.string().uuid(),
+  name: z.string().trim().min(1).max(120),
+  targetUrl: z.string().url().max(2048),
+  events: z.array(z.enum(WEB_WEBHOOK_EVENTS)).min(1),
+  isActive: z.boolean().default(true),
+});
+
+export const upsertWebWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => webhookUpsertInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    if (data.id) {
+      const { error } = await supabase.from("web_webhooks").update({
+        name: data.name,
+        target_url: data.targetUrl,
+        events: data.events,
+        is_active: data.isActive,
+        updated_at: new Date().toISOString(),
+      }).eq("id", data.id);
+      if (error) throw new Error(error.message);
+      return { id: data.id, secret: null as string | null };
+    }
+    const secret = randomSecret();
+    const { data: ins, error } = await supabase.from("web_webhooks").insert({
+      organization_id: data.organizationId,
+      name: data.name,
+      target_url: data.targetUrl,
+      secret,
+      events: data.events,
+      is_active: data.isActive,
+      created_by: userId,
+    }).select("id").single();
+    if (error) throw new Error(error.message);
+    return { id: ins.id, secret };
+  });
+
+export const deleteWebWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase.from("web_webhooks").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listWebWebhookDeliveries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { webhookId: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("web_webhook_deliveries")
+      .select("id, event, status_code, ok, error, duration_ms, created_at")
+      .eq("webhook_id", data.webhookId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new Error(error.message);
+    return { deliveries: rows ?? [] };
+  });
+
+export const revealWebWebhookSecret = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("web_webhooks").select("secret").eq("id", data.id).single();
+    if (error) throw new Error(error.message);
+    return { secret: row.secret as string };
   });

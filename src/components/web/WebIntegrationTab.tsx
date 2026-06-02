@@ -145,8 +145,10 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
   const galleryEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/gallery`;
   const rssEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/news/feed.xml`;
   const icalEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/events.ics`;
+  const sitemapEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/sitemap.xml`;
   const embedJsUrl = `${baseUrl}/api/public/v1/embed.js`;
   const embedSnippet = `<div id="concertivo-feed"></div>\n<script async src="${embedJsUrl}"\n  data-org="${publicSlug || "<slug>"}" data-mode="news" data-lang="pl" data-limit="6"\n  data-target="#concertivo-feed"></script>`;
+  const embedGallerySnippet = `<div id="concertivo-gallery"></div>\n<script async src="${embedJsUrl}"\n  data-org="${publicSlug || "<slug>"}" data-mode="gallery" data-lang="pl" data-limit="12"\n  data-target="#concertivo-gallery"></script>`;
 
   const tokens = tokensQuery.data?.tokens ?? [];
   const domains = domainsQuery.data?.domains ?? [];
@@ -193,6 +195,7 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
           <EndpointRow label="Gallery (JSON)" url={galleryEndpoint} />
           <EndpointRow label="RSS (news)" url={rssEndpoint} />
           <EndpointRow label="iCal (events)" url={icalEndpoint} />
+          <EndpointRow label="Sitemap (SEO)" url={sitemapEndpoint} />
           <EndpointRow label="embed.js" url={embedJsUrl} />
         </div>
         <Alert>
@@ -218,7 +221,28 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
             <Copy className="mr-2 h-4 w-4" /> {t("common.copy")}
           </Button>
         </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Gallery embed</p>
+          <p className="text-xs text-muted-foreground">{t("web.integration.embed_gallery_help")}</p>
+          <pre className="overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-xs">
+{embedGallerySnippet}
+          </pre>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(embedGallerySnippet);
+              toast.success(t("common.copied"));
+            }}
+          >
+            <Copy className="mr-2 h-4 w-4" /> {t("common.copy")}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("web.integration.sitemap_help")}</p>
       </section>
+
 
       {/* TOKENS */}
       <section className="space-y-3 rounded-md border border-border bg-card p-4">

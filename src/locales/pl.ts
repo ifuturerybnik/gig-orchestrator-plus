@@ -1704,7 +1704,8 @@ export default
         "news": "Aktualności",
         "events": "Wydarzenia",
         "gallery": "Galeria",
-        "integration": "Integracja WWW"
+        "integration": "Integracja WWW",
+        "webhooks": "Webhooki"
       },
       "news": {
         "title": "Aktualności",
@@ -1811,7 +1812,26 @@ export default
         "add_domain": "Dodaj",
         "no_domains": "Brak ograniczeń domenowych.",
         "embed_snippet": "Snippet do wklejenia na stronę",
-        "embed_snippet_help": "Wklej ten kod na stronę – wyświetli listę aktualności w lekkim widgecie (Shadow DOM)."
+        "embed_snippet_help": "Wklej ten kod na stronę – wyświetli listę aktualności w lekkim widgecie (Shadow DOM).",
+        "embed_gallery_help": "Tryb gallery dodaje siatkę albumów z lightboxem i odtwarzaniem wideo.",
+        "sitemap_help": "Sitemap zawiera linki do aktualności, wydarzeń i albumów. Dodaj ?base=https://twoja-domena aby uzyskać absolutne URL-e."
+      },
+      "webhooks": {
+        "title": "Webhooki",
+        "subtitle": "Powiadamiaj zewnętrzne systemy (CMS, statyczny generator, n8n, Zapier) o zmianach treści.",
+        "add": "Dodaj webhook",
+        "empty": "Brak webhooków.",
+        "inactive": "nieaktywny",
+        "active": "Aktywny",
+        "url": "Adres URL (POST)",
+        "events": "Zdarzenia",
+        "events_count": "zdarzeń",
+        "form_help": "Każde żądanie podpisujemy nagłówkiem X-Concertivo-Signature: sha256=<hmac>. Sekret pokazujemy raz przy tworzeniu.",
+        "secret_title": "Sekret webhooka",
+        "secret_desc": "Zachowaj sekret w bezpiecznym miejscu. Użyj go do weryfikacji nagłówka X-Concertivo-Signature po stronie odbiorcy.",
+        "show_secret": "Pokaż sekret",
+        "deliveries": "Ostatnie dostarczenia",
+        "no_deliveries": "Brak prób dostarczenia."
       }
     }
   }
