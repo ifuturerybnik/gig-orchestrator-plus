@@ -454,7 +454,7 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
   });
 
 const ORG_COLUMNS =
-  "id, types, artist_kind, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_building_no, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website, is_shared";
+  "id, types, artist_kind, name, description, status, created_at, created_by, approved_at, rejection_reason, address_street, address_building_no, address_city, address_postal_code, address_country, genres, currency, legal_name, tax_id, registration_number, court_register_number, bank_account, bank_name, signatory_name, signatory_position, contact_email, contact_phone, website, is_shared, deletion_requested_at, deletion_scheduled_for, deletion_requested_by";
 
 export const getOrganizationDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
