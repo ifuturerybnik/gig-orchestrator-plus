@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { WebTabInstructions } from "@/components/web/WebTabInstructions";
+
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Globe, EyeOff, X } from "lucide-react";
@@ -87,7 +89,9 @@ export function WebEventsTab({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-4">
+      <WebTabInstructions tab="events" />
       <div className="flex items-center justify-between">
+
         <div>
           <h2 className="text-lg font-semibold">{t("web.events.title")}</h2>
           <p className="text-sm text-muted-foreground">{t("web.events.subtitle")}</p>
