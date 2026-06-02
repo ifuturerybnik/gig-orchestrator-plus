@@ -304,6 +304,52 @@ function OrganizationMembersPage() {
         </section>
       )}
 
+      {isOwner && (
+        <section className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+            <div className="flex-1 space-y-3">
+              <h2 className="text-lg font-semibold text-destructive">
+                {t("organizations.deletion.title")}
+              </h2>
+              {deletionScheduledFor ? (
+                <>
+                  <p className="text-sm text-foreground">
+                    {t("organizations.deletion.scheduled_banner", {
+                      date: dateFmt.format(new Date(deletionScheduledFor)),
+                    })}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => cancelDeletionMutation.mutate()}
+                    disabled={cancelDeletionMutation.isPending}
+                  >
+                    {t("organizations.deletion.cancel")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t("organizations.deletion.description")}
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm(t("organizations.deletion.request_confirm"))) {
+                        requestDeletionMutation.mutate();
+                      }
+                    }}
+                    disabled={requestDeletionMutation.isPending}
+                  >
+                    {t("organizations.deletion.request")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <MemberPermissionsDialog
         memberId={permMember?.id ?? null}
         memberLabel={permMember?.label ?? ""}
