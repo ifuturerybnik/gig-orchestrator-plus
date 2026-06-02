@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUploader, type UploadedImage } from "@/components/ui/image-uploader";
 import {
   listWebAlbums,
   getWebAlbum,
