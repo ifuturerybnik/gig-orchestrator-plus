@@ -4,21 +4,24 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Settings2 } from "lucide-react";
+import { AlertTriangle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { MemberPermissionsDialog } from "@/components/organizations/MemberPermissionsDialog";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
-  CONFIGURABLE_MODULE_IDS,
   type BudgetPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 import {
   cancelInvitation,
+  cancelOrganizationDeletion,
   getOrganizationDetails,
   inviteUserToOrganization,
   removeOrganizationMember,
+  requestOrganizationDeletion,
 } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute(
@@ -29,13 +32,15 @@ export const Route = createFileRoute(
 
 function OrganizationMembersPage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
   const inviteFn = useServerFn(inviteUserToOrganization);
   const removeFn = useServerFn(removeOrganizationMember);
   const cancelFn = useServerFn(cancelInvitation);
+  const requestDeleteFn = useServerFn(requestOrganizationDeletion);
+  const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
@@ -44,9 +49,10 @@ function OrganizationMembersPage() {
   });
 
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteAsOwner, setInviteAsOwner] = useState(false);
   const [inviteIsOrgAdmin, setInviteIsOrgAdmin] = useState(false);
   const [inviteModules, setInviteModules] = useState<Set<OrgModuleId>>(
-    () => new Set(CONFIGURABLE_MODULE_IDS),
+    () => new Set(),
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
   const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
@@ -59,6 +65,7 @@ function OrganizationMembersPage() {
           organizationId: orgId,
           email: inviteEmail,
           access: {
+            asOwner: inviteAsOwner,
             isOrgAdmin: inviteIsOrgAdmin,
             modules: Array.from(inviteModules),
             budgetMode: inviteBudgetMode,
@@ -68,6 +75,10 @@ function OrganizationMembersPage() {
     onSuccess: () => {
       toast.success(t("organizations.members.invitation_sent"));
       setInviteEmail("");
+      setInviteAsOwner(false);
+      setInviteIsOrgAdmin(false);
+      setInviteModules(new Set());
+      setInviteBudgetMode("full");
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -91,6 +102,24 @@ function OrganizationMembersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const requestDeletionMutation = useMutation({
+    mutationFn: () => requestDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.requested"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: () => cancelDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.cancelled"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (detailsQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
@@ -105,13 +134,20 @@ function OrganizationMembersPage() {
     );
   }
 
-  const { members, invitations, canManage } = detailsQuery.data;
+  const { members, invitations, canManage, isOwner, organization } = detailsQuery.data;
+  const deletionScheduledFor = (organization as { deletion_scheduled_for?: string | null } | null)
+    ?.deletion_scheduled_for ?? null;
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
     if (!inviteEmail) return;
     inviteMutation.mutate();
   };
+
+  const dateFmt = new Intl.DateTimeFormat(i18n.language || "pl", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
 
   return (
     <div className="space-y-10">
@@ -194,20 +230,39 @@ function OrganizationMembersPage() {
                 {t("organizations.members.invite")}
               </Button>
             </div>
-            <div>
-              <p className="mb-3 text-sm font-medium text-foreground">
-                {t("organizations.members.initial_access")}
-              </p>
-              <OrgPermissionsFields
-                isOrgAdmin={inviteIsOrgAdmin}
-                onIsOrgAdminChange={setInviteIsOrgAdmin}
-                modules={inviteModules}
-                onModulesChange={setInviteModules}
-                budgetMode={inviteBudgetMode}
-                onBudgetModeChange={setInviteBudgetMode}
-                fieldIdPrefix="invite-permissions"
-              />
-            </div>
+            {isOwner && (
+              <div className="flex items-center justify-between rounded-md border border-border bg-card/40 p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="invite-as-owner" className="cursor-pointer">
+                    {t("organizations.members.invite_as_owner")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("organizations.members.invite_as_owner_help")}
+                  </p>
+                </div>
+                <Switch
+                  id="invite-as-owner"
+                  checked={inviteAsOwner}
+                  onCheckedChange={setInviteAsOwner}
+                />
+              </div>
+            )}
+            {!inviteAsOwner && (
+              <div>
+                <p className="mb-3 text-sm font-medium text-foreground">
+                  {t("organizations.members.initial_access")}
+                </p>
+                <OrgPermissionsFields
+                  isOrgAdmin={inviteIsOrgAdmin}
+                  onIsOrgAdminChange={setInviteIsOrgAdmin}
+                  modules={inviteModules}
+                  onModulesChange={setInviteModules}
+                  budgetMode={inviteBudgetMode}
+                  onBudgetModeChange={setInviteBudgetMode}
+                  fieldIdPrefix="invite-permissions"
+                />
+              </div>
+            )}
           </form>
 
           {invitations.length > 0 && (
@@ -246,6 +301,52 @@ function OrganizationMembersPage() {
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {isOwner && (
+        <section className="rounded-md border border-destructive/40 bg-destructive/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+            <div className="flex-1 space-y-3">
+              <h2 className="text-lg font-semibold text-destructive">
+                {t("organizations.deletion.title")}
+              </h2>
+              {deletionScheduledFor ? (
+                <>
+                  <p className="text-sm text-foreground">
+                    {t("organizations.deletion.scheduled_banner", {
+                      date: dateFmt.format(new Date(deletionScheduledFor)),
+                    })}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => cancelDeletionMutation.mutate()}
+                    disabled={cancelDeletionMutation.isPending}
+                  >
+                    {t("organizations.deletion.cancel")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t("organizations.deletion.description")}
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm(t("organizations.deletion.request_confirm"))) {
+                        requestDeletionMutation.mutate();
+                      }
+                    }}
+                    disabled={requestDeletionMutation.isPending}
+                  >
+                    {t("organizations.deletion.request")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </section>
       )}
 
