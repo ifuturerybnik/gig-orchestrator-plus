@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ImageUploader, type UploadedImage } from "@/components/ui/image-uploader";
 import {
   Dialog,
   DialogContent,
