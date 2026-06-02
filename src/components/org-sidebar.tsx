@@ -17,6 +17,7 @@ import {
   Globe,
   Megaphone,
   Sparkles,
+  HardDrive,
   ChevronDown,
 } from "lucide-react";
 import {
