@@ -1525,7 +1525,8 @@ export default
         "news": "News",
         "events": "Events",
         "gallery": "Gallery",
-        "integration": "Web integration"
+        "integration": "Web integration",
+        "webhooks": "Webhooks"
       },
       "news": {
         "title": "News",
