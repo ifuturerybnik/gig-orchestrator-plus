@@ -178,6 +178,8 @@ export default
     "edit": "Edytuj",
     "delete": "Usuń",
     "search": "Szukaj",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
     "empty": "Brak danych",
     "error": "Coś poszło nie tak",
     "success": "Gotowe"
@@ -1728,6 +1730,62 @@ export default
         "delete_title": "Usunąć wpis?",
         "delete_desc": "Operacja jest nieodwracalna."
       },
+      "events": {
+        "title": "Wydarzenia",
+        "subtitle": "Koncerty, spektakle, festiwale publikowane na stronie organizacji.",
+        "add": "Dodaj wydarzenie",
+        "edit": "Edytuj wydarzenie",
+        "empty": "Brak wydarzeń. Dodaj pierwsze klikając przycisk powyżej.",
+        "saved": "Wydarzenie zapisane.",
+        "deleted": "Wydarzenie usunięte.",
+        "delete_title": "Usunąć wydarzenie?",
+        "delete_desc": "Operacja jest nieodwracalna.",
+        "starts_at": "Początek",
+        "ends_at": "Koniec (opcjonalnie)",
+        "timezone": "Strefa czasowa",
+        "status_label": "Status",
+        "location_name": "Nazwa lokalizacji",
+        "location_address": "Adres",
+        "ticket_url": "Link do biletów",
+        "ticket_price_from": "Cena biletu od",
+        "description": "Opis",
+        "performers": "Wykonawcy",
+        "performer_name": "Nazwa wykonawcy",
+        "add_performer": "Dodaj wykonawcę",
+        "start_required": "Data rozpoczęcia jest wymagana.",
+        "status": {
+          "scheduled": "Zaplanowane",
+          "cancelled": "Odwołane",
+          "postponed": "Przełożone",
+          "sold_out": "Wyprzedane"
+        }
+      },
+      "gallery": {
+        "title": "Galeria",
+        "subtitle": "Albumy ze zdjęciami i filmami publikowane na stronie organizacji.",
+        "add_album": "Nowy album",
+        "edit_album": "Edytuj album",
+        "empty": "Brak albumów. Dodaj pierwszy klikając przycisk powyżej.",
+        "album": "Album",
+        "album_saved": "Album zapisany.",
+        "album_deleted": "Album usunięty.",
+        "delete_album_title": "Usunąć album?",
+        "delete_album_desc": "Wszystkie zdjęcia i filmy z albumu zostaną usunięte.",
+        "cover_url": "URL okładki albumu",
+        "description": "Opis",
+        "add_item": "Dodaj plik",
+        "item_added": "Plik dodany.",
+        "item_deleted": "Plik usunięty.",
+        "item_url_required": "URL pliku jest wymagany.",
+        "no_items": "Album jest pusty. Dodaj pierwszy plik powyżej.",
+        "kind": "Typ",
+        "kind_image": "Zdjęcie",
+        "kind_video": "Wideo",
+        "item_url": "URL pliku",
+        "thumb_url": "URL miniatury (opcjonalnie)",
+        "credit": "Autor zdjęcia (opcjonalnie)",
+        "caption": "Podpis"
+      },
       "integration": {
         "title": "Integracja WWW",
         "subtitle": "Publikuj treści tej organizacji na własnej stronie poprzez JSON API, RSS, iCal lub embed.",
@@ -1751,7 +1809,9 @@ export default
         "domains": "Dozwolone domeny (CORS)",
         "domains_help": "Domeny, z których można wywoływać API z przeglądarki. Puste = bez ograniczeń.",
         "add_domain": "Dodaj",
-        "no_domains": "Brak ograniczeń domenowych."
+        "no_domains": "Brak ograniczeń domenowych.",
+        "embed_snippet": "Snippet do wklejenia na stronę",
+        "embed_snippet_help": "Wklej ten kod na stronę – wyświetli listę aktualności w lekkim widgecie (Shadow DOM)."
       }
     }
   }

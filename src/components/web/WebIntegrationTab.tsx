@@ -145,6 +145,8 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
   const galleryEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/gallery`;
   const rssEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/news/feed.xml`;
   const icalEndpoint = `${baseUrl}/api/public/v1/orgs/${publicSlug || "<slug>"}/events.ics`;
+  const embedJsUrl = `${baseUrl}/api/public/v1/embed.js`;
+  const embedSnippet = `<div id="concertivo-feed"></div>\n<script async src="${embedJsUrl}"\n  data-org="${publicSlug || "<slug>"}" data-mode="news" data-lang="pl" data-limit="6"\n  data-target="#concertivo-feed"></script>`;
 
   const tokens = tokensQuery.data?.tokens ?? [];
   const domains = domainsQuery.data?.domains ?? [];
@@ -191,12 +193,31 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
           <EndpointRow label="Gallery (JSON)" url={galleryEndpoint} />
           <EndpointRow label="RSS (news)" url={rssEndpoint} />
           <EndpointRow label="iCal (events)" url={icalEndpoint} />
+          <EndpointRow label="embed.js" url={embedJsUrl} />
         </div>
         <Alert>
           <Globe className="h-4 w-4" />
           <AlertTitle>{t("web.integration.lang_param_title")}</AlertTitle>
           <AlertDescription>{t("web.integration.lang_param_desc")}</AlertDescription>
         </Alert>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">{t("web.integration.embed_snippet")}</p>
+          <p className="text-xs text-muted-foreground">{t("web.integration.embed_snippet_help")}</p>
+          <pre className="overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-xs">
+{embedSnippet}
+          </pre>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(embedSnippet);
+              toast.success(t("common.copied"));
+            }}
+          >
+            <Copy className="mr-2 h-4 w-4" /> {t("common.copy")}
+          </Button>
+        </div>
       </section>
 
       {/* TOKENS */}

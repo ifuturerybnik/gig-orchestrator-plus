@@ -153,6 +153,8 @@ export default
     "edit": "Edit",
     "delete": "Delete",
     "search": "Search",
+    "copy": "Copy",
+    "copied": "Copied",
     "empty": "No data",
     "error": "Something went wrong",
     "success": "Done"
@@ -1549,6 +1551,62 @@ export default
         "delete_title": "Delete post?",
         "delete_desc": "This action cannot be undone."
       },
+      "events": {
+        "title": "Events",
+        "subtitle": "Concerts, shows and festivals published on the organization's website.",
+        "add": "Add event",
+        "edit": "Edit event",
+        "empty": "No events yet. Click the button above to add the first one.",
+        "saved": "Event saved.",
+        "deleted": "Event deleted.",
+        "delete_title": "Delete event?",
+        "delete_desc": "This action cannot be undone.",
+        "starts_at": "Start",
+        "ends_at": "End (optional)",
+        "timezone": "Timezone",
+        "status_label": "Status",
+        "location_name": "Venue name",
+        "location_address": "Address",
+        "ticket_url": "Ticket link",
+        "ticket_price_from": "Ticket price from",
+        "description": "Description",
+        "performers": "Performers",
+        "performer_name": "Performer name",
+        "add_performer": "Add performer",
+        "start_required": "Start date is required.",
+        "status": {
+          "scheduled": "Scheduled",
+          "cancelled": "Cancelled",
+          "postponed": "Postponed",
+          "sold_out": "Sold out"
+        }
+      },
+      "gallery": {
+        "title": "Gallery",
+        "subtitle": "Photo and video albums published on the organization's website.",
+        "add_album": "New album",
+        "edit_album": "Edit album",
+        "empty": "No albums yet. Click the button above to add the first one.",
+        "album": "Album",
+        "album_saved": "Album saved.",
+        "album_deleted": "Album deleted.",
+        "delete_album_title": "Delete album?",
+        "delete_album_desc": "All photos and videos in this album will be removed.",
+        "cover_url": "Album cover URL",
+        "description": "Description",
+        "add_item": "Add file",
+        "item_added": "File added.",
+        "item_deleted": "File deleted.",
+        "item_url_required": "File URL is required.",
+        "no_items": "Album is empty. Add the first file above.",
+        "kind": "Type",
+        "kind_image": "Image",
+        "kind_video": "Video",
+        "item_url": "File URL",
+        "thumb_url": "Thumbnail URL (optional)",
+        "credit": "Photo credit (optional)",
+        "caption": "Caption"
+      },
       "integration": {
         "title": "Web integration",
         "subtitle": "Publish this organization's content on your own website via JSON API, RSS, iCal or embed.",
@@ -1572,7 +1630,9 @@ export default
         "domains": "Allowed domains (CORS)",
         "domains_help": "Domains that can call the API from a browser. Empty = no restriction.",
         "add_domain": "Add",
-        "no_domains": "No domain restrictions."
+        "no_domains": "No domain restrictions.",
+        "embed_snippet": "Embed snippet for your website",
+        "embed_snippet_help": "Paste this code on your site – it renders the news list in a lightweight widget (Shadow DOM)."
       }
     }
   }
