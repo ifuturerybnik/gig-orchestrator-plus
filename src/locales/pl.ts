@@ -849,9 +849,6 @@ export default
       "subtitle": "Centralny bucket Concertivo oraz integracje per-organizacja (Model 3).",
       "global": {
         "title": "Konfiguracja globalna",
-        "secrets_title": "Sekrety serwera",
-        "secret_missing": "brak",
-        "secrets_hint": "Sekrety dodaj w Lovable → Project Settings → Secrets. Po dodaniu odśwież stronę.",
         "free_quota_gb": "Darmowy limit (GB) na organizację",
         "free_quota_gb_hint": "Każda organizacja domyślnie dostaje tyle miejsca w trybie centralnym.",
         "price_per_extra_gb_pln": "Cena za 1 GB nadwyżki (PLN / mies.)",
@@ -863,6 +860,33 @@ export default
         "save": "Zapisz konfigurację globalną",
         "saved": "Konfiguracja zapisana"
       },
+      "central": {
+        "title": "Centralny Cloudflare R2 (konto Concertivo)",
+        "subtitle": "Wpisz dane konta R2 bezpośrednio tutaj — klucze są szyfrowane przed zapisem. Jeśli pola sekretów zostawisz puste, zachowamy aktualnie zapisane wartości.",
+        "status_ok": "Skonfigurowany",
+        "status_missing": "Brakuje danych",
+        "source_db": "Źródło: baza",
+        "source_env": "Źródło: zmienne środowiskowe",
+        "source_mixed": "Źródło: baza + env",
+        "source_none": "Brak",
+        "account_id": "Cloudflare Account ID",
+        "account_id_hint": "Z R2 → Overview → Account Details → Account ID.",
+        "access_key_id": "Access Key ID",
+        "secret_access_key": "Secret Access Key",
+        "bucket": "Bucket",
+        "public_base_url": "Publiczny adres bazowy",
+        "public_base_url_hint": "URL publiczny do plików — pub-xxx.r2.dev lub własna domena (np. https://media.concertivo.eu). Bez `/` na końcu.",
+        "kept_secret": "•••••••• (zachowam aktualną wartość)",
+        "save": "Zapisz dane R2",
+        "saved": "Dane centralnego R2 zapisane",
+        "test": "Testuj połączenie",
+        "testing": "Testuję…",
+        "test_ok": "OK — bucket: {{bucket}}",
+        "clear": "Wyczyść",
+        "clear_confirm": "Na pewno wyczyścić dane centralnego R2? Zostanie użyty fallback do EXT_R2_* (jeśli ustawione) lub upload będzie niedostępny.",
+        "cleared": "Wyczyszczono dane centralnego R2"
+      },
+
       "orgs": {
         "title": "Organizacje — kwoty i integracje",
         "filter_placeholder": "Filtruj po nazwie…",
