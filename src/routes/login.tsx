@@ -23,6 +23,14 @@ function LoginPage() {
   useForceLightTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { redirect: redirectTo } = Route.useSearch();
+  const goNext = () => {
+    if (redirectTo && redirectTo.startsWith("/")) {
+      window.location.assign(redirectTo);
+    } else {
+      navigate({ to: "/dashboard" });
+    }
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
