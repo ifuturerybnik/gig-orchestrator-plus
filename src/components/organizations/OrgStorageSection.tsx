@@ -18,11 +18,24 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
   getOrgStorageSettings,
   setOrgStorageMode,
   setOrgOwnR2,
   clearOrgOwnR2,
   testOrgR2,
+  getOrgStorageMigrationStatus,
+  migrateOrgStorage,
 } from "@/lib/storage.functions";
 
 function formatBytes(n: number) {
@@ -55,6 +68,47 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
   });
   const [initialized, setInitialized] = useState(false);
   const [viewMode, setViewMode] = useState<"central" | "own">("central");
+  const [pendingMode, setPendingMode] = useState<"central" | "own" | null>(null);
+  const [deleteSourceAfter, setDeleteSourceAfter] = useState(false);
+
+  const fetchMigStatus = useServerFn(getOrgStorageMigrationStatus);
+  const migrateFn = useServerFn(migrateOrgStorage);
+  const migStatusKey = ["org-storage-migration", orgId];
+  const migStatusQ = useQuery({
+    queryKey: migStatusKey,
+    queryFn: () => fetchMigStatus({ data: { organization_id: orgId } }),
+  });
+
+  const migrate = useMutation({
+    mutationFn: () =>
+      migrateFn({
+        data: {
+          organization_id: orgId,
+          from_mode: migStatusQ.data!.legacy_mode,
+          to_mode: migStatusQ.data!.active_mode,
+          delete_source: deleteSourceAfter,
+        },
+      }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: migStatusKey });
+      qc.invalidateQueries({ queryKey });
+      if (r.done) {
+        toast.success(`Migracja zakończona. Skopiowano ${r.copied} plików.`);
+      } else {
+        toast.success(
+          `Skopiowano ${r.copied}. Zostało ${r.remaining}. Kliknij ponownie, aby kontynuować.`,
+        );
+      }
+      if (r.skipped_too_big > 0) {
+        toast.warning(`Pominięto ${r.skipped_too_big} plików > 200 MB — skontaktuj się z obsługą.`);
+      }
+      if (r.failed > 0) {
+        toast.error(`Nieudane: ${r.failed}. ${r.errors.join("; ")}`);
+      }
+    },
+    onError: (e: Error) => toast.error(`Migracja: ${e.message}`),
+  });
+
 
   useEffect(() => {
     if (!initialized && data) {
@@ -181,12 +235,15 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           value={viewMode}
           onValueChange={(v) => {
             const next = v as "central" | "own";
-            setViewMode(next);
             if (next === "central" && data.mode === "own") {
-              setMode.mutate("central");
+              // Realny powrót z 'own' do 'central' — wymaga potwierdzenia
+              // (legacy pliki w bucketcie usera + ostrzeżenie o linkach).
+              setPendingMode("central");
+              return;
             }
-            // For "own": just expand panel locally. Actual activation happens
-            // via "Zapisz i aktywuj" after user fills in credentials.
+            setViewMode(next);
+            // Dla "own": tylko rozwijamy panel lokalnie. Aktywacja przez
+            // "Zapisz i aktywuj" po wypełnieniu danych.
           }}
           className="grid gap-2 sm:grid-cols-2"
         >
@@ -473,6 +530,100 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </div>
         </div>
       )}
+
+      {/* === Migracja plików między bucketami === */}
+      {migStatusQ.data?.has_legacy && (
+        <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">
+                Pliki w starym storage ({migStatusQ.data.legacy_mode === "own" ? "Własne R2" : "Concertivo Storage"})
+              </p>
+              <p className="text-muted-foreground">
+                Po przełączeniu trybu masz jeszcze <strong>{migStatusQ.data.legacy.files} plików</strong>
+                {" "}({formatBytes(migStatusQ.data.legacy.bytes)}) w poprzedniej lokalizacji.
+                Pliki te są nadal widoczne i można je pobierać (tryb tylko-do-odczytu dla legacy),
+                ale <strong>nowe uploady idą do aktywnego storage</strong>. Możesz je przenieść poniżej.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Migracja kopiuje obiekty w paczkach po 50. Większe migracje uruchom kilka razy
+                (jest idempotentna). Pliki większe niż 200 MB wymagają pomocy obsługi.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
+            <Checkbox
+              id="del-source"
+              checked={deleteSourceAfter}
+              onCheckedChange={(v) => setDeleteSourceAfter(!!v)}
+            />
+            <Label htmlFor="del-source" className="text-xs leading-relaxed">
+              Po skopiowaniu skasuj plik ze starego bucketa.
+              <span className="block text-muted-foreground">
+                UWAGA: publiczne linki do skasowanych plików <strong>przestaną działać</strong>.
+                Zostaw odznaczone, jeśli ktoś mógł już udostępnić linki — wtedy stare URL-e zostaną żywe.
+              </span>
+            </Label>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => migrate.mutate()}
+            disabled={migrate.isPending}
+          >
+            {migrate.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Migruj kolejną paczkę ({Math.min(50, migStatusQ.data.legacy.files)} plików)
+          </Button>
+        </div>
+      )}
+
+      {/* === AlertDialog: powrót z own -> central === */}
+      <AlertDialog
+        open={pendingMode === "central"}
+        onOpenChange={(open) => {
+          if (!open) setPendingMode(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Przełączyć z Własne R2 na Concertivo Storage?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Od tej chwili <strong>nowe uploady</strong> będą trafiać do Concertivo Storage.
+                </p>
+                <p>
+                  <strong>Pliki w Twoim koncie Cloudflare R2 nie zostaną nigdzie automatycznie skopiowane</strong>{" "}
+                  ani usunięte. Pozostają w Twoim buckecie w trybie tylko-do-odczytu:
+                </p>
+                <ul className="list-disc pl-5">
+                  <li>nadal będą widoczne na liście Dysku i pobieralne,</li>
+                  <li>publiczne linki (https://pub-...r2.dev/...) działają tak długo, jak istnieją w Twoim buckecie,</li>
+                  <li>nie powstaną tam żadne nowe pliki.</li>
+                </ul>
+                <p>
+                  Jeśli chcesz mieć wszystko w jednym miejscu — po przełączeniu zobaczysz sekcję
+                  „Migracja plików", która przeniesie je do Concertivo Storage paczkami.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setViewMode("central");
+                setMode.mutate("central");
+                setPendingMode(null);
+              }}
+            >
+              Tak, przełącz na Concertivo Storage
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

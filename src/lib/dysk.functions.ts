@@ -12,6 +12,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   getOrgR2Context,
+  getR2ContextForMode,
   presignPut,
   deleteObject,
   calculateOrgQuota,
@@ -417,12 +418,11 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertOrgMember(supabase, userId, data.organization_id);
-    const ctx = await getOrgR2Context(data.organization_id);
 
     if (data.object_id) {
       const { data: obj, error } = await supabaseAdmin
         .from("org_storage_objects")
-        .select("id, object_key, mime, organization_id, bucket, is_system")
+        .select("id, object_key, mime, organization_id, bucket, mode, is_system")
         .eq("id", data.object_id)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -433,6 +433,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
         mime: string | null;
         organization_id: string;
         bucket: string;
+        mode: "central" | "own";
         is_system: boolean | null;
       };
       if (row.organization_id !== data.organization_id) {
@@ -441,9 +442,20 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       if (row.is_system) {
         throw new Error("Folder systemowy — nie można go usunąć.");
       }
+      // Użyj kontekstu zgodnego z trybem zapisanym przy obiekcie (legacy-safe).
+      const rowCtx = await getR2ContextForMode(data.organization_id, row.mode);
       if (row.mime === FOLDER_MIME) {
-        // skasuj wszystkie obiekty z prefixem (folder marker + zawartość)
-        await deletePrefix(ctx, row.object_key);
+        // Folder może zawierać pliki z różnych trybów (po migracji częściowej).
+        // Skasuj zawartość w obu bucketach (jeśli dostępne) — best effort.
+        const modesToClear: Array<"central" | "own"> = ["central", "own"];
+        for (const m of modesToClear) {
+          try {
+            const ctx = await getR2ContextForMode(data.organization_id, m);
+            await deletePrefix(ctx, row.object_key);
+          } catch {
+            // brak konfiguracji dla trybu — pomijamy
+          }
+        }
         const { error: dErr } = await supabaseAdmin
           .from("org_storage_objects")
           .update({ status: "deleted" })
@@ -452,7 +464,7 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
           .like("object_key", `${row.object_key}%`);
         if (dErr) throw new Error(dErr.message);
       } else {
-        await deleteObject(ctx, row.object_key);
+        await deleteObject(rowCtx, row.object_key);
         const { error: dErr } = await supabaseAdmin
           .from("org_storage_objects")
           .update({ status: "deleted" })
@@ -467,7 +479,6 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       if (!path) throw new Error("Brak ścieżki folderu");
       const prefix = buildPrefix(data.organization_id, path);
 
-      // sprawdź czy folder (lub jakikolwiek jego podfolder systemowy) nie jest systemowy
       const { data: sysCheck } = await supabaseAdmin
         .from("org_storage_objects")
         .select("id")
@@ -481,7 +492,16 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
         throw new Error("Folder systemowy — nie można go usunąć.");
       }
 
-      await deletePrefix(ctx, prefix);
+      // Best-effort kasowanie z obu trybów (legacy-safe).
+      const modesToClear: Array<"central" | "own"> = ["central", "own"];
+      for (const m of modesToClear) {
+        try {
+          const ctx = await getR2ContextForMode(data.organization_id, m);
+          await deletePrefix(ctx, prefix);
+        } catch {
+          // brak konfiguracji dla trybu — pomijamy
+        }
+      }
       const { error: dErr } = await supabaseAdmin
         .from("org_storage_objects")
         .update({ status: "deleted" })
@@ -491,7 +511,6 @@ export const deleteDyskEntry = createServerFn({ method: "POST" })
       if (dErr) throw new Error(dErr.message);
       return { ok: true };
     }
-
 
     throw new Error("Podaj object_id albo folder_path");
   });
