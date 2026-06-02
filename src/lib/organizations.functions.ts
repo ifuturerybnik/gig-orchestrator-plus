@@ -379,16 +379,22 @@ export const inviteUserToOrganization = createServerFn({ method: "POST" })
           : "Zaproszenie do organizacji w Concertivo";
         const safeOrg = orgName.replace(/[<>&]/g, "");
         const safeInviter = inviterName.replace(/[<>&]/g, "");
-        const html = `
-          <div style="font-family:Arial,sans-serif;font-size:14px;color:#111">
-            <p>Cześć,</p>
-            <p>${safeInviter ? `<strong>${safeInviter}</strong> ` : ""}zaprasza Cię do organizacji
-            ${safeOrg ? `<strong>${safeOrg}</strong>` : "Concertivo"}.</p>
-            <p>Aby przyjąć zaproszenie, kliknij poniższy link:</p>
-            <p><a href="${acceptUrl}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">Przyjmij zaproszenie</a></p>
-            <p style="color:#666;font-size:12px">Lub skopiuj adres: ${acceptUrl}</p>
-            <p style="color:#999;font-size:12px;margin-top:24px">Concertivo — zarządzanie koncertami i organizacjami muzycznymi/eventowymi.</p>
-          </div>`;
+        const html = `<div style="background:#f5f5f7;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb">
+    <tr><td style="padding:32px 32px 8px 32px">
+      <h1 style="margin:0 0 16px 0;font-size:20px;line-height:1.3;color:#111">${subject}</h1>
+      <p style="margin:0 0 12px 0;font-size:15px;line-height:1.6;color:#111">Cześć,</p>
+      <p style="margin:0 0 12px 0;font-size:15px;line-height:1.6;color:#111">${safeInviter ? `<strong>${safeInviter}</strong> ` : ""}zaprasza Cię do organizacji ${safeOrg ? `<strong>${safeOrg}</strong>` : "Concertivo"}.</p>
+      <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#111">Aby przyjąć zaproszenie, kliknij poniższy przycisk:</p>
+      <p style="margin:0 0 20px 0"><a href="${acceptUrl}" style="display:inline-block;padding:12px 22px;background:#111;color:#ffffff;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600">Przyjmij zaproszenie</a></p>
+      <p style="margin:0 0 8px 0;color:#666;font-size:12px;line-height:1.5">Lub skopiuj i wklej w przeglądarce:</p>
+      <p style="margin:0 0 24px 0;color:#666;font-size:12px;line-height:1.5;word-break:break-all"><a href="${acceptUrl}" style="color:#666;text-decoration:underline">${acceptUrl}</a></p>
+    </td></tr>
+    <tr><td style="padding:16px 32px 24px 32px;border-top:1px solid #e5e7eb">
+      <p style="margin:0;color:#999;font-size:12px;line-height:1.5">Concertivo — zarządzanie koncertami i organizacjami muzycznymi/eventowymi.</p>
+    </td></tr>
+  </table>
+</div>`;
         await callMailProxy("send", {
           skrzynka_id: skrzynkaId,
           to: [data.email],
