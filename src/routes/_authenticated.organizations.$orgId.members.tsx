@@ -116,13 +116,38 @@ function OrganizationMembersPage() {
     );
   }
 
-  const { members, invitations, canManage } = detailsQuery.data;
+  const { members, invitations, canManage, isOwner, organization } = detailsQuery.data;
+  const deletionScheduledFor = (organization as { deletion_scheduled_for?: string | null } | null)
+    ?.deletion_scheduled_for ?? null;
+
+  const requestDeletionMutation = useMutation({
+    mutationFn: () => requestDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.requested"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: () => cancelDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.cancelled"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
     if (!inviteEmail) return;
     inviteMutation.mutate();
   };
+
+  const dateFmt = new Intl.DateTimeFormat(i18n.language || "pl", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
 
   return (
     <div className="space-y-10">
