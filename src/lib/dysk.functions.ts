@@ -19,6 +19,7 @@ import {
 import {
   ListObjectsV2Command,
   DeleteObjectsCommand,
+  type ListObjectsV2CommandOutput,
 } from "@aws-sdk/client-s3";
 
 const FOLDER_MIME = "application/x-directory";
