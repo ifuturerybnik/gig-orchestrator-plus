@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
   type BudgetPermissionMode,
+  type EventsPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 import {
