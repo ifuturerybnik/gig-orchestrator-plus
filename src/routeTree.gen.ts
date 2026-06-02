@@ -44,6 +44,7 @@ import { Route as ApiPublicSocialTiktokCallbackRouteImport } from './routes/api/
 import { Route as ApiPublicSocialSpotifyCallbackRouteImport } from './routes/api/public/social.spotify-callback'
 import { Route as ApiPublicSocialMetaCallbackRouteImport } from './routes/api/public/social.meta-callback'
 import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
+import { Route as AuthenticatedOrganizationsOrgIdWebRouteImport } from './routes/_authenticated.organizations.$orgId.web'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
@@ -248,6 +249,12 @@ const ApiPublicSocialLinkedinCallbackRoute =
     path: '/api/public/social/linkedin-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedOrganizationsOrgIdWebRoute =
+  AuthenticatedOrganizationsOrgIdWebRouteImport.update({
+    id: '/web',
+    path: '/web',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdSocialRoute =
   AuthenticatedOrganizationsOrgIdSocialRouteImport.update({
     id: '/social',
@@ -347,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -390,6 +398,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -438,6 +447,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  '/_authenticated/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/organizations/$orgId/web'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/members'
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
+    | '/organizations/$orgId/web'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -576,6 +588,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/members'
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/social'
+    | '/_authenticated/organizations/$orgId/web'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -856,6 +869,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSocialLinkedinCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/organizations/$orgId/web': {
+      id: '/_authenticated/organizations/$orgId/web'
+      path: '/web'
+      fullPath: '/organizations/$orgId/web'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdWebRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/social': {
       id: '/_authenticated/organizations/$orgId/social'
       path: '/social'
@@ -973,6 +993,7 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
   AuthenticatedOrganizationsOrgIdProfileRoute: typeof AuthenticatedOrganizationsOrgIdProfileRoute
   AuthenticatedOrganizationsOrgIdSocialRoute: typeof AuthenticatedOrganizationsOrgIdSocialRoute
+  AuthenticatedOrganizationsOrgIdWebRoute: typeof AuthenticatedOrganizationsOrgIdWebRoute
   AuthenticatedOrganizationsOrgIdIndexRoute: typeof AuthenticatedOrganizationsOrgIdIndexRoute
 }
 
@@ -996,6 +1017,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
       AuthenticatedOrganizationsOrgIdProfileRoute,
     AuthenticatedOrganizationsOrgIdSocialRoute:
       AuthenticatedOrganizationsOrgIdSocialRoute,
+    AuthenticatedOrganizationsOrgIdWebRoute:
+      AuthenticatedOrganizationsOrgIdWebRoute,
     AuthenticatedOrganizationsOrgIdIndexRoute:
       AuthenticatedOrganizationsOrgIdIndexRoute,
   }
