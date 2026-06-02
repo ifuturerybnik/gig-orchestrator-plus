@@ -55,6 +55,12 @@ function AdminLayout() {
       icon: Bot,
       show: true,
     },
+    {
+      to: "/admin/storage",
+      label: t("admin.nav.storage"),
+      icon: HardDrive,
+      show: true,
+    },
   ];
 
   return (
