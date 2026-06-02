@@ -2121,6 +2121,22 @@ export default
     "done": "Gotowe",
     "failed": "Nie udało się wgrać",
     "not_an_image": "Wybrany plik nie jest obrazem"
+  },
+  "invitations": {
+    "title": "Zaproszenie do organizacji",
+    "description": "Zostałeś zaproszony do organizacji „{{org}}”.",
+    "for_email": "Zaproszenie wystawione na: {{email}}",
+    "need_login": "Aby przyjąć zaproszenie, zaloguj się lub załóż konto na ten sam adres email.",
+    "email_mismatch": "Zaproszenie jest dla {{expected}}, a jesteś zalogowany jako {{current}}.",
+    "accept": "Przyjmij",
+    "decline": "Odrzuć",
+    "accepted": "Zaproszenie przyjęte",
+    "declined": "Zaproszenie odrzucone",
+    "not_found": "Zaproszenie nie istnieje.",
+    "already_processed": "To zaproszenie zostało już obsłużone.",
+    "expired": "Zaproszenie wygasło.",
+    "pending_title": "Oczekujące zaproszenia",
+    "expires_at": "Ważne do {{date}}"
   }
 } as const;
 
