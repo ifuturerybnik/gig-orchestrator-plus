@@ -66,7 +66,7 @@ export const updateStorageGlobalConfig = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertSuperAdmin(supabase, userId);
-    const { error } = await _supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("storage_global_config")
       .update({ ...data, updated_at: new Date().toISOString(), updated_by: userId })
       .eq("id", 1);
@@ -108,7 +108,7 @@ export const setCentralR2 = createServerFn({ method: "POST" })
     if (data.r2_secret_access_key && data.r2_secret_access_key.length > 0) {
       patch.r2_secret_access_key_enc = encryptPii(data.r2_secret_access_key);
     }
-    const { error } = await _supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("storage_global_config")
       .update(patch)
       .eq("id", 1);
@@ -121,7 +121,7 @@ export const clearCentralR2 = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     await assertSuperAdmin(supabase, userId);
-    const { error } = await _supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("storage_global_config")
       .update({
         r2_account_id: null,
