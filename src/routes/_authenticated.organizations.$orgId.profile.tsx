@@ -171,7 +171,14 @@ function OrganizationProfilePage() {
     );
   }
 
-  const { organization: org, canManage } = detailsQuery.data;
+  const { organization: org, canManage, isOwner } = detailsQuery.data;
+  const deletionScheduledFor =
+    (org as { deletion_scheduled_for?: string | null } | null)
+      ?.deletion_scheduled_for ?? null;
+  const dateFmt = new Intl.DateTimeFormat(i18n.language || "pl", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
 
   if (!canManage) {
     return (
