@@ -108,6 +108,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
       const isOrgAdmin = Boolean(invAccess.initial_is_org_admin);
       const modules = Array.from(new Set(isOrgAdmin ? [] : invitationModules));
       const budgetMode = (invAccess.initial_budget_mode as BudgetPermissionMode | null) ?? "full";
+      const eventsMode = (invAccess.initial_events_mode as EventsPermissionMode | null) ?? "full";
       const { error: permErr } = await supabaseAdmin
         .from("organization_member_permissions")
         .upsert(
@@ -118,6 +119,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
             is_org_admin: isOrgAdmin,
             modules,
             budget_mode: isOrgAdmin || !modules.includes("budget") ? "full" : budgetMode,
+            events_mode: isOrgAdmin || !modules.includes("events") ? "full" : eventsMode,
             updated_at: new Date().toISOString(),
             updated_by: userId,
           },
