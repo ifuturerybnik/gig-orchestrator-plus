@@ -98,23 +98,6 @@ function OrganizationMembersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const requestDeletionMutation = useMutation({
-    mutationFn: () => requestDeleteFn({ data: { organizationId: orgId } }),
-    onSuccess: () => {
-      toast.success(t("organizations.deletion.requested"));
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const cancelDeletionMutation = useMutation({
-    mutationFn: () => cancelDeleteFn({ data: { organizationId: orgId } }),
-    onSuccess: () => {
-      toast.success(t("organizations.deletion.cancelled"));
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   if (detailsQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
