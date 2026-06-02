@@ -1877,7 +1877,7 @@ export default
               "heading": "Dobre praktyki",
               "items": [
                 "Trzymaj lead krótki (1–2 zdania) – pojawia się na liście i w meta description.",
-                "Zdjęcia główne 1200×630 px działają najlepiej dla podglądów społecznościowych.",
+                "Zdjęcia główne wgrywaj w jak największej rozdzielczości – system sam zrobi wersję optymalną i miniatury (idealny format ~1200×630 px lub większy, proporcja landscape dla podglądów społecznościowych).",
                 "Slug ustawiaj raz – zmiana zepsuje istniejące linki zewnętrzne."
               ]
             }
