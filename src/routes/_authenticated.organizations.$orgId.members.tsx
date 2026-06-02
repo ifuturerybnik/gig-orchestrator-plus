@@ -84,6 +84,7 @@ function OrganizationMembersPage() {
   }
 
   const { members, invitations, canManage } = detailsQuery.data;
+  const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
@@ -119,18 +120,33 @@ function OrganizationMembersPage() {
                   </p>
                 </div>
                 {canManage && m.role !== "owner" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm(t("organizations.members.remove_confirm"))) {
-                        removeMutation.mutate(m.id);
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("organizations.permissions.edit")}
+                      onClick={() =>
+                        setPermMember({
+                          id: m.id,
+                          label: fullName || t("organizations.members.no_name"),
+                        })
                       }
-                    }}
-                    disabled={removeMutation.isPending}
-                  >
-                    {t("organizations.members.remove")}
-                  </Button>
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(t("organizations.members.remove_confirm"))) {
+                          removeMutation.mutate(m.id);
+                        }
+                      }}
+                      disabled={removeMutation.isPending}
+                    >
+                      {t("organizations.members.remove")}
+                    </Button>
+                  </div>
                 )}
               </li>
             );
