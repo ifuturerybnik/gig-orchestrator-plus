@@ -5,6 +5,69 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MUSIC_GENRES } from "@/lib/genres";
 import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
 import { normalizeNip } from "@/lib/nip";
+import {
+  CONFIGURABLE_MODULE_IDS,
+  type BudgetPermissionMode,
+  type OrgModuleId,
+} from "@/lib/org-modules";
+
+const ModuleIdEnum = z.enum(
+  CONFIGURABLE_MODULE_IDS as unknown as [OrgModuleId, ...OrgModuleId[]],
+);
+const BudgetModeEnum = z.enum(["full", "unrealized_only"] as const);
+
+async function isAppAdmin(supabase: { from: (t: string) => any }, userId: string) {
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  return ((roles ?? []) as Array<{ role: string }>).some(
+    (r) => r.role === "super_admin" || r.role === "admin_staff",
+  );
+}
+
+async function loadEffectivePerms(
+  supabase: { from: (t: string) => any },
+  userId: string,
+  organizationId: string,
+): Promise<{
+  isOrgAdmin: boolean;
+  modules: OrgModuleId[];
+  budgetMode: BudgetPermissionMode;
+}> {
+  // owner?
+  const { data: me } = await supabase
+    .from("organization_members")
+    .select("id, role")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (me?.role === "owner") {
+    return { isOrgAdmin: true, modules: [], budgetMode: "full" };
+  }
+  // admin aplikacji?
+  if (await isAppAdmin(supabase, userId)) {
+    return { isOrgAdmin: true, modules: [], budgetMode: "full" };
+  }
+  if (!me) {
+    // nie jest członkiem — brak dostępu (overview/profile traktowane jako alwaysVisible po stronie UI)
+    return { isOrgAdmin: false, modules: [], budgetMode: "full" };
+  }
+  const { data: perm } = await supabase
+    .from("organization_member_permissions")
+    .select("is_org_admin, modules, budget_mode")
+    .eq("member_id", me.id)
+    .maybeSingle();
+  if (!perm) {
+    // kompatybilność wsteczna: brak wpisu = pełen dostęp
+    return { isOrgAdmin: true, modules: [], budgetMode: "full" };
+  }
+  return {
+    isOrgAdmin: Boolean(perm.is_org_admin),
+    modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
+    budgetMode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
+  };
+}
 
 const OrgTypeEnum = z.enum(ORG_TYPES as unknown as [string, ...string[]]);
 const ArtistKindEnum = z.enum(ARTIST_KINDS as unknown as [string, ...string[]]);
