@@ -4,18 +4,29 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CountrySelect } from "@/components/country-select";
 import { CurrencySelect } from "@/components/currency-select";
 import { PhoneInput } from "@/components/phone-input";
 import { MUSIC_GENRES } from "@/lib/genres";
 import { currencyForCountry } from "@/lib/currencies";
 import {
+  cancelOrganizationDeletion,
   getOrganizationDetails,
+  requestOrganizationDeletion,
   updateOrganization,
 } from "@/lib/organizations.functions";
 import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
@@ -31,12 +42,14 @@ export const Route = createFileRoute(
 
 function OrganizationProfilePage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
   const updateFn = useServerFn(updateOrganization);
+  const requestDeleteFn = useServerFn(requestOrganizationDeletion);
+  const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
@@ -118,6 +131,32 @@ function OrganizationProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+
+  const requestDeletionMutation = useMutation({
+    mutationFn: (password: string) =>
+      requestDeleteFn({ data: { organizationId: orgId, password } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.requested"));
+      setDeleteOpen(false);
+      setDeletePassword("");
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: () => cancelDeleteFn({ data: { organizationId: orgId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.deletion.cancelled"));
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (detailsQuery.isLoading || !initialized) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
@@ -132,7 +171,14 @@ function OrganizationProfilePage() {
     );
   }
 
-  const { organization: org, canManage } = detailsQuery.data;
+  const { organization: org, canManage, isOwner } = detailsQuery.data;
+  const deletionScheduledFor =
+    (org as { deletion_scheduled_for?: string | null } | null)
+      ?.deletion_scheduled_for ?? null;
+  const dateFmt = new Intl.DateTimeFormat(i18n.language || "pl", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
 
   if (!canManage) {
     return (
@@ -450,6 +496,104 @@ function OrganizationProfilePage() {
     <OrgMailboxesSection orgId={orgId} />
     <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
     <OrgStorageSection orgId={orgId} />
+
+    {isOwner && (
+      <div className="flex justify-end pt-4">
+        {deletionScheduledFor ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>
+              {t("organizations.deletion.scheduled_banner", {
+                date: dateFmt.format(new Date(deletionScheduledFor)),
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => cancelDeletionMutation.mutate()}
+              disabled={cancelDeletionMutation.isPending}
+            >
+              {t("organizations.deletion.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {t("organizations.deletion.request_short")}
+          </Button>
+        )}
+      </div>
+    )}
+
+    <Dialog
+      open={deleteOpen}
+      onOpenChange={(o) => {
+        setDeleteOpen(o);
+        if (!o) setDeletePassword("");
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            {t("organizations.deletion.title")}
+          </DialogTitle>
+          <DialogDescription className="space-y-2 pt-2 text-foreground">
+            <span className="block">
+              {t("organizations.deletion.dialog_info")}
+            </span>
+            <span className="block text-muted-foreground">
+              {t("organizations.deletion.dialog_members_info")}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!deletePassword) return;
+            requestDeletionMutation.mutate(deletePassword);
+          }}
+          className="space-y-3"
+        >
+          <Label htmlFor="delete-password">
+            {t("organizations.deletion.password_label")}
+          </Label>
+          <Input
+            id="delete-password"
+            type="password"
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            required
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={!deletePassword || requestDeletionMutation.isPending}
+            >
+              {t("organizations.deletion.confirm")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
     </div>
 
   );

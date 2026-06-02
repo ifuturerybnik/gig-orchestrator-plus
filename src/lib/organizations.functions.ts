@@ -1170,10 +1170,33 @@ async function notifyMembersOrgDeletion(
 export const requestOrganizationDeletion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ organizationId: z.string().uuid() }).parse(input),
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        password: z.string().min(1).max(200),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase, userId, userEmail } = context;
+    if (!userEmail) {
+      throw new Error("Brak adresu e-mail w sesji — zaloguj się ponownie.");
+    }
+    // Weryfikacja hasła (osobny klient, bez utrwalania sesji)
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabasePublishableKey = import.meta.env
+      .VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    const { createClient } = await import("@supabase/supabase-js");
+    const verifyClient = createClient(supabaseUrl, supabasePublishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error: pwErr } = await verifyClient.auth.signInWithPassword({
+      email: userEmail,
+      password: data.password,
+    });
+    if (pwErr) {
+      throw new Error("Nieprawidłowe hasło.");
+    }
     const { data: me } = await supabase
       .from("organization_members")
       .select("role")
