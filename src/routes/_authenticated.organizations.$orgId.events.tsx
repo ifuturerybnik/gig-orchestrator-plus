@@ -336,14 +336,18 @@ function OrganizationPerformancesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => openVacCreate()}>
-            <Plane className="h-4 w-4" />
-            {t("organizations.vacations.add")}
-          </Button>
-          <Button onClick={() => openCreate()}>
-            <Plus className="h-4 w-4" />
-            {t("organizations.performances.add")}
-          </Button>
+          {canEditEvents && (
+            <>
+              <Button variant="outline" onClick={() => openVacCreate()}>
+                <Plane className="h-4 w-4" />
+                {t("organizations.vacations.add")}
+              </Button>
+              <Button onClick={() => openCreate()}>
+                <Plus className="h-4 w-4" />
+                {t("organizations.performances.add")}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
