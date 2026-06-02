@@ -46,7 +46,7 @@ export const acceptInvitation = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: inv, error } = await supabaseAdmin
       .from("organization_invitations")
-      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode")
+      .select("id, email, status, expires_at, organization_id, initial_role, initial_is_org_admin, initial_modules, initial_budget_mode, initial_events_mode")
       .eq("token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
