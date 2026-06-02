@@ -42,12 +42,14 @@ export const Route = createFileRoute(
 
 function OrganizationProfilePage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
   const updateFn = useServerFn(updateOrganization);
+  const requestDeleteFn = useServerFn(requestOrganizationDeletion);
+  const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
