@@ -14,6 +14,8 @@ import {
   Mail,
   Bot,
   Share2,
+  Globe,
+  Megaphone,
   ChevronDown,
 } from "lucide-react";
 import {
