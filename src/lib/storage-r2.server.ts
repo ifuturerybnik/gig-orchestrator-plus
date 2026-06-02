@@ -32,6 +32,11 @@ function buildClient(opts: {
       secretAccessKey: opts.secretAccessKey,
     },
     forcePathStyle: false,
+    // R2 nie obsługuje nowych nagłówków checksum z AWS SDK v3 (>= 3.729).
+    // Bez tego presigned PUT zwraca SignatureDoesNotMatch, bo SDK dodaje
+    // x-amz-checksum-crc32 / x-amz-sdk-checksum-algorithm do query stringa.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 }
 
