@@ -8,7 +8,9 @@ import {
   getCentralR2Status,
   getCentralR2,
   getOrgR2Context,
+  getR2ContextForMode,
   presignPut,
+  presignGet,
   deleteObject,
   calculateOrgQuota,
   getGlobalCfg,
@@ -504,5 +506,203 @@ export const getOrgQuota = createServerFn({ method: "POST" })
     }
     return calculateOrgQuota(data.organization_id);
   });
+
+// =====================================================================
+// Migracja plików między bucketami (central <-> own) i status legacy.
+// =====================================================================
+
+/**
+ * Zwraca statystyki obiektów per tryb dla danej organizacji.
+ * Używane do pokazania użytkownikowi, że ma jeszcze pliki w "starym" trybie.
+ */
+export const getOrgStorageMigrationStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organization_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertOrgManager(supabase, userId, data.organization_id);
+    const cfg = await supabaseAdmin
+      .from("org_storage_config")
+      .select("mode")
+      .eq("organization_id", data.organization_id)
+      .maybeSingle();
+    const activeMode = ((cfg.data?.mode as "central" | "own") ?? "central");
+
+    const { data: rows } = await supabaseAdmin
+      .from("org_storage_objects")
+      .select("mode, size_bytes, mime")
+      .eq("organization_id", data.organization_id)
+      .neq("status", "deleted");
+
+    const stats = { central: { files: 0, bytes: 0 }, own: { files: 0, bytes: 0 } };
+    for (const r of (rows ?? []) as Array<{ mode: "central" | "own"; size_bytes: number; mime: string | null }>) {
+      if (r.mime === "application/x-directory") continue;
+      const bucket = stats[r.mode];
+      if (!bucket) continue;
+      bucket.files += 1;
+      bucket.bytes += Number(r.size_bytes ?? 0);
+    }
+    const legacyMode: "central" | "own" = activeMode === "central" ? "own" : "central";
+    return {
+      active_mode: activeMode,
+      legacy_mode: legacyMode,
+      active: stats[activeMode],
+      legacy: stats[legacyMode],
+      has_legacy: stats[legacyMode].files > 0,
+    };
+  });
+
+/**
+ * Migracja plików między bucketami. Kopiuje obiekty z trybu źródłowego do
+ * docelowego (streaming GET -> PUT przez presigned URLs, żeby uniknąć
+ * trzymania całych plików w pamięci Workera). Bezpieczna do uruchomienia
+ * wielokrotnie — kopiuje tylko te obiekty, które są w trybie 'from'.
+ *
+ * Po sukcesie aktualizuje wiersz w org_storage_objects: mode/bucket/public_url
+ * wskazują na nową lokalizację. Stary obiekt w źródłowym buckecie jest
+ * kasowany TYLKO gdy delete_source = true.
+ *
+ * Limity:
+ *  - pojedyncze wywołanie kopiuje maks. 50 plików (chunk) — większą migrację
+ *    user wykonuje wielokrotnym kliknięciem (idempotentne).
+ *  - pliki > 200 MB są pomijane i raportowane (Worker streaming limity);
+ *    do takich plików potrzebny jest osobny tryb (TODO).
+ */
+const MIGRATION_CHUNK = 50;
+const MIGRATION_MAX_FILE_BYTES = 200 * 1024 * 1024;
+
+export const migrateOrgStorage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organization_id: z.string().uuid(),
+        from_mode: z.enum(["central", "own"]),
+        to_mode: z.enum(["central", "own"]),
+        delete_source: z.boolean().default(false),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertOrgManager(supabase, userId, data.organization_id);
+    if (data.from_mode === data.to_mode) {
+      throw new Error("Tryb źródłowy i docelowy muszą się różnić.");
+    }
+
+    const srcCtx = await getR2ContextForMode(data.organization_id, data.from_mode);
+    const dstCtx = await getR2ContextForMode(data.organization_id, data.to_mode);
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("org_storage_objects")
+      .select("id, object_key, size_bytes, mime")
+      .eq("organization_id", data.organization_id)
+      .eq("mode", data.from_mode)
+      .neq("status", "deleted")
+      .neq("mime", "application/x-directory")
+      .order("size_bytes", { ascending: true })
+      .limit(MIGRATION_CHUNK);
+    if (error) throw new Error(error.message);
+
+    let copied = 0;
+    let skippedTooBig = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const r of (rows ?? []) as Array<{
+      id: string;
+      object_key: string;
+      size_bytes: number;
+      mime: string | null;
+    }>) {
+      if (Number(r.size_bytes ?? 0) > MIGRATION_MAX_FILE_BYTES) {
+        skippedTooBig += 1;
+        continue;
+      }
+      try {
+        const getUrl = await presignGet({ ctx: srcCtx, key: r.object_key, expiresIn: 900 });
+        const { uploadUrl, publicUrl } = await presignPut({
+          ctx: dstCtx,
+          key: r.object_key,
+          contentType: r.mime ?? "application/octet-stream",
+          expiresIn: 900,
+        });
+        const getRes = await fetch(getUrl);
+        if (!getRes.ok || !getRes.body) {
+          throw new Error(`GET ${getRes.status}`);
+        }
+        const buf = await getRes.arrayBuffer();
+        const putRes = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": r.mime ?? "application/octet-stream" },
+          body: buf,
+        });
+        if (!putRes.ok) {
+          throw new Error(`PUT ${putRes.status}`);
+        }
+        // Update row: nowa lokalizacja
+        const { error: upErr } = await supabaseAdmin
+          .from("org_storage_objects")
+          .update({
+            mode: data.to_mode,
+            bucket: dstCtx.bucket,
+            public_url: publicUrl,
+          })
+          .eq("id", r.id);
+        if (upErr) throw new Error(upErr.message);
+
+        if (data.delete_source) {
+          try {
+            await deleteObject(srcCtx, r.object_key);
+          } catch (e) {
+            errors.push(`del src ${r.object_key}: ${(e as Error).message}`);
+          }
+        }
+        copied += 1;
+      } catch (e) {
+        failed += 1;
+        errors.push(`${r.object_key}: ${(e as Error).message}`);
+      }
+    }
+
+    // Zaktualizuj też foldery-markery (zero-bajtowe) — żeby ListObjectsV2
+    // po stronie destynacji "widziało" strukturę, choć i tak listing korzysta
+    // z org_storage_objects.
+    const { data: folderRows } = await supabaseAdmin
+      .from("org_storage_objects")
+      .select("id, object_key")
+      .eq("organization_id", data.organization_id)
+      .eq("mode", data.from_mode)
+      .eq("mime", "application/x-directory")
+      .neq("status", "deleted")
+      .limit(MIGRATION_CHUNK);
+    for (const f of (folderRows ?? []) as Array<{ id: string; object_key: string }>) {
+      await supabaseAdmin
+        .from("org_storage_objects")
+        .update({ mode: data.to_mode, bucket: dstCtx.bucket })
+        .eq("id", f.id);
+    }
+
+    // Czy zostały jeszcze jakieś pliki w source?
+    const { count: remaining } = await supabaseAdmin
+      .from("org_storage_objects")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", data.organization_id)
+      .eq("mode", data.from_mode)
+      .neq("status", "deleted")
+      .neq("mime", "application/x-directory");
+
+    return {
+      copied,
+      skipped_too_big: skippedTooBig,
+      failed,
+      remaining: remaining ?? 0,
+      errors: errors.slice(0, 10),
+      done: (remaining ?? 0) === 0,
+    };
+  });
+
 
 
