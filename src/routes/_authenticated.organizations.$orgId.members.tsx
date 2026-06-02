@@ -49,6 +49,7 @@ function OrganizationMembersPage() {
     () => new Set(CONFIGURABLE_MODULE_IDS),
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
+  const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const inviteMutation = useMutation({
@@ -105,7 +106,6 @@ function OrganizationMembersPage() {
   }
 
   const { members, invitations, canManage } = detailsQuery.data;
-  const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
 
   const handleInvite = (e: FormEvent) => {
     e.preventDefault();
