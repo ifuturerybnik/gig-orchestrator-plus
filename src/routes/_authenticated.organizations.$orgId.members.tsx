@@ -52,6 +52,7 @@ function OrganizationMembersPage() {
     () => new Set(),
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
+  const [inviteEventsMode, setInviteEventsMode] = useState<EventsPermissionMode>("full");
   const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
@@ -66,6 +67,7 @@ function OrganizationMembersPage() {
             isOrgAdmin: inviteIsOrgAdmin,
             modules: Array.from(inviteModules),
             budgetMode: inviteBudgetMode,
+            eventsMode: inviteEventsMode,
           },
         },
       }),
@@ -76,6 +78,7 @@ function OrganizationMembersPage() {
       setInviteIsOrgAdmin(false);
       setInviteModules(new Set());
       setInviteBudgetMode("full");
+      setInviteEventsMode("full");
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -232,6 +235,8 @@ function OrganizationMembersPage() {
                   onModulesChange={setInviteModules}
                   budgetMode={inviteBudgetMode}
                   onBudgetModeChange={setInviteBudgetMode}
+                  eventsMode={inviteEventsMode}
+                  onEventsModeChange={setInviteEventsMode}
                   fieldIdPrefix="invite-permissions"
                 />
               </div>
