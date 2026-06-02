@@ -865,3 +865,133 @@ export const deletePlannedExpense = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ============================================================================
+// MEMBER PERMISSIONS
+// ============================================================================
+
+/**
+ * Zwraca uprawnienia jednego członka. Dostępne tylko dla ownera lub admina aplikacji.
+ */
+export const getMemberPermissions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ memberId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: member, error: memErr } = await supabaseAdmin
+      .from("organization_members")
+      .select("id, organization_id, user_id, role")
+      .eq("id", data.memberId)
+      .maybeSingle();
+    if (memErr) throw new Error(memErr.message);
+    if (!member) throw new Error("Not found");
+
+    // Autoryzacja: owner danej org lub admin aplikacji.
+    const { data: callerMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", member.organization_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const callerIsOwner = callerMembership?.role === "owner";
+    if (!callerIsOwner && !(await isAppAdmin(supabase, userId))) {
+      throw new Error("Forbidden");
+    }
+
+    const { data: perm } = await supabaseAdmin
+      .from("organization_member_permissions")
+      .select("is_org_admin, modules, budget_mode")
+      .eq("member_id", data.memberId)
+      .maybeSingle();
+
+    return {
+      member,
+      permissions: perm
+        ? {
+            is_org_admin: Boolean(perm.is_org_admin),
+            modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
+            budget_mode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
+          }
+        : null,
+    };
+  });
+
+/**
+ * Zapis uprawnień członka. Owner organizacji lub admin aplikacji.
+ * Owner samej organizacji nie może być modyfikowany (zawsze pełen dostęp).
+ */
+export const setMemberPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        memberId: z.string().uuid(),
+        isOrgAdmin: z.boolean(),
+        modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length),
+        budgetMode: BudgetModeEnum,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: member, error: memErr } = await supabaseAdmin
+      .from("organization_members")
+      .select("id, organization_id, user_id, role")
+      .eq("id", data.memberId)
+      .maybeSingle();
+    if (memErr) throw new Error(memErr.message);
+    if (!member) throw new Error("Not found");
+    if (member.role === "owner") {
+      throw new Error("Cannot modify owner permissions");
+    }
+
+    // Autoryzacja
+    const { data: callerMembership } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", member.organization_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const callerIsOwner = callerMembership?.role === "owner";
+    if (!callerIsOwner && !(await isAppAdmin(supabase, userId))) {
+      throw new Error("Forbidden");
+    }
+
+    // Deduplikacja modułów
+    const modules = Array.from(new Set(data.modules));
+
+    const { error } = await supabaseAdmin
+      .from("organization_member_permissions")
+      .upsert(
+        {
+          member_id: data.memberId,
+          organization_id: member.organization_id,
+          user_id: member.user_id,
+          is_org_admin: data.isOrgAdmin,
+          modules,
+          budget_mode: data.budgetMode,
+          updated_at: new Date().toISOString(),
+          updated_by: userId,
+        },
+        { onConflict: "member_id" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
+ * Efektywne uprawnienia bieżącego usera w danej organizacji.
+ * Używane przez sidebar / strony modułów do filtrowania UI.
+ */
+export const getMyOrgPermissions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
+    return { permissions: perms };
+  });
