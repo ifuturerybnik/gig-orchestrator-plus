@@ -2094,6 +2094,15 @@ export default
           ]
         }
       }
+  },
+  "upload": {
+    "drop_here": "Przeciągnij i upuść obraz lub kliknij, aby wybrać",
+    "formats_hint": "JPG, PNG, WebP — automatyczna konwersja i miniaturki",
+    "processing": "Przetwarzanie obrazu…",
+    "uploading": "Wysyłanie do storage…",
+    "done": "Gotowe",
+    "failed": "Nie udało się wgrać",
+    "not_an_image": "Wybrany plik nie jest obrazem"
   }
 } as const;
 
