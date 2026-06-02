@@ -496,6 +496,104 @@ function OrganizationProfilePage() {
     <OrgMailboxesSection orgId={orgId} />
     <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
     <OrgStorageSection orgId={orgId} />
+
+    {isOwner && (
+      <div className="flex justify-end pt-4">
+        {deletionScheduledFor ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>
+              {t("organizations.deletion.scheduled_banner", {
+                date: dateFmt.format(new Date(deletionScheduledFor)),
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => cancelDeletionMutation.mutate()}
+              disabled={cancelDeletionMutation.isPending}
+            >
+              {t("organizations.deletion.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {t("organizations.deletion.request_short")}
+          </Button>
+        )}
+      </div>
+    )}
+
+    <Dialog
+      open={deleteOpen}
+      onOpenChange={(o) => {
+        setDeleteOpen(o);
+        if (!o) setDeletePassword("");
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            {t("organizations.deletion.title")}
+          </DialogTitle>
+          <DialogDescription className="space-y-2 pt-2 text-foreground">
+            <span className="block">
+              {t("organizations.deletion.dialog_info")}
+            </span>
+            <span className="block text-muted-foreground">
+              {t("organizations.deletion.dialog_members_info")}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!deletePassword) return;
+            requestDeletionMutation.mutate(deletePassword);
+          }}
+          className="space-y-3"
+        >
+          <Label htmlFor="delete-password">
+            {t("organizations.deletion.password_label")}
+          </Label>
+          <Input
+            id="delete-password"
+            type="password"
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            required
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={!deletePassword || requestDeletionMutation.isPending}
+            >
+              {t("organizations.deletion.confirm")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
     </div>
 
   );
