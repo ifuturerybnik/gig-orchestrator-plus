@@ -17,6 +17,9 @@ import { useForceLightTheme } from "@/hooks/use-force-light-theme";
 
 
 export const Route = createFileRoute("/register")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+  }),
   component: RegisterPage,
 });
 
@@ -37,6 +40,7 @@ function RegisterPage() {
   useForceLightTheme();
   const { t, i18n } = useTranslation();
   const recordConsents = useServerFn(recordSignupConsents);
+  const { redirect: redirectTo } = Route.useSearch();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,7 +91,7 @@ function RegisterPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}${redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard"}`,
         data: {
           first_name: firstName,
           last_name: lastName,
