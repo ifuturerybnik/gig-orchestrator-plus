@@ -59,6 +59,7 @@ import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './rou
 import { Route as AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport } from './routes/_authenticated.organizations.$orgId.autokorespondencja'
 import { Route as AuthenticatedOrganizationsOrgIdAiStudioRouteImport } from './routes/_authenticated.organizations.$orgId.ai-studio'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
+import { Route as ApiPublicV1OrgsSlugSitemapDotxmlRouteImport } from './routes/api/public/v1.orgs.$slug.sitemap[.]xml'
 import { Route as ApiPublicV1OrgsSlugNewsRouteImport } from './routes/api/public/v1.orgs.$slug.news'
 import { Route as ApiPublicV1OrgsSlugGalleryRouteImport } from './routes/api/public/v1.orgs.$slug.gallery'
 import { Route as ApiPublicV1OrgsSlugEventsDoticsRouteImport } from './routes/api/public/v1.orgs.$slug.events[.]ics'
@@ -349,6 +350,12 @@ const AuthenticatedContactsOrgOrgIdRoute =
     path: '/org/$orgId',
     getParentRoute: () => AuthenticatedContactsRoute,
   } as any)
+const ApiPublicV1OrgsSlugSitemapDotxmlRoute =
+  ApiPublicV1OrgsSlugSitemapDotxmlRouteImport.update({
+    id: '/api/public/v1/orgs/$slug/sitemap.xml',
+    path: '/api/public/v1/orgs/$slug/sitemap.xml',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicV1OrgsSlugNewsRoute = ApiPublicV1OrgsSlugNewsRouteImport.update({
   id: '/api/public/v1/orgs/$slug/news',
   path: '/api/public/v1/orgs/$slug/news',
@@ -445,6 +452,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
   '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
   '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/sitemap.xml': typeof ApiPublicV1OrgsSlugSitemapDotxmlRoute
   '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
   '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
   '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
@@ -500,6 +508,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
   '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
   '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/sitemap.xml': typeof ApiPublicV1OrgsSlugSitemapDotxmlRoute
   '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
   '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
   '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
@@ -560,6 +569,7 @@ export interface FileRoutesById {
   '/api/public/v1/orgs/$slug/events.ics': typeof ApiPublicV1OrgsSlugEventsDoticsRoute
   '/api/public/v1/orgs/$slug/gallery': typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
   '/api/public/v1/orgs/$slug/news': typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  '/api/public/v1/orgs/$slug/sitemap.xml': typeof ApiPublicV1OrgsSlugSitemapDotxmlRoute
   '/api/public/v1/orgs/$slug/gallery/$albumSlug': typeof ApiPublicV1OrgsSlugGalleryAlbumSlugRoute
   '/api/public/v1/orgs/$slug/news/$itemSlug': typeof ApiPublicV1OrgsSlugNewsItemSlugRoute
   '/api/public/v1/orgs/$slug/news/feed.xml': typeof ApiPublicV1OrgsSlugNewsFeedDotxmlRoute
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/orgs/$slug/events.ics'
     | '/api/public/v1/orgs/$slug/gallery'
     | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/sitemap.xml'
     | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
     | '/api/public/v1/orgs/$slug/news/$itemSlug'
     | '/api/public/v1/orgs/$slug/news/feed.xml'
@@ -675,6 +686,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/orgs/$slug/events.ics'
     | '/api/public/v1/orgs/$slug/gallery'
     | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/sitemap.xml'
     | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
     | '/api/public/v1/orgs/$slug/news/$itemSlug'
     | '/api/public/v1/orgs/$slug/news/feed.xml'
@@ -734,6 +746,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/orgs/$slug/events.ics'
     | '/api/public/v1/orgs/$slug/gallery'
     | '/api/public/v1/orgs/$slug/news'
+    | '/api/public/v1/orgs/$slug/sitemap.xml'
     | '/api/public/v1/orgs/$slug/gallery/$albumSlug'
     | '/api/public/v1/orgs/$slug/news/$itemSlug'
     | '/api/public/v1/orgs/$slug/news/feed.xml'
@@ -766,6 +779,7 @@ export interface RootRouteChildren {
   ApiPublicV1OrgsSlugEventsDoticsRoute: typeof ApiPublicV1OrgsSlugEventsDoticsRoute
   ApiPublicV1OrgsSlugGalleryRoute: typeof ApiPublicV1OrgsSlugGalleryRouteWithChildren
   ApiPublicV1OrgsSlugNewsRoute: typeof ApiPublicV1OrgsSlugNewsRouteWithChildren
+  ApiPublicV1OrgsSlugSitemapDotxmlRoute: typeof ApiPublicV1OrgsSlugSitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1120,6 +1134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContactsOrgOrgIdRouteImport
       parentRoute: typeof AuthenticatedContactsRoute
     }
+    '/api/public/v1/orgs/$slug/sitemap.xml': {
+      id: '/api/public/v1/orgs/$slug/sitemap.xml'
+      path: '/api/public/v1/orgs/$slug/sitemap.xml'
+      fullPath: '/api/public/v1/orgs/$slug/sitemap.xml'
+      preLoaderRoute: typeof ApiPublicV1OrgsSlugSitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/orgs/$slug/news': {
       id: '/api/public/v1/orgs/$slug/news'
       path: '/api/public/v1/orgs/$slug/news'
@@ -1343,6 +1364,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicV1OrgsSlugEventsDoticsRoute: ApiPublicV1OrgsSlugEventsDoticsRoute,
   ApiPublicV1OrgsSlugGalleryRoute: ApiPublicV1OrgsSlugGalleryRouteWithChildren,
   ApiPublicV1OrgsSlugNewsRoute: ApiPublicV1OrgsSlugNewsRouteWithChildren,
+  ApiPublicV1OrgsSlugSitemapDotxmlRoute: ApiPublicV1OrgsSlugSitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
