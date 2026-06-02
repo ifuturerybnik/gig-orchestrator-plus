@@ -636,6 +636,13 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Egzekwowanie uprawnień: członek z budget_mode='unrealized_only'
+    // może dodawać tylko wpisy ze statusem completed=false.
+    const perms = await loadEffectivePerms(supabase, userId, data.organizationId);
+    const canComplete =
+      perms.isOrgAdmin ||
+      (perms.modules.includes("budget") && perms.budgetMode === "full");
+    const forcedCompleted = canComplete ? data.completed ?? true : false;
     const { data: entry, error } = await supabase
       .from("organization_budget_entries")
       .insert({
@@ -647,7 +654,7 @@ export const createBudgetEntry = createServerFn({ method: "POST" })
         amount_gross: data.amount_gross,
         currency: data.currency,
         category: data.category ?? null,
-        completed: data.completed ?? true,
+        completed: forcedCompleted,
       })
       .select()
       .single();
