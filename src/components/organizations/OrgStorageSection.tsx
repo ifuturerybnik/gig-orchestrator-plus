@@ -457,7 +457,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
           </ul>
         </div>
       </details>
-      )}
+      </>)}
 
       {data.mode === "central" && (
         <div className="flex gap-3 rounded-md border border-border bg-background p-4 text-sm">
