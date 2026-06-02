@@ -319,6 +319,9 @@ export const updatePerformance = createServerFn({ method: "POST" })
   .inputValidator((input) => updateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
+
+
 
     const kind = data.eventKind.trim();
     const isPreset = (PERFORMANCE_EVENT_KIND_PRESETS as readonly string[]).includes(kind);
@@ -412,7 +415,8 @@ export const deletePerformance = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    await assertCanEditEvents(supabase, userId, data.organizationId);
     const { error } = await supabase
       .from("performances")
       .delete()
