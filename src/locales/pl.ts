@@ -1696,8 +1696,9 @@ export default
       "ai_analysis_title": "Analiza AI",
       "ai_analysis_subtitle": "AI przeanalizuje wyniki i zaproponuje kierunki optymalizacji.",
       "run_analysis": "Uruchom analizę"
-    },
-    "web": {
+    }
+  },
+  "web": {
       "subtitle": "Publikuj treści (Aktualności, Wydarzenia, Galeria) na swojej stronie WWW.",
       "coming_in_next_step": "Pełen edytor pojawi się w kolejnym kroku — najpierw uruchamiamy Aktualności i konfigurację integracji.",
       "tabs": {
@@ -2093,7 +2094,6 @@ export default
           ]
         }
       }
-    }
   }
 } as const;
 
