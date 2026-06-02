@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,14 +22,13 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   useForceLightTheme();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  
   const { redirect: redirectTo } = Route.useSearch();
   const goNext = () => {
-    if (redirectTo && redirectTo.startsWith("/")) {
-      window.location.assign(redirectTo);
-    } else {
-      goNext();
-    }
+    const target = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+    // Twardy reload — gwarantuje że AuthProvider odczyta świeżą sesję z localStorage
+    // przed renderem chronionej strony (eliminuje flash ekranu logowania).
+    window.location.assign(target);
   };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
