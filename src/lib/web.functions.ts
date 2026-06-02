@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { notifyWebhooks } from "@/lib/web-webhooks.server";
+
 
 // ============================================================
 // Helpers
@@ -279,6 +281,11 @@ export const upsertWebNews = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabase.from("web_news").update(payload).eq("id", data.id);
       if (error) throw new Error(error.message);
+      await notifyWebhooks(data.organizationId, data.isPublic ? "news.published" : "news.updated", {
+        id: data.id,
+        slug,
+        organization_id: data.organizationId,
+      });
       return { id: data.id };
     }
     const { data: inserted, error } = await supabase
@@ -287,6 +294,11 @@ export const upsertWebNews = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await notifyWebhooks(data.organizationId, data.isPublic ? "news.published" : "news.updated", {
+      id: inserted.id,
+      slug,
+      organization_id: data.organizationId,
+    });
     return { id: inserted.id };
   });
 
@@ -295,8 +307,20 @@ export const deleteWebNews = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { data: row } = await supabase
+      .from("web_news")
+      .select("organization_id, slug")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabase.from("web_news").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (row?.organization_id) {
+      await notifyWebhooks(row.organization_id as string, "news.deleted", {
+        id: data.id,
+        slug: row.slug,
+        organization_id: row.organization_id,
+      });
+    }
     return { ok: true };
   });
 
