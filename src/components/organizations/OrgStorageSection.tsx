@@ -474,6 +474,7 @@ export function OrgStorageSection({ orgId }: { orgId: string }) {
 ]`}</pre>
             Bez tego przeglądarka zablokuje upload plików.
           </li>
+          <li>
             <strong>Utwórz API token R2.</strong> Wróć do głównej strony R2 → po prawej
             „Manage R2 API Tokens" → „Create API token". Ustaw:
             <ul className="mt-1 list-disc pl-5 text-muted-foreground">
