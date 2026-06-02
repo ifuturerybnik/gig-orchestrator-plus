@@ -4,21 +4,24 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Settings2 } from "lucide-react";
+import { AlertTriangle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { MemberPermissionsDialog } from "@/components/organizations/MemberPermissionsDialog";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
-  CONFIGURABLE_MODULE_IDS,
   type BudgetPermissionMode,
   type OrgModuleId,
 } from "@/lib/org-modules";
 import {
   cancelInvitation,
+  cancelOrganizationDeletion,
   getOrganizationDetails,
   inviteUserToOrganization,
   removeOrganizationMember,
+  requestOrganizationDeletion,
 } from "@/lib/organizations.functions";
 
 export const Route = createFileRoute(
@@ -29,13 +32,15 @@ export const Route = createFileRoute(
 
 function OrganizationMembersPage() {
   const { orgId } = Route.useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const fetchDetails = useServerFn(getOrganizationDetails);
   const inviteFn = useServerFn(inviteUserToOrganization);
   const removeFn = useServerFn(removeOrganizationMember);
   const cancelFn = useServerFn(cancelInvitation);
+  const requestDeleteFn = useServerFn(requestOrganizationDeletion);
+  const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
@@ -44,9 +49,10 @@ function OrganizationMembersPage() {
   });
 
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteAsOwner, setInviteAsOwner] = useState(false);
   const [inviteIsOrgAdmin, setInviteIsOrgAdmin] = useState(false);
   const [inviteModules, setInviteModules] = useState<Set<OrgModuleId>>(
-    () => new Set(CONFIGURABLE_MODULE_IDS),
+    () => new Set(),
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
   const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
@@ -59,6 +65,7 @@ function OrganizationMembersPage() {
           organizationId: orgId,
           email: inviteEmail,
           access: {
+            asOwner: inviteAsOwner,
             isOrgAdmin: inviteIsOrgAdmin,
             modules: Array.from(inviteModules),
             budgetMode: inviteBudgetMode,
@@ -68,6 +75,10 @@ function OrganizationMembersPage() {
     onSuccess: () => {
       toast.success(t("organizations.members.invitation_sent"));
       setInviteEmail("");
+      setInviteAsOwner(false);
+      setInviteIsOrgAdmin(false);
+      setInviteModules(new Set());
+      setInviteBudgetMode("full");
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
