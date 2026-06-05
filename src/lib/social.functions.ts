@@ -1679,8 +1679,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
       // Scope'y IG są wymagane, żeby Graph API zwracało pole
       // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
-      // Komentarze IG przez Facebook Login wymagają `instagram_manage_comments`
-      // oraz Page access tokena dla strony połączonej z kontem Instagram.
+      // `instagram_manage_comments` jest wymagane przez Meta dla moderacji komentarzy,
+      // ale ten App ID odrzuca je w dialogu Facebook Login jako Invalid Scopes.
+      // Nie wysyłamy go w OAuth; adapter nie blokuje wysyłki lokalnym sprawdzeniem scope'ów.
       // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
       // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // `pages_read_user_engagement` też nie jest akceptowanym permission OAuth
@@ -1695,7 +1696,6 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
-        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
@@ -1703,7 +1703,6 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         redirect_uri: callbackUrl,
         state,
         scope: scopes.join(","),
-        auth_type: "rerequest",
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
