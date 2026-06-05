@@ -52,7 +52,7 @@ function verifySignedRequest(
 
 async function resolveAppSecrets(): Promise<string[]> {
   const secrets: string[] = [];
-  const central = process.env.EXT_META_APP_SECRET;
+  const central = process.env.META_APP_SECRET || process.env.EXT_META_APP_SECRET;
   if (central) secrets.push(central);
   try {
     const { data } = await supabaseAdmin
