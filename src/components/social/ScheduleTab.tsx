@@ -46,6 +46,7 @@ import {
 export function ScheduleTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
   const fetchPosts = useServerFn(listSocialPosts);
   const publishFn = useServerFn(publishPostNow);
   const syncFn = useServerFn(syncPostNow);
