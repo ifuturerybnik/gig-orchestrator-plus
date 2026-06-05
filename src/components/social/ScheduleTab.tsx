@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { PostDetailsDialog } from "./PostDetailsDialog";
 import { toast } from "sonner";
 import {
   CalendarClock,
@@ -44,6 +46,7 @@ import {
 export function ScheduleTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
   const fetchPosts = useServerFn(listSocialPosts);
   const publishFn = useServerFn(publishPostNow);
   const syncFn = useServerFn(syncPostNow);
@@ -209,7 +212,19 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
               const isPublished = p.status === "published";
 
               return (
-                <div key={p.id} className="overflow-hidden rounded-md border text-sm">
+                <div
+                  key={p.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setOpenPostId(p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpenPostId(p.id);
+                    }
+                  }}
+                  className="overflow-hidden rounded-md border text-sm cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="flex gap-3 p-3">
                     {cover ? (
                       <img
@@ -288,6 +303,7 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                             href={externalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 text-primary hover:underline"
                           >
                             {t("social.schedule.open_original")}
@@ -312,7 +328,10 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                         </div>
                       )}
 
-                      <div className="flex flex-wrap items-center justify-end gap-1 pt-1">
+                      <div
+                        className="flex flex-wrap items-center justify-end gap-1 pt-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {isPublished && (
                           <Button size="sm" variant="ghost" onClick={() => handleSync(p.id)}>
                             <RefreshCw className="mr-1 h-3 w-3" />
@@ -361,6 +380,13 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <PostDetailsDialog
+        orgId={orgId}
+        postId={openPostId}
+        open={!!openPostId}
+        onOpenChange={(v) => !v && setOpenPostId(null)}
+      />
     </div>
   );
 }
