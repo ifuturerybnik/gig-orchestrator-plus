@@ -364,6 +364,7 @@ export function PostDetailsDialog({
                         replyFn={replyFn}
                         moderateFn={moderateFn}
                         suggestFn={suggestFn}
+                        likeFn={likeFn}
                         onChanged={invalidate}
                       />
                     ))}
@@ -390,6 +391,7 @@ function Metric({ icon, value }: { icon: React.ReactNode; value: number }) {
 type ReplyFn = (args: { data: { organizationId: string; commentId: string; text: string } }) => Promise<{ ok: boolean; sent: boolean; error: string | null }>;
 type ModerateFn = (args: { data: { organizationId: string; commentId: string; action: "hide" | "unhide" | "delete" | "mark_spam" | "archive" } }) => Promise<{ ok: boolean }>;
 type SuggestFn = (args: { data: { organizationId: string; commentId: string; tone: "warm" | "formal" | "short"; language: "pl" | "en" } }) => Promise<{ variants: string[] }>;
+type LikeFn = (args: { data: { organizationId: string; target: "comment"; commentId: string } }) => Promise<{ ok: boolean }>;
 
 function CommentItem({
   comment,
@@ -398,6 +400,7 @@ function CommentItem({
   replyFn,
   moderateFn,
   suggestFn,
+  likeFn,
   onChanged,
   isReply = false,
 }: {
@@ -407,13 +410,14 @@ function CommentItem({
   replyFn: ReplyFn;
   moderateFn: ModerateFn;
   suggestFn: SuggestFn;
+  likeFn: LikeFn;
   onChanged: () => void;
   isReply?: boolean;
 }) {
   const { t } = useTranslation();
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
-  const [busy, setBusy] = useState<"none" | "reply" | "suggest" | "moderate">("none");
+  const [busy, setBusy] = useState<"none" | "reply" | "suggest" | "moderate" | "like">("none");
   const [variants, setVariants] = useState<string[] | null>(null);
 
   useEffect(() => {
