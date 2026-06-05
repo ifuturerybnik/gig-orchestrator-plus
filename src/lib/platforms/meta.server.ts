@@ -81,6 +81,22 @@ function pickIgDisplayMediaUrl(args: {
   return args.mediaUrl ?? args.thumbnailUrl ?? null;
 }
 
+function pickIgMediaItem(args: {
+  mediaType?: string;
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+}): { url: string; type: "image" | "video"; thumbnail_url?: string | null } | null {
+  const mt = (args.mediaType ?? "").toUpperCase();
+  if (mt === "VIDEO" || mt === "REELS") {
+    const url = args.mediaUrl ?? args.thumbnailUrl;
+    if (!url) return null;
+    return { url, type: "video", thumbnail_url: args.thumbnailUrl ?? null };
+  }
+  const url = args.mediaUrl ?? args.thumbnailUrl;
+  if (!url) return null;
+  return { url, type: "image" };
+}
+
 type FbPostMediaShape = {
   full_picture?: string;
   picture?: string;
@@ -440,9 +456,10 @@ export const facebookAdapter: PlatformAdapter = {
     // Pola komentarzy z Page tokena. Nie pobieramy avatarów autorów, bo częściej
     // uruchamiają dodatkowe ograniczenia API niż same komentarze i liczniki.
     const params = new URLSearchParams({
-      fields: "id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+      fields: "id,from{name,id,picture{url}},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+      filter: "stream",
       order: "reverse_chronological",
-      limit: "50",
+      limit: "100",
       access_token: account.access_token,
     });
     if (sinceIso) {
@@ -450,7 +467,7 @@ export const facebookAdapter: PlatformAdapter = {
     }
     type FbComment = {
       id: string;
-      from?: { id?: string; name?: string };
+      from?: { id?: string; name?: string; picture?: { data?: { url?: string } } };
       message?: string;
       created_time: string;
       like_count?: number;
@@ -460,11 +477,11 @@ export const facebookAdapter: PlatformAdapter = {
     };
     const mapComment = (c: FbComment): PlatformInboxItem => ({
       externalCommentId: c.id,
-      externalParentCommentId: c.parent?.id ?? null,
+      externalParentCommentId: c.parent?.id && c.parent.id !== externalPostId ? c.parent.id : null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
-      authorAvatarUrl: null,
+      authorAvatarUrl: c.from?.picture?.data?.url ?? null,
       content: c.message ?? "",
       permalink: c.permalink_url ?? `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
@@ -567,16 +584,73 @@ export const facebookAdapter: PlatformAdapter = {
 
     return Promise.all((j.data ?? []).map(async (p) => {
       const mediaUrls = collectFbMediaUrls(p);
+      const mediaItems = await fetchFbPostMediaItems(p.id, token).catch(() => null);
+      const itemsFallback: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> =
+        mediaItems && mediaItems.length > 0
+          ? mediaItems
+          : mediaUrls.map((url) => ({ url, type: "image" as const, thumbnail_url: null }));
       return {
         externalPostId: p.id,
         externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
         text: p.message ?? p.story ?? "",
-        mediaUrls,
+        mediaUrls: itemsFallback.map((i) => i.thumbnail_url ?? i.url),
+        mediaItems: itemsFallback,
         postedAt: p.created_time,
       };
     }));
   },
 };
+
+/**
+ * Pobiera attachments dla pojedynczego posta FB (per-object endpoint nie wpada
+ * w aggregated #12 tak często jak /posts?fields=attachments). Wyciąga zarówno
+ * obrazy jak i wideo (typy: photo, video, video_inline, share, album).
+ * Zwraca null w razie błędu uprawnień.
+ */
+async function fetchFbPostMediaItems(
+  postId: string,
+  accessToken: string,
+): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
+  try {
+    const fields =
+      "attachments{media_type,type,media,target,url,subattachments{media_type,type,media,target,url}}";
+    const url = `${GRAPH}/${encodeURIComponent(postId)}?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`;
+    type Att = {
+      media_type?: string;
+      type?: string;
+      url?: string;
+      target?: { id?: string; url?: string };
+      media?: {
+        image?: { src?: string };
+        source?: string;
+      };
+      subattachments?: { data?: Att[] };
+    };
+    const j = await graphJson<{ attachments?: { data?: Att[] } }>(url, {
+      context: "FB post attachments",
+    });
+    const items: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> = [];
+    const walk = (atts: Att[]) => {
+      for (const a of atts) {
+        const t = (a.media_type ?? a.type ?? "").toLowerCase();
+        const img = a.media?.image?.src ?? null;
+        const src = a.media?.source ?? null;
+        if (t.includes("video") || t === "animated_image_video") {
+          const videoUrl = src ?? img;
+          if (videoUrl) items.push({ url: videoUrl, type: "video", thumbnail_url: img });
+        } else if (img) {
+          items.push({ url: img, type: "image" });
+        }
+        if (a.subattachments?.data?.length) walk(a.subattachments.data);
+      }
+    };
+    walk(j.attachments?.data ?? []);
+    return items;
+  } catch (e) {
+    console.warn("[meta] fetchFbPostMediaItems failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 // =============================================================================
 // Instagram adapter (Business / Creator)
@@ -797,29 +871,27 @@ export const instagramAdapter: PlatformAdapter = {
     );
     return (j.data ?? []).map((m) => {
       const mediaUrls: string[] = [];
+      const mediaItems: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> = [];
       const children = m.children?.data ?? [];
+      const pushOne = (it: { mediaType?: string; mediaUrl?: string; thumbnailUrl?: string }) => {
+        const url = pickIgDisplayMediaUrl(it);
+        if (url) mediaUrls.push(url);
+        const item = pickIgMediaItem(it);
+        if (item) mediaItems.push(item);
+      };
       if (children.length > 0) {
         for (const c of children) {
-          const url = pickIgDisplayMediaUrl({
-            mediaType: c.media_type,
-            mediaUrl: c.media_url,
-            thumbnailUrl: c.thumbnail_url,
-          });
-          if (url) mediaUrls.push(url);
+          pushOne({ mediaType: c.media_type, mediaUrl: c.media_url, thumbnailUrl: c.thumbnail_url });
         }
       } else {
-        const url = pickIgDisplayMediaUrl({
-          mediaType: m.media_type,
-          mediaUrl: m.media_url,
-          thumbnailUrl: m.thumbnail_url,
-        });
-        if (url) mediaUrls.push(url);
+        pushOne({ mediaType: m.media_type, mediaUrl: m.media_url, thumbnailUrl: m.thumbnail_url });
       }
       return {
         externalPostId: m.id,
         externalUrl: m.permalink ?? null,
         text: m.caption ?? "",
         mediaUrls,
+        mediaItems,
         postedAt: m.timestamp,
       };
     });
