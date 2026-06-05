@@ -1874,7 +1874,8 @@ export default
         "secret_desc": "Zachowaj sekret w bezpiecznym miejscu. Użyj go do weryfikacji nagłówka X-Concertivo-Signature po stronie odbiorcy.",
         "show_secret": "Pokaż sekret",
         "deliveries": "Ostatnie dostarczenia",
-        "no_deliveries": "Brak prób dostarczenia."
+        "no_deliveries": "Brak prób dostarczenia.",
+        "download_guide": "Pobierz instrukcję PDF"
       },
       "instructions": {
         "news": {
