@@ -303,6 +303,7 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                             href={externalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 text-primary hover:underline"
                           >
                             {t("social.schedule.open_original")}
