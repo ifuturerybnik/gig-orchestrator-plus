@@ -462,10 +462,7 @@ export async function handleMetaOAuthCallback(args: {
       external_account_id: page.id,
       account_name: page.name,
       account_avatar_url: page.picture ?? null,
-      scopes: [
-        "pages_show_list",
-        "pages_read_engagement",
-      ],
+      scopes: perms.granted,
       access_token_enc: encryptPii(page.access_token),
       refresh_token_enc: null,
       token_expires_at: tokenExpiresAt,
