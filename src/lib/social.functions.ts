@@ -852,6 +852,7 @@ export type InboxCommentRow = {
   post_id: string | null;
   external_post_id: string;
   external_comment_id: string;
+  external_parent_comment_id: string | null;
   author_name: string | null;
   author_avatar_url: string | null;
   content: string;
