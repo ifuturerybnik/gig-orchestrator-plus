@@ -467,7 +467,7 @@ export const facebookAdapter: PlatformAdapter = {
     }
     type FbComment = {
       id: string;
-      from?: { id?: string; name?: string };
+      from?: { id?: string; name?: string; picture?: { data?: { url?: string } } };
       message?: string;
       created_time: string;
       like_count?: number;
@@ -477,11 +477,11 @@ export const facebookAdapter: PlatformAdapter = {
     };
     const mapComment = (c: FbComment): PlatformInboxItem => ({
       externalCommentId: c.id,
-      externalParentCommentId: c.parent?.id ?? null,
+      externalParentCommentId: c.parent?.id && c.parent.id !== externalPostId ? c.parent.id : null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
-      authorAvatarUrl: null,
+      authorAvatarUrl: c.from?.picture?.data?.url ?? null,
       content: c.message ?? "",
       permalink: c.permalink_url ?? `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
