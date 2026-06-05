@@ -930,7 +930,10 @@ export async function refreshFbPostMediaUrls(args: {
   accessToken: string;
 }): Promise<string[] | null> {
   try {
-    const fields = "id,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
+    // Pole attachments w wersjach Graph v3.3+ potrafi zwracać błąd #12
+    // deprecate_post_aggregated_fields_for_attachment. Używamy wyłącznie
+    // bezpiecznych pól i object_id jako fallbacku do grafiki.
+    const fields = "id,full_picture,picture,object_id";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
     const j = await graphJson<FbPostMediaShape & {
       object_id?: string;
