@@ -1473,14 +1473,21 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
-      // Facebook Pages — osobny flow, bez scope'ów Instagram.
+      // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
+      // Scope'y IG są wymagane, żeby Graph API zwracało pole
+      // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
         "pages_manage_posts",
         "pages_manage_metadata",
+        "pages_manage_engagement",
         "business_management",
-      ].filter((scope) => scope !== "pages_read_user_content");
+        "instagram_basic",
+        "instagram_content_publish",
+        "instagram_manage_comments",
+        "instagram_manage_insights",
+      ];
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
