@@ -34,9 +34,12 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v22.0";
 
 function igApiBases(account: PlatformAccount): string[] {
+  return isInstagramLoginAccount(account) ? [INSTAGRAM_GRAPH] : [GRAPH];
+}
+
+function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
-  const looksLikeInstagramLogin = scopes.some((s) => s.startsWith("instagram_business_"));
-  return looksLikeInstagramLogin ? [INSTAGRAM_GRAPH, GRAPH] : [GRAPH, INSTAGRAM_GRAPH];
+  return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
 }
 
 export class MetaPermissionError extends Error {
