@@ -1561,6 +1561,16 @@ export default
       "delete_imported_confirm": "Clear imports",
       "import_delete_done": "Deleted imported posts locally: {{count}}."
     },
+    "post_details": {
+      "title": "Post details",
+      "subtitle": "Content, metrics, comments and replies.",
+      "not_found": "Post not found.",
+      "no_results": "This post has not been published on any platform yet.",
+      "comments_title": "Comments ({{count}})",
+      "no_comments": "No comments. Click \"Sync\" to pull the latest from the platform.",
+      "reply": "Reply",
+      "moderation": "Moderation"
+    },
     "stats": {
       "title": "Stats",
       "subtitle": "Reach, reactions and click-through of published content.",
