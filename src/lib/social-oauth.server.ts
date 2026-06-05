@@ -506,7 +506,7 @@ export async function handleMetaOAuthCallback(args: {
           access_token_enc: encryptPii(page.access_token),
           refresh_token_enc: null,
           token_expires_at: null,
-          scopes: ["instagram_basic", "instagram_content_publish"],
+          scopes: perms.granted.filter((scope) => scope.startsWith("instagram_")),
           status: "connected",
           last_error: null,
           connected_by: s.user_id,
