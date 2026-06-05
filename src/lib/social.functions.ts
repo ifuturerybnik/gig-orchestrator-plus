@@ -1821,29 +1821,39 @@ export const syncPostNow = createServerFn({ method: "POST" })
       // Odświeżenie URL-i mediów dla Meta (CDN URLs wygasają po ~24h).
       if (r.platform === "instagram" || r.platform === "facebook") {
         try {
-          const { refreshIgPostMediaUrls, refreshFbPostMediaUrls } = await import(
+          const { refreshIgPostMediaItems, refreshFbPostMediaUrls, fetchFbPostMediaItems } = await import(
             "./platforms/meta.server"
           );
-          const fresh =
+          const freshItems =
             r.platform === "instagram"
-              ? await refreshIgPostMediaUrls({
+              ? await refreshIgPostMediaItems({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
                 })
-              : await refreshFbPostMediaUrls({
+              : await fetchFbPostMediaItems(r.external_post_id, ctx2.account.access_token);
+          const fallbackUrls = freshItems && freshItems.length > 0
+            ? null
+            : await refreshFbPostMediaUrls({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
                 });
-          if (fresh && fresh.length > 0) {
+          const freshUrls = freshItems && freshItems.length > 0
+            ? freshItems.map((i) => (i.type === "video" ? i.thumbnail_url ?? i.url : i.url))
+            : fallbackUrls;
+          if (freshUrls && freshUrls.length > 0) {
             const { data: postRow } = await supabaseAdmin
               .from("social_posts")
               .select("content_per_platform")
               .eq("id", r.post_id)
               .maybeSingle();
             const cpp =
-              ((postRow as { content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }> } | null)
+              ((postRow as { content_per_platform: SocialPostRow["content_per_platform"] } | null)
                 ?.content_per_platform) ?? {};
-            cpp[r.platform] = { ...(cpp[r.platform] ?? {}), media_urls: fresh };
+            cpp[r.platform] = {
+              ...(cpp[r.platform] ?? {}),
+              media_urls: freshUrls,
+              ...(freshItems && freshItems.length > 0 ? { media_items: freshItems } : {}),
+            };
             await supabaseAdmin
               .from("social_posts")
               .update({ content_per_platform: cpp })
