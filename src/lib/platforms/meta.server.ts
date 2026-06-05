@@ -439,11 +439,34 @@ export const facebookAdapter: PlatformAdapter = {
       access_token: account.access_token,
     });
     const url = `${GRAPH}/${encodeURIComponent(externalPostId)}?${params.toString()}`;
-    const j = await graphJson<{
+    let j: {
       likes?: { summary?: { total_count?: number } };
       comments?: { summary?: { total_count?: number } };
       shares?: { count?: number };
-    }>(url, { context: "FB metrics" });
+    };
+    try {
+      j = await graphJson(url, { context: "FB metrics" });
+    } catch (e) {
+      if (e instanceof MetaPermissionError) throw e;
+      const [likes, comments] = await Promise.all([
+        fetchFbEdgeSummaryCount({
+          objectId: externalPostId,
+          edge: "likes",
+          accessToken: account.access_token,
+          context: "FB /likes summary",
+        }),
+        fetchFbEdgeSummaryCount({
+          objectId: externalPostId,
+          edge: "comments",
+          accessToken: account.access_token,
+          context: "FB /comments summary",
+        }),
+      ]);
+      j = {
+        likes: { summary: { total_count: likes } },
+        comments: { summary: { total_count: comments } },
+      };
+    }
     return {
       likes: j.likes?.summary?.total_count ?? 0,
       comments: j.comments?.summary?.total_count ?? 0,
