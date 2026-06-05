@@ -84,7 +84,6 @@ function pickIgDisplayMediaUrl(args: {
 type FbPostMediaShape = {
   full_picture?: string;
   picture?: string;
-  object_id?: string;
 };
 
 function pushUniqueUrl(urls: string[], url?: string | null): void {
