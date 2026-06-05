@@ -107,6 +107,16 @@ export interface PlatformAdapter {
     clientSecret: string;
   }): Promise<PlatformReplyResult>;
 
+  /** Polub post lub komentarz jako połączone konto/strona, jeśli API platformy to wspiera. */
+  like?(args: {
+    account: PlatformAccount;
+    target: "post" | "comment";
+    externalId: string;
+    externalPostId?: string;
+    clientId: string;
+    clientSecret: string;
+  }): Promise<{ ok: boolean }>;
+
   /** Pobierz N ostatnio opublikowanych postów z konta (do importu historii / synchronizacji). */
   listRecentPosts?(args: {
     account: PlatformAccount;
