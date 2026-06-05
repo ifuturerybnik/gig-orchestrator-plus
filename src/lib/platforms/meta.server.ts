@@ -46,14 +46,21 @@ export class MetaPermissionError extends Error {
 function isMetaEngagementPermissionError(status: number, body: string): boolean {
   if (status !== 400 && status !== 403) return false;
   const isCode10 = body.includes("(#10)") || body.includes('"code":10');
-  // Wymaga zarówno code:10 jak i wyraźnej wzmianki o brakującym uprawnieniu/PPCA.
-  // Inne code:10 (np. ograniczenia konta, "Application does not have permission for this action")
-  // powinny iść jako zwykły błąd, nie schowane pod banerem o App Review.
   const mentionsMissingPermission =
     /requires?\s+.*permission/i.test(body) ||
     /Page Public Content Access/i.test(body) ||
     /requires?\s+.*pages_read_engagement/i.test(body);
   return isCode10 && mentionsMissingPermission;
+}
+
+function composeText(content: PlatformPostContent, maxLen: number): string {
+  const text = (content.text ?? "").trim();
+  const tags = (content.hashtags ?? [])
+    .map((h) => (h.startsWith("#") ? h : `#${h}`))
+    .join(" ");
+  const out = [text, tags].filter(Boolean).join("\n\n");
+  if (out.length > maxLen) return out.slice(0, maxLen - 3) + "…";
+  return out;
 }
 
 async function graphJson<T = unknown>(
