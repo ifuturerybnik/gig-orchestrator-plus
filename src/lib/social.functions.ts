@@ -351,12 +351,21 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: post, error: accessErr } = await supabase
       .from("social_posts")
-      .select("id")
+      .select("id, source")
       .eq("id", data.postId)
       .eq("organization_id", data.organizationId)
       .maybeSingle();
     if (accessErr) throw new Error(accessErr.message);
     if (!post) throw new Error("Post nie istnieje lub brak dostępu.");
+    if ((post as { source?: string }).source !== "imported") {
+      const { error } = await supabase
+        .from("social_posts")
+        .delete()
+        .eq("id", data.postId)
+        .eq("organization_id", data.organizationId);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
 
     const { error: commentsErr } = await supabaseAdmin
       .from("social_comments")
