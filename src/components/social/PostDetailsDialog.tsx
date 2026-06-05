@@ -166,6 +166,7 @@ export function PostDetailsDialog({
   };
 
   const [syncing, setSyncing] = useState(false);
+  const [likingPost, setLikingPost] = useState<string | null>(null);
   const handleSync = async () => {
     if (!postId) return;
     setSyncing(true);
@@ -181,6 +182,20 @@ export function PostDetailsDialog({
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleLikePost = async (platform: string) => {
+    if (!postId) return;
+    setLikingPost(platform);
+    try {
+      await likeFn({ data: { organizationId: orgId, target: "post", postId, platform: platform as SocialPlatformId } });
+      toast.success(t("social.post_details.like_done", "Polubiono."));
+      invalidate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLikingPost(null);
     }
   };
 
@@ -293,7 +308,16 @@ export function PostDetailsDialog({
                         <span className="text-xs text-muted-foreground">{r.status}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                        <Metric icon={<Heart className="h-3 w-3" />} value={m?.likes ?? 0} />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => handleLikePost(r.platform)}
+                          disabled={likingPost === r.platform || !r.external_post_id}
+                        >
+                          {likingPost === r.platform ? <Loader2 className="h-3 w-3 animate-spin" /> : <Heart className="h-3 w-3" />}
+                          <span className="tabular-nums">{m?.likes ?? 0}</span>
+                        </Button>
                         <Metric icon={<MessageCircle className="h-3 w-3" />} value={m?.comments ?? 0} />
                         <Metric icon={<Share2 className="h-3 w-3" />} value={m?.shares ?? 0} />
                         {(m?.views ?? 0) > 0 && <Metric icon={<Eye className="h-3 w-3" />} value={m?.views ?? 0} />}
