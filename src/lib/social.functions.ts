@@ -951,7 +951,11 @@ export const moderateComment = createServerFn({ method: "POST" })
       archive: "archived",
     };
 
-    if (["hide", "unhide", "delete"].includes(data.action)) {
+    const platformAction = data.action === "hide" || data.action === "unhide" || data.action === "delete"
+      ? data.action
+      : null;
+
+    if (platformAction) {
       try {
         const { getAdapter, getValidAccount } = await import("./platforms/index.server");
         const adapter = getAdapter(cm.platform);
@@ -968,7 +972,7 @@ export const moderateComment = createServerFn({ method: "POST" })
           await adapter.moderateComment({
             account: ctx2.account,
             externalCommentId: cm.external_comment_id,
-            action: data.action,
+            action: platformAction,
             clientId: ctx2.credentials.clientId,
             clientSecret: ctx2.credentials.clientSecret,
           });
