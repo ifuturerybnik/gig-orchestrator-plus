@@ -1726,7 +1726,7 @@ export const syncPostNow = createServerFn({ method: "POST" })
           const { count, error: upErr } = await supabaseAdmin
             .from("social_comments")
             .upsert(rowsToInsert, {
-              onConflict: "organization_id,platform,external_comment_id",
+              onConflict: "account_id,external_comment_id",
               ignoreDuplicates: true,
               count: "exact",
             });
