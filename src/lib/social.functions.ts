@@ -349,11 +349,6 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await supabase
-      .from("social_comments")
-      .delete()
-      .eq("post_id", data.postId)
-      .eq("organization_id", data.organizationId);
     const { error } = await supabase
       .from("social_posts")
       .delete()
