@@ -975,7 +975,7 @@ export const replyToComment = createServerFn({ method: "POST" })
     const { data: c, error: cErr } = await supabase
       .from("social_comments")
       .select(
-        "id, platform, external_post_id, external_comment_id, account_id, organization_id",
+        "id, platform, post_id, external_post_id, external_comment_id, account_id, organization_id",
       )
       .eq("id", data.commentId)
       .eq("organization_id", data.organizationId)
@@ -985,6 +985,7 @@ export const replyToComment = createServerFn({ method: "POST" })
     const cm = c as {
       id: string;
       platform: string;
+      post_id: string | null;
       external_post_id: string;
       external_comment_id: string;
       account_id: string;
@@ -994,6 +995,8 @@ export const replyToComment = createServerFn({ method: "POST" })
     // Spróbuj wysłać do platformy (jeśli mamy adapter z reply())
     let sentExternalId: string | null = null;
     let sendError: string | null = null;
+    let sentAuthorName: string | null = null;
+    let sentAuthorExternalId: string | null = null;
     try {
       const { getAdapter, getValidAccount } = await import("./platforms/index.server");
       const adapter = getAdapter(cm.platform);
@@ -1003,6 +1006,8 @@ export const replyToComment = createServerFn({ method: "POST" })
           platform: cm.platform,
         });
         if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+        sentAuthorName = ctx2.account.account_name;
+        sentAuthorExternalId = ctx2.account.external_account_id;
         const r = await adapter.reply({
           account: ctx2.account,
           externalParentCommentId: cm.external_comment_id,
@@ -1019,29 +1024,70 @@ export const replyToComment = createServerFn({ method: "POST" })
       sendError = e instanceof Error ? e.message : String(e);
     }
 
-    // Oznacz komentarz jako 'replied' (zawsze — UX: widzimy że obsłużone)
+    const handledAt = new Date().toISOString();
+    if (sendError || !sentExternalId) {
+      await supabase.from("social_moderation_log").insert({
+        organization_id: data.organizationId,
+        account_id: cm.account_id,
+        comment_id: data.commentId,
+        action: "reply",
+        payload: { text: data.text, external_id: sentExternalId },
+        result: "error",
+        error_message: sendError ?? "Platforma nie zwróciła ID odpowiedzi.",
+        performed_by: userId,
+      });
+      return { ok: false, sent: false, error: sendError ?? "Nie udało się wysłać odpowiedzi do platformy." };
+    }
+
+    // Oznacz komentarz jako 'replied' dopiero po faktycznej wysyłce do platformy.
     const { error: updErr } = await supabase
       .from("social_comments")
       .update({
         status: "replied",
         handled_by: userId,
-        handled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        handled_at: handledAt,
+        updated_at: handledAt,
       })
       .eq("id", data.commentId)
       .eq("organization_id", data.organizationId);
     if (updErr) throw new Error(updErr.message);
 
+    await supabase.from("social_comments").upsert(
+      {
+        organization_id: data.organizationId,
+        account_id: cm.account_id,
+        platform: cm.platform,
+        post_id: cm.post_id,
+        external_post_id: cm.external_post_id,
+        external_comment_id: sentExternalId,
+        external_parent_comment_id: cm.external_comment_id,
+        author_external_id: sentAuthorExternalId,
+        author_name: sentAuthorName,
+        author_avatar_url: null,
+        content: data.text,
+        permalink: null,
+        posted_at: handledAt,
+        like_count: 0,
+        reply_count: 0,
+        status: "replied",
+        handled_by: userId,
+        handled_at: handledAt,
+        updated_at: handledAt,
+      },
+      { onConflict: "account_id,external_comment_id" },
+    );
+
     await supabase.from("social_moderation_log").insert({
       organization_id: data.organizationId,
+      account_id: cm.account_id,
       comment_id: data.commentId,
       action: "reply",
       payload: { text: data.text, external_id: sentExternalId },
-      result: sendError ? "pending_oauth" : "ok",
-      error_message: sendError,
+      result: "ok",
+      error_message: null,
       performed_by: userId,
     });
-    return { ok: true, sent: !!sentExternalId, error: sendError };
+    return { ok: true, sent: true, error: null };
   });
 
 export const aiSuggestCommentReply = createServerFn({ method: "POST" })
