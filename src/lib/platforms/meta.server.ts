@@ -607,7 +607,7 @@ export const facebookAdapter: PlatformAdapter = {
  * obrazy jak i wideo (typy: photo, video, video_inline, share, album).
  * Zwraca null w razie błędu uprawnień.
  */
-async function fetchFbPostMediaItems(
+export async function fetchFbPostMediaItems(
   postId: string,
   accessToken: string,
 ): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
@@ -922,6 +922,14 @@ export async function refreshIgPostMediaUrls(args: {
   externalPostId: string;
   accessToken: string;
 }): Promise<string[] | null> {
+  const items = await refreshIgPostMediaItems(args);
+  return items ? items.map((i) => i.type === "video" ? i.thumbnail_url ?? i.url : i.url) : null;
+}
+
+export async function refreshIgPostMediaItems(args: {
+  externalPostId: string;
+  accessToken: string;
+}): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
   try {
     const fields =
       "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
@@ -934,28 +942,28 @@ export async function refreshIgPostMediaUrls(args: {
         data?: Array<{ media_type?: string; media_url?: string; thumbnail_url?: string }>;
       };
     }>(url, { context: "IG media refresh" });
-    const urls: string[] = [];
+    const items: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> = [];
     const children = j.children?.data ?? [];
     if (children.length > 0) {
       for (const c of children) {
-        const u = pickIgDisplayMediaUrl({
+        const item = pickIgMediaItem({
           mediaType: c.media_type,
           mediaUrl: c.media_url,
           thumbnailUrl: c.thumbnail_url,
         });
-        if (u) urls.push(u);
+        if (item) items.push(item);
       }
     } else {
-      const u = pickIgDisplayMediaUrl({
+      const item = pickIgMediaItem({
         mediaType: j.media_type,
         mediaUrl: j.media_url,
         thumbnailUrl: j.thumbnail_url,
       });
-      if (u) urls.push(u);
+      if (item) items.push(item);
     }
-    return urls;
+    return items;
   } catch (e) {
-    console.warn("[meta] refreshIgPostMediaUrls failed:", e instanceof Error ? e.message : e);
+    console.warn("[meta] refreshIgPostMediaItems failed:", e instanceof Error ? e.message : e);
     return null;
   }
 }
