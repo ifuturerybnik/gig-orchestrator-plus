@@ -45,12 +45,18 @@ export class MetaPermissionError extends Error {
 
 function isMetaEngagementPermissionError(status: number, body: string): boolean {
   if (status !== 400 && status !== 403) return false;
-  const isCode10 = body.includes("(#10)") || body.includes('"code":10');
+  const isKnownPermissionCode =
+    body.includes("(#10)") ||
+    body.includes('"code":10') ||
+    body.includes('"code":200') ||
+    body.includes('"code":283');
   const mentionsMissingPermission =
     /requires?\s+.*permission/i.test(body) ||
+    /extended permission/i.test(body) ||
+    /Permissions error/i.test(body) ||
     /Page Public Content Access/i.test(body) ||
     /requires?\s+.*pages_read_engagement/i.test(body);
-  return isCode10 && mentionsMissingPermission;
+  return isKnownPermissionCode && mentionsMissingPermission;
 }
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
@@ -133,6 +139,24 @@ async function fetchFbObjectMediaUrls(args: {
     console.warn("[meta] FB media object failed:", e instanceof Error ? e.message : e);
     return [];
   }
+}
+
+async function fetchFbEdgeSummaryCount(args: {
+  objectId: string;
+  edge: "likes" | "comments";
+  accessToken: string;
+  context: string;
+}): Promise<number> {
+  const params = new URLSearchParams({
+    limit: "0",
+    summary: "total_count",
+    access_token: args.accessToken,
+  });
+  const j = await graphJson<{ summary?: { total_count?: number } }>(
+    `${GRAPH}/${encodeURIComponent(args.objectId)}/${args.edge}?${params.toString()}`,
+    { context: args.context },
+  );
+  return j.summary?.total_count ?? 0;
 }
 
 async function graphJson<T = unknown>(
