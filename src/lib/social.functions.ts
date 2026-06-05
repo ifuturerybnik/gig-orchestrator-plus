@@ -349,6 +349,11 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    await supabase
+      .from("social_comments")
+      .delete()
+      .eq("post_id", data.postId)
+      .eq("organization_id", data.organizationId);
     const { error } = await supabase
       .from("social_posts")
       .delete()
@@ -356,6 +361,48 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
       .eq("organization_id", data.organizationId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const deleteImportedSocialPosts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    let q = supabase
+      .from("social_posts")
+      .select("id, target_platforms")
+      .eq("organization_id", data.organizationId)
+      .eq("source", "imported")
+      .limit(1000);
+    if (data.platform) q = q.contains("target_platforms", [data.platform]);
+
+    const { data: rows, error: listErr } = await q;
+    if (listErr) throw new Error(listErr.message);
+    const ids = ((rows ?? []) as Array<{ id: string }>).map((r) => r.id);
+    if (ids.length === 0) return { deleted: 0 };
+
+    const { error: commentsErr } = await supabase
+      .from("social_comments")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .in("post_id", ids);
+    if (commentsErr) throw new Error(commentsErr.message);
+
+    const { error: deleteErr } = await supabase
+      .from("social_posts")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .eq("source", "imported")
+      .in("id", ids);
+    if (deleteErr) throw new Error(deleteErr.message);
+    return { deleted: ids.length };
   });
 
 // ---------- AI: generatory postów ----------
