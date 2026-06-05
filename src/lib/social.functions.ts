@@ -1555,12 +1555,13 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       // UWAGA: pages_manage_engagement, instagram_manage_comments, instagram_manage_insights
       // wymagają App Review (Advanced Access) i muszą być dodane w Use Cases aplikacji Meta.
       // Bez tego Meta zwraca "Invalid Scopes" i blokuje cały dialog OAuth.
+      // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
+      // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // Trzymamy minimalny zestaw, który Standard Access pozwala wywołać od ręki —
       // wystarcza do listowania stron, publikacji postów FB+IG i pobrania IG Business Account.
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
-        "pages_read_user_content",
         "pages_manage_posts",
         "pages_manage_metadata",
         "business_management",

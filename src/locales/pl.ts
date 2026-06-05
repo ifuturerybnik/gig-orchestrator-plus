@@ -1727,7 +1727,7 @@ export default
       "open_original": "Otwórz oryginał",
       "sync_now": "Synchronizuj",
       "sync_done": "Zsynchronizowano: metryki {{metrics}}, nowe komentarze {{comments}}",
-      "sync_meta_limited": "Posty są zaimportowane. Meta blokuje jeszcze metryki i komentarze do czasu zatwierdzenia uprawnień pages_read_engagement oraz pages_read_user_content w App Review.",
+      "sync_meta_limited": "Posty są zaimportowane. Meta może jeszcze blokować metryki i komentarze do czasu zatwierdzenia uprawnień Facebook Pages w App Review.",
       "new_comments": "{{count}} nowych",
       "delete_local": "Usuń lokalnie",
       "delete_local_title": "Usunąć wpis tylko z aplikacji?",
