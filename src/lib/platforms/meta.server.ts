@@ -81,18 +81,9 @@ function pickIgDisplayMediaUrl(args: {
   return args.mediaUrl ?? args.thumbnailUrl ?? null;
 }
 
-type FbAttachmentNode = {
-  type?: string;
-  url?: string;
-  media?: { image?: { src?: string } };
-  subattachments?: { data?: FbAttachmentNode[] };
-};
-
 type FbPostMediaShape = {
   full_picture?: string;
   picture?: string;
-  object_id?: string;
-  attachments?: { data?: FbAttachmentNode[] };
 };
 
 function pushUniqueUrl(urls: string[], url?: string | null): void {
@@ -103,42 +94,7 @@ function collectFbMediaUrls(post: FbPostMediaShape): string[] {
   const urls: string[] = [];
   pushUniqueUrl(urls, post.full_picture);
   pushUniqueUrl(urls, post.picture);
-
-  const walk = (items?: FbAttachmentNode[]) => {
-    for (const item of items ?? []) {
-      pushUniqueUrl(urls, item.media?.image?.src);
-      walk(item.subattachments?.data);
-    }
-  };
-  walk(post.attachments?.data);
   return urls;
-}
-
-async function fetchFbObjectMediaUrls(args: {
-  objectId: string;
-  accessToken: string;
-}): Promise<string[]> {
-  try {
-    const params = new URLSearchParams({
-      fields: "images,picture,source",
-      access_token: args.accessToken,
-    });
-    const j = await graphJson<{
-      images?: Array<{ source?: string }>;
-      picture?: string;
-      source?: string;
-    }>(`${GRAPH}/${encodeURIComponent(args.objectId)}?${params.toString()}`, {
-      context: "FB media object",
-    });
-    const urls: string[] = [];
-    for (const image of j.images ?? []) pushUniqueUrl(urls, image.source);
-    pushUniqueUrl(urls, j.source);
-    pushUniqueUrl(urls, j.picture);
-    return urls;
-  } catch (e) {
-    console.warn("[meta] FB media object failed:", e instanceof Error ? e.message : e);
-    return [];
-  }
 }
 
 async function fetchFbEdgeSummaryCount(args: {
@@ -562,10 +518,11 @@ export const facebookAdapter: PlatformAdapter = {
     const token = account.access_token;
     const safeLimit = Math.min(Math.max(limit, 1), 25);
 
-    // Nie pobieramy już pola attachments w /posts — Meta zwraca dla niego
-    // OAuthException #12: deprecate_post_aggregated_fields_for_attachment.
-    // Grafiki bierzemy z full_picture/picture albo z object_id poniżej.
-    const postFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
+    // Nie pobieramy pól agregowanych/deprecated w /posts (attachments, object_id,
+    // source, type itd.) — Meta zwraca OAuthException #12:
+    // deprecate_post_aggregated_fields_for_attachment. Grafiki bierzemy tylko
+    // z pól nadal wspieranych na liście postów: full_picture/picture.
+    const postFields = "id,message,story,created_time,permalink_url,full_picture,picture";
 
     type PostRow = {
       id: string;
@@ -575,8 +532,6 @@ export const facebookAdapter: PlatformAdapter = {
       permalink_url?: string;
       full_picture?: string;
       picture?: string;
-      object_id?: string;
-      attachments?: { data?: FbAttachmentNode[] };
     };
 
     const fetchWith = async (fields: string, lim: number) => {
@@ -596,10 +551,11 @@ export const facebookAdapter: PlatformAdapter = {
       j = await fetchWith(postFields, safeLimit);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // "reduce the amount of data" / code:1 → retry z minimalnym zestawem i mniejszym limitem
-      if (/reduce the amount of data|"code":1\b/i.test(msg)) {
+      // "reduce the amount of data" / code:1 albo Meta #12 dla pól deprecated
+      // → retry z minimalnym zestawem i mniejszym limitem.
+      if (/reduce the amount of data|"code":1\b|deprecate_post_aggregated_fields_for_attachment|"code":12\b/i.test(msg)) {
         try {
-          j = await fetchWith(postFields, Math.min(safeLimit, 10));
+          j = await fetchWith("id,message,story,created_time,permalink_url,full_picture,picture", Math.min(safeLimit, 10));
         } catch {
           // ostatnia próba: tylko ID + timestamp, limit 5
           j = await fetchWith("id,message,created_time,permalink_url", 5);
@@ -611,14 +567,6 @@ export const facebookAdapter: PlatformAdapter = {
 
     return Promise.all((j.data ?? []).map(async (p) => {
       const mediaUrls = collectFbMediaUrls(p);
-      if (mediaUrls.length === 0 && p.object_id) {
-        for (const url of await fetchFbObjectMediaUrls({
-          objectId: p.object_id,
-          accessToken: token,
-        })) {
-          pushUniqueUrl(mediaUrls, url);
-        }
-      }
       return {
         externalPostId: p.id,
         externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
@@ -930,24 +878,13 @@ export async function refreshFbPostMediaUrls(args: {
   accessToken: string;
 }): Promise<string[] | null> {
   try {
-    // Pole attachments w wersjach Graph v3.3+ potrafi zwracać błąd #12
-    // deprecate_post_aggregated_fields_for_attachment. Używamy wyłącznie
-    // bezpiecznych pól i object_id jako fallbacku do grafiki.
-    const fields = "id,full_picture,picture,object_id";
+    // Pola attachments/object_id/source/type itd. są deprecated dla postów stron
+    // i potrafią zwracać Meta #12. Do odświeżania mediów używamy tylko pól
+    // wspieranych w aktualnym Graph API.
+    const fields = "id,full_picture,picture";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
-    const j = await graphJson<FbPostMediaShape & {
-      object_id?: string;
-    }>(url, { context: "FB media refresh" });
-    const urls = collectFbMediaUrls(j);
-    if (urls.length === 0 && j.object_id) {
-      for (const objectUrl of await fetchFbObjectMediaUrls({
-        objectId: j.object_id,
-        accessToken: args.accessToken,
-      })) {
-        pushUniqueUrl(urls, objectUrl);
-      }
-    }
-    return urls;
+    const j = await graphJson<FbPostMediaShape>(url, { context: "FB media refresh" });
+    return collectFbMediaUrls(j);
   } catch (e) {
     console.warn("[meta] refreshFbPostMediaUrls failed:", e instanceof Error ? e.message : e);
     return null;
