@@ -584,9 +584,10 @@ export const facebookAdapter: PlatformAdapter = {
     return Promise.all((j.data ?? []).map(async (p) => {
       const mediaUrls = collectFbMediaUrls(p);
       const mediaItems = await fetchFbPostMediaItems(p.id, token).catch(() => null);
-      const itemsFallback = mediaItems && mediaItems.length > 0
-        ? mediaItems
-        : mediaUrls.map((url) => ({ url, type: "image" as const }));
+      const itemsFallback: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> =
+        mediaItems && mediaItems.length > 0
+          ? mediaItems
+          : mediaUrls.map((url) => ({ url, type: "image" as const, thumbnail_url: null }));
       return {
         externalPostId: p.id,
         externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
