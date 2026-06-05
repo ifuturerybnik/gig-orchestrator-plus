@@ -928,6 +928,21 @@ export const moderateComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: comment, error: commentErr } = await supabase
+      .from("social_comments")
+      .select("id, platform, account_id, external_comment_id, organization_id")
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (commentErr) throw new Error(commentErr.message);
+    if (!comment) throw new Error("Komentarz nie istnieje lub brak dostępu.");
+    const cm = comment as {
+      id: string;
+      platform: string;
+      account_id: string;
+      external_comment_id: string;
+      organization_id: string;
+    };
     const statusByAction: Record<string, string> = {
       hide: "hidden",
       unhide: "new",
@@ -935,6 +950,48 @@ export const moderateComment = createServerFn({ method: "POST" })
       mark_spam: "spam",
       archive: "archived",
     };
+
+    const platformAction = data.action === "hide" || data.action === "unhide" || data.action === "delete"
+      ? data.action
+      : null;
+
+    if (platformAction) {
+      try {
+        const { getAdapter, getValidAccount } = await import("./platforms/index.server");
+        const adapter = getAdapter(cm.platform);
+        if (!adapter?.moderateComment) {
+          if (cm.platform === "facebook" || cm.platform === "instagram") {
+            throw new Error(`Moderacja komentarzy dla ${cm.platform} nie jest dostępna w adapterze.`);
+          }
+        } else {
+          const ctx2 = await getValidAccount({
+            organizationId: cm.organization_id,
+            platform: cm.platform,
+          });
+          if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+          await adapter.moderateComment({
+            account: ctx2.account,
+            externalCommentId: cm.external_comment_id,
+            action: platformAction,
+            clientId: ctx2.credentials.clientId,
+            clientSecret: ctx2.credentials.clientSecret,
+          });
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        await supabase.from("social_moderation_log").insert({
+          organization_id: data.organizationId,
+          account_id: cm.account_id,
+          comment_id: data.commentId,
+          action: data.action,
+          result: "error",
+          error_message: message.slice(0, 1000),
+          performed_by: userId,
+        });
+        throw new Error(message);
+      }
+    }
+
     const { error } = await supabase
       .from("social_comments")
       .update({
@@ -1679,9 +1736,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
       // Scope'y IG są wymagane, żeby Graph API zwracało pole
       // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
-      // `instagram_manage_comments` jest wymagane przez Meta dla moderacji komentarzy,
-      // ale ten App ID odrzuca je w dialogu Facebook Login jako Invalid Scopes.
-      // Nie wysyłamy go w OAuth; adapter nie blokuje wysyłki lokalnym sprawdzeniem scope'ów.
+      // `instagram_manage_comments` działa w Facebook Login for Business dopiero
+      // z parametrami display=page + extras IG_API_ONBOARDING. Bez nich Meta potrafi
+      // zwracać "Invalid Scopes" dla tego permission.
       // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
       // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // `pages_read_user_engagement` też nie jest akceptowanym permission OAuth
@@ -1696,10 +1753,13 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
+        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
+        display: "page",
+        extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
         redirect_uri: callbackUrl,
         state,
         scope: scopes.join(","),

@@ -6,8 +6,8 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * dla Concertivo. Spisana na podstawie udanej integracji produkcyjnej.
  *
  * Ważne fakty, które już zostały zweryfikowane w boju:
- *  - Instagram używa NOWEGO API "Instagram API with Instagram Login"
- *    (graph.instagram.com), NIE starego "Instagram Graph API" przez Facebook Pages.
+ *  - Instagram może działać przez nowe Instagram Login albo przez Facebook Login for Business
+ *    dla Page-connected IG. Moderacja komentarzy wymaga osobnego scope'a w każdym flow.
  *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
@@ -165,8 +165,8 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           {t("social.meta.step4_title", "Krok 4 — Instagram (Business Login for Instagram)")}
         </h4>
         <p className="text-muted-foreground">
-          To <b>nowy</b> sposób integracji z IG — przez <i>Instagram API with Instagram Login</i> (NIE przez starsze
-          „Instagram Graph API via Facebook Pages"). Concertivo używa wyłącznie nowego API.
+          Instagram może być połączony bezpośrednio przez <i>Instagram API with Instagram Login</i> albo razem z Fanpage’em
+          przez <i>Facebook Login for Business</i>. Do komentarzy potrzebne jest uprawnienie zarządzania komentarzami.
         </p>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
@@ -287,7 +287,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           </li>
           <li>
             <b>Scopes FB:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_metadata, business_management, instagram_basic, instagram_content_publish</code>
+            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_metadata, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments</code>
           </li>
         </ul>
       </div>
