@@ -162,9 +162,22 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
       {/* SETTINGS */}
 
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">{t("web.integration.title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("web.integration.subtitle")}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">{t("web.integration.title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("web.integration.subtitle")}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lng = (i18n.language?.startsWith("en") ? "en" : "pl") as "pl" | "en";
+              downloadIntegrationGuidePdf("integration", lng);
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {t("web.integration.download_guide")}
+          </Button>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-[1fr,auto] sm:items-end">
