@@ -834,9 +834,10 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     // Najpierw policzniki na obiekcie media
     const baseUrl =
-      `${GRAPH}/${encodeURIComponent(externalPostId)}` +
+      `${apiBase}/${encodeURIComponent(externalPostId)}` +
       `?fields=like_count,comments_count,media_product_type,media_type` +
       `&access_token=${encodeURIComponent(account.access_token)}`;
     const base = await graphJson<{
@@ -852,7 +853,7 @@ export const instagramAdapter: PlatformAdapter = {
       const ins = await graphJson<{
         data?: Array<{ name: string; values?: Array<{ value: number }> }>;
       }>(
-        `${GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
+        `${apiBase}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
         { context: "IG insights" },
       );
       views = ins.data?.find((d) => d.name === "reach")?.values?.[0]?.value ?? 0;
@@ -1082,6 +1083,7 @@ export const instagramAdapter: PlatformAdapter = {
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
     const igId = account.external_account_id;
     const token = account.access_token;
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     const params = new URLSearchParams({
       fields:
         "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{media_url,thumbnail_url,media_type}",
@@ -1106,7 +1108,7 @@ export const instagramAdapter: PlatformAdapter = {
         };
       }>;
     }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media?${params.toString()}`,
+      `${apiBase}/${encodeURIComponent(igId)}/media?${params.toString()}`,
       { context: "IG /media (list)" },
     );
     return (j.data ?? []).map((m) => {
