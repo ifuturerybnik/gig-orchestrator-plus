@@ -852,6 +852,7 @@ export type InboxCommentRow = {
   post_id: string | null;
   external_post_id: string;
   external_comment_id: string;
+  external_parent_comment_id: string | null;
   author_name: string | null;
   author_avatar_url: string | null;
   content: string;
@@ -883,7 +884,7 @@ export const listInboxComments = createServerFn({ method: "GET" })
     let q = supabase
       .from("social_comments")
       .select(
-        "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
+        "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, external_parent_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
       )
       .eq("organization_id", data.organizationId)
       .order("posted_at", { ascending: false, nullsFirst: false })
@@ -1902,7 +1903,7 @@ export const getSocialPostDetails = createServerFn({ method: "GET" })
       supabase
         .from("social_comments")
         .select(
-          "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
+          "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, external_parent_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
         )
         .eq("organization_id", data.organizationId)
         .eq("post_id", data.postId)

@@ -4,10 +4,17 @@
 
 import type { SocialPlatformId } from "../social-platforms";
 
+export type MediaItem = {
+  url: string;
+  type: "image" | "video";
+  thumbnail_url?: string | null;
+};
+
 export type PlatformPostContent = {
   text?: string;
   hashtags?: string[];
   media_urls?: string[];
+  media_items?: MediaItem[];
 };
 
 export type PlatformAccount = {
@@ -57,6 +64,7 @@ export type PlatformRecentPost = {
   externalUrl: string | null;
   text: string;
   mediaUrls: string[];
+  mediaItems?: MediaItem[];
   postedAt: string | null;
 };
 

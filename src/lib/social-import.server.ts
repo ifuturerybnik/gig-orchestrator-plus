@@ -118,6 +118,7 @@ export async function importPostsFromAccount(args: {
           [args.platform]: {
             text: p.text,
             media_urls: p.mediaUrls,
+            ...(p.mediaItems && p.mediaItems.length > 0 ? { media_items: p.mediaItems } : {}),
           },
         },
         status: "published",
