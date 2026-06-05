@@ -932,28 +932,41 @@ export const instagramAdapter: PlatformAdapter = {
     );
     if (scopes.length > 0 && !hasKnownCommentScope) {
       throw new Error(
-        "Brak uprawnienia do zarządzania komentarzami Instagram. Dodaj instagram_business_manage_comments w aplikacji Meta i połącz Instagram ponownie.",
+        `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
+          "Rozłącz i połącz Instagram ponownie, akceptując uprawnienie instagram_business_manage_comments.",
       );
     }
-    const params = new URLSearchParams({
-      message: text.slice(0, 2200),
-      access_token: account.access_token,
-    });
     const endpoints = igApiBases(account);
-    let lastError: unknown = null;
+    const message = text.slice(0, 2200);
+    const attempts: string[] = [];
     let j: { id: string } | null = null;
     for (const base of endpoints) {
+      const isIgApi = base === INSTAGRAM_GRAPH;
+      // graph.instagram.com woli token w nagłówku Authorization; graph.facebook.com akceptuje oba.
+      const params = new URLSearchParams({ message });
+      if (!isIgApi) params.set("access_token", account.access_token);
       try {
         j = await graphJson<{ id: string }>(
           `${base}/${encodeURIComponent(externalParentCommentId)}/replies`,
-          { method: "POST", body: params, context: base === INSTAGRAM_GRAPH ? "IG reply (Instagram API)" : "IG reply" },
+          {
+            method: "POST",
+            body: params,
+            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
+            context: isIgApi ? "IG reply (Instagram API)" : "IG reply",
+          },
         );
         break;
       } catch (e) {
-        lastError = e;
+        const msg = e instanceof Error ? e.message : String(e);
+        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
       }
     }
-    if (!j) throw lastError instanceof Error ? lastError : new Error("IG reply: nie udało się wysłać odpowiedzi.");
+    if (!j) {
+      throw new Error(
+        `IG reply: nie udało się wysłać odpowiedzi.\nScope'y konta: [${scopes.join(", ")}]\n` +
+          attempts.map((a) => `• ${a}`).join("\n"),
+      );
+    }
     return { externalCommentId: j.id };
   },
 
