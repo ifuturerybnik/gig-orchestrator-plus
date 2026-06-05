@@ -114,7 +114,8 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
              <script>
                const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
                const token = hash.get("long_lived_token") || hash.get("access_token");
-               const hashState = hash.get("state");
+               const query = new URLSearchParams(window.location.search);
+               const hashState = hash.get("state") || query.get("state");
                if (token && hashState) {
                  const el = document.getElementById("oauth-message");
                  el.textContent = "Kończę łączenie konta Meta…";
