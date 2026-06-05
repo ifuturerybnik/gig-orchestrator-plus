@@ -1592,6 +1592,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         scope: [
           "instagram_business_basic",
           "instagram_business_content_publish",
+          "instagram_business_manage_comments",
         ].join(","),
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
