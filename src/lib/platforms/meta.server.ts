@@ -31,6 +31,12 @@ import type {
 const GRAPH = "https://graph.facebook.com/v20.0";
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
 
+function igApiBases(account: PlatformAccount): string[] {
+  const scopes = account.scopes ?? [];
+  const looksLikeInstagramLogin = scopes.some((s) => s.startsWith("instagram_business_"));
+  return looksLikeInstagramLogin ? [INSTAGRAM_GRAPH, GRAPH] : [GRAPH, INSTAGRAM_GRAPH];
+}
+
 export class MetaPermissionError extends Error {
   readonly code = "META_PERMISSION_REQUIRED";
 
