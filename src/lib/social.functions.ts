@@ -1091,6 +1091,84 @@ export const replyToComment = createServerFn({ method: "POST" })
     return { ok: true, sent: true, error: null };
   });
 
+export const likeSocialTarget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        target: z.enum(["post", "comment"]),
+        postId: z.string().uuid().optional(),
+        platform: platformSchema.optional(),
+        commentId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { getAdapter, getValidAccount } = await import("./platforms/index.server");
+
+    if (data.target === "comment") {
+      if (!data.commentId) throw new Error("Brak komentarza do polubienia.");
+      const { data: c, error } = await supabase
+        .from("social_comments")
+        .select("id, platform, organization_id, external_post_id, external_comment_id")
+        .eq("id", data.commentId)
+        .eq("organization_id", data.organizationId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!c) throw new Error("Komentarz nie istnieje lub brak dostępu.");
+      const cm = c as { platform: string; organization_id: string; external_post_id: string; external_comment_id: string };
+      const adapter = getAdapter(cm.platform);
+      if (!adapter?.like) throw new Error(`Platforma ${cm.platform} nie obsługuje polubień z API.`);
+      const ctx2 = await getValidAccount({ organizationId: cm.organization_id, platform: cm.platform });
+      if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+      await adapter.like({
+        account: ctx2.account,
+        target: "comment",
+        externalId: cm.external_comment_id,
+        externalPostId: cm.external_post_id,
+        clientId: ctx2.credentials.clientId,
+        clientSecret: ctx2.credentials.clientSecret,
+      });
+      const { data: likeRow } = await supabaseAdmin
+        .from("social_comments")
+        .select("like_count")
+        .eq("id", data.commentId)
+        .maybeSingle();
+      const currentLikes = (likeRow as { like_count?: number } | null)?.like_count ?? 0;
+      await supabaseAdmin
+        .from("social_comments")
+        .update({ like_count: currentLikes + 1, updated_at: new Date().toISOString() })
+        .eq("id", data.commentId);
+      return { ok: true };
+    }
+
+    if (!data.postId || !data.platform) throw new Error("Brak posta lub platformy do polubienia.");
+    const { data: r, error } = await supabase
+      .from("social_post_results")
+      .select("platform, external_post_id, post:social_posts!inner(id, organization_id)")
+      .eq("post_id", data.postId)
+      .eq("platform", data.platform)
+      .eq("post.organization_id", data.organizationId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const row = r as unknown as { platform: string; external_post_id: string | null } | null;
+    if (!row?.external_post_id) throw new Error("Ten post nie ma ID na platformie.");
+    const adapter = getAdapter(row.platform);
+    if (!adapter?.like) throw new Error(`Platforma ${row.platform} nie obsługuje polubień z API.`);
+    const ctx2 = await getValidAccount({ organizationId: data.organizationId, platform: row.platform });
+    if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+    await adapter.like({
+      account: ctx2.account,
+      target: "post",
+      externalId: row.external_post_id,
+      clientId: ctx2.credentials.clientId,
+      clientSecret: ctx2.credentials.clientSecret,
+    });
+    return { ok: true };
+  });
+
 export const aiSuggestCommentReply = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -1813,19 +1891,8 @@ export const syncPostNow = createServerFn({ method: "POST" })
 
       // Komentarze
       try {
-        const { data: latest } = await supabaseAdmin
-          .from("social_comments")
-          .select("posted_at")
-          .eq("organization_id", data.organizationId)
-          .eq("platform", r.platform)
-          .eq("external_post_id", r.external_post_id)
-          .order("posted_at", { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle();
-        const sinceIso =
-          (latest as { posted_at: string | null } | null)?.posted_at ??
-          r.published_at ??
-          null;
+        // Ręczna synchronizacja ma też backfillować starsze odpowiedzi do komentarzy.
+        const sinceIso: string | null = null;
 
         const items = await adapter.fetchInboxItems({
           account: ctx2.account,
@@ -1851,13 +1918,11 @@ export const syncPostNow = createServerFn({ method: "POST" })
             posted_at: it.postedAt,
             like_count: it.likeCount ?? 0,
             reply_count: it.replyCount ?? 0,
-            status: "new",
           }));
           const { count, error: upErr } = await supabaseAdmin
             .from("social_comments")
             .upsert(rowsToInsert, {
               onConflict: "account_id,external_comment_id",
-              ignoreDuplicates: true,
               count: "exact",
             });
           if (upErr) throw new Error(upErr.message);

@@ -31,6 +31,12 @@ import type {
 const GRAPH = "https://graph.facebook.com/v20.0";
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
 
+function igApiBases(account: PlatformAccount): string[] {
+  const scopes = account.scopes ?? [];
+  const looksLikeInstagramLogin = scopes.some((s) => s.startsWith("instagram_business_"));
+  return looksLikeInstagramLogin ? [INSTAGRAM_GRAPH, GRAPH] : [GRAPH, INSTAGRAM_GRAPH];
+}
+
 export class MetaPermissionError extends Error {
   readonly code = "META_PERMISSION_REQUIRED";
 
@@ -462,9 +468,6 @@ export const facebookAdapter: PlatformAdapter = {
       limit: "100",
       access_token: account.access_token,
     });
-    if (sinceIso) {
-      params.set("since", String(Math.floor(new Date(sinceIso).getTime() / 1000)));
-    }
     type FbComment = {
       id: string;
       from?: { id?: string; name?: string; picture?: { data?: { url?: string } } };
@@ -496,7 +499,30 @@ export const facebookAdapter: PlatformAdapter = {
         `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
         { context: "FB /comments" },
       );
-      return (j.data ?? []).map(mapComment);
+      const out = new Map<string, PlatformInboxItem>();
+      const roots = (j.data ?? []).map(mapComment);
+      for (const item of roots) out.set(item.externalCommentId, item);
+      const rootsWithReplies = roots.filter((item) => !item.externalParentCommentId && (item.replyCount ?? 0) > 0);
+      await Promise.all(
+        rootsWithReplies.slice(0, 25).map(async (root) => {
+          try {
+            const rp = new URLSearchParams({
+              fields: "id,from{name,id,picture{url}},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+              limit: "50",
+              access_token: account.access_token,
+            });
+            const replies = await graphJson<{ data?: FbComment[] }>(
+              `${GRAPH}/${encodeURIComponent(root.externalCommentId)}/comments?${rp.toString()}`,
+              { context: "FB comment replies" },
+            );
+            for (const reply of replies.data ?? []) out.set(reply.id, mapComment(reply));
+          } catch (e) {
+            console.warn("[meta] FB comment replies failed:", e instanceof Error ? e.message : e);
+          }
+        }),
+      );
+      const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
+      return Array.from(out.values()).filter((c) => !sinceTs || !c.postedAt || new Date(c.postedAt).getTime() > sinceTs);
     } catch (e) {
       if (e instanceof MetaPermissionError) throw e;
       console.warn("[meta] FB /comments edge failed, trying nested comments:", e);
@@ -528,6 +554,17 @@ export const facebookAdapter: PlatformAdapter = {
       { method: "POST", body: params, context: "FB reply" },
     );
     return { externalCommentId: j.id };
+  },
+
+  async like({ account, externalId }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({
+      access_token: account.access_token,
+    });
+    await graphJson<{ success?: boolean }>(
+      `${GRAPH}/${encodeURIComponent(externalId)}/likes`,
+      { method: "POST", body: params, context: "FB like" },
+    );
+    return { ok: true };
   },
 
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
@@ -793,26 +830,44 @@ export const instagramAdapter: PlatformAdapter = {
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
     const params = new URLSearchParams({
       fields: "id,username,text,timestamp,like_count,replies{id}",
+      limit: "100",
       access_token: account.access_token,
     });
-    const j = await graphJson<{
-      data: Array<{
-        id: string;
-        username?: string;
-        text?: string;
-        timestamp: string;
-        like_count?: number;
-        replies?: { data?: Array<{ id: string }> };
-      }>;
-    }>(
-      `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
-      { context: "IG /comments" },
-    );
-    const items = j.data ?? [];
+    type IgComment = {
+      id: string;
+      username?: string;
+      text?: string;
+      timestamp: string;
+      like_count?: number;
+      replies?: { data?: Array<{ id: string }> };
+    };
+    type IgReply = {
+      id: string;
+      username?: string;
+      text?: string;
+      timestamp?: string;
+      like_count?: number;
+    };
+    let items: IgComment[] = [];
+    let lastError: unknown = null;
+    for (const base of igApiBases(account)) {
+      try {
+        const j = await graphJson<{ data?: IgComment[] }>(
+          `${base}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+          { context: base === INSTAGRAM_GRAPH ? "IG /comments (Instagram API)" : "IG /comments" },
+        );
+        items = j.data ?? [];
+        break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (items.length === 0 && lastError) {
+      throw lastError instanceof Error ? lastError : new Error("IG /comments: nie udało się pobrać komentarzy.");
+    }
+    const out: PlatformInboxItem[] = [];
     const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
-    return items
-      .filter((c) => !sinceTs || new Date(c.timestamp).getTime() > sinceTs)
-      .map((c) => ({
+    const pushRoot = (c: IgComment) => out.push({
         externalCommentId: c.id,
         externalParentCommentId: null,
         externalPostId,
@@ -824,7 +879,48 @@ export const instagramAdapter: PlatformAdapter = {
         postedAt: c.timestamp,
         likeCount: c.like_count ?? 0,
         replyCount: c.replies?.data?.length ?? 0,
-      }));
+      });
+    const pushReply = (parentId: string, r: IgReply) => out.push({
+      externalCommentId: r.id,
+      externalParentCommentId: parentId,
+      externalPostId,
+      authorExternalId: null,
+      authorName: r.username ?? null,
+      authorAvatarUrl: null,
+      content: r.text ?? "",
+      permalink: null,
+      postedAt: r.timestamp ?? null,
+      likeCount: r.like_count ?? 0,
+      replyCount: 0,
+    });
+
+    for (const c of items) pushRoot(c);
+    await Promise.all(
+      items
+        .filter((c) => (c.replies?.data?.length ?? 0) > 0)
+        .slice(0, 50)
+        .map(async (c) => {
+          const rp = new URLSearchParams({
+            fields: "id,username,text,timestamp,like_count",
+            limit: "50",
+            access_token: account.access_token,
+          });
+          for (const base of igApiBases(account)) {
+            try {
+              const replies = await graphJson<{ data?: IgReply[] }>(
+                `${base}/${encodeURIComponent(c.id)}/replies?${rp.toString()}`,
+                { context: base === INSTAGRAM_GRAPH ? "IG /replies (Instagram API)" : "IG /replies" },
+              );
+              for (const reply of replies.data ?? []) pushReply(c.id, reply);
+              return;
+            } catch (e) {
+              lastError = e;
+            }
+          }
+          console.warn("[meta] IG /replies failed:", lastError instanceof Error ? lastError.message : lastError);
+        }),
+    );
+    return out.filter((c) => !sinceTs || !c.postedAt || new Date(c.postedAt).getTime() > sinceTs);
   },
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
@@ -841,10 +937,7 @@ export const instagramAdapter: PlatformAdapter = {
       message: text.slice(0, 2200),
       access_token: account.access_token,
     });
-    const useInstagramLoginApi = scopes.some((s) => s.startsWith("instagram_business_"));
-    const endpoints = useInstagramLoginApi
-      ? [INSTAGRAM_GRAPH, GRAPH]
-      : [GRAPH, INSTAGRAM_GRAPH];
+    const endpoints = igApiBases(account);
     let lastError: unknown = null;
     let j: { id: string } | null = null;
     for (const base of endpoints) {
@@ -860,6 +953,26 @@ export const instagramAdapter: PlatformAdapter = {
     }
     if (!j) throw lastError instanceof Error ? lastError : new Error("IG reply: nie udało się wysłać odpowiedzi.");
     return { externalCommentId: j.id };
+  },
+
+  async like({ account, target, externalId }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({
+      access_token: account.access_token,
+      [target === "comment" ? "comment_id" : "media_id"]: externalId,
+    });
+    let lastError: unknown = null;
+    for (const base of [GRAPH.replace("v20.0", "v25.0"), INSTAGRAM_GRAPH]) {
+      try {
+        await graphJson<{ success?: boolean }>(
+          `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
+          { method: "POST", body: params, context: base === INSTAGRAM_GRAPH ? "IG like (Instagram API)" : "IG like" },
+        );
+        return { ok: true };
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("IG like: nie udało się polubić.");
   },
 
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {

@@ -84,14 +84,12 @@ async function processTick() {
         posted_at: it.postedAt,
         like_count: it.likeCount ?? 0,
         reply_count: it.replyCount ?? 0,
-        status: "new",
       }));
 
       const { error: upErr, count } = await supabaseAdmin
         .from("social_comments")
         .upsert(rowsToInsert, {
           onConflict: "account_id,external_comment_id",
-          ignoreDuplicates: true,
           count: "exact",
         });
       if (upErr) throw new Error(upErr.message);
