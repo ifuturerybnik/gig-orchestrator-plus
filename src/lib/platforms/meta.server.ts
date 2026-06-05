@@ -998,12 +998,49 @@ export const instagramAdapter: PlatformAdapter = {
       }
     }
     if (!j) {
+      if (attempts.some(isMetaMissingPermissionError)) {
+        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
+      }
       throw new Error(
         `IG reply: nie udało się wysłać odpowiedzi.\nScope'y konta: [${scopes.join(", ")}]\n` +
           attempts.map((a) => `• ${a}`).join("\n"),
       );
     }
     return { externalCommentId: j.id };
+  },
+
+  async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams();
+    const attempts: string[] = [];
+    if (action === "hide" || action === "unhide") {
+      params.set("hide", action === "hide" ? "true" : "false");
+    }
+    for (const base of igApiBases(account)) {
+      const isIgApi = base === INSTAGRAM_GRAPH;
+      if (!isIgApi) params.set("access_token", account.access_token);
+      try {
+        await graphJson<{ success?: boolean }>(
+          `${base}/${encodeURIComponent(externalCommentId)}`,
+          {
+            method: action === "delete" ? "DELETE" : "POST",
+            body: action === "delete" ? undefined : params,
+            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
+            context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
+          },
+        );
+        return { ok: true };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
+      }
+    }
+    if (attempts.some(isMetaMissingPermissionError)) {
+      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
+    }
+    throw new Error(
+      `IG comment ${action}: nie udało się wykonać operacji.\n` +
+        attempts.map((a) => `• ${a}`).join("\n"),
+    );
   },
 
   async like({ account, target, externalId }): Promise<{ ok: boolean }> {
