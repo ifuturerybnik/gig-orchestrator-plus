@@ -937,10 +937,7 @@ export const instagramAdapter: PlatformAdapter = {
       message: text.slice(0, 2200),
       access_token: account.access_token,
     });
-    const useInstagramLoginApi = scopes.some((s) => s.startsWith("instagram_business_"));
-    const endpoints = useInstagramLoginApi
-      ? [INSTAGRAM_GRAPH, GRAPH]
-      : [GRAPH, INSTAGRAM_GRAPH];
+    const endpoints = igApiBases(account);
     let lastError: unknown = null;
     let j: { id: string } | null = null;
     for (const base of endpoints) {
@@ -956,6 +953,26 @@ export const instagramAdapter: PlatformAdapter = {
     }
     if (!j) throw lastError instanceof Error ? lastError : new Error("IG reply: nie udało się wysłać odpowiedzi.");
     return { externalCommentId: j.id };
+  },
+
+  async like({ account, target, externalId }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({
+      access_token: account.access_token,
+      [target === "comment" ? "comment_id" : "media_id"]: externalId,
+    });
+    let lastError: unknown = null;
+    for (const base of [GRAPH.replace("v20.0", "v25.0"), INSTAGRAM_GRAPH]) {
+      try {
+        await graphJson<{ success?: boolean }>(
+          `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
+          { method: "POST", body: params, context: base === INSTAGRAM_GRAPH ? "IG like (Instagram API)" : "IG like" },
+        );
+        return { ok: true };
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("IG like: nie udało się polubić.");
   },
 
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
