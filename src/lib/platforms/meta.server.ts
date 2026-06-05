@@ -735,11 +735,12 @@ export async function fetchFbPostMediaItems(
 async function waitForIgContainer(args: {
   containerId: string;
   accessToken: string;
+  apiBase: string;
 }): Promise<void> {
   // Container musi być FINISHED zanim publish. Próbujemy do 10s.
   for (let i = 0; i < 10; i++) {
     const j = await graphJson<{ status_code?: string }>(
-      `${GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
+      `${args.apiBase}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
       { context: "IG container status" },
     );
     if (j.status_code === "FINISHED") return;
@@ -756,6 +757,7 @@ export const instagramAdapter: PlatformAdapter = {
   async publish({ account, content }): Promise<PlatformPublishResult> {
     const igId = account.external_account_id;
     const token = account.access_token;
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     const caption = composeText(content, 2200);
     const media = (content.media_urls ?? []).filter(Boolean);
     if (media.length === 0) {
@@ -773,7 +775,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${apiBase}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: params, context: "IG /media (single)" },
       );
       creationId = j.id;
@@ -787,7 +789,7 @@ export const instagramAdapter: PlatformAdapter = {
           access_token: token,
         });
         const j = await graphJson<{ id: string }>(
-          `${GRAPH}/${encodeURIComponent(igId)}/media`,
+          `${apiBase}/${encodeURIComponent(igId)}/media`,
           { method: "POST", body: p, context: "IG carousel child" },
         );
         childIds.push(j.id);
@@ -799,20 +801,20 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${apiBase}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: p, context: "IG carousel parent" },
       );
       creationId = j.id;
     }
 
-    await waitForIgContainer({ containerId: creationId, accessToken: token });
+    await waitForIgContainer({ containerId: creationId, accessToken: token, apiBase });
 
     const pub = new URLSearchParams({
       creation_id: creationId,
       access_token: token,
     });
     const pubRes = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media_publish`,
+      `${apiBase}/${encodeURIComponent(igId)}/media_publish`,
       { method: "POST", body: pub, context: "IG /media_publish" },
     );
     const mediaId = pubRes.id;
@@ -821,7 +823,7 @@ export const instagramAdapter: PlatformAdapter = {
     let permalink: string | null = null;
     try {
       const meta = await graphJson<{ permalink?: string }>(
-        `${GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
+        `${apiBase}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
         { context: "IG permalink" },
       );
       permalink = meta.permalink ?? null;
