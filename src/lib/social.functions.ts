@@ -1833,10 +1833,12 @@ export const syncPostNow = createServerFn({ method: "POST" })
               : await fetchFbPostMediaItems(r.external_post_id, ctx2.account.access_token);
           const fallbackUrls = freshItems && freshItems.length > 0
             ? null
-            : await refreshFbPostMediaUrls({
+            : r.platform === "facebook"
+              ? await refreshFbPostMediaUrls({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
-                });
+                })
+              : null;
           const freshUrls = freshItems && freshItems.length > 0
             ? freshItems.map((i) => (i.type === "video" ? i.thumbnail_url ?? i.url : i.url))
             : fallbackUrls;
