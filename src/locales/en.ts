@@ -1363,6 +1363,7 @@ export default
         "ai_variants": "AI variants — click to insert",
         "placeholder": "Write a reply…",
         "pending_oauth_note": "Sending to the platform activates after OAuth is connected.",
+        "send_failed": "Could not send the reply to the platform.",
         "send": "Send"
       },
       "tones": {
