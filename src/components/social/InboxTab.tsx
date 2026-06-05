@@ -111,9 +111,13 @@ export function InboxTab({ orgId }: { orgId: string }) {
   const handleReply = async () => {
     if (!selected || !replyText.trim()) return;
     try {
-      await replyFn({
+      const res = await replyFn({
         data: { organizationId: orgId, commentId: selected.id, text: replyText.trim() },
       });
+      if (!res.sent) {
+        toast.error(res.error ?? t("social.inbox.reply.send_failed", "Nie udało się wysłać odpowiedzi do platformy."));
+        return;
+      }
       toast.success(t("social.inbox.toast.replied"));
       setReplyText("");
       setVariants(null);

@@ -1383,6 +1383,7 @@ export default
         "ai_variants": "Warianty AI — kliknij aby wstawić",
         "placeholder": "Napisz odpowiedź…",
         "pending_oauth_note": "Wysyłka do platformy aktywuje się po podłączeniu OAuth.",
+        "send_failed": "Nie udało się wysłać odpowiedzi do platformy.",
         "send": "Wyślij"
       },
       "tones": {
