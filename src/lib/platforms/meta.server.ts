@@ -456,9 +456,10 @@ export const facebookAdapter: PlatformAdapter = {
     // Pola komentarzy z Page tokena. Nie pobieramy avatarów autorów, bo częściej
     // uruchamiają dodatkowe ograniczenia API niż same komentarze i liczniki.
     const params = new URLSearchParams({
-      fields: "id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+      fields: "id,from{name,id,picture{url}},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+      filter: "stream",
       order: "reverse_chronological",
-      limit: "50",
+      limit: "100",
       access_token: account.access_token,
     });
     if (sinceIso) {
