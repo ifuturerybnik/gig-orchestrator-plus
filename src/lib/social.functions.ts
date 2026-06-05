@@ -358,6 +358,13 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
     if (accessErr) throw new Error(accessErr.message);
     if (!post) throw new Error("Post nie istnieje lub brak dostępu.");
 
+    const { error: commentsErr } = await supabaseAdmin
+      .from("social_comments")
+      .delete()
+      .eq("post_id", data.postId)
+      .eq("organization_id", data.organizationId);
+    if (commentsErr) throw new Error(commentsErr.message);
+
     const { error } = await supabaseAdmin
       .from("social_posts")
       .delete()
