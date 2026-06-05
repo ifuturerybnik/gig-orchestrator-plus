@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Plus, Copy, Check, Trash2, Webhook, Activity } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Webhook, Activity, FileDown } from "lucide-react";
+import i18n from "@/i18n";
+import { downloadIntegrationGuidePdf } from "@/lib/web-integration-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,16 +101,29 @@ export function WebWebhooksTab({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       <WebTabInstructions tab="webhooks" />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
 
         <div>
           <h3 className="font-semibold">{t("web.webhooks.title")}</h3>
           <p className="text-sm text-muted-foreground">{t("web.webhooks.subtitle")}</p>
         </div>
-        <Button onClick={startCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("web.webhooks.add")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lng = (i18n.language?.startsWith("en") ? "en" : "pl") as "pl" | "en";
+              downloadIntegrationGuidePdf("webhooks", lng);
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {t("web.webhooks.download_guide")}
+          </Button>
+          <Button onClick={startCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("web.webhooks.add")}
+          </Button>
+        </div>
       </div>
 
       {hooks.length === 0 ? (
