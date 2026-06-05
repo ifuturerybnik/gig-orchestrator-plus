@@ -367,7 +367,7 @@ export async function handleMetaOAuthCallback(args: {
       : null;
     const scopes = shortIg.scopes.length > 0
       ? shortIg.scopes
-      : ["instagram_business_basic", "instagram_business_content_publish"];
+      : ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_comments"];
 
     const { error: upIgErr } = await admin.from("social_accounts").upsert(
       {
@@ -490,6 +490,7 @@ export async function handleMetaOAuthCallback(args: {
         scopes: [
           "instagram_business_basic",
           "instagram_business_content_publish",
+          "instagram_business_manage_comments",
         ],
         // IG Graph używa PAGE access token (tego samego, którym publikuje FB)
         access_token_enc: encryptPii(page.access_token),
