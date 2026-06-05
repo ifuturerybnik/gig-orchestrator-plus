@@ -1032,15 +1032,14 @@ export const instagramAdapter: PlatformAdapter = {
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
       if (!isIgApi) params.set("access_token", account.access_token);
-      const url = action === "delete" && !isIgApi
-        ? `${base}/${encodeURIComponent(externalCommentId)}?access_token=${encodeURIComponent(account.access_token)}`
-        : `${base}/${encodeURIComponent(externalCommentId)}`;
+      const query = params.toString();
+      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: action === "delete" ? undefined : params,
+            body: undefined,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
