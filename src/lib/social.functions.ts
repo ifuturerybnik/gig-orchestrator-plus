@@ -1736,9 +1736,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
       // Scope'y IG są wymagane, żeby Graph API zwracało pole
       // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
-      // `instagram_manage_comments` działa w Facebook Login for Business dopiero
-      // z parametrami display=page + extras IG_API_ONBOARDING. Bez nich Meta potrafi
-      // zwracać "Invalid Scopes" dla tego permission.
+      // `instagram_manage_comments` działa w Facebook Login for Business wyłącznie
+      // w Business Login flow opisanym przez Meta: display=page + extras IG_API_ONBOARDING
+      // + response_type=token. Flow `code` potrafi zwracać "Invalid Scopes" dla tego permission.
       // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
       // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // `pages_read_user_engagement` też nie jest akceptowanym permission OAuth
@@ -1756,7 +1756,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
-        response_type: "code",
+        response_type: "token",
         client_id: clientId,
         display: "page",
         extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
@@ -1764,7 +1764,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
         scope: scopes.join(","),
       });
-      authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
+      authorizeUrl = `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
       const params = new URLSearchParams({
