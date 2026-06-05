@@ -2004,6 +2004,9 @@ export const syncPostNow = createServerFn({ method: "POST" })
               ? await refreshIgPostMediaItems({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
+                  apiBase: (ctx2.account.scopes ?? []).some((s) => s.startsWith("instagram_business_"))
+                    ? "https://graph.instagram.com/v22.0"
+                    : undefined,
                 })
               : await fetchFbPostMediaItems(r.external_post_id, ctx2.account.access_token);
           const fallbackUrls = freshItems && freshItems.length > 0
