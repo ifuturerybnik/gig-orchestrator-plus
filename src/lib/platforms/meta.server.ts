@@ -583,16 +583,72 @@ export const facebookAdapter: PlatformAdapter = {
 
     return Promise.all((j.data ?? []).map(async (p) => {
       const mediaUrls = collectFbMediaUrls(p);
+      const mediaItems = await fetchFbPostMediaItems(p.id, token).catch(() => null);
+      const itemsFallback = mediaItems && mediaItems.length > 0
+        ? mediaItems
+        : mediaUrls.map((url) => ({ url, type: "image" as const }));
       return {
         externalPostId: p.id,
         externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
         text: p.message ?? p.story ?? "",
-        mediaUrls,
+        mediaUrls: itemsFallback.map((i) => i.thumbnail_url ?? i.url),
+        mediaItems: itemsFallback,
         postedAt: p.created_time,
       };
     }));
   },
 };
+
+/**
+ * Pobiera attachments dla pojedynczego posta FB (per-object endpoint nie wpada
+ * w aggregated #12 tak często jak /posts?fields=attachments). Wyciąga zarówno
+ * obrazy jak i wideo (typy: photo, video, video_inline, share, album).
+ * Zwraca null w razie błędu uprawnień.
+ */
+async function fetchFbPostMediaItems(
+  postId: string,
+  accessToken: string,
+): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
+  try {
+    const fields =
+      "attachments{media_type,type,media,target,url,subattachments{media_type,type,media,target,url}}";
+    const url = `${GRAPH}/${encodeURIComponent(postId)}?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`;
+    type Att = {
+      media_type?: string;
+      type?: string;
+      url?: string;
+      target?: { id?: string; url?: string };
+      media?: {
+        image?: { src?: string };
+        source?: string;
+      };
+      subattachments?: { data?: Att[] };
+    };
+    const j = await graphJson<{ attachments?: { data?: Att[] } }>(url, {
+      context: "FB post attachments",
+    });
+    const items: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> = [];
+    const walk = (atts: Att[]) => {
+      for (const a of atts) {
+        const t = (a.media_type ?? a.type ?? "").toLowerCase();
+        const img = a.media?.image?.src ?? null;
+        const src = a.media?.source ?? null;
+        if (t.includes("video") || t === "animated_image_video") {
+          const videoUrl = src ?? img;
+          if (videoUrl) items.push({ url: videoUrl, type: "video", thumbnail_url: img });
+        } else if (img) {
+          items.push({ url: img, type: "image" });
+        }
+        if (a.subattachments?.data?.length) walk(a.subattachments.data);
+      }
+    };
+    walk(j.attachments?.data ?? []);
+    return items;
+  } catch (e) {
+    console.warn("[meta] fetchFbPostMediaItems failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 // =============================================================================
 // Instagram adapter (Business / Creator)
