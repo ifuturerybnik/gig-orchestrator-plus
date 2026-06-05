@@ -796,21 +796,30 @@ export async function refreshIgPostMediaUrls(args: {
       "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
     const j = await graphJson<{
+      media_type?: string;
       media_url?: string;
       thumbnail_url?: string;
       children?: {
-        data?: Array<{ media_url?: string; thumbnail_url?: string }>;
+        data?: Array<{ media_type?: string; media_url?: string; thumbnail_url?: string }>;
       };
     }>(url, { context: "IG media refresh" });
     const urls: string[] = [];
     const children = j.children?.data ?? [];
     if (children.length > 0) {
       for (const c of children) {
-        const u = c.media_url ?? c.thumbnail_url;
+        const u = pickIgDisplayMediaUrl({
+          mediaType: c.media_type,
+          mediaUrl: c.media_url,
+          thumbnailUrl: c.thumbnail_url,
+        });
         if (u) urls.push(u);
       }
     } else {
-      const u = j.media_url ?? j.thumbnail_url;
+      const u = pickIgDisplayMediaUrl({
+        mediaType: j.media_type,
+        mediaUrl: j.media_url,
+        thumbnailUrl: j.thumbnail_url,
+      });
       if (u) urls.push(u);
     }
     return urls;
@@ -825,10 +834,11 @@ export async function refreshFbPostMediaUrls(args: {
   accessToken: string;
 }): Promise<string[] | null> {
   try {
-    const fields = "id,full_picture,attachments{media,subattachments}";
+    const fields = "id,full_picture,picture,attachments{media,subattachments}";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
     const j = await graphJson<{
       full_picture?: string;
+      picture?: string;
       attachments?: {
         data?: Array<{
           media?: { image?: { src?: string } };
@@ -840,6 +850,7 @@ export async function refreshFbPostMediaUrls(args: {
     }>(url, { context: "FB media refresh" });
     const urls: string[] = [];
     if (j.full_picture) urls.push(j.full_picture);
+    if (j.picture && !urls.includes(j.picture)) urls.push(j.picture);
     for (const a of j.attachments?.data ?? []) {
       const src = a.media?.image?.src;
       if (src && !urls.includes(src)) urls.push(src);
