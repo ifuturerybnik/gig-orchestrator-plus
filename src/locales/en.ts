@@ -1548,8 +1548,18 @@ export default
       "open_original": "Open original",
       "sync_now": "Sync",
       "sync_done": "Synced: metrics {{metrics}}, new comments {{comments}}",
-      "sync_meta_limited": "Posts are imported. Meta still blocks metrics and comments until pages_read_engagement is approved in App Review.",
-      "new_comments": "{{count}} new"
+      "sync_meta_limited": "Posts are imported. Meta still blocks metrics and comments until pages_read_engagement and pages_read_user_content are approved in App Review.",
+      "new_comments": "{{count}} new",
+      "delete_local": "Delete locally",
+      "delete_local_title": "Delete this post from the app only?",
+      "delete_local_desc": "This removes the imported post, metrics and comments only from Concertivo. The original social media post will not be deleted.",
+      "delete_local_confirm": "Delete from app",
+      "local_delete_done": "Post deleted from the app only.",
+      "delete_imported": "Clear imports",
+      "delete_imported_title": "Delete all imported posts?",
+      "delete_imported_desc": "This removes {{count}} imported posts with local metrics and comments. Social media posts remain unchanged.",
+      "delete_imported_confirm": "Clear imports",
+      "import_delete_done": "Deleted imported posts locally: {{count}}."
     },
     "stats": {
       "title": "Stats",
