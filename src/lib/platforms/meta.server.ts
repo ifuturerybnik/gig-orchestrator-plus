@@ -410,11 +410,12 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
-    const fields =
-      "likes.summary(true),comments.summary(true),shares,reactions.summary(true)";
-    const url =
-      `${GRAPH}/${encodeURIComponent(externalPostId)}` +
-      `?fields=${fields}&access_token=${encodeURIComponent(account.access_token)}`;
+    const params = new URLSearchParams({
+      fields:
+        "reactions.type(LIKE).limit(0).summary(total_count),likes.limit(0).summary(true),comments.limit(0).summary(true),shares",
+      access_token: account.access_token,
+    });
+    const url = `${GRAPH}/${encodeURIComponent(externalPostId)}?${params.toString()}`;
     const j = await graphJson<{
       likes?: { summary?: { total_count?: number } };
       reactions?: { summary?: { total_count?: number } };
@@ -436,9 +437,8 @@ export const facebookAdapter: PlatformAdapter = {
     // - `like_count` — OK
     // pomijamy `comment_count` i `parent` (częściej wywołują dodatkowe ograniczenia API)
     const params = new URLSearchParams({
-      fields: "id,from,message,created_time,like_count",
+      fields: "id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}",
       order: "reverse_chronological",
-      filter: "stream",
       limit: "50",
       access_token: account.access_token,
     });
@@ -451,19 +451,22 @@ export const facebookAdapter: PlatformAdapter = {
       message?: string;
       created_time: string;
       like_count?: number;
+      comment_count?: number;
+      permalink_url?: string;
+      parent?: { id?: string };
     };
     const mapComment = (c: FbComment): PlatformInboxItem => ({
       externalCommentId: c.id,
-      externalParentCommentId: null,
+      externalParentCommentId: c.parent?.id ?? null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
       authorAvatarUrl: null,
       content: c.message ?? "",
-      permalink: `https://www.facebook.com/${c.id}`,
+      permalink: c.permalink_url ?? `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
       likeCount: c.like_count ?? 0,
-      replyCount: 0,
+      replyCount: c.comment_count ?? 0,
     });
 
     try {
@@ -481,7 +484,7 @@ export const facebookAdapter: PlatformAdapter = {
 
     const nestedParams = new URLSearchParams({
       fields:
-        "comments.order(reverse_chronological).limit(50){id,from,message,created_time,like_count}",
+        "comments.order(reverse_chronological).limit(50){id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}}",
       access_token: account.access_token,
     });
     const nested = await graphJson<{
