@@ -39,7 +39,7 @@ function igApiBases(account: PlatformAccount): string[] {
 
 function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
-  return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
+  return scopes.some((s) => s.startsWith("instagram_business_"));
 }
 
 function describeMetaCommentPermission(account: PlatformAccount): string {
@@ -1025,22 +1025,21 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
-    const params = new URLSearchParams();
     const attempts: string[] = [];
-    if (action === "hide" || action === "unhide") {
-      params.set("hide", action === "hide" ? "true" : "false");
-    }
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      params.set("access_token", account.access_token);
-      const query = params.toString();
+      const query = isIgApi ? "" : `access_token=${encodeURIComponent(account.access_token)}`;
       const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
+      const body = new URLSearchParams();
+      if (action === "hide" || action === "unhide") {
+        body.set(isIgApi ? "hide" : "is_hidden", action === "hide" ? "true" : "false");
+      }
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: undefined,
+            body: action === "delete" ? undefined : body,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
@@ -1156,11 +1155,13 @@ export async function refreshIgPostMediaUrls(args: {
 export async function refreshIgPostMediaItems(args: {
   externalPostId: string;
   accessToken: string;
+  apiBase?: string;
 }): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
   try {
     const fields =
       "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
-    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const base = args.apiBase ?? GRAPH;
+    const url = `${base}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
     const j = await graphJson<{
       media_type?: string;
       media_url?: string;
