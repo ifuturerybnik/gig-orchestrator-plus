@@ -165,8 +165,8 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           {t("social.meta.step4_title", "Krok 4 — Instagram (Business Login for Instagram)")}
         </h4>
         <p className="text-muted-foreground">
-          To <b>nowy</b> sposób integracji z IG — przez <i>Instagram API with Instagram Login</i> (NIE przez starsze
-          „Instagram Graph API via Facebook Pages"). Concertivo używa wyłącznie nowego API.
+          Instagram może być połączony bezpośrednio przez <i>Instagram API with Instagram Login</i> albo razem z Fanpage’em
+          przez <i>Facebook Login for Business</i>. Do komentarzy potrzebne jest uprawnienie zarządzania komentarzami.
         </p>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>

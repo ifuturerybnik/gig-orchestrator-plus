@@ -20,7 +20,6 @@
 import type {
   PlatformAdapter,
   PlatformAccount,
-  PlatformCommentModerationAction,
   PlatformInboxItem,
   PlatformMetrics,
   PlatformPostContent,
