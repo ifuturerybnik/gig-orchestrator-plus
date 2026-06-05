@@ -562,12 +562,10 @@ export const facebookAdapter: PlatformAdapter = {
     const token = account.access_token;
     const safeLimit = Math.min(Math.max(limit, 1), 25);
 
-    // Próbujemy najpierw z pełnymi polami (w tym attachments).
-    // FB Graph zwraca code:1 "Please reduce the amount of data..." gdy posty
-    // mają dużo załączników/komentarzy — wtedy retry z minimalnym zestawem pól.
-    const fullFields =
-      "id,message,story,created_time,permalink_url,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
-    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
+    // Nie pobieramy już pola attachments w /posts — Meta zwraca dla niego
+    // OAuthException #12: deprecate_post_aggregated_fields_for_attachment.
+    // Grafiki bierzemy z full_picture/picture albo z object_id poniżej.
+    const postFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
 
     type PostRow = {
       id: string;
@@ -595,13 +593,13 @@ export const facebookAdapter: PlatformAdapter = {
 
     let j: { data: PostRow[] };
     try {
-      j = await fetchWith(fullFields, safeLimit);
+      j = await fetchWith(postFields, safeLimit);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // "reduce the amount of data" / code:1 → retry z minimalnym zestawem i mniejszym limitem
       if (/reduce the amount of data|"code":1\b/i.test(msg)) {
         try {
-          j = await fetchWith(minimalFields, Math.min(safeLimit, 10));
+          j = await fetchWith(postFields, Math.min(safeLimit, 10));
         } catch {
           // ostatnia próba: tylko ID + timestamp, limit 5
           j = await fetchWith("id,message,created_time,permalink_url", 5);
