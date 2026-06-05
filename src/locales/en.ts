@@ -1695,7 +1695,8 @@ export default
         "secret_desc": "Keep this secret safe. Use it to verify the X-Concertivo-Signature header on your side.",
         "show_secret": "Show secret",
         "deliveries": "Recent deliveries",
-        "no_deliveries": "No delivery attempts yet."
+        "no_deliveries": "No delivery attempts yet.",
+        "download_guide": "Download PDF guide"
       },
       "instructions": {
         "news": {
