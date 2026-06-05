@@ -1918,7 +1918,6 @@ export const syncPostNow = createServerFn({ method: "POST" })
             posted_at: it.postedAt,
             like_count: it.likeCount ?? 0,
             reply_count: it.replyCount ?? 0,
-            status: "new",
           }));
           const { count, error: upErr } = await supabaseAdmin
             .from("social_comments")
