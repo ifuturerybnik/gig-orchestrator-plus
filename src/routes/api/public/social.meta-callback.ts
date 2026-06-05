@@ -112,8 +112,8 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
                const err = hash.get("error") || hash.get("error_reason");
                const desc = hash.get("error_description");
                if (err || desc) {
-                 document.getElementById("oauth-message").innerHTML =
-                   "Meta zwrócił błąd autoryzacji: <b>" + (err || "error") + "</b><br>" + (desc || "");
+                 const el = document.getElementById("oauth-message");
+                 el.textContent = "Meta zwrócił błąd autoryzacji: " + (err || "error") + (desc ? " — " + desc : "");
                }
              </script>`,
             false,
