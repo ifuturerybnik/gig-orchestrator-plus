@@ -46,6 +46,7 @@ import {
   replyToComment,
   moderateComment,
   aiSuggestCommentReply,
+  likeSocialTarget,
   type InboxCommentRow,
 } from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
@@ -107,6 +108,7 @@ export function PostDetailsDialog({
   const replyFn = useServerFn(replyToComment);
   const moderateFn = useServerFn(moderateComment);
   const suggestFn = useServerFn(aiSuggestCommentReply);
+  const likeFn = useServerFn(likeSocialTarget);
 
   const detailsQ = useQuery({
     queryKey: ["social-post-details", orgId, postId],

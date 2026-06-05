@@ -91,7 +91,6 @@ async function processTick() {
         .from("social_comments")
         .upsert(rowsToInsert, {
           onConflict: "account_id,external_comment_id",
-          ignoreDuplicates: true,
           count: "exact",
         });
       if (upErr) throw new Error(upErr.message);
