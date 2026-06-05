@@ -349,13 +349,89 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase
+    const { data: post, error: accessErr } = await supabase
+      .from("social_posts")
+      .select("id, source")
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (accessErr) throw new Error(accessErr.message);
+    if (!post) throw new Error("Post nie istnieje lub brak dostępu.");
+    if ((post as { source?: string }).source !== "imported") {
+      const { error } = await supabase
+        .from("social_posts")
+        .delete()
+        .eq("id", data.postId)
+        .eq("organization_id", data.organizationId);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+
+    const { error: commentsErr } = await supabaseAdmin
+      .from("social_comments")
+      .delete()
+      .eq("post_id", data.postId)
+      .eq("organization_id", data.organizationId);
+    if (commentsErr) throw new Error(commentsErr.message);
+
+    const { error } = await supabaseAdmin
       .from("social_posts")
       .delete()
       .eq("id", data.postId)
       .eq("organization_id", data.organizationId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const deleteImportedSocialPosts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        platform: platformSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: membership, error: membershipErr } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("organization_id", data.organizationId)
+      .limit(1)
+      .maybeSingle();
+    if (membershipErr) throw new Error(membershipErr.message);
+    if (!membership) throw new Error("Brak dostępu do organizacji.");
+
+    let q = supabaseAdmin
+      .from("social_posts")
+      .select("id, target_platforms")
+      .eq("organization_id", data.organizationId)
+      .eq("source", "imported")
+      .limit(1000);
+    if (data.platform) q = q.contains("target_platforms", [data.platform]);
+
+    const { data: rows, error: listErr } = await q;
+    if (listErr) throw new Error(listErr.message);
+    const ids = ((rows ?? []) as Array<{ id: string }>).map((r) => r.id);
+    if (ids.length === 0) return { deleted: 0 };
+
+    const { error: commentsErr } = await supabaseAdmin
+      .from("social_comments")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .in("post_id", ids);
+    if (commentsErr) throw new Error(commentsErr.message);
+
+    const { error: deleteErr } = await supabaseAdmin
+      .from("social_posts")
+      .delete()
+      .eq("organization_id", data.organizationId)
+      .eq("source", "imported")
+      .in("id", ids);
+    if (deleteErr) throw new Error(deleteErr.message);
+    return { deleted: ids.length };
   });
 
 // ---------- AI: generatory postów ----------
@@ -1484,6 +1560,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
+        "pages_read_user_content",
         "pages_manage_posts",
         "pages_manage_metadata",
         "business_management",

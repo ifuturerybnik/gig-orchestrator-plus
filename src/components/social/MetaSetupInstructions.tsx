@@ -286,7 +286,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           </li>
           <li>
             <b>Scopes FB:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement</code>
+            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_read_user_content</code>
           </li>
         </ul>
       </div>

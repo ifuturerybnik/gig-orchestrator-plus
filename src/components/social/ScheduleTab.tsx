@@ -15,13 +15,31 @@ import {
   RefreshCw,
   Download,
   Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { listSocialPosts, publishPostNow, syncPostNow } from "@/lib/social.functions";
+import {
+  deleteImportedSocialPosts,
+  deleteSocialPost,
+  listSocialPosts,
+  publishPostNow,
+  syncPostNow,
+} from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function ScheduleTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
@@ -29,12 +47,15 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
   const fetchPosts = useServerFn(listSocialPosts);
   const publishFn = useServerFn(publishPostNow);
   const syncFn = useServerFn(syncPostNow);
+  const deletePostFn = useServerFn(deleteSocialPost);
+  const deleteImportedFn = useServerFn(deleteImportedSocialPosts);
   const postsQ = useQuery({
     queryKey: ["social-posts", orgId],
     queryFn: () => fetchPosts({ data: { organizationId: orgId } }),
   });
 
   const items = postsQ.data?.items ?? [];
+  const importedCount = items.filter((p) => p.source === "imported").length;
   const scheduledDays = items
     .filter((p) => p.scheduled_at)
     .map((p) => new Date(p.scheduled_at!));
@@ -47,6 +68,32 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
         .join(", ");
       toast.info(t("social.schedule.publish_now_result", { summary }));
       qc.invalidateQueries({ queryKey: ["social-posts", orgId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const invalidateSocialData = () => {
+    qc.invalidateQueries({ queryKey: ["social-posts", orgId] });
+    qc.invalidateQueries({ queryKey: ["inbox-comments", orgId] });
+    qc.invalidateQueries({ queryKey: ["inbox-counts", orgId] });
+  };
+
+  const handleDeleteLocalPost = async (postId: string) => {
+    try {
+      await deletePostFn({ data: { organizationId: orgId, postId } });
+      toast.success(t("social.schedule.local_delete_done"));
+      invalidateSocialData();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const handleDeleteImported = async () => {
+    try {
+      const res = await deleteImportedFn({ data: { organizationId: orgId } });
+      toast.success(t("social.schedule.import_delete_done", { count: res.deleted }));
+      invalidateSocialData();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
@@ -110,8 +157,39 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("social.schedule.list_title")}</CardTitle>
-          <CardDescription>{t("social.schedule.list_subtitle")}</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">{t("social.schedule.list_title")}</CardTitle>
+              <CardDescription>{t("social.schedule.list_subtitle")}</CardDescription>
+            </div>
+            {importedCount > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="gap-2">
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t("social.schedule.delete_imported")}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("social.schedule.delete_imported_title")}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("social.schedule.delete_imported_desc", { count: importedCount })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteImported}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {t("social.schedule.delete_imported_confirm")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {items.length === 0 ? (
@@ -240,6 +318,33 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                             <RefreshCw className="mr-1 h-3 w-3" />
                             {t("social.schedule.sync_now")}
                           </Button>
+                        )}
+                        {isImported && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                {t("social.schedule.delete_local")}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t("social.schedule.delete_local_title")}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t("social.schedule.delete_local_desc")}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteLocalPost(p.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {t("social.schedule.delete_local_confirm")}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                         {(p.status === "scheduled" || p.status === "draft") && (
                           <Button size="sm" variant="ghost" onClick={() => handlePublishNow(p.id)}>
