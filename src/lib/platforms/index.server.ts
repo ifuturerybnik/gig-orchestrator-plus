@@ -66,7 +66,7 @@ export async function getValidAccount(args: {
   const { data, error } = await supabaseAdmin
     .from("social_accounts")
     .select(
-      "id, organization_id, platform, external_account_id, account_name, access_token_enc, refresh_token_enc, token_expires_at",
+      "id, organization_id, platform, external_account_id, account_name, scopes, access_token_enc, refresh_token_enc, token_expires_at",
     )
     .eq("organization_id", args.organizationId)
     .eq("platform", args.platform)
@@ -79,6 +79,7 @@ export async function getValidAccount(args: {
     platform: string;
     external_account_id: string;
     account_name: string;
+    scopes?: string[] | null;
     access_token_enc: string | null;
     refresh_token_enc: string | null;
     token_expires_at: string | null;
@@ -156,6 +157,7 @@ export async function getValidAccount(args: {
     platform: row.platform,
     external_account_id: row.external_account_id,
     account_name: row.account_name,
+    scopes: row.scopes ?? [],
     access_token: accessToken,
     refresh_token: refreshToken,
     token_expires_at: expiresAt,
