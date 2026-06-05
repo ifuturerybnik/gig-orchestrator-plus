@@ -23,6 +23,7 @@ export type PlatformAccount = {
   platform: string;
   external_account_id: string;
   account_name: string;
+  scopes?: string[];
   access_token: string; // ODSZYFROWANY
   refresh_token: string | null; // ODSZYFROWANY
   token_expires_at: string | null;

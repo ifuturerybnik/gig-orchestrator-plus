@@ -38,7 +38,7 @@ export type SocialPostRow = {
   organization_id: string;
   created_by: string;
   target_platforms: string[];
-  content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }>;
+  content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[]; media_items?: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> }>;
   linked_event_id: string | null;
   status: string;
   scheduled_at: string | null;
@@ -975,7 +975,7 @@ export const replyToComment = createServerFn({ method: "POST" })
     const { data: c, error: cErr } = await supabase
       .from("social_comments")
       .select(
-        "id, platform, external_post_id, external_comment_id, account_id, organization_id",
+        "id, platform, post_id, external_post_id, external_comment_id, account_id, organization_id",
       )
       .eq("id", data.commentId)
       .eq("organization_id", data.organizationId)
@@ -985,6 +985,7 @@ export const replyToComment = createServerFn({ method: "POST" })
     const cm = c as {
       id: string;
       platform: string;
+      post_id: string | null;
       external_post_id: string;
       external_comment_id: string;
       account_id: string;
@@ -994,6 +995,8 @@ export const replyToComment = createServerFn({ method: "POST" })
     // Spróbuj wysłać do platformy (jeśli mamy adapter z reply())
     let sentExternalId: string | null = null;
     let sendError: string | null = null;
+    let sentAuthorName: string | null = null;
+    let sentAuthorExternalId: string | null = null;
     try {
       const { getAdapter, getValidAccount } = await import("./platforms/index.server");
       const adapter = getAdapter(cm.platform);
@@ -1003,6 +1006,8 @@ export const replyToComment = createServerFn({ method: "POST" })
           platform: cm.platform,
         });
         if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+        sentAuthorName = ctx2.account.account_name;
+        sentAuthorExternalId = ctx2.account.external_account_id;
         const r = await adapter.reply({
           account: ctx2.account,
           externalParentCommentId: cm.external_comment_id,
@@ -1019,29 +1024,71 @@ export const replyToComment = createServerFn({ method: "POST" })
       sendError = e instanceof Error ? e.message : String(e);
     }
 
-    // Oznacz komentarz jako 'replied' (zawsze — UX: widzimy że obsłużone)
+    const handledAt = new Date().toISOString();
+    if (sendError || !sentExternalId) {
+      await supabase.from("social_moderation_log").insert({
+        organization_id: data.organizationId,
+        account_id: cm.account_id,
+        comment_id: data.commentId,
+        action: "reply",
+        payload: { text: data.text, external_id: sentExternalId },
+        result: "error",
+        error_message: sendError ?? "Platforma nie zwróciła ID odpowiedzi.",
+        performed_by: userId,
+      });
+      return { ok: false, sent: false, error: sendError ?? "Nie udało się wysłać odpowiedzi do platformy." };
+    }
+
+    // Oznacz komentarz jako 'replied' dopiero po faktycznej wysyłce do platformy.
     const { error: updErr } = await supabase
       .from("social_comments")
       .update({
         status: "replied",
         handled_by: userId,
-        handled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        handled_at: handledAt,
+        updated_at: handledAt,
       })
       .eq("id", data.commentId)
       .eq("organization_id", data.organizationId);
     if (updErr) throw new Error(updErr.message);
 
+    const { error: replyRowErr } = await supabase.from("social_comments").upsert(
+      {
+        organization_id: data.organizationId,
+        account_id: cm.account_id,
+        platform: cm.platform,
+        post_id: cm.post_id,
+        external_post_id: cm.external_post_id,
+        external_comment_id: sentExternalId,
+        external_parent_comment_id: cm.external_comment_id,
+        author_external_id: sentAuthorExternalId,
+        author_name: sentAuthorName,
+        author_avatar_url: null,
+        content: data.text,
+        permalink: null,
+        posted_at: handledAt,
+        like_count: 0,
+        reply_count: 0,
+        status: "replied",
+        handled_by: userId,
+        handled_at: handledAt,
+        updated_at: handledAt,
+      },
+      { onConflict: "account_id,external_comment_id" },
+    );
+    if (replyRowErr) throw new Error(replyRowErr.message);
+
     await supabase.from("social_moderation_log").insert({
       organization_id: data.organizationId,
+      account_id: cm.account_id,
       comment_id: data.commentId,
       action: "reply",
       payload: { text: data.text, external_id: sentExternalId },
-      result: sendError ? "pending_oauth" : "ok",
-      error_message: sendError,
+      result: "ok",
+      error_message: null,
       performed_by: userId,
     });
-    return { ok: true, sent: !!sentExternalId, error: sendError };
+    return { ok: true, sent: true, error: null };
   });
 
 export const aiSuggestCommentReply = createServerFn({ method: "POST" })
@@ -1546,6 +1593,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         scope: [
           "instagram_business_basic",
           "instagram_business_content_publish",
+          "instagram_business_manage_comments",
         ].join(","),
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
@@ -1570,6 +1618,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
+        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
@@ -1821,29 +1870,41 @@ export const syncPostNow = createServerFn({ method: "POST" })
       // Odświeżenie URL-i mediów dla Meta (CDN URLs wygasają po ~24h).
       if (r.platform === "instagram" || r.platform === "facebook") {
         try {
-          const { refreshIgPostMediaUrls, refreshFbPostMediaUrls } = await import(
+          const { refreshIgPostMediaItems, refreshFbPostMediaUrls, fetchFbPostMediaItems } = await import(
             "./platforms/meta.server"
           );
-          const fresh =
+          const freshItems =
             r.platform === "instagram"
-              ? await refreshIgPostMediaUrls({
+              ? await refreshIgPostMediaItems({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
                 })
-              : await refreshFbPostMediaUrls({
+              : await fetchFbPostMediaItems(r.external_post_id, ctx2.account.access_token);
+          const fallbackUrls = freshItems && freshItems.length > 0
+            ? null
+            : r.platform === "facebook"
+              ? await refreshFbPostMediaUrls({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
-                });
-          if (fresh && fresh.length > 0) {
+                })
+              : null;
+          const freshUrls = freshItems && freshItems.length > 0
+            ? freshItems.map((i) => (i.type === "video" ? i.thumbnail_url ?? i.url : i.url))
+            : fallbackUrls;
+          if (freshUrls && freshUrls.length > 0) {
             const { data: postRow } = await supabaseAdmin
               .from("social_posts")
               .select("content_per_platform")
               .eq("id", r.post_id)
               .maybeSingle();
             const cpp =
-              ((postRow as { content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }> } | null)
+              ((postRow as { content_per_platform: SocialPostRow["content_per_platform"] } | null)
                 ?.content_per_platform) ?? {};
-            cpp[r.platform] = { ...(cpp[r.platform] ?? {}), media_urls: fresh };
+            cpp[r.platform] = {
+              ...(cpp[r.platform] ?? {}),
+              media_urls: freshUrls,
+              ...(freshItems && freshItems.length > 0 ? { media_items: freshItems } : {}),
+            };
             await supabaseAdmin
               .from("social_posts")
               .update({ content_per_platform: cpp })
