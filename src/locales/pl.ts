@@ -1727,8 +1727,18 @@ export default
       "open_original": "Otwórz oryginał",
       "sync_now": "Synchronizuj",
       "sync_done": "Zsynchronizowano: metryki {{metrics}}, nowe komentarze {{comments}}",
-      "sync_meta_limited": "Posty są zaimportowane. Meta blokuje jeszcze metryki i komentarze do czasu zatwierdzenia uprawnienia pages_read_engagement w App Review.",
-      "new_comments": "{{count}} nowych"
+      "sync_meta_limited": "Posty są zaimportowane. Meta blokuje jeszcze metryki i komentarze do czasu zatwierdzenia uprawnień pages_read_engagement oraz pages_read_user_content w App Review.",
+      "new_comments": "{{count}} nowych",
+      "delete_local": "Usuń lokalnie",
+      "delete_local_title": "Usunąć wpis tylko z aplikacji?",
+      "delete_local_desc": "Usunie to zaimportowany wpis, metryki i komentarze wyłącznie z Concertivo. Oryginalny post w mediach społecznościowych nie zostanie usunięty.",
+      "delete_local_confirm": "Usuń z aplikacji",
+      "local_delete_done": "Wpis usunięty tylko z aplikacji.",
+      "delete_imported": "Wyczyść importy",
+      "delete_imported_title": "Usunąć wszystkie zaimportowane wpisy?",
+      "delete_imported_desc": "Usunie to {{count}} zaimportowanych wpisów wraz z lokalnymi metrykami i komentarzami. Posty w mediach społecznościowych pozostaną bez zmian.",
+      "delete_imported_confirm": "Wyczyść importy",
+      "import_delete_done": "Usunięto lokalnie zaimportowane wpisy: {{count}}."
     },
     "stats": {
       "title": "Statystyki",
