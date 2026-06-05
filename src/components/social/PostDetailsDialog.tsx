@@ -319,9 +319,9 @@ function CommentItem({
       const res = await replyFn({
         data: { organizationId: orgId, commentId: comment.id, text: replyText.trim() },
       });
-      if (res.sent) toast.success(t("social.inbox.toasts.reply_sent"));
+      if (res.sent) toast.success(t("social.inbox.toast.replied"));
       else if (res.error) toast.info(res.error);
-      else toast.success(t("social.inbox.toasts.reply_marked"));
+      else toast.success(t("social.inbox.toast.replied"));
       setReplyOpen(false);
       onChanged();
     } catch (e) {
