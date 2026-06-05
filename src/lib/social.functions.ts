@@ -928,6 +928,21 @@ export const moderateComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: comment, error: commentErr } = await supabase
+      .from("social_comments")
+      .select("id, platform, account_id, external_comment_id, organization_id")
+      .eq("id", data.commentId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (commentErr) throw new Error(commentErr.message);
+    if (!comment) throw new Error("Komentarz nie istnieje lub brak dostępu.");
+    const cm = comment as {
+      id: string;
+      platform: string;
+      account_id: string;
+      external_comment_id: string;
+      organization_id: string;
+    };
     const statusByAction: Record<string, string> = {
       hide: "hidden",
       unhide: "new",
@@ -935,6 +950,44 @@ export const moderateComment = createServerFn({ method: "POST" })
       mark_spam: "spam",
       archive: "archived",
     };
+
+    if (["hide", "unhide", "delete"].includes(data.action)) {
+      try {
+        const { getAdapter, getValidAccount } = await import("./platforms/index.server");
+        const adapter = getAdapter(cm.platform);
+        if (!adapter?.moderateComment) {
+          if (cm.platform === "facebook" || cm.platform === "instagram") {
+            throw new Error(`Moderacja komentarzy dla ${cm.platform} nie jest dostępna w adapterze.`);
+          }
+        } else {
+          const ctx2 = await getValidAccount({
+            organizationId: cm.organization_id,
+            platform: cm.platform,
+          });
+          if (!ctx2) throw new Error("Brak podłączonego konta tej platformy.");
+          await adapter.moderateComment({
+            account: ctx2.account,
+            externalCommentId: cm.external_comment_id,
+            action: data.action,
+            clientId: ctx2.credentials.clientId,
+            clientSecret: ctx2.credentials.clientSecret,
+          });
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        await supabase.from("social_moderation_log").insert({
+          organization_id: data.organizationId,
+          account_id: cm.account_id,
+          comment_id: data.commentId,
+          action: data.action,
+          result: "error",
+          error_message: message.slice(0, 1000),
+          performed_by: userId,
+        });
+        throw new Error(message);
+      }
+    }
+
     const { error } = await supabase
       .from("social_comments")
       .update({
