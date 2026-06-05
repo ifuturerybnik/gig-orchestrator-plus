@@ -1697,6 +1697,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
+        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
