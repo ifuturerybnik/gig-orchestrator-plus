@@ -1679,9 +1679,10 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
       // Scope'y IG są wymagane, żeby Graph API zwracało pole
       // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
-      // UWAGA: instagram_manage_comments, instagram_manage_insights
-      // wymagają App Review (Advanced Access) i muszą być dodane w Use Cases aplikacji Meta.
-      // Bez tego Meta zwraca "Invalid Scopes" i blokuje cały dialog OAuth.
+      // UWAGA: instagram_manage_comments nie jest poprawnym scope'em w tym
+      // Facebook Login flow dla naszej konfiguracji aplikacji Meta — blokuje
+      // cały dialog OAuth komunikatem "Invalid Scopes". Komentarze IG obsługuje
+      // osobny flow Instagram Login przez instagram_business_manage_comments.
       // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
       // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // `pages_read_user_engagement` też nie jest akceptowanym permission OAuth
@@ -1696,7 +1697,6 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
-        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
