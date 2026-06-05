@@ -45,12 +45,18 @@ export class MetaPermissionError extends Error {
 
 function isMetaEngagementPermissionError(status: number, body: string): boolean {
   if (status !== 400 && status !== 403) return false;
-  const isCode10 = body.includes("(#10)") || body.includes('"code":10');
+  const isKnownPermissionCode =
+    body.includes("(#10)") ||
+    body.includes('"code":10') ||
+    body.includes('"code":200') ||
+    body.includes('"code":283');
   const mentionsMissingPermission =
     /requires?\s+.*permission/i.test(body) ||
+    /extended permission/i.test(body) ||
+    /Permissions error/i.test(body) ||
     /Page Public Content Access/i.test(body) ||
     /requires?\s+.*pages_read_engagement/i.test(body);
-  return isCode10 && mentionsMissingPermission;
+  return isKnownPermissionCode && mentionsMissingPermission;
 }
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
@@ -73,6 +79,84 @@ function pickIgDisplayMediaUrl(args: {
     return args.thumbnailUrl ?? args.mediaUrl ?? null;
   }
   return args.mediaUrl ?? args.thumbnailUrl ?? null;
+}
+
+type FbAttachmentNode = {
+  type?: string;
+  url?: string;
+  media?: { image?: { src?: string } };
+  subattachments?: { data?: FbAttachmentNode[] };
+};
+
+type FbPostMediaShape = {
+  full_picture?: string;
+  picture?: string;
+  object_id?: string;
+  attachments?: { data?: FbAttachmentNode[] };
+};
+
+function pushUniqueUrl(urls: string[], url?: string | null): void {
+  if (url && !urls.includes(url)) urls.push(url);
+}
+
+function collectFbMediaUrls(post: FbPostMediaShape): string[] {
+  const urls: string[] = [];
+  pushUniqueUrl(urls, post.full_picture);
+  pushUniqueUrl(urls, post.picture);
+
+  const walk = (items?: FbAttachmentNode[]) => {
+    for (const item of items ?? []) {
+      pushUniqueUrl(urls, item.media?.image?.src);
+      walk(item.subattachments?.data);
+    }
+  };
+  walk(post.attachments?.data);
+  return urls;
+}
+
+async function fetchFbObjectMediaUrls(args: {
+  objectId: string;
+  accessToken: string;
+}): Promise<string[]> {
+  try {
+    const params = new URLSearchParams({
+      fields: "images,picture,source",
+      access_token: args.accessToken,
+    });
+    const j = await graphJson<{
+      images?: Array<{ source?: string }>;
+      picture?: string;
+      source?: string;
+    }>(`${GRAPH}/${encodeURIComponent(args.objectId)}?${params.toString()}`, {
+      context: "FB media object",
+    });
+    const urls: string[] = [];
+    for (const image of j.images ?? []) pushUniqueUrl(urls, image.source);
+    pushUniqueUrl(urls, j.source);
+    pushUniqueUrl(urls, j.picture);
+    return urls;
+  } catch (e) {
+    console.warn("[meta] FB media object failed:", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+async function fetchFbEdgeSummaryCount(args: {
+  objectId: string;
+  edge: "likes" | "comments";
+  accessToken: string;
+  context: string;
+}): Promise<number> {
+  const params = new URLSearchParams({
+    limit: "0",
+    summary: "total_count",
+    access_token: args.accessToken,
+  });
+  const j = await graphJson<{ summary?: { total_count?: number } }>(
+    `${GRAPH}/${encodeURIComponent(args.objectId)}/${args.edge}?${params.toString()}`,
+    { context: args.context },
+  );
+  return j.summary?.total_count ?? 0;
 }
 
 async function graphJson<T = unknown>(
@@ -350,19 +434,45 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
-    const fields =
-      "likes.summary(true),comments.summary(true),shares,reactions.summary(true)";
-    const url =
-      `${GRAPH}/${encodeURIComponent(externalPostId)}` +
-      `?fields=${fields}&access_token=${encodeURIComponent(account.access_token)}`;
-    const j = await graphJson<{
+    const params = new URLSearchParams({
+      fields: "likes.limit(0).summary(true),comments.limit(0).summary(true),shares",
+      access_token: account.access_token,
+    });
+    const url = `${GRAPH}/${encodeURIComponent(externalPostId)}?${params.toString()}`;
+    let j: {
       likes?: { summary?: { total_count?: number } };
-      reactions?: { summary?: { total_count?: number } };
       comments?: { summary?: { total_count?: number } };
       shares?: { count?: number };
-    }>(url, { context: "FB metrics" });
+    };
+    try {
+      j = await graphJson<{
+        likes?: { summary?: { total_count?: number } };
+        comments?: { summary?: { total_count?: number } };
+        shares?: { count?: number };
+      }>(url, { context: "FB metrics" });
+    } catch (e) {
+      if (e instanceof MetaPermissionError) throw e;
+      const [likes, comments] = await Promise.all([
+        fetchFbEdgeSummaryCount({
+          objectId: externalPostId,
+          edge: "likes",
+          accessToken: account.access_token,
+          context: "FB /likes summary",
+        }),
+        fetchFbEdgeSummaryCount({
+          objectId: externalPostId,
+          edge: "comments",
+          accessToken: account.access_token,
+          context: "FB /comments summary",
+        }),
+      ]);
+      j = {
+        likes: { summary: { total_count: likes } },
+        comments: { summary: { total_count: comments } },
+      };
+    }
     return {
-      likes: j.reactions?.summary?.total_count ?? j.likes?.summary?.total_count ?? 0,
+      likes: j.likes?.summary?.total_count ?? 0,
       comments: j.comments?.summary?.total_count ?? 0,
       shares: j.shares?.count ?? 0,
       views: 0,
@@ -371,14 +481,11 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
-    // Minimalne pola, by uniknąć eskalacji uprawnień:
-    // - `from` (bez subselect picture) — bezpieczne z pages_read_engagement
-    // - `like_count` — OK
-    // pomijamy `comment_count` i `parent` (częściej wywołują dodatkowe ograniczenia API)
+    // Pola komentarzy z Page tokena. Nie pobieramy avatarów autorów, bo częściej
+    // uruchamiają dodatkowe ograniczenia API niż same komentarze i liczniki.
     const params = new URLSearchParams({
-      fields: "id,from,message,created_time,like_count",
+      fields: "id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}",
       order: "reverse_chronological",
-      filter: "stream",
       limit: "50",
       access_token: account.access_token,
     });
@@ -391,19 +498,22 @@ export const facebookAdapter: PlatformAdapter = {
       message?: string;
       created_time: string;
       like_count?: number;
+      comment_count?: number;
+      permalink_url?: string;
+      parent?: { id?: string };
     };
     const mapComment = (c: FbComment): PlatformInboxItem => ({
       externalCommentId: c.id,
-      externalParentCommentId: null,
+      externalParentCommentId: c.parent?.id ?? null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
       authorAvatarUrl: null,
       content: c.message ?? "",
-      permalink: `https://www.facebook.com/${c.id}`,
+      permalink: c.permalink_url ?? `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
       likeCount: c.like_count ?? 0,
-      replyCount: 0,
+      replyCount: c.comment_count ?? 0,
     });
 
     try {
@@ -421,7 +531,7 @@ export const facebookAdapter: PlatformAdapter = {
 
     const nestedParams = new URLSearchParams({
       fields:
-        "comments.order(reverse_chronological).limit(50){id,from,message,created_time,like_count}",
+        "comments.order(reverse_chronological).limit(50){id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}}",
       access_token: account.access_token,
     });
     const nested = await graphJson<{
@@ -456,8 +566,8 @@ export const facebookAdapter: PlatformAdapter = {
     // FB Graph zwraca code:1 "Please reduce the amount of data..." gdy posty
     // mają dużo załączników/komentarzy — wtedy retry z minimalnym zestawem pól.
     const fullFields =
-      "id,message,story,created_time,permalink_url,full_picture,picture,attachments{media,subattachments,type,url}";
-    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture";
+      "id,message,story,created_time,permalink_url,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
+    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
 
     type PostRow = {
       id: string;
@@ -467,16 +577,8 @@ export const facebookAdapter: PlatformAdapter = {
       permalink_url?: string;
       full_picture?: string;
       picture?: string;
-      attachments?: {
-        data?: Array<{
-          type?: string;
-          url?: string;
-          media?: { image?: { src?: string } };
-          subattachments?: {
-            data?: Array<{ media?: { image?: { src?: string } } }>;
-          };
-        }>;
-      };
+      object_id?: string;
+      attachments?: { data?: FbAttachmentNode[] };
     };
 
     const fetchWith = async (fields: string, lim: number) => {
@@ -509,18 +611,14 @@ export const facebookAdapter: PlatformAdapter = {
       }
     }
 
-    return (j.data ?? []).map((p) => {
-      const mediaUrls: string[] = [];
-      if (p.full_picture) mediaUrls.push(p.full_picture);
-      if (p.picture && !mediaUrls.includes(p.picture)) mediaUrls.push(p.picture);
-      const atts = p.attachments?.data ?? [];
-      for (const a of atts) {
-        const src = a.media?.image?.src;
-        if (src && !mediaUrls.includes(src)) mediaUrls.push(src);
-        const subs = a.subattachments?.data ?? [];
-        for (const s of subs) {
-          const sub = s.media?.image?.src;
-          if (sub && !mediaUrls.includes(sub)) mediaUrls.push(sub);
+    return Promise.all((j.data ?? []).map(async (p) => {
+      const mediaUrls = collectFbMediaUrls(p);
+      if (mediaUrls.length === 0 && p.object_id) {
+        for (const url of await fetchFbObjectMediaUrls({
+          objectId: p.object_id,
+          accessToken: token,
+        })) {
+          pushUniqueUrl(mediaUrls, url);
         }
       }
       return {
@@ -530,7 +628,7 @@ export const facebookAdapter: PlatformAdapter = {
         mediaUrls,
         postedAt: p.created_time,
       };
-    });
+    }));
   },
 };
 
@@ -834,29 +932,18 @@ export async function refreshFbPostMediaUrls(args: {
   accessToken: string;
 }): Promise<string[] | null> {
   try {
-    const fields = "id,full_picture,picture,attachments{media,subattachments}";
+    const fields = "id,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
-    const j = await graphJson<{
-      full_picture?: string;
-      picture?: string;
-      attachments?: {
-        data?: Array<{
-          media?: { image?: { src?: string } };
-          subattachments?: {
-            data?: Array<{ media?: { image?: { src?: string } } }>;
-          };
-        }>;
-      };
+    const j = await graphJson<FbPostMediaShape & {
+      object_id?: string;
     }>(url, { context: "FB media refresh" });
-    const urls: string[] = [];
-    if (j.full_picture) urls.push(j.full_picture);
-    if (j.picture && !urls.includes(j.picture)) urls.push(j.picture);
-    for (const a of j.attachments?.data ?? []) {
-      const src = a.media?.image?.src;
-      if (src && !urls.includes(src)) urls.push(src);
-      for (const s of a.subattachments?.data ?? []) {
-        const sub = s.media?.image?.src;
-        if (sub && !urls.includes(sub)) urls.push(sub);
+    const urls = collectFbMediaUrls(j);
+    if (urls.length === 0 && j.object_id) {
+      for (const objectUrl of await fetchFbObjectMediaUrls({
+        objectId: j.object_id,
+        accessToken: args.accessToken,
+      })) {
+        pushUniqueUrl(urls, objectUrl);
       }
     }
     return urls;
