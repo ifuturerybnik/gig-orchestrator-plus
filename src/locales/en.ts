@@ -1677,7 +1677,8 @@ export default
         "embed_snippet": "Embed snippet for your website",
         "embed_snippet_help": "Paste this code on your site – it renders the news list in a lightweight widget (Shadow DOM).",
         "embed_gallery_help": "Gallery mode renders an album grid with lightbox and video playback.",
-        "sitemap_help": "Sitemap covers news, events and albums. Add ?base=https://your-domain to get absolute URLs."
+        "sitemap_help": "Sitemap covers news, events and albums. Add ?base=https://your-domain to get absolute URLs.",
+        "download_guide": "Download PDF guide"
       },
       "webhooks": {
         "title": "Webhooks",
