@@ -59,7 +59,6 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
       "business_management",
       "instagram_basic",
       "instagram_content_publish",
-      "instagram_manage_comments",
     ],
     envClientIdKey: "META_APP_ID",
   },

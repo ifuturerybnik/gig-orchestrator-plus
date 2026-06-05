@@ -497,9 +497,6 @@ export async function handleMetaOAuthCallback(args: {
 
     if (!isInstagramLoginAccount) {
       const instagramScopes = perms.granted.filter((scope) => scope.startsWith("instagram_"));
-      if (!instagramScopes.includes("instagram_manage_comments")) {
-        instagramScopes.push("instagram_manage_comments");
-      }
       const { error: upIgErr } = await admin.from("social_accounts").upsert(
         {
           organization_id: s.organization_id,
