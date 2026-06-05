@@ -735,3 +735,76 @@ export const instagramAdapter: PlatformAdapter = {
     });
   },
 };
+
+/**
+ * Pobiera świeże URL-e mediów dla pojedynczego posta IG / FB.
+ * IG CDN URL-e wygasają po ~24h, więc przy synchronizacji musimy je odświeżać.
+ * Zwraca null gdy nie udało się pobrać (np. post usunięty / brak uprawnień).
+ */
+export async function refreshIgPostMediaUrls(args: {
+  externalPostId: string;
+  accessToken: string;
+}): Promise<string[] | null> {
+  try {
+    const fields =
+      "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
+    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const j = await graphJson<{
+      media_url?: string;
+      thumbnail_url?: string;
+      children?: {
+        data?: Array<{ media_url?: string; thumbnail_url?: string }>;
+      };
+    }>(url, { context: "IG media refresh" });
+    const urls: string[] = [];
+    const children = j.children?.data ?? [];
+    if (children.length > 0) {
+      for (const c of children) {
+        const u = c.media_url ?? c.thumbnail_url;
+        if (u) urls.push(u);
+      }
+    } else {
+      const u = j.media_url ?? j.thumbnail_url;
+      if (u) urls.push(u);
+    }
+    return urls;
+  } catch (e) {
+    console.warn("[meta] refreshIgPostMediaUrls failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+export async function refreshFbPostMediaUrls(args: {
+  externalPostId: string;
+  accessToken: string;
+}): Promise<string[] | null> {
+  try {
+    const fields = "id,full_picture,attachments{media,subattachments}";
+    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const j = await graphJson<{
+      full_picture?: string;
+      attachments?: {
+        data?: Array<{
+          media?: { image?: { src?: string } };
+          subattachments?: {
+            data?: Array<{ media?: { image?: { src?: string } } }>;
+          };
+        }>;
+      };
+    }>(url, { context: "FB media refresh" });
+    const urls: string[] = [];
+    if (j.full_picture) urls.push(j.full_picture);
+    for (const a of j.attachments?.data ?? []) {
+      const src = a.media?.image?.src;
+      if (src && !urls.includes(src)) urls.push(src);
+      for (const s of a.subattachments?.data ?? []) {
+        const sub = s.media?.image?.src;
+        if (sub && !urls.includes(sub)) urls.push(sub);
+      }
+    }
+    return urls;
+  } catch (e) {
+    console.warn("[meta] refreshFbPostMediaUrls failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
