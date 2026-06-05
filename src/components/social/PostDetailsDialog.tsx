@@ -405,7 +405,7 @@ function CommentItem({
         data: { organizationId: orgId, commentId: comment.id, text: replyText.trim() },
       });
       if (!res.sent) {
-        toast.error(res.error ?? t("social.inbox.reply.send_failed"));
+        toast.error(res.error ?? t("social.inbox.reply.send_failed", "Nie udało się wysłać odpowiedzi do platformy."));
         return;
       }
       toast.success(t("social.inbox.toast.replied"));
