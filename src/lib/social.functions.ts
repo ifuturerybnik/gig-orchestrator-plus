@@ -1052,7 +1052,7 @@ export const replyToComment = createServerFn({ method: "POST" })
       .eq("organization_id", data.organizationId);
     if (updErr) throw new Error(updErr.message);
 
-    await supabase.from("social_comments").upsert(
+    const { error: replyRowErr } = await supabase.from("social_comments").upsert(
       {
         organization_id: data.organizationId,
         account_id: cm.account_id,
@@ -1076,6 +1076,7 @@ export const replyToComment = createServerFn({ method: "POST" })
       },
       { onConflict: "account_id,external_comment_id" },
     );
+    if (replyRowErr) throw new Error(replyRowErr.message);
 
     await supabase.from("social_moderation_log").insert({
       organization_id: data.organizationId,
