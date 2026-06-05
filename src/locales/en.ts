@@ -1548,7 +1548,7 @@ export default
       "open_original": "Open original",
       "sync_now": "Sync",
       "sync_done": "Synced: metrics {{metrics}}, new comments {{comments}}",
-      "sync_meta_limited": "Posts are imported. Meta may still block likes and comments until pages_read_engagement and pages_manage_engagement are approved in App Review.",
+      "sync_meta_limited": "Posts are imported. Meta may still block likes and comments until pages_read_engagement or Page Public Content Access is approved in App Review.",
       "new_comments": "{{count}} new",
       "delete_local": "Delete locally",
       "delete_local_title": "Delete this post from the app only?",
