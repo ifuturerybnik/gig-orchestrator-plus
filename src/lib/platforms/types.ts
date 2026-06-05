@@ -64,6 +64,7 @@ export type PlatformRecentPost = {
   externalUrl: string | null;
   text: string;
   mediaUrls: string[];
+  mediaItems?: MediaItem[];
   postedAt: string | null;
 };
 
