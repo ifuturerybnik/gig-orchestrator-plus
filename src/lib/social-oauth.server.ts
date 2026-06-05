@@ -476,35 +476,12 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) upsert instagram (jeśli powiązany)
+  // 8) Facebook Login zwraca Page token. Nie zapisujemy go jako konto Instagram,
+  // bo Instagram Login używa innego tokena i hosta graph.instagram.com; nadpisanie
+  // powoduje błąd "Cannot parse access token" przy odpowiedziach na komentarze.
   let igUsername: string | null = null;
   if (page.instagram) {
     igUsername = page.instagram.username;
-    const { error: upIgErr } = await admin.from("social_accounts").upsert(
-      {
-        organization_id: s.organization_id,
-        platform: "instagram",
-        external_account_id: page.instagram.id,
-        account_name: `@${page.instagram.username}`,
-        account_avatar_url: page.instagram.profile_picture_url ?? null,
-        scopes: [
-          "instagram_business_basic",
-          "instagram_business_content_publish",
-          "instagram_business_manage_comments",
-        ],
-        // IG Graph używa PAGE access token (tego samego, którym publikuje FB)
-        access_token_enc: encryptPii(page.access_token),
-        refresh_token_enc: null,
-        token_expires_at: tokenExpiresAt,
-        status: "connected",
-        last_error: null,
-        connected_by: s.user_id,
-        connected_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "organization_id,platform" },
-    );
-    if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
   }
 
   await admin.from("social_oauth_states").delete().eq("state", args.state);
