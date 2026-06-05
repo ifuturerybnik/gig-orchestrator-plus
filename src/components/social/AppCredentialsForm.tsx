@@ -68,7 +68,9 @@ export function AppCredentialsForm({
 
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
+  const [metaConfigId, setMetaConfigId] = useState("");
   const [showSecret, setShowSecret] = useState(false);
+  const isMetaPlatform = platform === "facebook" || platform === "instagram";
 
   // Slug callback URL: X używa "x", Facebook+Instagram dzielą "meta",
   // Spotify używa skróconego "spotify", reszta = id platformy.
@@ -93,12 +95,14 @@ export function AppCredentialsForm({
           platform,
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
+          metaConfigId: isMetaPlatform ? metaConfigId.trim() : undefined,
         },
       }),
     onSuccess: () => {
       toast.success(t("social.setup.saved"));
       setClientId("");
       setClientSecret("");
+      setMetaConfigId("");
       qc.invalidateQueries({ queryKey: ["social-app-credentials", orgId, platform] });
       qc.invalidateQueries({ queryKey: ["platform-readiness", platform, orgId] });
       onConfigured?.();
@@ -258,6 +262,23 @@ export function AppCredentialsForm({
             {t("social.setup.secret_hint")}
           </p>
         </div>
+
+        {isMetaPlatform && (
+          <div className="space-y-2">
+            <Label htmlFor="meta-config-id">Facebook Login for Business — Configuration ID</Label>
+            <Input
+              id="meta-config-id"
+              value={metaConfigId}
+              onChange={(e) => setMetaConfigId(e.target.value)}
+              placeholder="123456789012345"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              W Meta for Developers: Facebook Login for Business → Configurations → skopiuj Configuration ID z konfiguracji zawierającej Facebook Pages i Instagram.
+            </p>
+          </div>
+        )}
 
         <Button
           onClick={() => saveMut.mutate()}

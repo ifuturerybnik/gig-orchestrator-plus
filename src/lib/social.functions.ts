@@ -1512,7 +1512,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
     const candidates = credPlatformCandidates(data.platform);
     const { data: rows, error } = await supabase
       .from("social_app_credentials")
-      .select("id, client_id, configured_at, configured_by, updated_at, platform")
+      .select("id, client_id, configured_at, configured_by, updated_at, platform, extra")
       .eq("organization_id", data.organizationId)
       .in("platform", candidates);
 
@@ -1522,6 +1522,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
         (rows ?? [])[0]) as null | {
         id: string;
         client_id: string;
+        extra?: { meta_config_id?: string | null };
         configured_at: string;
         configured_by: string;
         updated_at: string;
@@ -1531,6 +1532,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
       exists: !!r,
       clientId: r?.client_id ?? null,
       clientIdMasked: r ? maskClientIdLong(r.client_id) : null,
+      metaConfigId: ((r as { extra?: { meta_config_id?: string } } | null)?.extra?.meta_config_id ?? null) || null,
       configuredAt: r?.configured_at ?? null,
       updatedAt: r?.updated_at ?? null,
     };
@@ -1550,6 +1552,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
         platform: platformSchema,
         clientId: z.string().trim().min(3).max(512),
         clientSecret: z.string().trim().min(3).max(2048),
+        metaConfigId: z.string().trim().max(256).optional(),
       })
       .parse(input),
   )
@@ -1566,6 +1569,9 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
           platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
+          extra: data.platform === "facebook" || data.platform === "instagram"
+            ? { meta_config_id: data.metaConfigId?.trim() || null }
+            : {},
           configured_by: userId,
           updated_at: new Date().toISOString(),
         },
@@ -1658,7 +1664,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         : [data.platform];
     const { data: credRows, error: credErr } = await supabase
       .from("social_app_credentials")
-      .select("client_id, platform")
+      .select("client_id, platform, extra")
       .eq("organization_id", data.organizationId)
       .in("platform", lookupCandidates);
     if (credErr) throw new Error(credErr.message);
@@ -1670,6 +1676,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
     }
 
     const clientId = (credRow as { client_id: string }).client_id;
+    const metaConfigId = ((credRow as { extra?: { meta_config_id?: string | null } }).extra?.meta_config_id ?? "").trim();
 
     // 2) wygeneruj state + PKCE
     const state = base64UrlEncode(randomBytes(32));
@@ -1733,24 +1740,32 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
-      // Facebook OAuth: tylko scope'y, które Meta akceptuje w tym flow.
-      // Nie dodawaj tutaj pages_manage_engagement ani instagram_manage_comments —
-      // Meta zwraca dla nich "Invalid Scopes". Instagram komentarze obsługuje
-      // osobny przycisk "Połącz z Instagram" przez instagram_business_manage_comments.
+      // Meta OAuth: Facebook Page + powiązany Instagram Business w jednym flow.
+      // Komentarze FB wymagają pages_manage_engagement, a komentarze IG przez
+      // Facebook Login wymagają instagram_manage_comments.
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
+        "pages_read_user_content",
         "pages_manage_posts",
+        "pages_manage_engagement",
         "pages_manage_metadata",
         "business_management",
+        "instagram_basic",
+        "instagram_content_publish",
+        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
         redirect_uri: callbackUrl,
         state,
-        scope: scopes.join(","),
       });
+      if (metaConfigId) {
+        params.set("config_id", metaConfigId);
+      } else {
+        params.set("scope", scopes.join(","));
+      }
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
@@ -1989,6 +2004,9 @@ export const syncPostNow = createServerFn({ method: "POST" })
               ? await refreshIgPostMediaItems({
                   externalPostId: r.external_post_id,
                   accessToken: ctx2.account.access_token,
+                  apiBase: (ctx2.account.scopes ?? []).some((s) => s.startsWith("instagram_business_"))
+                    ? "https://graph.instagram.com/v22.0"
+                    : undefined,
                 })
               : await fetchFbPostMediaItems(r.external_post_id, ctx2.account.access_token);
           const fallbackUrls = freshItems && freshItems.length > 0
