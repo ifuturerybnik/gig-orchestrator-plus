@@ -37,7 +37,7 @@ export class MetaPermissionError extends Error {
   constructor(context: string) {
     super(
       `${context}: Meta nie udostępnia jeszcze metryk/komentarzy dla tej aplikacji. ` +
-        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonego pages_read_engagement w Meta App Review.",
+        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonych pages_read_engagement oraz pages_read_user_content w Meta App Review.",
     );
     this.name = "MetaPermissionError";
   }
@@ -61,6 +61,18 @@ function composeText(content: PlatformPostContent, maxLen: number): string {
   const out = [text, tags].filter(Boolean).join("\n\n");
   if (out.length > maxLen) return out.slice(0, maxLen - 3) + "…";
   return out;
+}
+
+function pickIgDisplayMediaUrl(args: {
+  mediaType?: string;
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+}): string | null {
+  const mediaType = (args.mediaType ?? "").toUpperCase();
+  if (mediaType === "VIDEO" || mediaType === "REELS") {
+    return args.thumbnailUrl ?? args.mediaUrl ?? null;
+  }
+  return args.mediaUrl ?? args.thumbnailUrl ?? null;
 }
 
 async function graphJson<T = unknown>(
@@ -366,25 +378,21 @@ export const facebookAdapter: PlatformAdapter = {
     const params = new URLSearchParams({
       fields: "id,from,message,created_time,like_count",
       order: "reverse_chronological",
+      filter: "stream",
       limit: "50",
       access_token: account.access_token,
     });
     if (sinceIso) {
       params.set("since", String(Math.floor(new Date(sinceIso).getTime() / 1000)));
     }
-    const j = await graphJson<{
-      data: Array<{
-        id: string;
-        from?: { id?: string; name?: string };
-        message?: string;
-        created_time: string;
-        like_count?: number;
-      }>;
-    }>(
-      `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
-      { context: "FB /comments" },
-    );
-    return (j.data ?? []).map((c) => ({
+    type FbComment = {
+      id: string;
+      from?: { id?: string; name?: string };
+      message?: string;
+      created_time: string;
+      like_count?: number;
+    };
+    const mapComment = (c: FbComment): PlatformInboxItem => ({
       externalCommentId: c.id,
       externalParentCommentId: null,
       externalPostId,
@@ -396,7 +404,35 @@ export const facebookAdapter: PlatformAdapter = {
       postedAt: c.created_time,
       likeCount: c.like_count ?? 0,
       replyCount: 0,
-    }));
+    });
+
+    try {
+      const j = await graphJson<{
+        data: FbComment[];
+      }>(
+        `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+        { context: "FB /comments" },
+      );
+      return (j.data ?? []).map(mapComment);
+    } catch (e) {
+      if (e instanceof MetaPermissionError) throw e;
+      console.warn("[meta] FB /comments edge failed, trying nested comments:", e);
+    }
+
+    const nestedParams = new URLSearchParams({
+      fields:
+        "comments.order(reverse_chronological).limit(50){id,from,message,created_time,like_count}",
+      access_token: account.access_token,
+    });
+    const nested = await graphJson<{
+      comments?: { data?: FbComment[] };
+    }>(`${GRAPH}/${encodeURIComponent(externalPostId)}?${nestedParams.toString()}`, {
+      context: "FB nested comments",
+    });
+    const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
+    return (nested.comments?.data ?? [])
+      .filter((c) => !sinceTs || new Date(c.created_time).getTime() > sinceTs)
+      .map(mapComment);
   },
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
@@ -420,8 +456,8 @@ export const facebookAdapter: PlatformAdapter = {
     // FB Graph zwraca code:1 "Please reduce the amount of data..." gdy posty
     // mają dużo załączników/komentarzy — wtedy retry z minimalnym zestawem pól.
     const fullFields =
-      "id,message,story,created_time,permalink_url,full_picture,attachments{media,subattachments,type,url}";
-    const minimalFields = "id,message,story,created_time,permalink_url,full_picture";
+      "id,message,story,created_time,permalink_url,full_picture,picture,attachments{media,subattachments,type,url}";
+    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture";
 
     type PostRow = {
       id: string;
@@ -430,6 +466,7 @@ export const facebookAdapter: PlatformAdapter = {
       created_time: string;
       permalink_url?: string;
       full_picture?: string;
+      picture?: string;
       attachments?: {
         data?: Array<{
           type?: string;
@@ -475,6 +512,7 @@ export const facebookAdapter: PlatformAdapter = {
     return (j.data ?? []).map((p) => {
       const mediaUrls: string[] = [];
       if (p.full_picture) mediaUrls.push(p.full_picture);
+      if (p.picture && !mediaUrls.includes(p.picture)) mediaUrls.push(p.picture);
       const atts = p.attachments?.data ?? [];
       for (const a of atts) {
         const src = a.media?.image?.src;
@@ -718,11 +756,19 @@ export const instagramAdapter: PlatformAdapter = {
       const children = m.children?.data ?? [];
       if (children.length > 0) {
         for (const c of children) {
-          const url = c.media_url ?? c.thumbnail_url;
+          const url = pickIgDisplayMediaUrl({
+            mediaType: c.media_type,
+            mediaUrl: c.media_url,
+            thumbnailUrl: c.thumbnail_url,
+          });
           if (url) mediaUrls.push(url);
         }
       } else {
-        const url = m.media_url ?? m.thumbnail_url;
+        const url = pickIgDisplayMediaUrl({
+          mediaType: m.media_type,
+          mediaUrl: m.media_url,
+          thumbnailUrl: m.thumbnail_url,
+        });
         if (url) mediaUrls.push(url);
       }
       return {
