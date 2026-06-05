@@ -38,7 +38,7 @@ export type SocialPostRow = {
   organization_id: string;
   created_by: string;
   target_platforms: string[];
-  content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }>;
+  content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[]; media_items?: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> }>;
   linked_event_id: string | null;
   status: string;
   scheduled_at: string | null;
