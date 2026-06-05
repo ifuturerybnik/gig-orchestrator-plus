@@ -47,7 +47,7 @@ export function ConnectWizardDialog({
 }) {
   const { t } = useTranslation();
   const meta = SOCIAL_PLATFORMS[platform];
-  const visibleScopes = meta.scopes.filter((s) => s !== "pages_read_user_content");
+  const visibleScopes = meta.scopes;
   const [step, setStep] = useState<Step>("intro");
   const [checklist, setChecklist] = useState<boolean[]>([false, false, false]);
 

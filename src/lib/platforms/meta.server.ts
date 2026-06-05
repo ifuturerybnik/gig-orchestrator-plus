@@ -37,7 +37,7 @@ export class MetaPermissionError extends Error {
   constructor(context: string) {
     super(
       `${context}: Meta nie udostępnia jeszcze metryk/komentarzy dla tej aplikacji. ` +
-        "Import postów działa, ale odczyt zaangażowania wymaga zatwierdzonych pages_read_engagement oraz pages_read_user_content w Meta App Review.",
+        "Import postów działa, ale odczyt zaangażowania może wymagać zatwierdzonych uprawnień Facebook Pages w Meta App Review.",
     );
     this.name = "MetaPermissionError";
   }
@@ -374,7 +374,7 @@ export const facebookAdapter: PlatformAdapter = {
     // Minimalne pola, by uniknąć eskalacji uprawnień:
     // - `from` (bez subselect picture) — bezpieczne z pages_read_engagement
     // - `like_count` — OK
-    // pomijamy `comment_count` i `parent` (mogą wymagać pages_read_user_content)
+    // pomijamy `comment_count` i `parent` (częściej wywołują dodatkowe ograniczenia API)
     const params = new URLSearchParams({
       fields: "id,from,message,created_time,like_count",
       order: "reverse_chronological",

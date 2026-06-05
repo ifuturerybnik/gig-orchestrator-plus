@@ -1548,7 +1548,7 @@ export default
       "open_original": "Open original",
       "sync_now": "Sync",
       "sync_done": "Synced: metrics {{metrics}}, new comments {{comments}}",
-      "sync_meta_limited": "Posts are imported. Meta still blocks metrics and comments until pages_read_engagement and pages_read_user_content are approved in App Review.",
+      "sync_meta_limited": "Posts are imported. Meta may still block metrics and comments until Facebook Pages permissions are approved in App Review.",
       "new_comments": "{{count}} new",
       "delete_local": "Delete locally",
       "delete_local_title": "Delete this post from the app only?",
