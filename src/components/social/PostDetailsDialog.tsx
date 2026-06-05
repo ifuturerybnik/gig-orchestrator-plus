@@ -128,7 +128,7 @@ export function PostDetailsDialog({
             {t("social.post_details.not_found")}
           </div>
         ) : (
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
             <div className="space-y-4 pb-2">
               {/* Header: platforms + status + sync */}
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -412,6 +412,16 @@ function CommentItem({
           >
             <Send className="mr-1 h-3 w-3" />
             {t("social.post_details.reply")}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleModerate("delete")}
+            disabled={busy !== "none"}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            {t("social.inbox.actions.delete")}
           </Button>
         </div>
       </div>
