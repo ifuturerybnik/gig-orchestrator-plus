@@ -60,6 +60,8 @@ export type PlatformReplyResult = {
   externalCommentId: string;
 };
 
+export type PlatformCommentModerationAction = "hide" | "unhide" | "delete";
+
 export type PlatformRecentPost = {
   externalPostId: string;
   externalUrl: string | null;
@@ -106,6 +108,15 @@ export interface PlatformAdapter {
     clientId: string;
     clientSecret: string;
   }): Promise<PlatformReplyResult>;
+
+  /** Wykonaj moderację komentarza bezpośrednio na platformie, jeśli API ją wspiera. */
+  moderateComment?(args: {
+    account: PlatformAccount;
+    externalCommentId: string;
+    action: PlatformCommentModerationAction;
+    clientId: string;
+    clientSecret: string;
+  }): Promise<{ ok: boolean }>;
 
   /** Polub post lub komentarz jako połączone konto/strona, jeśli API platformy to wspiera. */
   like?(args: {
