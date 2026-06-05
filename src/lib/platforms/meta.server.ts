@@ -562,10 +562,11 @@ export const facebookAdapter: PlatformAdapter = {
     const token = account.access_token;
     const safeLimit = Math.min(Math.max(limit, 1), 25);
 
-    // Nie pobieramy już pola attachments w /posts — Meta zwraca dla niego
-    // OAuthException #12: deprecate_post_aggregated_fields_for_attachment.
-    // Grafiki bierzemy z full_picture/picture albo z object_id poniżej.
-    const postFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
+    // Nie pobieramy pól agregowanych/deprecated w /posts (attachments, object_id,
+    // source, type itd.) — Meta zwraca OAuthException #12:
+    // deprecate_post_aggregated_fields_for_attachment. Grafiki bierzemy tylko
+    // z pól nadal wspieranych na liście postów: full_picture/picture.
+    const postFields = "id,message,story,created_time,permalink_url,full_picture,picture";
 
     type PostRow = {
       id: string;
@@ -575,8 +576,6 @@ export const facebookAdapter: PlatformAdapter = {
       permalink_url?: string;
       full_picture?: string;
       picture?: string;
-      object_id?: string;
-      attachments?: { data?: FbAttachmentNode[] };
     };
 
     const fetchWith = async (fields: string, lim: number) => {
@@ -596,10 +595,11 @@ export const facebookAdapter: PlatformAdapter = {
       j = await fetchWith(postFields, safeLimit);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // "reduce the amount of data" / code:1 → retry z minimalnym zestawem i mniejszym limitem
-      if (/reduce the amount of data|"code":1\b/i.test(msg)) {
+      // "reduce the amount of data" / code:1 albo Meta #12 dla pól deprecated
+      // → retry z minimalnym zestawem i mniejszym limitem.
+      if (/reduce the amount of data|"code":1\b|deprecate_post_aggregated_fields_for_attachment|"code":12\b/i.test(msg)) {
         try {
-          j = await fetchWith(postFields, Math.min(safeLimit, 10));
+          j = await fetchWith("id,message,story,created_time,permalink_url,full_picture,picture", Math.min(safeLimit, 10));
         } catch {
           // ostatnia próba: tylko ID + timestamp, limit 5
           j = await fetchWith("id,message,created_time,permalink_url", 5);
@@ -611,14 +611,6 @@ export const facebookAdapter: PlatformAdapter = {
 
     return Promise.all((j.data ?? []).map(async (p) => {
       const mediaUrls = collectFbMediaUrls(p);
-      if (mediaUrls.length === 0 && p.object_id) {
-        for (const url of await fetchFbObjectMediaUrls({
-          objectId: p.object_id,
-          accessToken: token,
-        })) {
-          pushUniqueUrl(mediaUrls, url);
-        }
-      }
       return {
         externalPostId: p.id,
         externalUrl: p.permalink_url ?? `https://www.facebook.com/${p.id}`,
