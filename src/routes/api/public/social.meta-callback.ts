@@ -106,7 +106,16 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
         if (!code || !state) {
           return html(
             "Błąd autoryzacji",
-            "<p>Brak parametrów <code>code</code> lub <code>state</code>.</p>",
+            `<p id="oauth-message">Brak parametrów <code>code</code> lub <code>state</code>. Uruchom integrację ponownie z aplikacji.</p>
+             <script>
+               const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+               const err = hash.get("error") || hash.get("error_reason");
+               const desc = hash.get("error_description");
+               if (err || desc) {
+                 document.getElementById("oauth-message").innerHTML =
+                   "Meta zwrócił błąd autoryzacji: <b>" + (err || "error") + "</b><br>" + (desc || "");
+               }
+             </script>`,
             false,
           );
         }
