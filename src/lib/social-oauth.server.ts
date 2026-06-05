@@ -476,12 +476,32 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) Jeżeli strona FB ma podłączone konto Instagram, pokazujemy to w diagnostyce,
-  // ale NIE zapisujemy konta Instagram z tokenem Facebook Page. Komentarze IG wymagają
-  // osobnego Instagram Login z instagram_business_manage_comments.
+  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG.
+  // To jest oficjalny wariant „Instagram API with Facebook Login”: IG używa Page tokena
+  // i hosta graph.facebook.com. Osobny Instagram Login nadal jest obsługiwany jako alternatywa.
   let igUsername: string | null = null;
   if (page.instagram) {
     igUsername = page.instagram.username;
+    const { error: upIgErr } = await admin.from("social_accounts").upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "instagram",
+        external_account_id: page.instagram.id,
+        account_name: `@${page.instagram.username}`,
+        account_avatar_url: page.instagram.profile_picture_url ?? null,
+        scopes: perms.granted,
+        access_token_enc: encryptPii(page.access_token),
+        refresh_token_enc: null,
+        token_expires_at: tokenExpiresAt,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+    if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
   }
 
   await admin.from("social_oauth_states").delete().eq("state", args.state);

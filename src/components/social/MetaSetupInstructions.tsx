@@ -6,8 +6,8 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * dla Concertivo. Spisana na podstawie udanej integracji produkcyjnej.
  *
  * Ważne fakty, które już zostały zweryfikowane w boju:
- *  - Instagram może działać przez nowe Instagram Login albo przez Facebook Login for Business
- *    dla Page-connected IG. Moderacja komentarzy wymaga osobnego scope'a w każdym flow.
+ *  - Instagram działa przez Facebook Login for Business dla Page-connected IG albo alternatywnie
+ *    przez Business Login for Instagram. Moderacja komentarzy wymaga odpowiedniego scope'a.
  *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
@@ -146,7 +146,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
             <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
           </li>
           <li>
-            {t("social.meta.facebook_no_ig_comment_scopes", "Facebook łączymy bez uprawnień instagram_manage_comments i pages_manage_engagement, bo Meta odrzuca je w tym flow. Komentarze Instagrama wymagają osobnego przycisku „Połącz z Instagram”.")}
+            Utwórz konfigurację w <b>Facebook Login for Business → Configurations</b> z dostępem do Facebook Pages oraz Instagram i skopiuj jej <b>Configuration ID</b> do formularza w Concertivo.
           </li>
           <li>
             Kliknij <b>Save changes</b>.
@@ -290,7 +290,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           </li>
           <li>
             <b>Scopes FB:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_metadata, business_management</code>
+            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_read_user_content, pages_manage_posts, pages_manage_engagement, pages_manage_metadata, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments</code>
           </li>
         </ul>
       </div>

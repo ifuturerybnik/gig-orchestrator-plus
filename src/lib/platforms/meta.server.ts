@@ -39,7 +39,7 @@ function igApiBases(account: PlatformAccount): string[] {
 
 function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
-  return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
+  return scopes.some((s) => s.startsWith("instagram_business_"));
 }
 
 function describeMetaCommentPermission(account: PlatformAccount): string {
@@ -735,11 +735,12 @@ export async function fetchFbPostMediaItems(
 async function waitForIgContainer(args: {
   containerId: string;
   accessToken: string;
+  apiBase: string;
 }): Promise<void> {
   // Container musi być FINISHED zanim publish. Próbujemy do 10s.
   for (let i = 0; i < 10; i++) {
     const j = await graphJson<{ status_code?: string }>(
-      `${GRAPH}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
+      `${args.apiBase}/${args.containerId}?fields=status_code&access_token=${encodeURIComponent(args.accessToken)}`,
       { context: "IG container status" },
     );
     if (j.status_code === "FINISHED") return;
@@ -756,6 +757,7 @@ export const instagramAdapter: PlatformAdapter = {
   async publish({ account, content }): Promise<PlatformPublishResult> {
     const igId = account.external_account_id;
     const token = account.access_token;
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     const caption = composeText(content, 2200);
     const media = (content.media_urls ?? []).filter(Boolean);
     if (media.length === 0) {
@@ -773,7 +775,7 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${apiBase}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: params, context: "IG /media (single)" },
       );
       creationId = j.id;
@@ -787,7 +789,7 @@ export const instagramAdapter: PlatformAdapter = {
           access_token: token,
         });
         const j = await graphJson<{ id: string }>(
-          `${GRAPH}/${encodeURIComponent(igId)}/media`,
+          `${apiBase}/${encodeURIComponent(igId)}/media`,
           { method: "POST", body: p, context: "IG carousel child" },
         );
         childIds.push(j.id);
@@ -799,20 +801,20 @@ export const instagramAdapter: PlatformAdapter = {
         access_token: token,
       });
       const j = await graphJson<{ id: string }>(
-        `${GRAPH}/${encodeURIComponent(igId)}/media`,
+        `${apiBase}/${encodeURIComponent(igId)}/media`,
         { method: "POST", body: p, context: "IG carousel parent" },
       );
       creationId = j.id;
     }
 
-    await waitForIgContainer({ containerId: creationId, accessToken: token });
+    await waitForIgContainer({ containerId: creationId, accessToken: token, apiBase });
 
     const pub = new URLSearchParams({
       creation_id: creationId,
       access_token: token,
     });
     const pubRes = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media_publish`,
+      `${apiBase}/${encodeURIComponent(igId)}/media_publish`,
       { method: "POST", body: pub, context: "IG /media_publish" },
     );
     const mediaId = pubRes.id;
@@ -821,7 +823,7 @@ export const instagramAdapter: PlatformAdapter = {
     let permalink: string | null = null;
     try {
       const meta = await graphJson<{ permalink?: string }>(
-        `${GRAPH}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
+        `${apiBase}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(token)}`,
         { context: "IG permalink" },
       );
       permalink = meta.permalink ?? null;
@@ -832,9 +834,10 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     // Najpierw policzniki na obiekcie media
     const baseUrl =
-      `${GRAPH}/${encodeURIComponent(externalPostId)}` +
+      `${apiBase}/${encodeURIComponent(externalPostId)}` +
       `?fields=like_count,comments_count,media_product_type,media_type` +
       `&access_token=${encodeURIComponent(account.access_token)}`;
     const base = await graphJson<{
@@ -850,7 +853,7 @@ export const instagramAdapter: PlatformAdapter = {
       const ins = await graphJson<{
         data?: Array<{ name: string; values?: Array<{ value: number }> }>;
       }>(
-        `${GRAPH}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
+        `${apiBase}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
         { context: "IG insights" },
       );
       views = ins.data?.find((d) => d.name === "reach")?.values?.[0]?.value ?? 0;
@@ -1022,22 +1025,21 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
-    const params = new URLSearchParams();
     const attempts: string[] = [];
-    if (action === "hide" || action === "unhide") {
-      params.set("hide", action === "hide" ? "true" : "false");
-    }
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      params.set("access_token", account.access_token);
-      const query = params.toString();
+      const query = isIgApi ? "" : `access_token=${encodeURIComponent(account.access_token)}`;
       const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
+      const body = new URLSearchParams();
+      if (action === "hide" || action === "unhide") {
+        body.set(isIgApi ? "hide" : "is_hidden", action === "hide" ? "true" : "false");
+      }
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: undefined,
+            body: action === "delete" ? undefined : body,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
@@ -1080,6 +1082,7 @@ export const instagramAdapter: PlatformAdapter = {
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
     const igId = account.external_account_id;
     const token = account.access_token;
+    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
     const params = new URLSearchParams({
       fields:
         "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{media_url,thumbnail_url,media_type}",
@@ -1104,7 +1107,7 @@ export const instagramAdapter: PlatformAdapter = {
         };
       }>;
     }>(
-      `${GRAPH}/${encodeURIComponent(igId)}/media?${params.toString()}`,
+      `${apiBase}/${encodeURIComponent(igId)}/media?${params.toString()}`,
       { context: "IG /media (list)" },
     );
     return (j.data ?? []).map((m) => {
@@ -1152,11 +1155,13 @@ export async function refreshIgPostMediaUrls(args: {
 export async function refreshIgPostMediaItems(args: {
   externalPostId: string;
   accessToken: string;
+  apiBase?: string;
 }): Promise<Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> | null> {
   try {
     const fields =
       "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
-    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const base = args.apiBase ?? GRAPH;
+    const url = `${base}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
     const j = await graphJson<{
       media_type?: string;
       media_url?: string;
