@@ -445,7 +445,11 @@ export const facebookAdapter: PlatformAdapter = {
       shares?: { count?: number };
     };
     try {
-      j = await graphJson(url, { context: "FB metrics" });
+      j = await graphJson<{
+        likes?: { summary?: { total_count?: number } };
+        comments?: { summary?: { total_count?: number } };
+        shares?: { count?: number };
+      }>(url, { context: "FB metrics" });
     } catch (e) {
       if (e instanceof MetaPermissionError) throw e;
       const [likes, comments] = await Promise.all([
