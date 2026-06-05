@@ -225,7 +225,7 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                   }}
                   className="overflow-hidden rounded-md border text-sm cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <div className="flex gap-3 p-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-3 p-3">
                     {cover ? (
                       <img
                         src={cover}
