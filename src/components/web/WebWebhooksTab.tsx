@@ -101,16 +101,29 @@ export function WebWebhooksTab({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       <WebTabInstructions tab="webhooks" />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
 
         <div>
           <h3 className="font-semibold">{t("web.webhooks.title")}</h3>
           <p className="text-sm text-muted-foreground">{t("web.webhooks.subtitle")}</p>
         </div>
-        <Button onClick={startCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("web.webhooks.add")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lng = (i18n.language?.startsWith("en") ? "en" : "pl") as "pl" | "en";
+              downloadIntegrationGuidePdf("webhooks", lng);
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {t("web.webhooks.download_guide")}
+          </Button>
+          <Button onClick={startCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("web.webhooks.add")}
+          </Button>
+        </div>
       </div>
 
       {hooks.length === 0 ? (
