@@ -1734,11 +1734,9 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
       // Facebook Pages + powiązany Instagram Business / Creator (jeden flow).
-      // Scope'y IG są wymagane, żeby Graph API zwracało pole
-      // `instagram_business_account` w /me/accounts oraz pozwalało publikować / czytać metryki IG.
-      // `instagram_manage_comments` działa w Facebook Login for Business dopiero
-      // z parametrami display=page + extras IG_API_ONBOARDING. Bez nich Meta potrafi
-      // zwracać "Invalid Scopes" dla tego permission.
+      // Oficjalny Business Login for Instagram przez Facebook wymaga response_type=token
+      // oraz display=page + IG_API_ONBOARDING; przy response_type=code Meta zwraca
+      // "Invalid Scopes" dla instagram_manage_comments.
       // `pages_read_user_content` nie jest poprawnym permission w Facebook Login —
       // próba poproszenia o niego zatrzymuje logowanie komunikatem "Invalid Scopes".
       // `pages_read_user_engagement` też nie jest akceptowanym permission OAuth
@@ -1750,13 +1748,14 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         "pages_read_engagement",
         "pages_manage_posts",
         "pages_manage_metadata",
+        "pages_manage_engagement",
         "business_management",
         "instagram_basic",
         "instagram_content_publish",
         "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
-        response_type: "code",
+        response_type: "token",
         client_id: clientId,
         display: "page",
         extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
@@ -1764,7 +1763,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         state,
         scope: scopes.join(","),
       });
-      authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
+      authorizeUrl = `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
       const params = new URLSearchParams({
