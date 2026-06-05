@@ -349,7 +349,7 @@ function CommentItem({
     setBusy("moderate");
     try {
       await moderateFn({ data: { organizationId: orgId, commentId: comment.id, action } });
-      toast.success(t("social.inbox.toasts.action_done"));
+      toast.success(t(`social.inbox.toast.${action}`));
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
