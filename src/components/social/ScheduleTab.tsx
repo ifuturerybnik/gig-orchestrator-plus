@@ -328,7 +328,10 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
                         </div>
                       )}
 
-                      <div className="flex flex-wrap items-center justify-end gap-1 pt-1">
+                      <div
+                        className="flex flex-wrap items-center justify-end gap-1 pt-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {isPublished && (
                           <Button size="sm" variant="ghost" onClick={() => handleSync(p.id)}>
                             <RefreshCw className="mr-1 h-3 w-3" />
