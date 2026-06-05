@@ -1131,7 +1131,16 @@ export const likeSocialTarget = createServerFn({ method: "POST" })
         clientId: ctx2.credentials.clientId,
         clientSecret: ctx2.credentials.clientSecret,
       });
-      await supabaseAdmin.rpc("increment_social_comment_like_count", { p_comment_id: data.commentId }).catch(() => null);
+      const { data: likeRow } = await supabaseAdmin
+        .from("social_comments")
+        .select("like_count")
+        .eq("id", data.commentId)
+        .maybeSingle();
+      const currentLikes = (likeRow as { like_count?: number } | null)?.like_count ?? 0;
+      await supabaseAdmin
+        .from("social_comments")
+        .update({ like_count: currentLikes + 1, updated_at: new Date().toISOString() })
+        .eq("id", data.commentId);
       return { ok: true };
     }
 
@@ -1882,19 +1891,8 @@ export const syncPostNow = createServerFn({ method: "POST" })
 
       // Komentarze
       try {
-        const { data: latest } = await supabaseAdmin
-          .from("social_comments")
-          .select("posted_at")
-          .eq("organization_id", data.organizationId)
-          .eq("platform", r.platform)
-          .eq("external_post_id", r.external_post_id)
-          .order("posted_at", { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle();
-        const sinceIso =
-          (latest as { posted_at: string | null } | null)?.posted_at ??
-          r.published_at ??
-          null;
+        // Ręczna synchronizacja ma też backfillować starsze odpowiedzi do komentarzy.
+        const sinceIso: string | null = null;
 
         const items = await adapter.fetchInboxItems({
           account: ctx2.account,
