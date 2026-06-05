@@ -813,29 +813,27 @@ export const instagramAdapter: PlatformAdapter = {
     );
     return (j.data ?? []).map((m) => {
       const mediaUrls: string[] = [];
+      const mediaItems: Array<{ url: string; type: "image" | "video"; thumbnail_url?: string | null }> = [];
       const children = m.children?.data ?? [];
+      const pushOne = (it: { mediaType?: string; mediaUrl?: string; thumbnailUrl?: string }) => {
+        const url = pickIgDisplayMediaUrl(it);
+        if (url) mediaUrls.push(url);
+        const item = pickIgMediaItem(it);
+        if (item) mediaItems.push(item);
+      };
       if (children.length > 0) {
         for (const c of children) {
-          const url = pickIgDisplayMediaUrl({
-            mediaType: c.media_type,
-            mediaUrl: c.media_url,
-            thumbnailUrl: c.thumbnail_url,
-          });
-          if (url) mediaUrls.push(url);
+          pushOne({ mediaType: c.media_type, mediaUrl: c.media_url, thumbnailUrl: c.thumbnail_url });
         }
       } else {
-        const url = pickIgDisplayMediaUrl({
-          mediaType: m.media_type,
-          mediaUrl: m.media_url,
-          thumbnailUrl: m.thumbnail_url,
-        });
-        if (url) mediaUrls.push(url);
+        pushOne({ mediaType: m.media_type, mediaUrl: m.media_url, thumbnailUrl: m.thumbnail_url });
       }
       return {
         externalPostId: m.id,
         externalUrl: m.permalink ?? null,
         text: m.caption ?? "",
         mediaUrls,
+        mediaItems,
         postedAt: m.timestamp,
       };
     });
