@@ -37,7 +37,7 @@ export class MetaPermissionError extends Error {
   constructor(context: string) {
     super(
       `${context}: Meta nie udostępnia jeszcze metryk/komentarzy dla tej aplikacji. ` +
-        "Import postów działa, ale polubienia/komentarze Facebook Page wymagają zatwierdzonych uprawnień pages_read_engagement, pages_read_user_engagement i pages_manage_engagement w Meta App Review.",
+        "Import postów działa, ale polubienia/komentarze Facebook Page mogą wymagać zatwierdzonych uprawnień pages_read_engagement i pages_manage_engagement w Meta App Review.",
     );
     this.name = "MetaPermissionError";
   }
