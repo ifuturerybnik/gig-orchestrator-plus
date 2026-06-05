@@ -380,6 +380,13 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
           )}
         </CardContent>
       </Card>
+
+      <PostDetailsDialog
+        orgId={orgId}
+        postId={openPostId}
+        open={!!openPostId}
+        onOpenChange={(v) => !v && setOpenPostId(null)}
+      />
     </div>
   );
 }
