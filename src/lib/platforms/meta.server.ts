@@ -29,7 +29,9 @@ import type {
 } from "./types";
 
 const GRAPH = "https://graph.facebook.com/v20.0";
-const INSTAGRAM_GRAPH = "https://graph.instagram.com/v25.0";
+// graph.instagram.com obsługuje wersje v22.0 / v23.0; v25.0 zwraca 400 dla części endpointów,
+// dlatego trzymamy się stabilnej v22.0 dla Instagram Login API.
+const INSTAGRAM_GRAPH = "https://graph.instagram.com/v22.0";
 
 function igApiBases(account: PlatformAccount): string[] {
   const scopes = account.scopes ?? [];
