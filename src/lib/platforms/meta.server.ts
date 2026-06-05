@@ -946,10 +946,10 @@ export const instagramAdapter: PlatformAdapter = {
           `[meta] IG reply continues despite stale Facebook Login scopes: [${scopes.join(", ")}]`,
         );
       } else {
-      throw new Error(
-        `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
-          `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
-      );
+        throw new Error(
+          `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
+            `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
+        );
       }
     }
     const endpoints = igApiBases(account);
