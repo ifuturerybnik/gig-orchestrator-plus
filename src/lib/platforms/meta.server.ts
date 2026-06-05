@@ -581,6 +581,21 @@ export const facebookAdapter: PlatformAdapter = {
     return { externalCommentId: j.id };
   },
 
+  async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({ access_token: account.access_token });
+    if (action === "hide" || action === "unhide") {
+      params.set("is_hidden", action === "hide" ? "true" : "false");
+    }
+    await graphJson<{ success?: boolean }>(
+      `${GRAPH}/${encodeURIComponent(externalCommentId)}?${params.toString()}`,
+      {
+        method: action === "delete" ? "DELETE" : "POST",
+        context: `FB comment ${action}`,
+      },
+    );
+    return { ok: true };
+  },
+
   async like({ account, externalId }): Promise<{ ok: boolean }> {
     const params = new URLSearchParams({
       access_token: account.access_token,
