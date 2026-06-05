@@ -468,9 +468,6 @@ export const facebookAdapter: PlatformAdapter = {
       limit: "100",
       access_token: account.access_token,
     });
-    if (sinceIso) {
-      params.set("since", String(Math.floor(new Date(sinceIso).getTime() / 1000)));
-    }
     type FbComment = {
       id: string;
       from?: { id?: string; name?: string; picture?: { data?: { url?: string } } };
