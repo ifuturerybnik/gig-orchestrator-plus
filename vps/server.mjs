@@ -62,8 +62,12 @@ const nodeServer = createServer(async (req, res) => {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
     const pathname = url.pathname;
 
-    // 1. Try static files first (assets with hash)
-    if (pathname.startsWith("/assets/") || pathname.startsWith("/email-icons/")) {
+    // 1. Try static files first (assets with hash, plus root-level files like favicon.png, robots.txt)
+    const isHashedAsset =
+      pathname.startsWith("/assets/") || pathname.startsWith("/email-icons/");
+    const isRootStaticFile =
+      pathname !== "/" && /^\/[^/]+\.[a-zA-Z0-9]+$/.test(pathname);
+    if (isHashedAsset || isRootStaticFile) {
       const staticRes = await serveStatic(pathname);
       if (staticRes) {
         res.statusCode = staticRes.status;
