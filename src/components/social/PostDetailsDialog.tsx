@@ -641,6 +641,7 @@ function CommentItem({
               replyFn={replyFn}
               moderateFn={moderateFn}
               suggestFn={suggestFn}
+              likeFn={likeFn}
               onChanged={onChanged}
               isReply
             />
