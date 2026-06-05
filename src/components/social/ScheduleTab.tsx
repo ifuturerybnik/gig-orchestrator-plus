@@ -212,8 +212,20 @@ export function ScheduleTab({ orgId }: { orgId: string }) {
               const isPublished = p.status === "published";
 
               return (
-                <div key={p.id} className="overflow-hidden rounded-md border text-sm">
-                  <div className="flex gap-3 p-3">
+                <div
+                  key={p.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setOpenPostId(p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpenPostId(p.id);
+                    }
+                  }}
+                  className="overflow-hidden rounded-md border text-sm cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="flex gap-3 p-3" onClick={(e) => e.stopPropagation()}>
                     {cover ? (
                       <img
                         src={cover}
