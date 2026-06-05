@@ -1858,3 +1858,108 @@ export const syncPostNow = createServerFn({ method: "POST" })
   });
 
 
+
+// ---------- Szczegóły posta + komentarze ----------
+
+export const getSocialPostDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        postId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{
+    post: SocialPostRow | null;
+    metricsByPlatform: Array<{ platform: string; likes: number; comments: number; shares: number; views: number; snapshot_at: string | null }>;
+    comments: InboxCommentRow[];
+  }> => {
+    const { supabase } = context;
+
+    const { data: postRow, error: postErr } = await supabase
+      .from("social_posts")
+      .select(
+        "id, organization_id, created_by, target_platforms, content_per_platform, linked_event_id, status, scheduled_at, published_at, ai_generated, ai_scenariusz, notes, source, created_at, updated_at",
+      )
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (postErr) throw new Error(postErr.message);
+    if (!postRow) return { post: null, metricsByPlatform: [], comments: [] };
+
+    const [resultsRes, metricsRes, commentsRes] = await Promise.all([
+      supabase
+        .from("social_post_results")
+        .select("post_id, platform, external_post_id, external_url, status")
+        .eq("post_id", data.postId),
+      supabase
+        .from("social_post_metrics")
+        .select("post_id, platform, likes, comments, shares, views, snapshot_at")
+        .eq("post_id", data.postId)
+        .order("snapshot_at", { ascending: false }),
+      supabase
+        .from("social_comments")
+        .select(
+          "id, organization_id, account_id, platform, post_id, external_post_id, external_comment_id, author_name, author_avatar_url, content, permalink, posted_at, status, ai_sentiment, ai_flags, ai_suggested_reply, like_count, reply_count",
+        )
+        .eq("organization_id", data.organizationId)
+        .eq("post_id", data.postId)
+        .order("posted_at", { ascending: false, nullsFirst: false })
+        .limit(500),
+    ]);
+    if (resultsRes.error) throw new Error(resultsRes.error.message);
+    if (metricsRes.error) throw new Error(metricsRes.error.message);
+    if (commentsRes.error) throw new Error(commentsRes.error.message);
+
+    const results = ((resultsRes.data ?? []) as Array<{
+      post_id: string; platform: string; external_post_id: string | null; external_url: string | null; status: string;
+    }>).map((r) => ({
+      platform: r.platform,
+      external_post_id: r.external_post_id,
+      external_url: r.external_url,
+      status: r.status,
+    }));
+
+    // Najnowsza metryka per platforma
+    const latestByPlatform = new Map<string, { likes: number; comments: number; shares: number; views: number; snapshot_at: string | null }>();
+    for (const m of (metricsRes.data ?? []) as Array<{
+      platform: string; likes: number; comments: number; shares: number; views: number; snapshot_at: string | null;
+    }>) {
+      if (latestByPlatform.has(m.platform)) continue;
+      latestByPlatform.set(m.platform, {
+        likes: m.likes ?? 0,
+        comments: m.comments ?? 0,
+        shares: m.shares ?? 0,
+        views: m.views ?? 0,
+        snapshot_at: m.snapshot_at ?? null,
+      });
+    }
+    const metricsByPlatform = Array.from(latestByPlatform.entries()).map(([platform, m]) => ({ platform, ...m }));
+
+    const aggregate = metricsByPlatform.reduce(
+      (acc, m) => ({
+        likes: acc.likes + m.likes,
+        comments: acc.comments + m.comments,
+        shares: acc.shares + m.shares,
+        views: acc.views + m.views,
+      }),
+      { likes: 0, comments: 0, shares: 0, views: 0 },
+    );
+
+    const commentRows = (commentsRes.data ?? []) as InboxCommentRow[];
+    const commentCounts = {
+      total: commentRows.length,
+      new: commentRows.filter((c) => c.status === "new").length,
+    };
+
+    const post: SocialPostRow = {
+      ...(postRow as Omit<SocialPostRow, "results" | "metrics" | "comment_counts">),
+      results,
+      metrics: metricsByPlatform.length ? aggregate : null,
+      comment_counts: commentCounts,
+    };
+
+    return { post, metricsByPlatform, comments: commentRows };
+  });
