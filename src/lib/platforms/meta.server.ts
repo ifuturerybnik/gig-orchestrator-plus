@@ -941,10 +941,16 @@ export const instagramAdapter: PlatformAdapter = {
     const requiredScope = usesInstagramLogin ? "instagram_business_manage_comments" : "instagram_manage_comments";
     const hasKnownCommentScope = scopes.includes(requiredScope);
     if (scopes.length > 0 && !hasKnownCommentScope) {
+      if (!usesInstagramLogin) {
+        console.warn(
+          `[meta] IG reply continues despite stale Facebook Login scopes: [${scopes.join(", ")}]`,
+        );
+      } else {
       throw new Error(
         `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
           `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
       );
+      }
     }
     const endpoints = igApiBases(account);
     const message = text.slice(0, 2200);
