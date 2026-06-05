@@ -411,19 +411,17 @@ export const facebookAdapter: PlatformAdapter = {
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
     const params = new URLSearchParams({
-      fields:
-        "reactions.type(LIKE).limit(0).summary(total_count),likes.limit(0).summary(true),comments.limit(0).summary(true),shares",
+      fields: "likes.limit(0).summary(true),comments.limit(0).summary(true),shares",
       access_token: account.access_token,
     });
     const url = `${GRAPH}/${encodeURIComponent(externalPostId)}?${params.toString()}`;
     const j = await graphJson<{
       likes?: { summary?: { total_count?: number } };
-      reactions?: { summary?: { total_count?: number } };
       comments?: { summary?: { total_count?: number } };
       shares?: { count?: number };
     }>(url, { context: "FB metrics" });
     return {
-      likes: j.reactions?.summary?.total_count ?? j.likes?.summary?.total_count ?? 0,
+      likes: j.likes?.summary?.total_count ?? 0,
       comments: j.comments?.summary?.total_count ?? 0,
       shares: j.shares?.count ?? 0,
       views: 0,
@@ -432,10 +430,8 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
-    // Minimalne pola, by uniknąć eskalacji uprawnień:
-    // - `from` (bez subselect picture) — bezpieczne z pages_read_engagement
-    // - `like_count` — OK
-    // pomijamy `comment_count` i `parent` (częściej wywołują dodatkowe ograniczenia API)
+    // Pola komentarzy z Page tokena. Nie pobieramy avatarów autorów, bo częściej
+    // uruchamiają dodatkowe ograniczenia API niż same komentarze i liczniki.
     const params = new URLSearchParams({
       fields: "id,from{name,id},message,created_time,like_count,comment_count,permalink_url,parent{id}",
       order: "reverse_chronological",
