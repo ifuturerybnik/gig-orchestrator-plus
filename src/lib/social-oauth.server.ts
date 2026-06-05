@@ -496,6 +496,10 @@ export async function handleMetaOAuthCallback(args: {
       (existingIg!.scopes as string[]).some((sc) => sc.startsWith("instagram_business_"));
 
     if (!isInstagramLoginAccount) {
+      const instagramScopes = perms.granted.filter((scope) => scope.startsWith("instagram_"));
+      if (!instagramScopes.includes("instagram_manage_comments")) {
+        instagramScopes.push("instagram_manage_comments");
+      }
       const { error: upIgErr } = await admin.from("social_accounts").upsert(
         {
           organization_id: s.organization_id,
@@ -506,7 +510,7 @@ export async function handleMetaOAuthCallback(args: {
           access_token_enc: encryptPii(page.access_token),
           refresh_token_enc: null,
           token_expires_at: null,
-          scopes: perms.granted.filter((scope) => scope.startsWith("instagram_")),
+          scopes: instagramScopes,
           status: "connected",
           last_error: null,
           connected_by: s.user_id,

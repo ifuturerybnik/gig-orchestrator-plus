@@ -1703,6 +1703,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         redirect_uri: callbackUrl,
         state,
         scope: scopes.join(","),
+        auth_type: "rerequest",
       });
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
