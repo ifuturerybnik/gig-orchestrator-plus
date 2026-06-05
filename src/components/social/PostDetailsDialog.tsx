@@ -294,9 +294,9 @@ function CommentItem({
 }: {
   comment: InboxCommentRow;
   orgId: string;
-  replyFn: ReturnType<typeof useServerFn<typeof replyToComment>>;
-  moderateFn: ReturnType<typeof useServerFn<typeof moderateComment>>;
-  suggestFn: ReturnType<typeof useServerFn<typeof aiSuggestCommentReply>>;
+  replyFn: (args: { data: { organizationId: string; commentId: string; text: string } }) => Promise<{ ok: boolean; sent: boolean; error: string | null }>;
+  moderateFn: (args: { data: { organizationId: string; commentId: string; action: "hide" | "unhide" | "delete" | "mark_spam" | "archive" } }) => Promise<{ ok: boolean }>;
+  suggestFn: (args: { data: { organizationId: string; commentId: string; tone: "warm" | "formal" | "short"; language: "pl" | "en" } }) => Promise<{ variants: string[] }>;
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
