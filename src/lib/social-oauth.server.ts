@@ -531,6 +531,135 @@ export async function handleMetaOAuthCallback(args: {
   };
 }
 
+export async function handleMetaOAuthTokenCallback(args: {
+  accessToken: string;
+  state: string;
+}): Promise<{
+  orgId: string;
+  facebookPageName: string | null;
+  instagramUsername: string | null;
+  redirectBack: string | null;
+  diagnostics: MetaDiagnostics | null;
+}> {
+  const admin = supabaseAdmin;
+
+  const { data: stateRow, error: stateErr } = await admin
+    .from("social_oauth_states")
+    .select("organization_id, user_id, platform, redirect_back, expires_at")
+    .eq("state", args.state)
+    .maybeSingle();
+  if (stateErr) throw new Error(stateErr.message);
+  if (!stateRow) throw new Error("Nieznany lub wygasły state OAuth.");
+  const s = stateRow as {
+    organization_id: string;
+    user_id: string;
+    platform: string;
+    redirect_back: string | null;
+    expires_at: string;
+  };
+  if (s.platform !== "facebook") throw new Error("State nie pasuje do platformy Facebook.");
+  if (new Date(s.expires_at).getTime() < Date.now()) {
+    await admin.from("social_oauth_states").delete().eq("state", args.state);
+    throw new Error("State OAuth wygasł — uruchom proces od nowa.");
+  }
+
+  let redirectBack: string | null = null;
+  if (s.redirect_back) {
+    const decoded = decryptPii(s.redirect_back);
+    if (decoded) {
+      try {
+        const parsed = JSON.parse(decoded) as { r?: string | null };
+        redirectBack = parsed.r ?? null;
+      } catch {
+        redirectBack = null;
+      }
+    }
+  }
+
+  const perms = await listUserPermissions(args.accessToken);
+  const pages = await listUserPages(args.accessToken);
+  const buildDiag = (selectedId: string | null): MetaDiagnostics => ({
+    granted: perms.granted,
+    declined: perms.declined,
+    pages: pages.map((p) => ({
+      id: p.id,
+      name: p.name,
+      businessId: p.business?.id ?? null,
+      businessName: p.business?.name ?? null,
+      tasks: p.tasks ?? [],
+      hasInstagram: !!p.instagram,
+      instagramUsername: p.instagram?.username ?? null,
+      selected: p.id === selectedId,
+    })),
+  });
+
+  if (pages.length === 0) {
+    const err = new Error(
+      `Nie znaleziono żadnej strony Facebook na tym koncie. Granted: [${perms.granted.join(", ") || "—"}]. Declined: [${perms.declined.join(", ") || "—"}].`,
+    );
+    (err as Error & { diagnostics?: MetaDiagnostics }).diagnostics = buildDiag(null);
+    throw err;
+  }
+
+  const page = pages.find((p) => !!p.instagram) ?? pages[0];
+
+  const { error: upFbErr } = await admin.from("social_accounts").upsert(
+    {
+      organization_id: s.organization_id,
+      platform: "facebook",
+      external_account_id: page.id,
+      account_name: page.name,
+      account_avatar_url: page.picture ?? null,
+      scopes: perms.granted,
+      access_token_enc: encryptPii(page.access_token),
+      refresh_token_enc: null,
+      token_expires_at: null,
+      status: "connected",
+      last_error: null,
+      connected_by: s.user_id,
+      connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "organization_id,platform" },
+  );
+  if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
+
+  let igUsername: string | null = null;
+  if (page.instagram) {
+    igUsername = page.instagram.username;
+    const instagramScopes = perms.granted.filter((scope) => scope.startsWith("instagram_"));
+    const { error: upIgErr } = await admin.from("social_accounts").upsert(
+      {
+        organization_id: s.organization_id,
+        platform: "instagram",
+        external_account_id: page.instagram.id,
+        account_name: page.instagram.username,
+        account_avatar_url: null,
+        access_token_enc: encryptPii(page.access_token),
+        refresh_token_enc: null,
+        token_expires_at: null,
+        scopes: instagramScopes,
+        status: "connected",
+        last_error: null,
+        connected_by: s.user_id,
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,platform" },
+    );
+    if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
+  }
+
+  await admin.from("social_oauth_states").delete().eq("state", args.state);
+  return {
+    orgId: s.organization_id,
+    facebookPageName: page.name,
+    instagramUsername: igUsername,
+    redirectBack,
+    diagnostics: buildDiag(page.id),
+  };
+}
+
 // =============================================================================
 // YouTube (Google OAuth 2.0)
 // =============================================================================

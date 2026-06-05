@@ -146,6 +146,12 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
             <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
           </li>
           <li>
+            {t("social.meta.facebook_business_token_flow_prefix", "Dla Facebook Login for Business Concertivo używa trybu")} <b>token</b>{" "}
+            {t("social.meta.facebook_business_token_flow_mid", "oraz onboardingu Instagram API")}
+            (<code className="rounded bg-muted px-1 py-0.5 text-xs">display=page</code>,{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">IG_API_ONBOARDING</code>) — {t("social.meta.facebook_business_token_flow_suffix", "to wymagany wariant dla uprawnienia komentarzy.")}
+          </li>
+          <li>
             Kliknij <b>Save changes</b>.
           </li>
         </ol>
@@ -287,7 +293,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           </li>
           <li>
             <b>Scopes FB:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_metadata, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments</code>
+            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_metadata, pages_manage_engagement, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments</code>
           </li>
         </ul>
       </div>

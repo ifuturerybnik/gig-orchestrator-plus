@@ -53,7 +53,7 @@ function explainMetaCommentPermissionError(account: PlatformAccount, action: str
   const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
   const connectHint = isInstagramLoginAccount(account)
     ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
-    : "Rozłącz Facebook i połącz go ponownie przez Facebook Login for Business z uprawnieniem instagram_manage_comments. Jeśli Meta nadal odrzuca to uprawnienie, trzeba dodać/zaakceptować je w konfiguracji aplikacji Meta.";
+    : "Rozłącz Facebook i połącz go ponownie przez Facebook Login for Business. Concertivo użyje flow response_type=token + IG_API_ONBOARDING, które Meta wymaga dla instagram_manage_comments.";
   return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
 }
 
@@ -1031,16 +1031,15 @@ export const instagramAdapter: PlatformAdapter = {
     }
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      if (!isIgApi) params.set("access_token", account.access_token);
-      const url = action === "delete" && !isIgApi
-        ? `${base}/${encodeURIComponent(externalCommentId)}?access_token=${encodeURIComponent(account.access_token)}`
-        : `${base}/${encodeURIComponent(externalCommentId)}`;
+      params.set("access_token", account.access_token);
+      const query = params.toString();
+      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: action === "delete" ? undefined : params,
+            body: undefined,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
