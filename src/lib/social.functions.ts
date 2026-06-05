@@ -349,7 +349,16 @@ export const deleteSocialPost = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase
+    const { data: post, error: accessErr } = await supabase
+      .from("social_posts")
+      .select("id")
+      .eq("id", data.postId)
+      .eq("organization_id", data.organizationId)
+      .maybeSingle();
+    if (accessErr) throw new Error(accessErr.message);
+    if (!post) throw new Error("Post nie istnieje lub brak dostępu.");
+
+    const { error } = await supabaseAdmin
       .from("social_posts")
       .delete()
       .eq("id", data.postId)
@@ -370,7 +379,16 @@ export const deleteImportedSocialPosts = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    let q = supabase
+    const { data: membership, error: membershipErr } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("organization_id", data.organizationId)
+      .limit(1)
+      .maybeSingle();
+    if (membershipErr) throw new Error(membershipErr.message);
+    if (!membership) throw new Error("Brak dostępu do organizacji.");
+
+    let q = supabaseAdmin
       .from("social_posts")
       .select("id, target_platforms")
       .eq("organization_id", data.organizationId)
@@ -383,14 +401,14 @@ export const deleteImportedSocialPosts = createServerFn({ method: "POST" })
     const ids = ((rows ?? []) as Array<{ id: string }>).map((r) => r.id);
     if (ids.length === 0) return { deleted: 0 };
 
-    const { error: commentsErr } = await supabase
+    const { error: commentsErr } = await supabaseAdmin
       .from("social_comments")
       .delete()
       .eq("organization_id", data.organizationId)
       .in("post_id", ids);
     if (commentsErr) throw new Error(commentsErr.message);
 
-    const { error: deleteErr } = await supabase
+    const { error: deleteErr } = await supabaseAdmin
       .from("social_posts")
       .delete()
       .eq("organization_id", data.organizationId)
