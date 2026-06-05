@@ -1740,6 +1740,16 @@ export default
       "delete_imported_confirm": "Wyczyść importy",
       "import_delete_done": "Usunięto lokalnie zaimportowane wpisy: {{count}}."
     },
+    "post_details": {
+      "title": "Szczegóły posta",
+      "subtitle": "Treść, metryki, komentarze i odpowiedzi.",
+      "not_found": "Nie znaleziono posta.",
+      "no_results": "Post nie został jeszcze opublikowany na żadnej platformie.",
+      "comments_title": "Komentarze ({{count}})",
+      "no_comments": "Brak komentarzy. Kliknij „Synchronizuj”, aby pobrać najnowsze z platformy.",
+      "reply": "Odpowiedz",
+      "moderation": "Moderacja"
+    },
     "stats": {
       "title": "Statystyki",
       "subtitle": "Zasięgi, reakcje i klikalność opublikowanych treści.",
