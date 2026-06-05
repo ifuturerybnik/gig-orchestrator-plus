@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvitationsTokenRouteImport } from './routes/invitations.$token'
+import { Route as DataDeletionCodeRouteImport } from './routes/data-deletion.$code'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
@@ -29,6 +30,7 @@ import { Route as ApiPublicSocialSyncInboxRouteImport } from './routes/api/publi
 import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/api/public/social-publish-scheduled'
 import { Route as ApiPublicSocialImportPostsRouteImport } from './routes/api/public/social-import-posts'
 import { Route as ApiPublicOrgDeletionTickRouteImport } from './routes/api/public/org-deletion-tick'
+import { Route as ApiPublicMetaDataDeletionRouteImport } from './routes/api/public/meta-data-deletion'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
 import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
@@ -109,6 +111,11 @@ const InvitationsTokenRoute = InvitationsTokenRouteImport.update({
   path: '/invitations/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataDeletionCodeRoute = DataDeletionCodeRouteImport.update({
+  id: '/data-deletion/$code',
+  path: '/data-deletion/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -174,6 +181,12 @@ const ApiPublicOrgDeletionTickRoute =
   ApiPublicOrgDeletionTickRouteImport.update({
     id: '/api/public/org-deletion-tick',
     path: '/api/public/org-deletion-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicMetaDataDeletionRoute =
+  ApiPublicMetaDataDeletionRouteImport.update({
+    id: '/api/public/meta-data-deletion',
+    path: '/api/public/meta-data-deletion',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicEmailUnsubscribeRoute =
@@ -422,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/contacts': typeof AuthenticatedContactsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/data-deletion/$code': typeof DataDeletionCodeRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -434,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
@@ -481,6 +496,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/data-deletion/$code': typeof DataDeletionCodeRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -492,6 +508,7 @@ export interface FileRoutesByTo {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
@@ -543,6 +560,7 @@ export interface FileRoutesById {
   '/_authenticated/contacts': typeof AuthenticatedContactsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/data-deletion/$code': typeof DataDeletionCodeRoute
   '/invitations/$token': typeof InvitationsTokenRoute
   '/_authenticated/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -555,6 +573,7 @@ export interface FileRoutesById {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
@@ -606,6 +625,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/profile'
+    | '/data-deletion/$code'
     | '/invitations/$token'
     | '/admin/administrators'
     | '/admin/ai'
@@ -618,6 +638,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
     | '/api/public/social-publish-scheduled'
@@ -665,6 +686,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/profile'
+    | '/data-deletion/$code'
     | '/invitations/$token'
     | '/admin/administrators'
     | '/admin/ai'
@@ -676,6 +698,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
     | '/api/public/social-publish-scheduled'
@@ -726,6 +749,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/data-deletion/$code'
     | '/invitations/$token'
     | '/_authenticated/admin/administrators'
     | '/_authenticated/admin/ai'
@@ -738,6 +762,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
     | '/api/public/social-publish-scheduled'
@@ -785,11 +810,13 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  DataDeletionCodeRoute: typeof DataDeletionCodeRoute
   InvitationsTokenRoute: typeof InvitationsTokenRoute
   ApiPublicAutokorTickRoute: typeof ApiPublicAutokorTickRoute
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
+  ApiPublicMetaDataDeletionRoute: typeof ApiPublicMetaDataDeletionRoute
   ApiPublicOrgDeletionTickRoute: typeof ApiPublicOrgDeletionTickRoute
   ApiPublicSocialImportPostsRoute: typeof ApiPublicSocialImportPostsRoute
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
@@ -865,6 +892,13 @@ declare module '@tanstack/react-router' {
       path: '/invitations/$token'
       fullPath: '/invitations/$token'
       preLoaderRoute: typeof InvitationsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-deletion/$code': {
+      id: '/data-deletion/$code'
+      path: '/data-deletion/$code'
+      fullPath: '/data-deletion/$code'
+      preLoaderRoute: typeof DataDeletionCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -949,6 +983,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/org-deletion-tick'
       fullPath: '/api/public/org-deletion-tick'
       preLoaderRoute: typeof ApiPublicOrgDeletionTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/meta-data-deletion': {
+      id: '/api/public/meta-data-deletion'
+      path: '/api/public/meta-data-deletion'
+      fullPath: '/api/public/meta-data-deletion'
+      preLoaderRoute: typeof ApiPublicMetaDataDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/email-unsubscribe': {
@@ -1386,11 +1427,13 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  DataDeletionCodeRoute: DataDeletionCodeRoute,
   InvitationsTokenRoute: InvitationsTokenRoute,
   ApiPublicAutokorTickRoute: ApiPublicAutokorTickRoute,
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
+  ApiPublicMetaDataDeletionRoute: ApiPublicMetaDataDeletionRoute,
   ApiPublicOrgDeletionTickRoute: ApiPublicOrgDeletionTickRoute,
   ApiPublicSocialImportPostsRoute: ApiPublicSocialImportPostsRoute,
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
