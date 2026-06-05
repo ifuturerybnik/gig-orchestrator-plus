@@ -828,11 +828,19 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
+    const scopes = account.scopes ?? [];
+    const hasKnownCommentScope = scopes.some((s) =>
+      ["instagram_business_manage_comments", "instagram_manage_comments"].includes(s),
+    );
+    if (scopes.length > 0 && !hasKnownCommentScope) {
+      throw new Error(
+        "Brak uprawnienia do zarządzania komentarzami Instagram. Dodaj instagram_business_manage_comments w aplikacji Meta i połącz Instagram ponownie.",
+      );
+    }
     const params = new URLSearchParams({
       message: text.slice(0, 2200),
       access_token: account.access_token,
     });
-    const scopes = account.scopes ?? [];
     const useInstagramLoginApi = scopes.some((s) => s.startsWith("instagram_business_"));
     const endpoints = useInstagramLoginApi
       ? [INSTAGRAM_GRAPH, GRAPH]
