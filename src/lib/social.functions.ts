@@ -1522,6 +1522,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
         (rows ?? [])[0]) as null | {
         id: string;
         client_id: string;
+        extra?: { meta_config_id?: string | null };
         configured_at: string;
         configured_by: string;
         updated_at: string;
