@@ -8,7 +8,7 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * Ważne fakty, które już zostały zweryfikowane w boju:
  *  - Instagram używa NOWEGO API "Instagram API with Instagram Login"
  *    (graph.instagram.com), NIE starego "Instagram Graph API" przez Facebook Pages.
- *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish.
+ *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
  *  - Redirect URI musi być DOKŁADNIE taki sam jak callbackUrl poniżej (z https://).
@@ -198,6 +198,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
                 <div className="mt-1 flex flex-wrap gap-1">
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_basic</code>
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_content_publish</code>
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_manage_comments</code>
                 </div>
               </li>
             </ul>
@@ -282,7 +283,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           </li>
           <li>
             <b>Scopes IG:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">instagram_business_basic, instagram_business_content_publish</code>
+            <code className="rounded bg-background px-1 py-0.5">instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments</code>
           </li>
           <li>
             <b>Scopes FB:</b>{" "}
