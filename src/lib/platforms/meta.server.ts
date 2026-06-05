@@ -81,6 +81,22 @@ function pickIgDisplayMediaUrl(args: {
   return args.mediaUrl ?? args.thumbnailUrl ?? null;
 }
 
+function pickIgMediaItem(args: {
+  mediaType?: string;
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+}): { url: string; type: "image" | "video"; thumbnail_url?: string | null } | null {
+  const mt = (args.mediaType ?? "").toUpperCase();
+  if (mt === "VIDEO" || mt === "REELS") {
+    const url = args.mediaUrl ?? args.thumbnailUrl;
+    if (!url) return null;
+    return { url, type: "video", thumbnail_url: args.thumbnailUrl ?? null };
+  }
+  const url = args.mediaUrl ?? args.thumbnailUrl;
+  if (!url) return null;
+  return { url, type: "image" };
+}
+
 type FbPostMediaShape = {
   full_picture?: string;
   picture?: string;
