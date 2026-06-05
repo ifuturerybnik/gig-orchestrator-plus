@@ -475,6 +475,19 @@ function CommentItem({
     }
   };
 
+  const handleLike = async () => {
+    setBusy("like");
+    try {
+      await likeFn({ data: { organizationId: orgId, target: "comment", commentId: comment.id } });
+      toast.success(t("social.post_details.like_done", "Polubiono."));
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy("none");
+    }
+  };
+
   return (
     <li className={`rounded-md border p-3 text-sm ${isReply ? "bg-muted/20" : ""}`}>
       <div className="flex items-start justify-between gap-2">
@@ -505,10 +518,15 @@ function CommentItem({
           </div>
           <p className="mt-1 whitespace-pre-wrap text-sm">{comment.content}</p>
           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Heart className="h-3 w-3" />
+            <button
+              type="button"
+              onClick={handleLike}
+              disabled={busy !== "none"}
+              className="inline-flex items-center gap-1 rounded px-1 hover:text-primary disabled:opacity-50"
+            >
+              {busy === "like" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Heart className="h-3 w-3" />}
               {comment.like_count}
-            </span>
+            </button>
             <span className="inline-flex items-center gap-1">
               <MessageCircle className="h-3 w-3" />
               {comment.reply_count}
