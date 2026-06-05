@@ -502,7 +502,30 @@ export const facebookAdapter: PlatformAdapter = {
         `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
         { context: "FB /comments" },
       );
-      return (j.data ?? []).map(mapComment);
+      const out = new Map<string, PlatformInboxItem>();
+      const roots = (j.data ?? []).map(mapComment);
+      for (const item of roots) out.set(item.externalCommentId, item);
+      const rootsWithReplies = roots.filter((item) => !item.externalParentCommentId && (item.replyCount ?? 0) > 0);
+      await Promise.all(
+        rootsWithReplies.slice(0, 25).map(async (root) => {
+          try {
+            const rp = new URLSearchParams({
+              fields: "id,from{name,id,picture{url}},message,created_time,like_count,comment_count,permalink_url,parent{id}",
+              limit: "50",
+              access_token: account.access_token,
+            });
+            const replies = await graphJson<{ data?: FbComment[] }>(
+              `${GRAPH}/${encodeURIComponent(root.externalCommentId)}/comments?${rp.toString()}`,
+              { context: "FB comment replies" },
+            );
+            for (const reply of replies.data ?? []) out.set(reply.id, mapComment(reply));
+          } catch (e) {
+            console.warn("[meta] FB comment replies failed:", e instanceof Error ? e.message : e);
+          }
+        }),
+      );
+      const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
+      return Array.from(out.values()).filter((c) => !sinceTs || !c.postedAt || new Date(c.postedAt).getTime() > sinceTs);
     } catch (e) {
       if (e instanceof MetaPermissionError) throw e;
       console.warn("[meta] FB /comments edge failed, trying nested comments:", e);
