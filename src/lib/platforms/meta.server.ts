@@ -20,6 +20,7 @@
 import type {
   PlatformAdapter,
   PlatformAccount,
+  PlatformCommentModerationAction,
   PlatformInboxItem,
   PlatformMetrics,
   PlatformPostContent,
@@ -40,6 +41,21 @@ function igApiBases(account: PlatformAccount): string[] {
 function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
   return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
+}
+
+function describeMetaCommentPermission(account: PlatformAccount): string {
+  return isInstagramLoginAccount(account)
+    ? "instagram_business_manage_comments"
+    : "instagram_manage_comments";
+}
+
+function explainMetaCommentPermissionError(account: PlatformAccount, action: string): string {
+  const requiredScope = describeMetaCommentPermission(account);
+  const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
+  const connectHint = isInstagramLoginAccount(account)
+    ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
+    : "Rozłącz Facebook i połącz go ponownie przez Facebook Login for Business z uprawnieniem instagram_manage_comments. Jeśli Meta nadal odrzuca to uprawnienie, trzeba dodać/zaakceptować je w konfiguracji aplikacji Meta.";
+  return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
 }
 
 export class MetaPermissionError extends Error {
@@ -68,6 +84,10 @@ function isMetaEngagementPermissionError(status: number, body: string): boolean 
     /Page Public Content Access/i.test(body) ||
     /requires?\s+.*pages_read_engagement/i.test(body);
   return isKnownPermissionCode && mentionsMissingPermission;
+}
+
+function isMetaMissingPermissionError(message: string): boolean {
+  return /Missing Permission|Permissions error|requires? .*permission|OAuthException.*"code":10|"code":10|\(#10\)/i.test(message);
 }
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
