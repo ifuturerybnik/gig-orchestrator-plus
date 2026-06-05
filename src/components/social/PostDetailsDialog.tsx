@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,9 +8,9 @@ import {
   ExternalLink,
   Eye,
   Heart,
-  Image as ImageIcon,
   Loader2,
   MessageCircle,
+  Play,
   RefreshCw,
   Send,
   Share2,
@@ -40,7 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getSocialPostDetails,
   syncPostNow,
@@ -50,6 +49,44 @@ import {
   type InboxCommentRow,
 } from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
+
+type MediaItem = { url: string; type: "image" | "video"; thumbnail_url?: string | null };
+
+function isVideoUrl(url: string): boolean {
+  const u = url.toLowerCase().split("?")[0];
+  return (
+    u.endsWith(".mp4") ||
+    u.endsWith(".mov") ||
+    u.endsWith(".webm") ||
+    u.endsWith(".m4v") ||
+    u.includes("video.") ||
+    u.includes("/video/")
+  );
+}
+
+function MediaTile({ item }: { item: MediaItem }) {
+  if (item.type === "video") {
+    return (
+      <video
+        controls
+        playsInline
+        preload="metadata"
+        poster={item.thumbnail_url ?? undefined}
+        className="w-full rounded-md bg-black max-h-[70vh] object-contain"
+      >
+        <source src={item.url} />
+      </video>
+    );
+  }
+  return (
+    <img
+      src={item.url}
+      alt=""
+      loading="lazy"
+      className="w-full rounded-md object-contain bg-muted max-h-[70vh]"
+    />
+  );
+}
 
 export function PostDetailsDialog({
   orgId,
@@ -83,7 +120,41 @@ export function PostDetailsDialog({
 
   const firstContent = post ? Object.values(post.content_per_platform)[0] : null;
   const text = firstContent?.text ?? "";
-  const media = firstContent?.media_urls ?? [];
+
+  // Build unified media items: prefer media_items, else map media_urls with URL-based type detection.
+  const mediaItems: MediaItem[] = useMemo(() => {
+    const items = (firstContent as { media_items?: MediaItem[] } | null)?.media_items;
+    if (items && items.length > 0) return items;
+    const urls = firstContent?.media_urls ?? [];
+    return urls.map((url) => ({
+      url,
+      type: isVideoUrl(url) ? "video" : "image",
+    }));
+  }, [firstContent]);
+
+  // Nest comments by external_parent_comment_id
+  const { roots, repliesByParent } = useMemo(() => {
+    const byExtId = new Map<string, InboxCommentRow>();
+    for (const c of comments) byExtId.set(c.external_comment_id, c);
+    const replies = new Map<string, InboxCommentRow[]>();
+    const top: InboxCommentRow[] = [];
+    for (const c of comments) {
+      const parentExt = c.external_parent_comment_id;
+      if (parentExt && byExtId.has(parentExt)) {
+        const arr = replies.get(parentExt) ?? [];
+        arr.push(c);
+        replies.set(parentExt, arr);
+      } else {
+        top.push(c);
+      }
+    }
+    // Sort replies chronologically
+    for (const [k, arr] of replies) {
+      arr.sort((a, b) => (a.posted_at ?? "").localeCompare(b.posted_at ?? ""));
+      replies.set(k, arr);
+    }
+    return { roots: top, repliesByParent: replies };
+  }, [comments]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["social-post-details", orgId, postId] });
@@ -113,23 +184,23 @@ export function PostDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] p-0 flex flex-col gap-0">
+        <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0">
           <DialogTitle>{t("social.post_details.title")}</DialogTitle>
           <DialogDescription>{t("social.post_details.subtitle")}</DialogDescription>
         </DialogHeader>
 
         {detailsQ.isLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : !post ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="flex-1 py-12 text-center text-sm text-muted-foreground">
             {t("social.post_details.not_found")}
           </div>
         ) : (
-          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
-            <div className="space-y-4 pb-2">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="space-y-4 pb-4">
               {/* Header: platforms + status + sync */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1">
@@ -171,16 +242,21 @@ export function PostDetailsDialog({
               </div>
 
               {/* Media gallery */}
-              {media.length > 0 && (
-                <div className={`grid gap-2 ${media.length === 1 ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3"}`}>
-                  {media.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt=""
-                      loading="lazy"
-                      className="w-full rounded-md object-cover max-h-80"
-                    />
+              {mediaItems.length > 0 && (
+                <div
+                  className={`grid gap-2 ${
+                    mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
+                  }`}
+                >
+                  {mediaItems.map((m, i) => (
+                    <div key={i} className="relative">
+                      <MediaTile item={m} />
+                      {m.type === "video" && (
+                        <div className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                          <Play className="h-3 w-3" /> Wideo
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -247,16 +323,17 @@ export function PostDetailsDialog({
                   </div>
                 </div>
 
-                {comments.length === 0 ? (
+                {roots.length === 0 ? (
                   <div className="rounded-md border border-dashed p-6 text-center text-xs text-muted-foreground">
                     {t("social.post_details.no_comments")}
                   </div>
                 ) : (
                   <ul className="space-y-2">
-                    {comments.map((c) => (
+                    {roots.map((c) => (
                       <CommentItem
                         key={c.id}
                         comment={c}
+                        replies={repliesByParent.get(c.external_comment_id) ?? []}
                         orgId={orgId}
                         replyFn={replyFn}
                         moderateFn={moderateFn}
@@ -268,7 +345,7 @@ export function PostDetailsDialog({
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
         )}
       </DialogContent>
     </Dialog>
@@ -284,20 +361,28 @@ function Metric({ icon, value }: { icon: React.ReactNode; value: number }) {
   );
 }
 
+type ReplyFn = (args: { data: { organizationId: string; commentId: string; text: string } }) => Promise<{ ok: boolean; sent: boolean; error: string | null }>;
+type ModerateFn = (args: { data: { organizationId: string; commentId: string; action: "hide" | "unhide" | "delete" | "mark_spam" | "archive" } }) => Promise<{ ok: boolean }>;
+type SuggestFn = (args: { data: { organizationId: string; commentId: string; tone: "warm" | "formal" | "short"; language: "pl" | "en" } }) => Promise<{ variants: string[] }>;
+
 function CommentItem({
   comment,
+  replies,
   orgId,
   replyFn,
   moderateFn,
   suggestFn,
   onChanged,
+  isReply = false,
 }: {
   comment: InboxCommentRow;
+  replies?: InboxCommentRow[];
   orgId: string;
-  replyFn: (args: { data: { organizationId: string; commentId: string; text: string } }) => Promise<{ ok: boolean; sent: boolean; error: string | null }>;
-  moderateFn: (args: { data: { organizationId: string; commentId: string; action: "hide" | "unhide" | "delete" | "mark_spam" | "archive" } }) => Promise<{ ok: boolean }>;
-  suggestFn: (args: { data: { organizationId: string; commentId: string; tone: "warm" | "formal" | "short"; language: "pl" | "en" } }) => Promise<{ variants: string[] }>;
+  replyFn: ReplyFn;
+  moderateFn: ModerateFn;
+  suggestFn: SuggestFn;
   onChanged: () => void;
+  isReply?: boolean;
 }) {
   const { t } = useTranslation();
   const [replyOpen, setReplyOpen] = useState(false);
@@ -359,18 +444,22 @@ function CommentItem({
   };
 
   return (
-    <li className="rounded-md border p-3 text-sm">
+    <li className={`rounded-md border p-3 text-sm ${isReply ? "bg-muted/20" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {comment.author_avatar_url && (
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {comment.author_avatar_url ? (
               <img
                 src={comment.author_avatar_url}
                 alt=""
                 className="h-6 w-6 rounded-full object-cover"
               />
+            ) : (
+              <div className="h-6 w-6 rounded-full bg-muted inline-flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                {(comment.author_name ?? "?").slice(0, 1).toUpperCase()}
+              </div>
             )}
-            <span className="font-medium">
+            <span className="font-medium truncate">
               {comment.author_name ?? t("social.inbox.unknown_author")}
             </span>
             {comment.posted_at && (
@@ -427,12 +516,12 @@ function CommentItem({
       </div>
 
       {replyOpen && (
-        <div className="mt-3 space-y-2 rounded-md border bg-muted/20 p-2">
-          <div className="flex items-center justify-between gap-2">
+        <div className="mt-3 space-y-2 rounded-md border bg-background p-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-medium inline-flex items-center gap-1">
               <Shield className="h-3 w-3" /> {t("social.post_details.moderation")}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <Button size="sm" variant="ghost" onClick={() => handleModerate("hide")} disabled={busy !== "none"}>
                 <EyeOff className="mr-1 h-3 w-3" /> {t("social.inbox.actions.hide")}
               </Button>
@@ -441,9 +530,6 @@ function CommentItem({
               </Button>
               <Button size="sm" variant="ghost" onClick={() => handleModerate("archive")} disabled={busy !== "none"}>
                 <Archive className="mr-1 h-3 w-3" /> {t("social.inbox.actions.archive")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => handleModerate("delete")} disabled={busy !== "none"}>
-                <Trash2 className="mr-1 h-3 w-3" /> {t("social.inbox.actions.delete")}
               </Button>
             </div>
           </div>
@@ -511,6 +597,23 @@ function CommentItem({
             </Button>
           </div>
         </div>
+      )}
+
+      {replies && replies.length > 0 && (
+        <ul className="mt-3 ml-6 space-y-2 border-l pl-3">
+          {replies.map((r) => (
+            <CommentItem
+              key={r.id}
+              comment={r}
+              orgId={orgId}
+              replyFn={replyFn}
+              moderateFn={moderateFn}
+              suggestFn={suggestFn}
+              onChanged={onChanged}
+              isReply
+            />
+          ))}
+        </ul>
       )}
     </li>
   );
