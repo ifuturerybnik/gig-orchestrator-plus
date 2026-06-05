@@ -1531,6 +1531,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
       exists: !!r,
       clientId: r?.client_id ?? null,
       clientIdMasked: r ? maskClientIdLong(r.client_id) : null,
+      metaConfigId: ((r as { extra?: { meta_config_id?: string } } | null)?.extra?.meta_config_id ?? null) || null,
       configuredAt: r?.configured_at ?? null,
       updatedAt: r?.updated_at ?? null,
     };
@@ -1550,6 +1551,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
         platform: platformSchema,
         clientId: z.string().trim().min(3).max(512),
         clientSecret: z.string().trim().min(3).max(2048),
+        metaConfigId: z.string().trim().max(256).optional(),
       })
       .parse(input),
   )
@@ -1566,6 +1568,9 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
           platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
+          extra: data.platform === "facebook" || data.platform === "instagram"
+            ? { meta_config_id: data.metaConfigId?.trim() || null }
+            : {},
           configured_by: userId,
           updated_at: new Date().toISOString(),
         },
@@ -1658,7 +1663,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         : [data.platform];
     const { data: credRows, error: credErr } = await supabase
       .from("social_app_credentials")
-      .select("client_id, platform")
+      .select("client_id, platform, extra")
       .eq("organization_id", data.organizationId)
       .in("platform", lookupCandidates);
     if (credErr) throw new Error(credErr.message);
@@ -1670,6 +1675,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
     }
 
     const clientId = (credRow as { client_id: string }).client_id;
+    const metaConfigId = ((credRow as { extra?: { meta_config_id?: string | null } }).extra?.meta_config_id ?? "").trim();
 
     // 2) wygeneruj state + PKCE
     const state = base64UrlEncode(randomBytes(32));
@@ -1753,8 +1759,12 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
         client_id: clientId,
         redirect_uri: callbackUrl,
         state,
-        scope: scopes.join(","),
       });
+      if (metaConfigId) {
+        params.set("config_id", metaConfigId);
+      } else {
+        params.set("scope", scopes.join(","));
+      }
       authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
