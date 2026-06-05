@@ -1856,7 +1856,8 @@ export default
         "embed_snippet": "Snippet do wklejenia na stronę",
         "embed_snippet_help": "Wklej ten kod na stronę – wyświetli listę aktualności w lekkim widgecie (Shadow DOM).",
         "embed_gallery_help": "Tryb gallery dodaje siatkę albumów z lightboxem i odtwarzaniem wideo.",
-        "sitemap_help": "Sitemap zawiera linki do aktualności, wydarzeń i albumów. Dodaj ?base=https://twoja-domena aby uzyskać absolutne URL-e."
+        "sitemap_help": "Sitemap zawiera linki do aktualności, wydarzeń i albumów. Dodaj ?base=https://twoja-domena aby uzyskać absolutne URL-e.",
+        "download_guide": "Pobierz instrukcję PDF"
       },
       "webhooks": {
         "title": "Webhooki",
