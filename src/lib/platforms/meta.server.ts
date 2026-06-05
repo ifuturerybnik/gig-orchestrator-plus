@@ -832,10 +832,25 @@ export const instagramAdapter: PlatformAdapter = {
       message: text.slice(0, 2200),
       access_token: account.access_token,
     });
-    const j = await graphJson<{ id: string }>(
-      `${GRAPH}/${encodeURIComponent(externalParentCommentId)}/replies`,
-      { method: "POST", body: params, context: "IG reply" },
-    );
+    const scopes = account.scopes ?? [];
+    const useInstagramLoginApi = scopes.some((s) => s.startsWith("instagram_business_"));
+    const endpoints = useInstagramLoginApi
+      ? [INSTAGRAM_GRAPH, GRAPH]
+      : [GRAPH, INSTAGRAM_GRAPH];
+    let lastError: unknown = null;
+    let j: { id: string } | null = null;
+    for (const base of endpoints) {
+      try {
+        j = await graphJson<{ id: string }>(
+          `${base}/${encodeURIComponent(externalParentCommentId)}/replies`,
+          { method: "POST", body: params, context: base === INSTAGRAM_GRAPH ? "IG reply (Instagram API)" : "IG reply" },
+        );
+        break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (!j) throw lastError instanceof Error ? lastError : new Error("IG reply: nie udało się wysłać odpowiedzi.");
     return { externalCommentId: j.id };
   },
 
