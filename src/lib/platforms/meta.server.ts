@@ -519,8 +519,8 @@ export const facebookAdapter: PlatformAdapter = {
     // FB Graph zwraca code:1 "Please reduce the amount of data..." gdy posty
     // mają dużo załączników/komentarzy — wtedy retry z minimalnym zestawem pól.
     const fullFields =
-      "id,message,story,created_time,permalink_url,full_picture,picture,attachments{media,subattachments,type,url}";
-    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture";
+      "id,message,story,created_time,permalink_url,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
+    const minimalFields = "id,message,story,created_time,permalink_url,full_picture,picture,object_id";
 
     type PostRow = {
       id: string;
@@ -530,16 +530,8 @@ export const facebookAdapter: PlatformAdapter = {
       permalink_url?: string;
       full_picture?: string;
       picture?: string;
-      attachments?: {
-        data?: Array<{
-          type?: string;
-          url?: string;
-          media?: { image?: { src?: string } };
-          subattachments?: {
-            data?: Array<{ media?: { image?: { src?: string } } }>;
-          };
-        }>;
-      };
+      object_id?: string;
+      attachments?: { data?: FbAttachmentNode[] };
     };
 
     const fetchWith = async (fields: string, lim: number) => {
@@ -572,18 +564,14 @@ export const facebookAdapter: PlatformAdapter = {
       }
     }
 
-    return (j.data ?? []).map((p) => {
-      const mediaUrls: string[] = [];
-      if (p.full_picture) mediaUrls.push(p.full_picture);
-      if (p.picture && !mediaUrls.includes(p.picture)) mediaUrls.push(p.picture);
-      const atts = p.attachments?.data ?? [];
-      for (const a of atts) {
-        const src = a.media?.image?.src;
-        if (src && !mediaUrls.includes(src)) mediaUrls.push(src);
-        const subs = a.subattachments?.data ?? [];
-        for (const s of subs) {
-          const sub = s.media?.image?.src;
-          if (sub && !mediaUrls.includes(sub)) mediaUrls.push(sub);
+    return Promise.all((j.data ?? []).map(async (p) => {
+      const mediaUrls = collectFbMediaUrls(p);
+      if (mediaUrls.length === 0 && p.object_id) {
+        for (const url of await fetchFbObjectMediaUrls({
+          objectId: p.object_id,
+          accessToken: token,
+        })) {
+          pushUniqueUrl(mediaUrls, url);
         }
       }
       return {
@@ -593,7 +581,7 @@ export const facebookAdapter: PlatformAdapter = {
         mediaUrls,
         postedAt: p.created_time,
       };
-    });
+    }));
   },
 };
 
