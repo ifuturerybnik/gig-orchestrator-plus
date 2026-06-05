@@ -5,7 +5,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   handleMetaOAuthCallback,
-  handleMetaOAuthTokenCallback,
   type MetaDiagnostics,
 } from "@/lib/social-oauth.server";
 
@@ -113,31 +112,11 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
             `<p id="oauth-message">Brak parametrów <code>code</code> lub <code>state</code>. Uruchom integrację ponownie z aplikacji.</p>
              <script>
                const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-               const token = hash.get("long_lived_token") || hash.get("access_token");
-               const query = new URLSearchParams(window.location.search);
-               const hashState = hash.get("state") || query.get("state");
-               if (token && hashState) {
-                 const el = document.getElementById("oauth-message");
-                 el.textContent = "Kończę łączenie konta Meta…";
-                 fetch(window.location.pathname, {
-                   method: "POST",
-                   headers: { "Content-Type": "application/json" },
-                   body: JSON.stringify({ access_token: token, state: hashState })
-                 }).then(async (res) => {
-                   const html = await res.text();
-                   document.open();
-                   document.write(html);
-                   document.close();
-                 }).catch((err) => {
-                   el.textContent = "Nie udało się dokończyć integracji Meta: " + (err && err.message ? err.message : String(err));
-                 });
-               } else {
                const err = hash.get("error") || hash.get("error_reason");
                const desc = hash.get("error_description");
                if (err || desc) {
                  const el = document.getElementById("oauth-message");
                  el.textContent = "Meta zwrócił błąd autoryzacji: " + (err || "error") + (desc ? " — " + desc : "");
-               }
                }
              </script>`,
             false,
@@ -168,36 +147,6 @@ export const Route = createFileRoute("/api/public/social/meta-callback")({
           const msg = e instanceof Error ? e.message : "Nieznany błąd";
           const diag = (e as Error & { diagnostics?: MetaDiagnostics }).diagnostics ?? null;
           console.error("[meta-callback]", msg);
-          return html("Błąd podczas łączenia z Meta", `<p>${esc(msg)}</p>`, false, undefined, diag);
-        }
-      },
-      POST: async ({ request }) => {
-        try {
-          const body = (await request.json()) as { access_token?: string; state?: string };
-          const accessToken = typeof body.access_token === "string" ? body.access_token : "";
-          const state = typeof body.state === "string" ? body.state : "";
-          if (!accessToken || !state) {
-            return html("Błąd autoryzacji", "<p>Brak tokena lub state z Meta.</p>", false);
-          }
-          const res = await handleMetaOAuthTokenCallback({ accessToken, state });
-          const back = res.redirectBack ?? `/organizations/${res.orgId}/social`;
-          const names = [
-            res.facebookPageName ? `Facebook: <b>${res.facebookPageName}</b>` : null,
-            res.instagramUsername ? `Instagram: <b>@${res.instagramUsername}</b>` : null,
-          ]
-            .filter(Boolean)
-            .join("<br>");
-          return html(
-            "Połączono z Meta",
-            `<p>Powiązano konta:</p><p>${names}</p>`,
-            true,
-            back,
-            res.diagnostics,
-          );
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : "Nieznany błąd";
-          const diag = (e as Error & { diagnostics?: MetaDiagnostics }).diagnostics ?? null;
-          console.error("[meta-callback-token]", msg);
           return html("Błąd podczas łączenia z Meta", `<p>${esc(msg)}</p>`, false, undefined, diag);
         }
       },

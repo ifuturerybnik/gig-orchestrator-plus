@@ -53,7 +53,7 @@ function explainMetaCommentPermissionError(account: PlatformAccount, action: str
   const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
   const connectHint = isInstagramLoginAccount(account)
     ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
-    : "Rozłącz Facebook i połącz go ponownie przez Facebook Login for Business. Concertivo użyje flow response_type=token + IG_API_ONBOARDING, które Meta wymaga dla instagram_manage_comments.";
+    : "Tego konta Instagram nie można obsługiwać przez token Facebooka. Rozłącz Instagram i połącz go osobnym przyciskiem „Połącz z Instagram”, akceptując instagram_business_manage_comments.";
   return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
 }
 
@@ -976,9 +976,7 @@ export const instagramAdapter: PlatformAdapter = {
     const hasKnownCommentScope = scopes.includes(requiredScope);
     if (scopes.length > 0 && !hasKnownCommentScope) {
       if (!usesInstagramLogin) {
-        console.warn(
-          `[meta] IG reply continues despite stale Facebook Login scopes: [${scopes.join(", ")}]`,
-        );
+        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
       } else {
         throw new Error(
           `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
