@@ -42,6 +42,21 @@ function isInstagramLoginAccount(account: PlatformAccount): boolean {
   return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
 }
 
+function describeMetaCommentPermission(account: PlatformAccount): string {
+  return isInstagramLoginAccount(account)
+    ? "instagram_business_manage_comments"
+    : "instagram_manage_comments";
+}
+
+function explainMetaCommentPermissionError(account: PlatformAccount, action: string): string {
+  const requiredScope = describeMetaCommentPermission(account);
+  const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
+  const connectHint = isInstagramLoginAccount(account)
+    ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
+    : "Rozłącz Facebook i połącz go ponownie przez Facebook Login for Business z uprawnieniem instagram_manage_comments. Jeśli Meta nadal odrzuca to uprawnienie, trzeba dodać/zaakceptować je w konfiguracji aplikacji Meta.";
+  return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
+}
+
 export class MetaPermissionError extends Error {
   readonly code = "META_PERMISSION_REQUIRED";
 
@@ -68,6 +83,10 @@ function isMetaEngagementPermissionError(status: number, body: string): boolean 
     /Page Public Content Access/i.test(body) ||
     /requires?\s+.*pages_read_engagement/i.test(body);
   return isKnownPermissionCode && mentionsMissingPermission;
+}
+
+function isMetaMissingPermissionError(message: string): boolean {
+  return /Missing Permission|Permissions error|requires? .*permission|OAuthException.*"code":10|"code":10|\(#10\)/i.test(message);
 }
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
@@ -561,6 +580,21 @@ export const facebookAdapter: PlatformAdapter = {
     return { externalCommentId: j.id };
   },
 
+  async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({ access_token: account.access_token });
+    if (action === "hide" || action === "unhide") {
+      params.set("is_hidden", action === "hide" ? "true" : "false");
+    }
+    await graphJson<{ success?: boolean }>(
+      `${GRAPH}/${encodeURIComponent(externalCommentId)}?${params.toString()}`,
+      {
+        method: action === "delete" ? "DELETE" : "POST",
+        context: `FB comment ${action}`,
+      },
+    );
+    return { ok: true };
+  },
+
   async like({ account, externalId }): Promise<{ ok: boolean }> {
     const params = new URLSearchParams({
       access_token: account.access_token,
@@ -978,12 +1012,52 @@ export const instagramAdapter: PlatformAdapter = {
       }
     }
     if (!j) {
+      if (attempts.some(isMetaMissingPermissionError)) {
+        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
+      }
       throw new Error(
         `IG reply: nie udało się wysłać odpowiedzi.\nScope'y konta: [${scopes.join(", ")}]\n` +
           attempts.map((a) => `• ${a}`).join("\n"),
       );
     }
     return { externalCommentId: j.id };
+  },
+
+  async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams();
+    const attempts: string[] = [];
+    if (action === "hide" || action === "unhide") {
+      params.set("hide", action === "hide" ? "true" : "false");
+    }
+    for (const base of igApiBases(account)) {
+      const isIgApi = base === INSTAGRAM_GRAPH;
+      if (!isIgApi) params.set("access_token", account.access_token);
+      const url = action === "delete" && !isIgApi
+        ? `${base}/${encodeURIComponent(externalCommentId)}?access_token=${encodeURIComponent(account.access_token)}`
+        : `${base}/${encodeURIComponent(externalCommentId)}`;
+      try {
+        await graphJson<{ success?: boolean }>(
+          url,
+          {
+            method: action === "delete" ? "DELETE" : "POST",
+            body: action === "delete" ? undefined : params,
+            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
+            context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
+          },
+        );
+        return { ok: true };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
+      }
+    }
+    if (attempts.some(isMetaMissingPermissionError)) {
+      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
+    }
+    throw new Error(
+      `IG comment ${action}: nie udało się wykonać operacji.\n` +
+        attempts.map((a) => `• ${a}`).join("\n"),
+    );
   },
 
   async like({ account, target, externalId }): Promise<{ ok: boolean }> {
