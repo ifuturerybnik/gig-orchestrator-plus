@@ -359,9 +359,12 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
+    // Minimalne pola, by uniknąć eskalacji uprawnień:
+    // - `from` (bez subselect picture) — bezpieczne z pages_read_engagement
+    // - `like_count` — OK
+    // pomijamy `comment_count` i `parent` (mogą wymagać pages_read_user_content)
     const params = new URLSearchParams({
-      fields:
-        "id,from{id,name,picture},message,created_time,like_count,comment_count,parent",
+      fields: "id,from,message,created_time,like_count",
       order: "reverse_chronological",
       limit: "50",
       access_token: account.access_token,
@@ -372,12 +375,10 @@ export const facebookAdapter: PlatformAdapter = {
     const j = await graphJson<{
       data: Array<{
         id: string;
-        from?: { id: string; name: string; picture?: { data?: { url?: string } } };
+        from?: { id?: string; name?: string };
         message?: string;
         created_time: string;
         like_count?: number;
-        comment_count?: number;
-        parent?: { id: string };
       }>;
     }>(
       `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
@@ -385,16 +386,16 @@ export const facebookAdapter: PlatformAdapter = {
     );
     return (j.data ?? []).map((c) => ({
       externalCommentId: c.id,
-      externalParentCommentId: c.parent?.id ?? null,
+      externalParentCommentId: null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
-      authorAvatarUrl: c.from?.picture?.data?.url ?? null,
+      authorAvatarUrl: null,
       content: c.message ?? "",
       permalink: `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
       likeCount: c.like_count ?? 0,
-      replyCount: c.comment_count ?? 0,
+      replyCount: 0,
     }));
   },
 
