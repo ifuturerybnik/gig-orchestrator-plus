@@ -976,7 +976,7 @@ export const instagramAdapter: PlatformAdapter = {
       [target === "comment" ? "comment_id" : "media_id"]: externalId,
     });
     let lastError: unknown = null;
-    for (const base of [GRAPH.replace("v20.0", "v25.0"), INSTAGRAM_GRAPH]) {
+    for (const base of [GRAPH, INSTAGRAM_GRAPH]) {
       try {
         await graphJson<{ success?: boolean }>(
           `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
