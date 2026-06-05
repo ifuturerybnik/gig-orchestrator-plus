@@ -211,7 +211,7 @@ export function InboxTab({ orgId }: { orgId: string }) {
                 </Button>
               </div>
             ) : (
-              <ul className="divide-y">
+              <ul className="divide-y max-h-[60vh] overflow-y-auto">
                 {items.map((c) => (
                   <li key={c.id}>
                     <button
