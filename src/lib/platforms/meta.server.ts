@@ -885,29 +885,18 @@ export async function refreshFbPostMediaUrls(args: {
   accessToken: string;
 }): Promise<string[] | null> {
   try {
-    const fields = "id,full_picture,picture,attachments{media,subattachments}";
+    const fields = "id,full_picture,picture,object_id,attachments{type,url,media,subattachments{type,url,media}}";
     const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
-    const j = await graphJson<{
-      full_picture?: string;
-      picture?: string;
-      attachments?: {
-        data?: Array<{
-          media?: { image?: { src?: string } };
-          subattachments?: {
-            data?: Array<{ media?: { image?: { src?: string } } }>;
-          };
-        }>;
-      };
+    const j = await graphJson<FbPostMediaShape & {
+      object_id?: string;
     }>(url, { context: "FB media refresh" });
-    const urls: string[] = [];
-    if (j.full_picture) urls.push(j.full_picture);
-    if (j.picture && !urls.includes(j.picture)) urls.push(j.picture);
-    for (const a of j.attachments?.data ?? []) {
-      const src = a.media?.image?.src;
-      if (src && !urls.includes(src)) urls.push(src);
-      for (const s of a.subattachments?.data ?? []) {
-        const sub = s.media?.image?.src;
-        if (sub && !urls.includes(sub)) urls.push(sub);
+    const urls = collectFbMediaUrls(j);
+    if (urls.length === 0 && j.object_id) {
+      for (const objectUrl of await fetchFbObjectMediaUrls({
+        objectId: j.object_id,
+        accessToken: args.accessToken,
+      })) {
+        pushUniqueUrl(urls, objectUrl);
       }
     }
     return urls;
