@@ -146,6 +146,11 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
             <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
           </li>
           <li>
+            Dla Facebook Login for Business Concertivo używa trybu <b>token</b> oraz onboardingu Instagram API
+            (<code className="rounded bg-muted px-1 py-0.5 text-xs">display=page</code>,{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">IG_API_ONBOARDING</code>) — to wymagany wariant dla uprawnienia komentarzy.
+          </li>
+          <li>
             Kliknij <b>Save changes</b>.
           </li>
         </ol>
