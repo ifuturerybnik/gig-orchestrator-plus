@@ -413,6 +413,16 @@ function CommentItem({
             <Send className="mr-1 h-3 w-3" />
             {t("social.post_details.reply")}
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleModerate("delete")}
+            disabled={busy !== "none"}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            {t("social.inbox.actions.delete")}
+          </Button>
         </div>
       </div>
 
