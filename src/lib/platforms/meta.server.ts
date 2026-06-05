@@ -931,6 +931,13 @@ export const instagramAdapter: PlatformAdapter = {
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
     const scopes = account.scopes ?? [];
     const usesInstagramLogin = isInstagramLoginAccount(account);
+    const hasInstagramLoginScopes = scopes.some((s) => s.startsWith("instagram_business_"));
+    if (!usesInstagramLogin && hasInstagramLoginScopes) {
+      throw new Error(
+        "Konto Instagram ma zapisany nieprawidłowy typ tokena po ostatnim połączeniu przez Facebook. " +
+          "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, a nie przez Facebook.",
+      );
+    }
     const requiredScope = usesInstagramLogin ? "instagram_business_manage_comments" : "instagram_manage_comments";
     const hasKnownCommentScope = scopes.includes(requiredScope);
     if (scopes.length > 0 && !hasKnownCommentScope) {
