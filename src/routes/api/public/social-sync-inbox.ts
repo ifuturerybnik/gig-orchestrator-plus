@@ -67,7 +67,7 @@ async function processTick() {
       });
       if (!items.length) continue;
 
-      // upsert — kluczem unikalności jest (organization_id, platform, external_comment_id)
+      // upsert — kluczem unikalności jest (account_id, external_comment_id) (zob. migr. 0029)
       const rowsToInsert = items.map((it) => ({
         organization_id: r.post!.organization_id,
         account_id: ctx.account.id,
@@ -90,7 +90,7 @@ async function processTick() {
       const { error: upErr, count } = await supabaseAdmin
         .from("social_comments")
         .upsert(rowsToInsert, {
-          onConflict: "organization_id,platform,external_comment_id",
+          onConflict: "account_id,external_comment_id",
           ignoreDuplicates: true,
           count: "exact",
         });
