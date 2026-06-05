@@ -530,6 +530,17 @@ export const facebookAdapter: PlatformAdapter = {
     return { externalCommentId: j.id };
   },
 
+  async like({ account, externalId }): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({
+      access_token: account.access_token,
+    });
+    await graphJson<{ success?: boolean }>(
+      `${GRAPH}/${encodeURIComponent(externalId)}/likes`,
+      { method: "POST", body: params, context: "FB like" },
+    );
+    return { ok: true };
+  },
+
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
     const pageId = account.external_account_id;
     const token = account.access_token;
