@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Plus, Copy, Check, Trash2, KeyRound, Globe } from "lucide-react";
+import { Plus, Copy, Check, Trash2, KeyRound, Globe, FileDown } from "lucide-react";
+import i18n from "@/i18n";
+import { downloadIntegrationGuidePdf } from "@/lib/web-integration-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,9 +162,22 @@ export function WebIntegrationTab({ orgId }: { orgId: string }) {
       {/* SETTINGS */}
 
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">{t("web.integration.title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("web.integration.subtitle")}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">{t("web.integration.title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("web.integration.subtitle")}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lng = (i18n.language?.startsWith("en") ? "en" : "pl") as "pl" | "en";
+              downloadIntegrationGuidePdf("integration", lng);
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {t("web.integration.download_guide")}
+          </Button>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-[1fr,auto] sm:items-end">
