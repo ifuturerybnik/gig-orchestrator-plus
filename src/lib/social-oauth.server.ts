@@ -476,12 +476,47 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) Facebook Login zwraca Page token. Nie zapisujemy go jako konto Instagram,
-  // bo Instagram Login używa innego tokena i hosta graph.instagram.com; nadpisanie
-  // powoduje błąd "Cannot parse access token" przy odpowiedziach na komentarze.
+  // 8) Jeżeli strona FB ma podłączone konto Instagram (IG Business connected to Page),
+  // zapisujemy je jako social_accounts.platform='instagram' z Page tokenem.
+  // UWAGA: nie nadpisujemy konta utworzonego przez Instagram Login (graph.instagram.com),
+  // bo używa innego typu tokena. Wykrywamy je po obecności scope'a `instagram_business_basic`.
   let igUsername: string | null = null;
   if (page.instagram) {
     igUsername = page.instagram.username;
+
+    const { data: existingIg } = await admin
+      .from("social_accounts")
+      .select("id, scopes")
+      .eq("organization_id", s.organization_id)
+      .eq("platform", "instagram")
+      .maybeSingle();
+
+    const isInstagramLoginAccount =
+      Array.isArray(existingIg?.scopes) &&
+      (existingIg!.scopes as string[]).some((sc) => sc.startsWith("instagram_business_"));
+
+    if (!isInstagramLoginAccount) {
+      const { error: upIgErr } = await admin.from("social_accounts").upsert(
+        {
+          organization_id: s.organization_id,
+          platform: "instagram",
+          external_account_id: page.instagram.id,
+          account_name: page.instagram.username,
+          account_avatar_url: null,
+          access_token: page.access_token,
+          refresh_token: null,
+          token_expires_at: null,
+          scopes: ["instagram_basic", "instagram_content_publish"],
+          status: "connected",
+          last_error: null,
+          connected_by: s.user_id,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "organization_id,platform" },
+      );
+      if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
+    }
   }
 
   await admin.from("social_oauth_states").delete().eq("state", args.state);
