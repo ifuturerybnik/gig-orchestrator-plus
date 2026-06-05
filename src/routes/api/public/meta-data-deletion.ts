@@ -9,8 +9,9 @@
 //  - zwracamy JSON { url, confirmation_code } — wymagany format Meta.
 //
 // Sekret aplikacji:
-//  - Najpierw EXT_META_APP_SECRET (oficjalna aplikacja Concertivo do App Review).
-//  - Fallback: iteracja po social_app_credentials (per-org), bo użytkownicy
+//  - Najpierw META_APP_SECRET (centralna aplikacja Concertivo, już skonfigurowana).
+//  - Fallback: EXT_META_APP_SECRET (dla kompatybilności).
+//  - Dodatkowo iteracja po social_app_credentials (per-org), bo użytkownicy
 //    mogą mieć własne aplikacje Meta i też skonfigurować ten sam callback URL.
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, randomUUID, timingSafeEqual } from "crypto";
