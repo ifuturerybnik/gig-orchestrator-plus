@@ -34,9 +34,12 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v22.0";
 
 function igApiBases(account: PlatformAccount): string[] {
+  return isInstagramLoginAccount(account) ? [INSTAGRAM_GRAPH] : [GRAPH];
+}
+
+function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
-  const looksLikeInstagramLogin = scopes.some((s) => s.startsWith("instagram_business_"));
-  return looksLikeInstagramLogin ? [INSTAGRAM_GRAPH, GRAPH] : [GRAPH, INSTAGRAM_GRAPH];
+  return !!account.token_expires_at && scopes.some((s) => s.startsWith("instagram_business_"));
 }
 
 export class MetaPermissionError extends Error {
@@ -927,13 +930,20 @@ export const instagramAdapter: PlatformAdapter = {
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
     const scopes = account.scopes ?? [];
-    const hasKnownCommentScope = scopes.some((s) =>
-      ["instagram_business_manage_comments", "instagram_manage_comments"].includes(s),
-    );
+    const usesInstagramLogin = isInstagramLoginAccount(account);
+    const hasInstagramLoginScopes = scopes.some((s) => s.startsWith("instagram_business_"));
+    if (!usesInstagramLogin && hasInstagramLoginScopes) {
+      throw new Error(
+        "Konto Instagram ma zapisany nieprawidłowy typ tokena po ostatnim połączeniu przez Facebook. " +
+          "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, a nie przez Facebook.",
+      );
+    }
+    const requiredScope = usesInstagramLogin ? "instagram_business_manage_comments" : "instagram_manage_comments";
+    const hasKnownCommentScope = scopes.includes(requiredScope);
     if (scopes.length > 0 && !hasKnownCommentScope) {
       throw new Error(
         `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
-          "Rozłącz i połącz Instagram ponownie, akceptując uprawnienie instagram_business_manage_comments.",
+          `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
       );
     }
     const endpoints = igApiBases(account);
@@ -942,7 +952,7 @@ export const instagramAdapter: PlatformAdapter = {
     let j: { id: string } | null = null;
     for (const base of endpoints) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      // graph.instagram.com woli token w nagłówku Authorization; graph.facebook.com akceptuje oba.
+      // graph.instagram.com wymaga Instagram User tokena, graph.facebook.com wymaga Page tokena.
       const params = new URLSearchParams({ message });
       if (!isIgApi) params.set("access_token", account.access_token);
       try {
