@@ -1733,16 +1733,20 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
-      // Facebook OAuth: tylko scope'y, które Meta akceptuje w tym flow.
-      // Nie dodawaj tutaj pages_manage_engagement ani instagram_manage_comments —
-      // Meta zwraca dla nich "Invalid Scopes". Instagram komentarze obsługuje
-      // osobny przycisk "Połącz z Instagram" przez instagram_business_manage_comments.
+      // Meta OAuth: Facebook Page + powiązany Instagram Business w jednym flow.
+      // Komentarze FB wymagają pages_manage_engagement, a komentarze IG przez
+      // Facebook Login wymagają instagram_manage_comments.
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
+        "pages_read_user_content",
         "pages_manage_posts",
+        "pages_manage_engagement",
         "pages_manage_metadata",
         "business_management",
+        "instagram_basic",
+        "instagram_content_publish",
+        "instagram_manage_comments",
       ];
       const params = new URLSearchParams({
         response_type: "code",
