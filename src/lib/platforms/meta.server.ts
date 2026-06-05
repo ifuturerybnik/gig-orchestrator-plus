@@ -75,6 +75,66 @@ function pickIgDisplayMediaUrl(args: {
   return args.mediaUrl ?? args.thumbnailUrl ?? null;
 }
 
+type FbAttachmentNode = {
+  type?: string;
+  url?: string;
+  media?: { image?: { src?: string } };
+  subattachments?: { data?: FbAttachmentNode[] };
+};
+
+type FbPostMediaShape = {
+  full_picture?: string;
+  picture?: string;
+  object_id?: string;
+  attachments?: { data?: FbAttachmentNode[] };
+};
+
+function pushUniqueUrl(urls: string[], url?: string | null): void {
+  if (url && !urls.includes(url)) urls.push(url);
+}
+
+function collectFbMediaUrls(post: FbPostMediaShape): string[] {
+  const urls: string[] = [];
+  pushUniqueUrl(urls, post.full_picture);
+  pushUniqueUrl(urls, post.picture);
+
+  const walk = (items?: FbAttachmentNode[]) => {
+    for (const item of items ?? []) {
+      pushUniqueUrl(urls, item.media?.image?.src);
+      walk(item.subattachments?.data);
+    }
+  };
+  walk(post.attachments?.data);
+  return urls;
+}
+
+async function fetchFbObjectMediaUrls(args: {
+  objectId: string;
+  accessToken: string;
+}): Promise<string[]> {
+  try {
+    const params = new URLSearchParams({
+      fields: "images,picture,source",
+      access_token: args.accessToken,
+    });
+    const j = await graphJson<{
+      images?: Array<{ source?: string }>;
+      picture?: string;
+      source?: string;
+    }>(`${GRAPH}/${encodeURIComponent(args.objectId)}?${params.toString()}`, {
+      context: "FB media object",
+    });
+    const urls: string[] = [];
+    for (const image of j.images ?? []) pushUniqueUrl(urls, image.source);
+    pushUniqueUrl(urls, j.source);
+    pushUniqueUrl(urls, j.picture);
+    return urls;
+  } catch (e) {
+    console.warn("[meta] FB media object failed:", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
 async function graphJson<T = unknown>(
   url: string,
   init?: RequestInit & { context?: string },
