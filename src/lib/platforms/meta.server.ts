@@ -1031,7 +1031,7 @@ export const instagramAdapter: PlatformAdapter = {
     }
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      if (!isIgApi) params.set("access_token", account.access_token);
+      if (!isIgApi || action === "delete") params.set("access_token", account.access_token);
       const query = params.toString();
       const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
       try {
