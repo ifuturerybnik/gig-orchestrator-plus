@@ -1736,6 +1736,42 @@ export const syncPostNow = createServerFn({ method: "POST" })
       } catch (e) {
         errors.push(`${r.platform} komentarze: ${e instanceof Error ? e.message : String(e)}`);
       }
+
+      // Odświeżenie URL-i mediów dla Meta (CDN URLs wygasają po ~24h).
+      if (r.platform === "instagram" || r.platform === "facebook") {
+        try {
+          const { refreshIgPostMediaUrls, refreshFbPostMediaUrls } = await import(
+            "./platforms/meta.server"
+          );
+          const fresh =
+            r.platform === "instagram"
+              ? await refreshIgPostMediaUrls({
+                  externalPostId: r.external_post_id,
+                  accessToken: ctx2.account.access_token,
+                })
+              : await refreshFbPostMediaUrls({
+                  externalPostId: r.external_post_id,
+                  accessToken: ctx2.account.access_token,
+                });
+          if (fresh && fresh.length > 0) {
+            const { data: postRow } = await supabaseAdmin
+              .from("social_posts")
+              .select("content_per_platform")
+              .eq("id", r.post_id)
+              .maybeSingle();
+            const cpp =
+              ((postRow as { content_per_platform: Record<string, { text?: string; hashtags?: string[]; media_urls?: string[] }> } | null)
+                ?.content_per_platform) ?? {};
+            cpp[r.platform] = { ...(cpp[r.platform] ?? {}), media_urls: fresh };
+            await supabaseAdmin
+              .from("social_posts")
+              .update({ content_per_platform: cpp })
+              .eq("id", r.post_id);
+          }
+        } catch (e) {
+          console.warn("[sync] media refresh failed", r.platform, e);
+        }
+      }
     }
 
     return { metricsOk, commentsInserted, errors };

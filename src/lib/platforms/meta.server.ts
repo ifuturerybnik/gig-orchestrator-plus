@@ -46,12 +46,11 @@ export class MetaPermissionError extends Error {
 function isMetaEngagementPermissionError(status: number, body: string): boolean {
   if (status !== 400 && status !== 403) return false;
   const isCode10 = body.includes("(#10)") || body.includes('"code":10');
-  const mentionsRequiredMetaAccess =
-    body.includes("pages_read_engagement") ||
-    body.includes("Page Public Content Access");
-  return (
-    isCode10 && mentionsRequiredMetaAccess
-  );
+  const mentionsMissingPermission =
+    /requires?\s+.*permission/i.test(body) ||
+    /Page Public Content Access/i.test(body) ||
+    /requires?\s+.*pages_read_engagement/i.test(body);
+  return isCode10 && mentionsMissingPermission;
 }
 
 function composeText(content: PlatformPostContent, maxLen: number): string {
@@ -73,8 +72,10 @@ async function graphJson<T = unknown>(
   const txt = await res.text();
   if (!res.ok) {
     if (isMetaEngagementPermissionError(res.status, txt)) {
+      console.warn(`[meta] permission error ${ctx} ${res.status}:`, txt.slice(0, 500));
       throw new MetaPermissionError(ctx);
     }
+    console.error(`[meta] error ${ctx} ${res.status}:`, txt.slice(0, 500));
     throw new Error(`${ctx} ${res.status}: ${txt.slice(0, 400)}`);
   }
   try {
@@ -358,9 +359,12 @@ export const facebookAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
+    // Minimalne pola, by uniknąć eskalacji uprawnień:
+    // - `from` (bez subselect picture) — bezpieczne z pages_read_engagement
+    // - `like_count` — OK
+    // pomijamy `comment_count` i `parent` (mogą wymagać pages_read_user_content)
     const params = new URLSearchParams({
-      fields:
-        "id,from{id,name,picture},message,created_time,like_count,comment_count,parent",
+      fields: "id,from,message,created_time,like_count",
       order: "reverse_chronological",
       limit: "50",
       access_token: account.access_token,
@@ -371,12 +375,10 @@ export const facebookAdapter: PlatformAdapter = {
     const j = await graphJson<{
       data: Array<{
         id: string;
-        from?: { id: string; name: string; picture?: { data?: { url?: string } } };
+        from?: { id?: string; name?: string };
         message?: string;
         created_time: string;
         like_count?: number;
-        comment_count?: number;
-        parent?: { id: string };
       }>;
     }>(
       `${GRAPH}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
@@ -384,16 +386,16 @@ export const facebookAdapter: PlatformAdapter = {
     );
     return (j.data ?? []).map((c) => ({
       externalCommentId: c.id,
-      externalParentCommentId: c.parent?.id ?? null,
+      externalParentCommentId: null,
       externalPostId,
       authorExternalId: c.from?.id ?? null,
       authorName: c.from?.name ?? null,
-      authorAvatarUrl: c.from?.picture?.data?.url ?? null,
+      authorAvatarUrl: null,
       content: c.message ?? "",
       permalink: `https://www.facebook.com/${c.id}`,
       postedAt: c.created_time,
       likeCount: c.like_count ?? 0,
-      replyCount: c.comment_count ?? 0,
+      replyCount: 0,
     }));
   },
 
@@ -733,3 +735,76 @@ export const instagramAdapter: PlatformAdapter = {
     });
   },
 };
+
+/**
+ * Pobiera świeże URL-e mediów dla pojedynczego posta IG / FB.
+ * IG CDN URL-e wygasają po ~24h, więc przy synchronizacji musimy je odświeżać.
+ * Zwraca null gdy nie udało się pobrać (np. post usunięty / brak uprawnień).
+ */
+export async function refreshIgPostMediaUrls(args: {
+  externalPostId: string;
+  accessToken: string;
+}): Promise<string[] | null> {
+  try {
+    const fields =
+      "id,media_type,media_url,thumbnail_url,children{media_url,thumbnail_url,media_type}";
+    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const j = await graphJson<{
+      media_url?: string;
+      thumbnail_url?: string;
+      children?: {
+        data?: Array<{ media_url?: string; thumbnail_url?: string }>;
+      };
+    }>(url, { context: "IG media refresh" });
+    const urls: string[] = [];
+    const children = j.children?.data ?? [];
+    if (children.length > 0) {
+      for (const c of children) {
+        const u = c.media_url ?? c.thumbnail_url;
+        if (u) urls.push(u);
+      }
+    } else {
+      const u = j.media_url ?? j.thumbnail_url;
+      if (u) urls.push(u);
+    }
+    return urls;
+  } catch (e) {
+    console.warn("[meta] refreshIgPostMediaUrls failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+export async function refreshFbPostMediaUrls(args: {
+  externalPostId: string;
+  accessToken: string;
+}): Promise<string[] | null> {
+  try {
+    const fields = "id,full_picture,attachments{media,subattachments}";
+    const url = `${GRAPH}/${encodeURIComponent(args.externalPostId)}?fields=${fields}&access_token=${encodeURIComponent(args.accessToken)}`;
+    const j = await graphJson<{
+      full_picture?: string;
+      attachments?: {
+        data?: Array<{
+          media?: { image?: { src?: string } };
+          subattachments?: {
+            data?: Array<{ media?: { image?: { src?: string } } }>;
+          };
+        }>;
+      };
+    }>(url, { context: "FB media refresh" });
+    const urls: string[] = [];
+    if (j.full_picture) urls.push(j.full_picture);
+    for (const a of j.attachments?.data ?? []) {
+      const src = a.media?.image?.src;
+      if (src && !urls.includes(src)) urls.push(src);
+      for (const s of a.subattachments?.data ?? []) {
+        const sub = s.media?.image?.src;
+        if (sub && !urls.includes(sub)) urls.push(sub);
+      }
+    }
+    return urls;
+  } catch (e) {
+    console.warn("[meta] refreshFbPostMediaUrls failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
