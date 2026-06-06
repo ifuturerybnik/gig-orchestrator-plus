@@ -47,6 +47,7 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
   const [wizardPlatform, setWizardPlatform] = useState<SocialPlatformId | null>(null);
   const [infoPlatform, setInfoPlatform] = useState<SocialPlatformId | null>(null);
   const [detailsAccountId, setDetailsAccountId] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const fetchAccounts = useServerFn(listSocialAccounts);
   const accountsQ = useQuery({
