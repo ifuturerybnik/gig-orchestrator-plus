@@ -1285,6 +1285,52 @@ export default
       "empty": "No entries."
     }
   },
+  "ai_studio": {
+    "title": "AI Studio",
+    "subtitle": "One place to create, schedule, moderate and analyze all your organization's media — social and website.",
+    "coming_soon": "Coming soon in a future iteration.",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "create": "Create",
+      "calendar": "Calendar",
+      "inbox": "Inbox",
+      "library": "Library",
+      "analytics": "Analytics",
+      "assistant": "AI Assistant"
+    },
+    "placeholders": {
+      "dashboard": "Activity overview: unread comments, posts pending approval, today's scheduled publications, 7-day sentiment.",
+      "library": "All publications (SM posts + web news + galleries + events) with filters, search and a 'duplicate as new post' action.",
+      "assistant": "Chat with an AI assistant that has access to tools: reports, campaign proposals, rewriting existing content across channels."
+    },
+    "create": {
+      "sm_title": "Social media posts",
+      "sm_subtitle": "Generate content once, tailor it per platform and publish to selected channels."
+    },
+    "web": {
+      "title": "Website news post",
+      "subtitle": "Quickly publish news on your organization's website. Full event and gallery editing stays in the Web module.",
+      "topic": "News topic",
+      "topic_placeholder": "e.g. Announcing the new 2026/2027 concert season",
+      "generate": "Generate content with AI",
+      "field_title": "Title",
+      "field_excerpt": "Excerpt",
+      "field_content": "Content",
+      "publish_now": "Publish now",
+      "publish_now_hint": "Disable to save as a draft visible only in the admin panel.",
+      "cta_publish": "Publish",
+      "cta_save_draft": "Save draft",
+      "errors": {
+        "no_topic": "Enter a topic before generating.",
+        "no_content": "Title and content are required."
+      },
+      "toast": {
+        "generated": "News content generated.",
+        "published": "News published on the website.",
+        "saved_draft": "News draft saved."
+      }
+    }
+  },
   "social": {
     "title": "Social Hub",
     "subtitle": "Connect your social media accounts to this organization and manage publishing in one place.",

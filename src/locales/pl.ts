@@ -1305,6 +1305,52 @@ export default
       "empty": "Brak wpisów."
     }
   },
+  "ai_studio": {
+    "title": "AI Studio",
+    "subtitle": "Centrum tworzenia, planowania, moderacji i analityki wszystkich mediów organizacji — social media oraz strona WWW — w jednym miejscu.",
+    "coming_soon": "Wkrótce dostępne w kolejnej iteracji.",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "create": "Tworzenie",
+      "calendar": "Kalendarz",
+      "inbox": "Skrzynka",
+      "library": "Biblioteka",
+      "analytics": "Analityka",
+      "assistant": "Asystent AI"
+    },
+    "placeholders": {
+      "dashboard": "Przegląd aktywności: nieodczytane komentarze, posty do akceptacji, zaplanowane publikacje na dziś, sentyment z 7 dni.",
+      "library": "Wszystkie publikacje (posty SM + aktualności WWW + galerie + wydarzenia) z filtrami, wyszukiwarką i akcją 'duplikuj jako nowy post'.",
+      "assistant": "Czat z asystentem AI mającym dostęp do narzędzi: raporty, propozycje kampanii, przepisywanie istniejących treści między kanałami."
+    },
+    "create": {
+      "sm_title": "Posty w social media",
+      "sm_subtitle": "Wygeneruj treść raz, dostosuj do każdej platformy i opublikuj w wybranych kanałach."
+    },
+    "web": {
+      "title": "Aktualność na stronę WWW",
+      "subtitle": "Szybka publikacja newsa na stronie organizacji. Pełna edycja wydarzeń i galerii pozostaje w module Web.",
+      "topic": "Temat aktualności",
+      "topic_placeholder": "np. Ogłaszamy nowy sezon koncertowy 2026/2027",
+      "generate": "Wygeneruj treść z AI",
+      "field_title": "Tytuł",
+      "field_excerpt": "Zajawka (excerpt)",
+      "field_content": "Treść",
+      "publish_now": "Opublikuj od razu",
+      "publish_now_hint": "Wyłącz, aby zapisać jako szkic widoczny tylko w panelu.",
+      "cta_publish": "Publikuj",
+      "cta_save_draft": "Zapisz szkic",
+      "errors": {
+        "no_topic": "Wpisz temat aktualności przed generowaniem.",
+        "no_content": "Tytuł i treść są wymagane."
+      },
+      "toast": {
+        "generated": "Wygenerowano treść aktualności.",
+        "published": "Aktualność opublikowana na stronie WWW.",
+        "saved_draft": "Szkic aktualności zapisany."
+      }
+    }
+  },
   "social": {
     "title": "Organizacja SM",
     "subtitle": "Połącz konta w social mediach z tą organizacją i zarządzaj publikacjami w jednym miejscu.",
