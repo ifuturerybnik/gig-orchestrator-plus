@@ -23,6 +23,9 @@ const EventsModeEnum = z.enum([
   "view_only",
   "view_confirmed_only",
 ] as const);
+const AiStudioModeEnum = z.enum(
+  AI_STUDIO_MODES as unknown as [AiStudioPermissionMode, ...AiStudioPermissionMode[]],
+);
 // Domyślnie zaproszony użytkownik nie ma dostępu do żadnego modułu konfigurowalnego.
 // Owner zaproszenia musi świadomie zaznaczyć moduły lub przełącznik administratora.
 const InvitationAccessSchema = z
