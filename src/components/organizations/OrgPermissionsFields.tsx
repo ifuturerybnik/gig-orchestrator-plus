@@ -77,6 +77,15 @@ export function OrgPermissionsFields({
         />
       );
     }
+    if (id === "ai_studio" && modules.has("ai_studio")) {
+      return (
+        <AiStudioSubChoice
+          fieldIdPrefix={`${fieldIdPrefix}-ai-studio`}
+          value={aiStudioMode}
+          onChange={onAiStudioModeChange}
+        />
+      );
+    }
     return null;
   };
 
