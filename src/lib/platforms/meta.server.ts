@@ -803,7 +803,7 @@ export const instagramAdapter: PlatformAdapter = {
   async publish({ account, content }): Promise<PlatformPublishResult> {
     const igId = account.external_account_id;
     const token = account.access_token;
-    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
+    const apiBase = ensureInstagramLoginAccount(account, "IG publish");
     const caption = composeText(content, 2200);
     const media = (content.media_urls ?? []).filter(Boolean);
     if (media.length === 0) {
@@ -880,7 +880,7 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
-    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
+    const apiBase = ensureInstagramLoginAccount(account, "IG metrics");
     // Najpierw policzniki na obiekcie media
     const baseUrl =
       `${apiBase}/${encodeURIComponent(externalPostId)}` +
@@ -917,10 +917,10 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
+    const apiBase = ensureInstagramLoginAccount(account, "IG comments sync");
     const params = new URLSearchParams({
       fields: "id,username,text,timestamp,like_count,replies{id}",
       limit: "100",
-      access_token: account.access_token,
     });
     type IgComment = {
       id: string;
@@ -937,23 +937,11 @@ export const instagramAdapter: PlatformAdapter = {
       timestamp?: string;
       like_count?: number;
     };
-    let items: IgComment[] = [];
-    let lastError: unknown = null;
-    for (const base of igApiBases(account)) {
-      try {
-        const j = await graphJson<{ data?: IgComment[] }>(
-          `${base}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
-          { context: base === INSTAGRAM_GRAPH ? "IG /comments (Instagram API)" : "IG /comments" },
-        );
-        items = j.data ?? [];
-        break;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    if (items.length === 0 && lastError) {
-      throw lastError instanceof Error ? lastError : new Error("IG /comments: nie udało się pobrać komentarzy.");
-    }
+    const j = await graphJson<{ data?: IgComment[] }>(
+      `${apiBase}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG /comments (Instagram API)" },
+    );
+    const items = j.data ?? [];
     const out: PlatformInboxItem[] = [];
     const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
     const pushRoot = (c: IgComment) => out.push({
