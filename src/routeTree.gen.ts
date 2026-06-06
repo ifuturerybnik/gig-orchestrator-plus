@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
 import { Route as AuthenticatedContactsIndexRouteImport } from './routes/_authenticated.contacts.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
+import { Route as ApiPublicSocialYoutubeTokenCheckRouteImport } from './routes/api/public/social-youtube-token-check'
 import { Route as ApiPublicSocialSyncMetricsRouteImport } from './routes/api/public/social-sync-metrics'
 import { Route as ApiPublicSocialSyncInboxRouteImport } from './routes/api/public/social-sync-inbox'
 import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/api/public/social-publish-scheduled'
@@ -155,6 +156,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicSocialYoutubeTokenCheckRoute =
+  ApiPublicSocialYoutubeTokenCheckRouteImport.update({
+    id: '/api/public/social-youtube-token-check',
+    path: '/api/public/social-youtube-token-check',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSocialSyncMetricsRoute =
   ApiPublicSocialSyncMetricsRouteImport.update({
     id: '/api/public/social-sync-metrics',
@@ -469,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
   '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
+  '/api/public/social-youtube-token-check': typeof ApiPublicSocialYoutubeTokenCheckRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/contacts/': typeof AuthenticatedContactsIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -531,6 +539,7 @@ export interface FileRoutesByTo {
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
   '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
+  '/api/public/social-youtube-token-check': typeof ApiPublicSocialYoutubeTokenCheckRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/contacts': typeof AuthenticatedContactsIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
@@ -598,6 +607,7 @@ export interface FileRoutesById {
   '/api/public/social-publish-scheduled': typeof ApiPublicSocialPublishScheduledRoute
   '/api/public/social-sync-inbox': typeof ApiPublicSocialSyncInboxRoute
   '/api/public/social-sync-metrics': typeof ApiPublicSocialSyncMetricsRoute
+  '/api/public/social-youtube-token-check': typeof ApiPublicSocialYoutubeTokenCheckRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/contacts/': typeof AuthenticatedContactsIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
@@ -665,6 +675,7 @@ export interface FileRouteTypes {
     | '/api/public/social-publish-scheduled'
     | '/api/public/social-sync-inbox'
     | '/api/public/social-sync-metrics'
+    | '/api/public/social-youtube-token-check'
     | '/admin/'
     | '/contacts/'
     | '/organizations/'
@@ -727,6 +738,7 @@ export interface FileRouteTypes {
     | '/api/public/social-publish-scheduled'
     | '/api/public/social-sync-inbox'
     | '/api/public/social-sync-metrics'
+    | '/api/public/social-youtube-token-check'
     | '/admin'
     | '/contacts'
     | '/organizations'
@@ -793,6 +805,7 @@ export interface FileRouteTypes {
     | '/api/public/social-publish-scheduled'
     | '/api/public/social-sync-inbox'
     | '/api/public/social-sync-metrics'
+    | '/api/public/social-youtube-token-check'
     | '/_authenticated/admin/'
     | '/_authenticated/contacts/'
     | '/_authenticated/organizations/'
@@ -848,6 +861,7 @@ export interface RootRouteChildren {
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
   ApiPublicSocialSyncInboxRoute: typeof ApiPublicSocialSyncInboxRoute
   ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
+  ApiPublicSocialYoutubeTokenCheckRoute: typeof ApiPublicSocialYoutubeTokenCheckRoute
   ApiPublicSocialInstagramCallbackRoute: typeof ApiPublicSocialInstagramCallbackRoute
   ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
   ApiPublicSocialMetaCallbackRoute: typeof ApiPublicSocialMetaCallbackRoute
@@ -976,6 +990,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/social-youtube-token-check': {
+      id: '/api/public/social-youtube-token-check'
+      path: '/api/public/social-youtube-token-check'
+      fullPath: '/api/public/social-youtube-token-check'
+      preLoaderRoute: typeof ApiPublicSocialYoutubeTokenCheckRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/social-sync-metrics': {
       id: '/api/public/social-sync-metrics'
@@ -1482,6 +1503,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
   ApiPublicSocialSyncInboxRoute: ApiPublicSocialSyncInboxRoute,
   ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
+  ApiPublicSocialYoutubeTokenCheckRoute: ApiPublicSocialYoutubeTokenCheckRoute,
   ApiPublicSocialInstagramCallbackRoute: ApiPublicSocialInstagramCallbackRoute,
   ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
   ApiPublicSocialMetaCallbackRoute: ApiPublicSocialMetaCallbackRoute,

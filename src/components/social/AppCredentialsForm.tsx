@@ -69,8 +69,11 @@ export function AppCredentialsForm({
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [metaConfigId, setMetaConfigId] = useState("");
+  const [youtubeTesting, setYoutubeTesting] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const isFacebookPlatform = platform === "facebook";
+  const isYouTube = platform === "youtube";
+
 
   // Slug callback URL: X używa "x", Facebook używa "meta",
   // Spotify używa skróconego "spotify", reszta = id platformy.
@@ -96,6 +99,7 @@ export function AppCredentialsForm({
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
           metaConfigId: isFacebookPlatform ? metaConfigId.trim() : undefined,
+          youtubeOauthTesting: isYouTube ? youtubeTesting : undefined,
         },
       }),
     onSuccess: () => {
@@ -109,6 +113,7 @@ export function AppCredentialsForm({
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
   });
+
 
   const delMut = useMutation({
     mutationFn: () =>
@@ -136,7 +141,11 @@ export function AppCredentialsForm({
     if (platform === "facebook" && existing?.metaConfigId) {
       setMetaConfigId(existing.metaConfigId);
     }
-  }, [existing?.metaConfigId, platform]);
+    if (isYouTube && typeof existing?.youtubeOauthTesting === "boolean") {
+      setYoutubeTesting(existing.youtubeOauthTesting);
+    }
+  }, [existing?.metaConfigId, existing?.youtubeOauthTesting, platform, isYouTube]);
+
 
   return (
     <div className="space-y-4">
@@ -293,6 +302,34 @@ export function AppCredentialsForm({
             </p>
           </div>
         )}
+
+        {isYouTube && (
+          <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="yt-testing" className="text-sm">
+                  {t("social.setup.youtube.testing_label")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("social.setup.youtube.testing_desc")}
+                </p>
+              </div>
+              <input
+                id="yt-testing"
+                type="checkbox"
+                checked={youtubeTesting}
+                onChange={(e) => setYoutubeTesting(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-amber-600"
+              />
+            </div>
+            {youtubeTesting && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {t("social.setup.youtube.testing_warning")}
+              </p>
+            )}
+          </div>
+        )}
+
 
         <Button
           onClick={() => saveMut.mutate()}
