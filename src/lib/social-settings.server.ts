@@ -1,55 +1,15 @@
-// Server-only helper: czyta globalne ustawienia social (limity crona) z tabeli app_settings,
-// z cache w pamięci modułu (60s), żeby crony nie pytały DB 3x za każdym tickiem.
-// Używać WYŁĄCZNIE wewnątrz server fn / server route handlers.
+// Server-only helper: czyta globalne ustawienia social z app_settings z cache 60s
+// + helper recordSyncRun do logowania ticków crona. Stałe i typy: social-settings.ts.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  SOCIAL_SETTINGS_DEFAULTS,
+  SOCIAL_SETTINGS_KEY_MAP,
+  SOCIAL_SETTINGS_KEYS,
+  type SocialSettings,
+} from "./social-settings";
 
-export type SocialSettings = {
-  syncInboxMaxPosts: number;
-  syncInboxWindowDays: number;
-  syncMetricsMaxPosts: number;
-  syncMetricsWindowDays: number;
-  importPerAccountLimit: number;
-  importMaxAccounts: number;
-  aiModerationMaxPerTick: number;
-  aiModerationDailyBudgetCalls: number;
-};
-
-export const SOCIAL_SETTINGS_DEFAULTS: SocialSettings = {
-  syncInboxMaxPosts: 200,
-  syncInboxWindowDays: 30,
-  syncMetricsMaxPosts: 200,
-  syncMetricsWindowDays: 30,
-  importPerAccountLimit: 25,
-  importMaxAccounts: 500,
-  aiModerationMaxPerTick: 20,
-  aiModerationDailyBudgetCalls: 1000,
-};
-
-// Limity twarde — chronią aplikację przed katastrofalnymi ustawieniami administratora.
-export const SOCIAL_SETTINGS_BOUNDS = {
-  syncInboxMaxPosts: { min: 10, max: 2000 },
-  syncInboxWindowDays: { min: 1, max: 90 },
-  syncMetricsMaxPosts: { min: 10, max: 2000 },
-  syncMetricsWindowDays: { min: 1, max: 90 },
-  importPerAccountLimit: { min: 5, max: 200 },
-  importMaxAccounts: { min: 50, max: 5000 },
-  aiModerationMaxPerTick: { min: 1, max: 100 },
-  aiModerationDailyBudgetCalls: { min: 0, max: 100_000 },
-} as const;
-
-const KEY_MAP: Array<[keyof SocialSettings, string]> = [
-  ["syncInboxMaxPosts", "social.sync_inbox.max_posts"],
-  ["syncInboxWindowDays", "social.sync_inbox.window_days"],
-  ["syncMetricsMaxPosts", "social.sync_metrics.max_posts"],
-  ["syncMetricsWindowDays", "social.sync_metrics.window_days"],
-  ["importPerAccountLimit", "social.import_posts.per_account_limit"],
-  ["importMaxAccounts", "social.import_posts.max_accounts"],
-  ["aiModerationMaxPerTick", "social.ai_moderation.max_per_tick"],
-  ["aiModerationDailyBudgetCalls", "social.ai_moderation.daily_budget_calls"],
-];
-
-export const SOCIAL_SETTINGS_KEYS: ReadonlyArray<string> = KEY_MAP.map(([, k]) => k);
+export type { SocialSettings } from "./social-settings";
 
 let cache: { value: SocialSettings; expiresAt: number } | null = null;
 const TTL_MS = 60_000;
@@ -73,7 +33,7 @@ export async function getSocialSettings(): Promise<SocialSettings> {
   }
 
   const out: SocialSettings = { ...SOCIAL_SETTINGS_DEFAULTS };
-  for (const [field, key] of KEY_MAP) {
+  for (const [field, key] of SOCIAL_SETTINGS_KEY_MAP) {
     if (map.has(key)) {
       out[field] = clampNumber(map.get(key), SOCIAL_SETTINGS_DEFAULTS[field]);
     }
@@ -87,13 +47,6 @@ export function invalidateSocialSettingsCache(): void {
   cache = null;
 }
 
-export function settingKeyFor(field: keyof SocialSettings): string {
-  const entry = KEY_MAP.find(([f]) => f === field);
-  if (!entry) throw new Error(`Unknown social setting: ${String(field)}`);
-  return entry[1];
-}
-
-// Helper: zapis wyniku ticku crona do social_sync_runs (best-effort, nie rzuca).
 export type SyncRunMetrics = {
   job: "sync-inbox" | "sync-metrics" | "import-posts";
   startedAt: number;
