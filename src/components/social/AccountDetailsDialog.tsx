@@ -70,6 +70,9 @@ export function AccountDetailsDialog({
   const externalUrl = externalUrlFor(account);
   const supportsImport =
     account.platform === "facebook" || account.platform === "instagram";
+  const isLegacyInstagram =
+    account.platform === "instagram" &&
+    !(account.scopes ?? []).some((scope) => scope.startsWith("instagram_business_"));
 
   const disconnectM = useMutation({
     mutationFn: () =>
@@ -196,6 +199,15 @@ export function AccountDetailsDialog({
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+
+          {isLegacyInstagram && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+              {t(
+                "social.account_details.instagram_reconnect_required",
+                "Rozłącz Instagram i połącz ponownie przyciskiem Połącz z Instagram, akceptując instagram_business_manage_comments",
+              )}
             </div>
           )}
 
