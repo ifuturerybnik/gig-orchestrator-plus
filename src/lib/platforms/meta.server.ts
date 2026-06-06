@@ -1,7 +1,7 @@
 // SERVER-ONLY. Meta Graph API — wspólne helpery + adaptery Facebook i Instagram.
 //
-// JEDEN OAuth flow (Facebook Login) → Page Access Token (long-lived, ~brak expiry)
-// + (opcjonalnie) Instagram Business Account ID powiązany ze stroną.
+// Facebook używa Facebook Login for Business i Page Access Tokena.
+// Instagram używa osobnego Instagram Login API i tokena z instagram_business_* scopes.
 //
 // Endpointy:
 //  - GET  /v20.0/oauth/access_token                         — code → user token
@@ -32,10 +32,13 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 // graph.instagram.com obsługuje wersje v22.0 / v23.0; v25.0 zwraca 400 dla części endpointów,
 // dlatego trzymamy się stabilnej v22.0 dla Instagram Login API.
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v22.0";
-
-function igApiBases(account: PlatformAccount): string[] {
-  return isInstagramLoginAccount(account) ? [INSTAGRAM_GRAPH] : [GRAPH];
-}
+const REQUIRED_INSTAGRAM_LOGIN_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_comments",
+] as const;
+const INSTAGRAM_RECONNECT_MESSAGE =
+  "Rozłącz Instagram i połącz ponownie przyciskiem Połącz z Instagram, akceptując instagram_business_manage_comments";
 
 function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
@@ -48,12 +51,24 @@ function describeMetaCommentPermission(account: PlatformAccount): string {
     : "instagram_manage_comments";
 }
 
+function ensureInstagramLoginAccount(account: PlatformAccount, action: string): string {
+  const scopes = account.scopes ?? [];
+  const missing = REQUIRED_INSTAGRAM_LOGIN_SCOPES.filter((scope) => !scopes.includes(scope));
+  if (!isInstagramLoginAccount(account) || missing.length > 0) {
+    const currentScopes = scopes.length ? scopes.join(", ") : "—";
+    throw new Error(
+      `${action}: ${INSTAGRAM_RECONNECT_MESSAGE}. Aktualne scope'y konta: [${currentScopes}].`,
+    );
+  }
+  return INSTAGRAM_GRAPH;
+}
+
 function explainMetaCommentPermissionError(account: PlatformAccount, action: string): string {
   const requiredScope = describeMetaCommentPermission(account);
   const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
   const connectHint = isInstagramLoginAccount(account)
-    ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
-    : "Tego konta Instagram nie można obsługiwać przez token Facebooka. Rozłącz Instagram i połącz go osobnym przyciskiem „Połącz z Instagram”, akceptując instagram_business_manage_comments.";
+    ? `${INSTAGRAM_RECONNECT_MESSAGE}.`
+    : `Tego konta Instagram nie można obsługiwać przez token Facebooka. ${INSTAGRAM_RECONNECT_MESSAGE}.`;
   return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
 }
 
