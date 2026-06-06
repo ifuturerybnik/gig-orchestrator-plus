@@ -250,6 +250,8 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
           />
         );
       })()}
+
+      <SocialDiagnosticsAiDialog orgId={orgId} open={aiOpen} onOpenChange={setAiOpen} />
     </div>
   );
 }
