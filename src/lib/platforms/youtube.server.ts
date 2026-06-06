@@ -21,6 +21,7 @@ import type {
   PlatformMetrics,
   PlatformPostContent,
   PlatformPublishResult,
+  PlatformRecentPost,
   PlatformReplyResult,
 } from "./types";
 
