@@ -72,12 +72,12 @@ export function AppCredentialsForm({
   const [showSecret, setShowSecret] = useState(false);
   const isFacebookPlatform = platform === "facebook";
 
-  // Slug callback URL: X używa "x", Facebook+Instagram dzielą "meta",
+  // Slug callback URL: X używa "x", Facebook używa "meta",
   // Spotify używa skróconego "spotify", reszta = id platformy.
   const callbackSlug =
     platform === "twitter"
       ? "x"
-      : platform === "facebook" || platform === "instagram"
+      : platform === "facebook"
         ? "meta"
         : platform === "spotify_artists"
           ? "spotify"

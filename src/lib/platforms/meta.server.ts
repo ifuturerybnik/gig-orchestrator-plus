@@ -1,7 +1,7 @@
 // SERVER-ONLY. Meta Graph API — wspólne helpery + adaptery Facebook i Instagram.
 //
-// JEDEN OAuth flow (Facebook Login) → Page Access Token (long-lived, ~brak expiry)
-// + (opcjonalnie) Instagram Business Account ID powiązany ze stroną.
+// Facebook używa Facebook Login for Business i Page Access Tokena.
+// Instagram używa osobnego Instagram Login API i tokena z instagram_business_* scopes.
 //
 // Endpointy:
 //  - GET  /v20.0/oauth/access_token                         — code → user token
@@ -32,10 +32,13 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 // graph.instagram.com obsługuje wersje v22.0 / v23.0; v25.0 zwraca 400 dla części endpointów,
 // dlatego trzymamy się stabilnej v22.0 dla Instagram Login API.
 const INSTAGRAM_GRAPH = "https://graph.instagram.com/v22.0";
-
-function igApiBases(account: PlatformAccount): string[] {
-  return isInstagramLoginAccount(account) ? [INSTAGRAM_GRAPH] : [GRAPH];
-}
+const REQUIRED_INSTAGRAM_LOGIN_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_comments",
+] as const;
+const INSTAGRAM_RECONNECT_MESSAGE =
+  "Rozłącz Instagram i połącz ponownie przyciskiem Połącz z Instagram, akceptując instagram_business_manage_comments";
 
 function isInstagramLoginAccount(account: PlatformAccount): boolean {
   const scopes = account.scopes ?? [];
@@ -48,12 +51,24 @@ function describeMetaCommentPermission(account: PlatformAccount): string {
     : "instagram_manage_comments";
 }
 
+function ensureInstagramLoginAccount(account: PlatformAccount, action: string): string {
+  const scopes = account.scopes ?? [];
+  const missing = REQUIRED_INSTAGRAM_LOGIN_SCOPES.filter((scope) => !scopes.includes(scope));
+  if (!isInstagramLoginAccount(account) || missing.length > 0) {
+    const currentScopes = scopes.length ? scopes.join(", ") : "—";
+    throw new Error(
+      `${action}: ${INSTAGRAM_RECONNECT_MESSAGE}. Aktualne scope'y konta: [${currentScopes}].`,
+    );
+  }
+  return INSTAGRAM_GRAPH;
+}
+
 function explainMetaCommentPermissionError(account: PlatformAccount, action: string): string {
   const requiredScope = describeMetaCommentPermission(account);
   const currentScopes = account.scopes?.length ? account.scopes.join(", ") : "—";
   const connectHint = isInstagramLoginAccount(account)
-    ? "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, akceptując uprawnienie do zarządzania komentarzami."
-    : "Tego konta Instagram nie można obsługiwać przez token Facebooka. Rozłącz Instagram i połącz go osobnym przyciskiem „Połącz z Instagram”, akceptując instagram_business_manage_comments.";
+    ? `${INSTAGRAM_RECONNECT_MESSAGE}.`
+    : `Tego konta Instagram nie można obsługiwać przez token Facebooka. ${INSTAGRAM_RECONNECT_MESSAGE}.`;
   return `${action}: Meta odrzuciła operację z powodu brakującego uprawnienia ${requiredScope}. Aktualne scope'y konta: [${currentScopes}]. ${connectHint}`;
 }
 
@@ -788,7 +803,7 @@ export const instagramAdapter: PlatformAdapter = {
   async publish({ account, content }): Promise<PlatformPublishResult> {
     const igId = account.external_account_id;
     const token = account.access_token;
-    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
+    const apiBase = ensureInstagramLoginAccount(account, "IG publish");
     const caption = composeText(content, 2200);
     const media = (content.media_urls ?? []).filter(Boolean);
     if (media.length === 0) {
@@ -865,7 +880,7 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchMetrics({ account, externalPostId }): Promise<PlatformMetrics> {
-    const apiBase = isInstagramLoginAccount(account) ? INSTAGRAM_GRAPH : GRAPH;
+    const apiBase = ensureInstagramLoginAccount(account, "IG metrics");
     // Najpierw policzniki na obiekcie media
     const baseUrl =
       `${apiBase}/${encodeURIComponent(externalPostId)}` +
@@ -902,10 +917,10 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async fetchInboxItems({ account, externalPostId, sinceIso }): Promise<PlatformInboxItem[]> {
+    const apiBase = ensureInstagramLoginAccount(account, "IG comments sync");
     const params = new URLSearchParams({
       fields: "id,username,text,timestamp,like_count,replies{id}",
       limit: "100",
-      access_token: account.access_token,
     });
     type IgComment = {
       id: string;
@@ -922,23 +937,11 @@ export const instagramAdapter: PlatformAdapter = {
       timestamp?: string;
       like_count?: number;
     };
-    let items: IgComment[] = [];
-    let lastError: unknown = null;
-    for (const base of igApiBases(account)) {
-      try {
-        const j = await graphJson<{ data?: IgComment[] }>(
-          `${base}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
-          { context: base === INSTAGRAM_GRAPH ? "IG /comments (Instagram API)" : "IG /comments" },
-        );
-        items = j.data ?? [];
-        break;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    if (items.length === 0 && lastError) {
-      throw lastError instanceof Error ? lastError : new Error("IG /comments: nie udało się pobrać komentarzy.");
-    }
+    const j = await graphJson<{ data?: IgComment[] }>(
+      `${apiBase}/${encodeURIComponent(externalPostId)}/comments?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG /comments (Instagram API)" },
+    );
+    const items = j.data ?? [];
     const out: PlatformInboxItem[] = [];
     const sinceTs = sinceIso ? new Date(sinceIso).getTime() : null;
     const pushRoot = (c: IgComment) => out.push({
@@ -977,149 +980,53 @@ export const instagramAdapter: PlatformAdapter = {
           const rp = new URLSearchParams({
             fields: "id,username,text,timestamp,like_count",
             limit: "50",
-            access_token: account.access_token,
           });
-          for (const base of igApiBases(account)) {
-            try {
-              const replies = await graphJson<{ data?: IgReply[] }>(
-                `${base}/${encodeURIComponent(c.id)}/replies?${rp.toString()}`,
-                { context: base === INSTAGRAM_GRAPH ? "IG /replies (Instagram API)" : "IG /replies" },
-              );
-              for (const reply of replies.data ?? []) pushReply(c.id, reply);
-              return;
-            } catch (e) {
-              lastError = e;
-            }
+          try {
+            const replies = await graphJson<{ data?: IgReply[] }>(
+              `${apiBase}/${encodeURIComponent(c.id)}/replies?${rp.toString()}`,
+              { headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG /replies (Instagram API)" },
+            );
+            for (const reply of replies.data ?? []) pushReply(c.id, reply);
+          } catch (e) {
+            console.warn("[meta] IG /replies failed:", e instanceof Error ? e.message : e);
           }
-          console.warn("[meta] IG /replies failed:", lastError instanceof Error ? lastError.message : lastError);
         }),
     );
     return out.filter((c) => !sinceTs || !c.postedAt || new Date(c.postedAt).getTime() > sinceTs);
   },
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
-    const scopes = account.scopes ?? [];
-    const usesInstagramLogin = isInstagramLoginAccount(account);
-    const hasInstagramLoginScopes = scopes.some((s) => s.startsWith("instagram_business_"));
-    if (!usesInstagramLogin && hasInstagramLoginScopes) {
-      throw new Error(
-        "Konto Instagram ma zapisany nieprawidłowy typ tokena po ostatnim połączeniu przez Facebook. " +
-          "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, a nie przez Facebook.",
-      );
-    }
-    const requiredScope = usesInstagramLogin ? "instagram_business_manage_comments" : "instagram_manage_comments";
-    const hasKnownCommentScope = scopes.includes(requiredScope);
-    if (scopes.length > 0 && !hasKnownCommentScope) {
-      if (!usesInstagramLogin) {
-        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
-      } else {
-        throw new Error(
-          `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
-            `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
-        );
-      }
-    }
-    const endpoints = igApiBases(account);
+    const apiBase = ensureInstagramLoginAccount(account, "IG reply");
     const message = text.slice(0, 2200);
-    const attempts: string[] = [];
-    let j: { id: string } | null = null;
-    for (const base of endpoints) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      // graph.instagram.com wymaga Instagram User tokena, graph.facebook.com wymaga Page tokena.
-      const params = new URLSearchParams({ message });
-      if (!isIgApi) params.set("access_token", account.access_token);
-      try {
-        j = await graphJson<{ id: string }>(
-          `${base}/${encodeURIComponent(externalParentCommentId)}/replies`,
-          {
-            method: "POST",
-            body: params,
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? "IG reply (Instagram API)" : "IG reply",
-          },
-        );
-        break;
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
-      }
-    }
-    if (!j) {
-      if (attempts.some(isMetaMissingPermissionError)) {
-        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
-      }
-      throw new Error(
-        `IG reply: nie udało się wysłać odpowiedzi.\nScope'y konta: [${scopes.join(", ")}]\n` +
-          attempts.map((a) => `• ${a}`).join("\n"),
-      );
-    }
+    const j = await graphJson<{ id: string }>(
+      `${apiBase}/${encodeURIComponent(externalParentCommentId)}/replies`,
+      { method: "POST", body: new URLSearchParams({ message }), headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG reply (Instagram API)" },
+    );
     return { externalCommentId: j.id };
   },
 
   async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
-    const scopes = account.scopes ?? [];
-    const requiredScope = isInstagramLoginAccount(account) ? "instagram_business_manage_comments" : "instagram_manage_comments";
-    if (scopes.length > 0 && !scopes.includes(requiredScope)) {
-      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
+    const apiBase = ensureInstagramLoginAccount(account, `IG comment ${action}`);
+    const queryParams = new URLSearchParams();
+    if (action === "hide" || action === "unhide") {
+      queryParams.set("hide", action === "hide" ? "true" : "false");
     }
-    const attempts: string[] = [];
-    for (const base of igApiBases(account)) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      const queryParams = new URLSearchParams();
-      if (!isIgApi) queryParams.set("access_token", account.access_token);
-      if (action === "hide" || action === "unhide") {
-        queryParams.set("hide", action === "hide" ? "true" : "false");
-      }
-      const query = queryParams.toString();
-      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
-      try {
-        await graphJson<{ success?: boolean }>(
-          url,
-          {
-            method: action === "delete" ? "DELETE" : "POST",
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
-          },
-        );
-        return { ok: true };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
-      }
-    }
-    if (attempts.some(isMetaMissingPermissionError)) {
-      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
-    }
-    throw new Error(
-      `IG comment ${action}: nie udało się wykonać operacji.\n` +
-        attempts.map((a) => `• ${a}`).join("\n"),
+    const query = queryParams.toString();
+    await graphJson<{ success?: boolean }>(
+      `${apiBase}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`,
+      { method: action === "delete" ? "DELETE" : "POST", headers: { Authorization: `Bearer ${account.access_token}` }, context: `IG comment ${action} (Instagram API)` },
     );
+    return { ok: true };
   },
 
   async like({ account, target, externalId }): Promise<{ ok: boolean }> {
-    let lastError: unknown = null;
-    for (const base of igApiBases(account)) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      const params = new URLSearchParams({
-        [target === "comment" ? "comment_id" : "media_id"]: externalId,
-      });
-      if (!isIgApi) params.set("access_token", account.access_token);
-      try {
-        await graphJson<{ success?: boolean }>(
-          `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
-          {
-            method: "POST",
-            body: params,
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? "IG like (Instagram API)" : "IG like",
-          },
-        );
-        return { ok: true };
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error("IG like: nie udało się polubić.");
+    const apiBase = ensureInstagramLoginAccount(account, "IG like");
+    const params = new URLSearchParams({ [target === "comment" ? "comment_id" : "media_id"]: externalId });
+    await graphJson<{ success?: boolean }>(
+      `${apiBase}/${encodeURIComponent(account.external_account_id)}/likes`,
+      { method: "POST", body: params, headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG like (Instagram API)" },
+    );
+    return { ok: true };
   },
 
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {

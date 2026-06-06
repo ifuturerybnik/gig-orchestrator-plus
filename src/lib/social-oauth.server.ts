@@ -11,7 +11,6 @@ import {
   exchangeInstagramLoginCode,
   exchangeLongLivedInstagramToken,
   exchangeMetaCode,
-  fetchPageInstagramAccount,
   fetchInstagramLoginProfile,
   listUserPages,
   listUserPermissions,
@@ -415,16 +414,9 @@ export async function handleMetaOAuthCallback(args: {
     clientSecret,
   });
 
-  // 6) Diagnostyka: permissions + lista stron
+  // 6) Diagnostyka: permissions + lista stron. Facebook Login nie zapisuje konta Instagram.
   const perms = await listUserPermissions(longTok.accessToken);
-  const rawPages = await listUserPages(longTok.accessToken);
-  const pages = await Promise.all(
-    rawPages.map(async (p) =>
-      p.instagram
-        ? p
-        : { ...p, instagram: await fetchPageInstagramAccount(p.id, p.access_token) },
-    ),
-  );
+  const pages = await listUserPages(longTok.accessToken);
 
   const buildDiag = (selectedId: string | null): MetaDiagnostics => ({
     granted: perms.granted,
@@ -484,59 +476,12 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG.
-  // Sam zapis nie może zależeć od kompletu scope'ów do publikacji/komentarzy:
-  // Meta potrafi zwrócić IG powiązany ze stroną nawet wtedy, gdy część uprawnień
-  // czeka na App Review. Braki uprawnień obsługujemy później przy konkretnych akcjach.
-  let igUsername: string | null = null;
-  if (page.instagram) {
-    igUsername = page.instagram.username;
-    const { data: existingIg } = await admin
-      .from("social_accounts")
-      .select("scopes")
-      .eq("organization_id", s.organization_id)
-      .eq("platform", "instagram")
-      .maybeSingle();
-    const hasInstagramLoginToken = ((existingIg as { scopes?: string[] } | null)?.scopes ?? [])
-      .some((scope) => scope.startsWith("instagram_business_"));
-    if (hasInstagramLoginToken) {
-      await admin.from("social_oauth_states").delete().eq("state", args.state);
-      return {
-        orgId: s.organization_id,
-        facebookPageName: page.name,
-        instagramUsername: igUsername,
-        redirectBack,
-        diagnostics: buildDiag(page.id),
-      };
-    }
-    const { error: upIgErr } = await admin.from("social_accounts").upsert(
-      {
-        organization_id: s.organization_id,
-        platform: "instagram",
-        external_account_id: page.instagram.id,
-        account_name: `@${page.instagram.username}`,
-        account_avatar_url: page.instagram.profile_picture_url ?? null,
-        scopes: perms.granted,
-        access_token_enc: encryptPii(page.access_token),
-        refresh_token_enc: null,
-        token_expires_at: tokenExpiresAt,
-        status: "connected",
-        last_error: null,
-        connected_by: s.user_id,
-        connected_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "organization_id,platform" },
-    );
-    if (upIgErr) throw new Error(`Zapis konta Instagram: ${upIgErr.message}`);
-  }
-
   await admin.from("social_oauth_states").delete().eq("state", args.state);
 
   return {
     orgId: s.organization_id,
     facebookPageName: page.name,
-    instagramUsername: igUsername,
+    instagramUsername: null,
     redirectBack,
     diagnostics: buildDiag(page.id),
   };
