@@ -66,6 +66,18 @@ export const CONFIGURABLE_MODULE_IDS: OrgModuleId[] = ORG_MODULES
 
 export type BudgetPermissionMode = "full" | "unrealized_only";
 export type EventsPermissionMode = "full" | "view_only" | "view_confirmed_only";
+export type AiStudioPermissionMode =
+  | "full"
+  | "create_only"
+  | "moderation_only"
+  | "view_only";
+
+export const AI_STUDIO_MODES: AiStudioPermissionMode[] = [
+  "full",
+  "create_only",
+  "moderation_only",
+  "view_only",
+];
 
 export interface EffectiveOrgPermissions {
   isOrgAdmin: boolean;
@@ -73,6 +85,7 @@ export interface EffectiveOrgPermissions {
   modules: OrgModuleId[];
   budgetMode: BudgetPermissionMode;
   eventsMode: EventsPermissionMode;
+  aiStudioMode: AiStudioPermissionMode;
 }
 
 /** Czy user ma dostęp do danego modułu (uwzględnia alwaysVisible i org admin). */

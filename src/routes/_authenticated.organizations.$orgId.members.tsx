@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { MemberPermissionsDialog } from "@/components/organizations/MemberPermissionsDialog";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
@@ -53,6 +54,7 @@ function OrganizationMembersPage() {
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
   const [inviteEventsMode, setInviteEventsMode] = useState<EventsPermissionMode>("full");
+  const [inviteAiStudioMode, setInviteAiStudioMode] = useState<AiStudioPermissionMode>("full");
   const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
@@ -237,6 +239,8 @@ function OrganizationMembersPage() {
                   onBudgetModeChange={setInviteBudgetMode}
                   eventsMode={inviteEventsMode}
                   onEventsModeChange={setInviteEventsMode}
+                  aiStudioMode={inviteAiStudioMode}
+                  onAiStudioModeChange={setInviteAiStudioMode}
                   fieldIdPrefix="invite-permissions"
                 />
               </div>

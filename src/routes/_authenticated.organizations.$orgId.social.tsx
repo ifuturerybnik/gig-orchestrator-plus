@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Share2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Share2, Sparkles, Info } from "lucide-react";
 import { PlatformsTab } from "@/components/social/PlatformsTab";
 import { AiStudioTab } from "@/components/social/AiStudioTab";
 import { ScheduleTab } from "@/components/social/ScheduleTab";
@@ -31,6 +33,20 @@ function SocialIntegrationsPage() {
           <p className="text-sm text-muted-foreground">{t("social.subtitle")}</p>
         </div>
       </header>
+
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>{t("social.deprecated.title")}</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>{t("social.deprecated.description")}</p>
+          <Button asChild size="sm" variant="default">
+            <Link to="/organizations/$orgId/ai-studio" params={{ orgId }}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              {t("social.deprecated.cta")}
+            </Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
 
       <Tabs defaultValue="accounts" className="w-full">
         <TabsList className="grid w-full max-w-3xl grid-cols-5">
