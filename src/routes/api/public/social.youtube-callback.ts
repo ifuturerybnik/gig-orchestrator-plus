@@ -16,6 +16,18 @@ function html(title: string, body: string, ok: boolean, redirectTo?: string): Re
   );
 }
 
+function getPublicOrigin(request: Request): string {
+  const h = request.headers;
+  const xfHost = h.get("x-forwarded-host") ?? h.get("host");
+  const xfProto = h.get("x-forwarded-proto");
+  if (xfHost) {
+    const isLocal = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?)/i.test(xfHost);
+    const proto = xfProto ?? (isLocal ? "http" : "https");
+    return `${proto}://${xfHost}`;
+  }
+  return new URL(request.url).origin;
+}
+
 export const Route = createFileRoute("/api/public/social/youtube-callback")({
   server: {
     handlers: {
