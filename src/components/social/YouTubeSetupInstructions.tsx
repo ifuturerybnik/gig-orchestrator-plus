@@ -74,9 +74,59 @@ export function YouTubeSetupInstructions({ callbackUrl }: { callbackUrl: string 
           Skopiuj <b>Identyfikator klienta</b> i <b>Tajny klucz klienta</b>.
           Identyfikator to losowy ciąg znaków (np. 12 cyfr + myślnik + znaki) kończący się{" "}
           <code>.apps.googleusercontent.com</code> — to normalny format.
-          Wklej oba pola poniżej.
+          Wklej oba pola poniżej i — jeśli Twój projekt jest w trybie <b>Testing</b> —
+          zaznacz odpowiednią opcję pod formularzem.
         </li>
       </ol>
+
+      <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-xs dark:border-sky-900 dark:bg-sky-950/40">
+        <div className="font-semibold text-sky-900 dark:text-sky-100">
+          Tryb Testing vs Production — co wybrać?
+        </div>
+        <ul className="ml-5 mt-1 list-disc space-y-1 text-sky-900/90 dark:text-sky-100/90">
+          <li>
+            <b>Testing</b> (domyślny po utworzeniu projektu): działa od razu, ale{" "}
+            <b>refresh_token wygasa co 7 dni</b> i trzeba klikać „Połącz ponownie".
+            Max 100 użytkowników testowych.
+          </li>
+          <li>
+            <b>Production</b>: bez wygasania, ale dla zakresów{" "}
+            <code>youtube.upload</code> / <code>youtube.force-ssl</code>{" "}
+            Google wymaga <b>weryfikacji aplikacji</b> (formularz + nagranie wideo,
+            ok. 4–6 tygodni).
+          </li>
+        </ul>
+      </div>
+
+      <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs dark:border-emerald-900 dark:bg-emerald-950/40">
+        <div className="font-semibold text-emerald-900 dark:text-emerald-100">
+          Chcesz przejść z Testing → Production (bez 7-dniowego limitu)?
+        </div>
+        <ol className="ml-5 mt-1 list-decimal space-y-1 text-emerald-900/90 dark:text-emerald-100/90">
+          <li>
+            W Google Cloud Console: <i>APIs &amp; Services → OAuth consent screen</i>{" "}
+            → <b>Publish App</b>.
+          </li>
+          <li>
+            Otwórz formularz <b>Verification Center</b>. Wymagane będą m.in.:
+            <ul className="ml-5 mt-0.5 list-[circle] space-y-0.5">
+              <li>Link do publicznej polityki prywatności i regulaminu.</li>
+              <li>Link do publicznej strony domowej aplikacji.</li>
+              <li>Nagranie wideo (max 5 min) pokazujące przebieg OAuth oraz każdy używany zakres.</li>
+              <li>Uzasadnienie dla zakresów wrażliwych <code>youtube.upload</code> i <code>youtube.force-ssl</code>.</li>
+            </ul>
+          </li>
+          <li>
+            Weryfikacja trwa ok. <b>4–6 tygodni</b>. W tym czasie aplikacja działa
+            normalnie w Testing dla użytkowników testowych.
+          </li>
+          <li>
+            Po zatwierdzeniu — wróć tutaj i <b>odznacz</b> opcję „Tryb OAuth Testing".
+            Token od tej pory przestaje wygasać po 7 dniach.
+          </li>
+        </ol>
+      </div>
+
       <p className="text-xs text-muted-foreground">
         Uwaga: domyślna kwota YouTube API to 10 000 jednostek dziennie. Jeden upload
         kosztuje 1 600 jednostek (≈6 filmów/dzień). Jeśli potrzebujesz więcej —
