@@ -509,7 +509,7 @@ function buildEventContext(args: {
   return lines.join("\n");
 }
 
-async function callAiInternal(args: {
+export async function callAiInternal(args: {
   userId: string | null;
   userEmail: string | null;
   scenariusz: string;
