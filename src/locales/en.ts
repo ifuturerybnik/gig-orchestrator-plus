@@ -505,6 +505,13 @@ export default
         "view_only": "View only",
         "view_confirmed_only": "View confirmed events only",
         "help": "'Full access' allows adding, editing and deleting events. 'View only' is read-only. 'View confirmed events only' restricts visibility to events with a confirmed status."
+      },
+      "ai_studio": {
+        "full": "Full access",
+        "create_only": "Create & schedule only (Create, Calendar, Library)",
+        "moderation_only": "Moderation only (Inbox, AI Assistant)",
+        "view_only": "View only (Dashboard, Library, Analytics)",
+        "help": "Member's working mode inside AI Studio. 'Full access' unlocks all tabs: Dashboard, Create, Calendar, Inbox, Library, Analytics, AI Assistant."
       }
     },
     "detail": {
