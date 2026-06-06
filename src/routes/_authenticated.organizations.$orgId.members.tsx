@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { MemberPermissionsDialog } from "@/components/organizations/MemberPermissionsDialog";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
