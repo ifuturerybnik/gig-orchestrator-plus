@@ -1560,6 +1560,22 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     const secretEnc = encryptPii(data.clientSecret);
     if (!secretEnc) throw new Error("Nie udało się zaszyfrować Client Secret.");
 
+    let extra: Record<string, unknown> = {};
+    if (data.platform === "facebook" || data.platform === "instagram") {
+      const nextConfigId = data.metaConfigId?.trim() || null;
+      if (nextConfigId) {
+        extra = { meta_config_id: nextConfigId };
+      } else {
+        const { data: existing } = await supabase
+          .from("social_app_credentials")
+          .select("extra")
+          .eq("organization_id", data.organizationId)
+          .eq("platform", credPlatform(data.platform))
+          .maybeSingle();
+        extra = ((existing as { extra?: Record<string, unknown> } | null)?.extra ?? {}) as Record<string, unknown>;
+      }
+    }
+
     const { error } = await supabase
       .from("social_app_credentials")
       .upsert(
@@ -1568,9 +1584,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
           platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
-          extra: data.platform === "facebook" || data.platform === "instagram"
-            ? { meta_config_id: data.metaConfigId?.trim() || null }
-            : {},
+          extra,
           configured_by: userId,
           updated_at: new Date().toISOString(),
         },
@@ -1732,20 +1746,26 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
-      if (!metaConfigId) {
-        throw new Error(
-          "Facebook wymaga Configuration ID z Facebook Login for Business. " +
-            "Bez config_id Meta odrzuca zaawansowane uprawnienia jako Invalid Scopes.",
-        );
-      }
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
         redirect_uri: callbackUrl,
         state,
-        config_id: metaConfigId,
-        override_default_response_type: "true",
       });
+      if (metaConfigId) {
+        params.set("config_id", metaConfigId);
+        params.set("override_default_response_type", "true");
+      } else {
+        params.set(
+          "scope",
+          [
+            "pages_show_list",
+            "pages_read_engagement",
+            "pages_manage_posts",
+            "pages_manage_metadata",
+          ].join(","),
+        );
+      }
       authorizeUrl = `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.

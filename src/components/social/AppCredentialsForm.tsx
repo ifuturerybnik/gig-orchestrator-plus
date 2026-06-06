@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -132,6 +132,12 @@ export function AppCredentialsForm({
 
   const existing = credQ.data;
 
+  useEffect(() => {
+    if (platform === "facebook" && existing?.metaConfigId) {
+      setMetaConfigId(existing.metaConfigId);
+    }
+  }, [existing?.metaConfigId, platform]);
+
   return (
     <div className="space-y-4">
       {existing?.exists && (
@@ -145,6 +151,14 @@ export function AppCredentialsForm({
                 {existing.clientIdMasked}
               </code>
             </div>
+            {platform === "facebook" && existing.metaConfigId && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Configuration ID:</span>
+                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {existing.metaConfigId}
+                </code>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
