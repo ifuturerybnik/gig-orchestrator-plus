@@ -11,6 +11,7 @@ import {
   exchangeInstagramLoginCode,
   exchangeLongLivedInstagramToken,
   exchangeMetaCode,
+  fetchPageInstagramAccount,
   fetchInstagramLoginProfile,
   listUserPages,
   listUserPermissions,
@@ -416,7 +417,14 @@ export async function handleMetaOAuthCallback(args: {
 
   // 6) Diagnostyka: permissions + lista stron
   const perms = await listUserPermissions(longTok.accessToken);
-  const pages = await listUserPages(longTok.accessToken);
+  const rawPages = await listUserPages(longTok.accessToken);
+  const pages = await Promise.all(
+    rawPages.map(async (p) =>
+      p.instagram
+        ? p
+        : { ...p, instagram: await fetchPageInstagramAccount(p.id, p.access_token) },
+    ),
+  );
 
   const buildDiag = (selectedId: string | null): MetaDiagnostics => ({
     granted: perms.granted,
