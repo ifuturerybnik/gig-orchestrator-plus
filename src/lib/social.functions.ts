@@ -1965,7 +1965,11 @@ export const syncPostNow = createServerFn({ method: "POST" })
           clientSecret: ctx2.credentials.clientSecret,
         });
         if (items.length) {
-          const rowsToInsert = items.map((it) => ({
+          // Deduplikacja po external_comment_id — Postgres nie pozwala na
+          // ON CONFLICT DO UPDATE dwa razy na ten sam wiersz w jednym statemencie.
+          const dedup = new Map<string, (typeof items)[number]>();
+          for (const it of items) dedup.set(it.externalCommentId, it);
+          const rowsToInsert = Array.from(dedup.values()).map((it) => ({
             organization_id: data.organizationId,
             account_id: ctx2.account.id,
             platform: r.platform,
