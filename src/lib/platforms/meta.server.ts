@@ -252,11 +252,12 @@ export async function exchangeInstagramLoginCode(args: {
     redirect_uri: args.redirectUri,
     code: args.code,
   });
+  type IgPerms = string | string[] | null | undefined;
   const j = await graphJson<{
     access_token?: string;
-    user_id?: string;
-    permissions?: string;
-    data?: Array<{ access_token?: string; user_id?: string; permissions?: string }>;
+    user_id?: string | number;
+    permissions?: IgPerms;
+    data?: Array<{ access_token?: string; user_id?: string | number; permissions?: IgPerms }>;
   }>("https://api.instagram.com/oauth/access_token", {
     method: "POST",
     body,
@@ -266,10 +267,16 @@ export async function exchangeInstagramLoginCode(args: {
   if (!item.access_token || !item.user_id) {
     throw new Error("Instagram token exchange: brak access_token lub user_id.");
   }
+  const perms: IgPerms = item.permissions;
+  const scopes = Array.isArray(perms)
+    ? perms.map((s) => String(s).trim()).filter(Boolean)
+    : typeof perms === "string"
+      ? perms.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
   return {
     accessToken: item.access_token,
     userId: String(item.user_id),
-    scopes: (item.permissions ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    scopes,
   };
 }
 
