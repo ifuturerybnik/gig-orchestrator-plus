@@ -280,7 +280,7 @@ export const Route = createFileRoute("/api/public/social-sync-inbox")({
           return new Response("Unauthorized", { status: 401 });
         try {
           const out = await processTick();
-          return Response.json({ ok: true, ...out });
+          return Response.json({ success: true, ...out });
         } catch (e) {
           return Response.json(
             { ok: false, error: e instanceof Error ? e.message : String(e) },
