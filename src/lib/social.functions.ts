@@ -107,6 +107,42 @@ export const disconnectSocialAccount = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Ustawia per-konto przełączniki automatyzacji (auto sync inbox, auto AI moderation,
+ * ewentualna ręczna pauza). RLS chroni: tylko członek organizacji może zmienić.
+ */
+export const setAccountAutomation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        accountId: z.string().uuid(),
+        autoSyncInbox: z.boolean().optional(),
+        autoAiModeration: z.boolean().optional(),
+        // null = wyczyść pauzę; string ISO = ustaw nowy timestamp; undefined = nie zmieniaj
+        syncPausedUntil: z.string().datetime().nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const patch: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof data.autoSyncInbox === "boolean") patch.auto_sync_inbox = data.autoSyncInbox;
+    if (typeof data.autoAiModeration === "boolean")
+      patch.auto_ai_moderation = data.autoAiModeration;
+    if (data.syncPausedUntil !== undefined) patch.sync_paused_until = data.syncPausedUntil;
+    const { error } = await supabase
+      .from("social_accounts")
+      .update(patch)
+      .eq("id", data.accountId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------- Wizard: sprawdzenie gotowości platformy (per-organizacja) ----------
 // Każda organizacja konfiguruje WŁASNĄ aplikację developerską u dostawcy
 // (np. developer.x.com). Client ID + zaszyfrowany Client Secret żyją w
