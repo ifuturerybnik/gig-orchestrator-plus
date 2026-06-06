@@ -70,13 +70,15 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<{ items: SocialAccountRow[] }> => {
     const { supabase, userId } = context;
-    let { data: rows, error } = await supabase
+    const accountsResult = await supabase
       .from("social_accounts")
       .select(
         "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
       )
       .eq("organization_id", data.organizationId)
       .order("connected_at", { ascending: false });
+    let rows = accountsResult.data;
+    const error = accountsResult.error;
     if (error) throw new Error(error.message);
     const visibleRows = (rows ?? []) as SocialAccountRow[];
     const hasFacebook = visibleRows.some((r) => r.platform === "facebook" && r.status === "connected");
