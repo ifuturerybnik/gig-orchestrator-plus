@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ExternalLink, Trash2, AlertCircle, CheckCircle2, Download, Loader2 } from "lucide-react";
+import {
+  ExternalLink,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Loader2,
+  PauseCircle,
+  PlayCircle,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +40,7 @@ import {
 import {
   disconnectSocialAccount,
   importPostsFromAccountFn,
+  setAccountAutomation,
   type SocialAccountRow,
 } from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
