@@ -1654,22 +1654,15 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // 1) pobierz credentials org+platform (Meta IG dzieli z Facebook).
-    //    Fallback: jeśli ktoś zapisał pod "instagram" w starszej wersji UI,
-    //    spróbuj odczytać też z tej platformy.
-    const lookupCandidates =
-      data.platform === "instagram" || data.platform === "facebook"
-        ? ["facebook", "instagram"]
-        : [data.platform];
+    // 1) pobierz credentials dokładnie dla wybranej platformy. Facebook i
+    // Instagram mają osobne produkty OAuth i nie wolno mieszać ich scope'ów.
     const { data: credRows, error: credErr } = await supabase
       .from("social_app_credentials")
       .select("client_id, platform, extra")
       .eq("organization_id", data.organizationId)
-      .in("platform", lookupCandidates);
+      .eq("platform", data.platform);
     if (credErr) throw new Error(credErr.message);
-    const credRow =
-      (credRows ?? []).find((r) => r.platform === "facebook") ??
-      (credRows ?? [])[0];
+    const credRow = (credRows ?? [])[0];
     if (!credRow) {
       throw new Error("Brak skonfigurowanej aplikacji dla tej platformy. Najpierw wklej Client ID i Client Secret.");
     }
@@ -1739,33 +1732,21 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
       });
       authorizeUrl = `https://www.instagram.com/oauth/authorize?${params.toString()}`;
     } else if (data.platform === "facebook") {
-      // Meta OAuth: Facebook Page + powiązany Instagram Business w jednym flow.
-      // Komentarze FB wymagają pages_manage_engagement, a komentarze IG przez
-      // Facebook Login wymagają instagram_manage_comments.
-      const scopes = [
-        "pages_show_list",
-        "pages_read_engagement",
-        "pages_read_user_content",
-        "pages_manage_posts",
-        "pages_manage_engagement",
-        "pages_manage_metadata",
-        "business_management",
-        "instagram_basic",
-        "instagram_content_publish",
-        "instagram_manage_comments",
-      ];
+      if (!metaConfigId) {
+        throw new Error(
+          "Facebook wymaga Configuration ID z Facebook Login for Business. " +
+            "Bez config_id Meta odrzuca zaawansowane uprawnienia jako Invalid Scopes.",
+        );
+      }
       const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
         redirect_uri: callbackUrl,
         state,
+        config_id: metaConfigId,
+        override_default_response_type: "true",
       });
-      if (metaConfigId) {
-        params.set("config_id", metaConfigId);
-      } else {
-        params.set("scope", scopes.join(","));
-      }
-      authorizeUrl = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
+      authorizeUrl = `https://www.facebook.com/v25.0/dialog/oauth?${params.toString()}`;
     } else if (data.platform === "youtube") {
       // Google OAuth: access_type=offline + prompt=consent → zawsze dostajemy refresh_token.
       const params = new URLSearchParams({
