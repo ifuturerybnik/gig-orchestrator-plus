@@ -268,3 +268,43 @@ function EventsSubChoice({
     </div>
   );
 }
+
+function AiStudioSubChoice({
+  fieldIdPrefix,
+  value,
+  onChange,
+}: {
+  fieldIdPrefix: string;
+  value: AiStudioPermissionMode;
+  onChange: (value: AiStudioPermissionMode) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-border bg-background/50 p-2">
+      <RadioGroup
+        value={value}
+        onValueChange={(nextValue) => onChange(nextValue as AiStudioPermissionMode)}
+        className="space-y-1"
+      >
+        {(["full", "create_only", "moderation_only", "view_only"] as const).map((opt) => (
+          <div key={opt} className="flex items-start gap-2">
+            <RadioGroupItem
+              id={`${fieldIdPrefix}-${opt}`}
+              value={opt}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor={`${fieldIdPrefix}-${opt}`}
+              className="cursor-pointer text-sm font-normal"
+            >
+              {t(`organizations.permissions.ai_studio.${opt}`)}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("organizations.permissions.ai_studio.help")}
+      </p>
+    </div>
+  );
+}
