@@ -1463,7 +1463,20 @@ export default
       "import_desc": "Pobiera ostatnie 25 postów opublikowanych bezpośrednio na platformie (poza Concertivo) i dodaje je do Harmonogramu jako „opublikowane\". Komentarze i metryki będą synchronizowane automatycznie.",
       "import_button": "Importuj 25 postów",
       "import_auto_note": "Aplikacja co 30 minut sama zaciąga nowe posty z tej platformy — ręczny import wymuszasz tylko, gdy chcesz odświeżyć teraz lub zaciągnąć historię.",
-      "import_success": "Zaimportowano {{inserted}} nowych postów (sprawdzono: {{fetched}})."
+      "import_success": "Zaimportowano {{inserted}} nowych postów (sprawdzono: {{fetched}}).",
+      "automation": {
+        "title": "Automatyzacja",
+        "subtitle": "Steruj, czy aplikacja sama pobiera dane z tego konta i czy AI moderuje komentarze.",
+        "auto_sync_label": "Automatyczna synchronizacja",
+        "auto_sync_desc": "Co kilkanaście minut aplikacja pobiera nowe komentarze, wiadomości i statystyki z tego konta. Wyłącz, jeśli chcesz robić to wyłącznie ręcznie.",
+        "auto_ai_label": "Automatyczna moderacja AI",
+        "auto_ai_desc": "Nowe komentarze są automatycznie analizowane przez AI pod kątem hejtu, spamu i tematu (wymaga skonfigurowanego klucza OpenAI w organizacji). Działa tylko gdy automatyczna synchronizacja jest włączona.",
+        "pause_desc": "Tymczasowo wstrzymaj całą synchronizację tego konta na 24 godziny — przyda się np. przy przekraczaniu limitów platformy.",
+        "pause_24h": "Wstrzymaj na 24h",
+        "paused_until": "Synchronizacja wstrzymana do: {{time}}",
+        "resume": "Wznów synchronizację",
+        "saved": "Zapisano ustawienia automatyzacji."
+      }
     },
     "post_status": {
       "draft": "Szkic",
