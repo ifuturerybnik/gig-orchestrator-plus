@@ -151,6 +151,14 @@ export function AppCredentialsForm({
                 {existing.clientIdMasked}
               </code>
             </div>
+            {platform === "facebook" && existing.metaConfigId && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Configuration ID:</span>
+                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {existing.metaConfigId}
+                </code>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
