@@ -1341,6 +1341,11 @@ export default
   "social": {
     "title": "Social Hub",
     "subtitle": "Connect your social media accounts to this organization and manage publishing in one place.",
+    "deprecated": {
+      "title": "This module is now for integrations and diagnostics",
+      "description": "Day-to-day work with social media and websites now happens in AI Studio. This section is reserved for connected-account management, technical preview and diagnostics — for admins and integrators only.",
+      "cta": "Open AI Studio"
+    },
     "tabs": {
       "accounts": "Connected accounts",
       "inbox": "Inbox",
