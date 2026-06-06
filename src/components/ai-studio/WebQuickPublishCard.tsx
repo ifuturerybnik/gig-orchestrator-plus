@@ -58,7 +58,7 @@ export function WebQuickPublishCard({ orgId }: { orgId: string }) {
           maxTokens: 1500,
         },
       });
-      let raw = (res.text ?? "").trim();
+      let raw = (res.content ?? "").trim();
       const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (fence) raw = fence[1].trim();
       const parsed = JSON.parse(raw) as {
