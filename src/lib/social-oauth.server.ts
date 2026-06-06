@@ -479,7 +479,12 @@ export async function handleMetaOAuthCallback(args: {
   // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG
   // tylko wtedy, gdy nie istnieje już osobny token Instagram Login.
   let igUsername: string | null = null;
-  if (page.instagram) {
+  if (
+    page.instagram &&
+    perms.granted.includes("instagram_basic") &&
+    perms.granted.includes("instagram_content_publish") &&
+    perms.granted.includes("instagram_manage_comments")
+  ) {
     igUsername = page.instagram.username;
     const { data: existingIg } = await admin
       .from("social_accounts")
