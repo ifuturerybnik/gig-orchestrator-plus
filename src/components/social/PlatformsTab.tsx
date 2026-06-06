@@ -30,6 +30,7 @@ import {
 import { ConnectWizardDialog } from "./ConnectWizardDialog";
 import { PlatformInfoDialog } from "./PlatformInfoDialog";
 import { AccountDetailsDialog } from "./AccountDetailsDialog";
+import { SocialDiagnosticsAiDialog } from "./SocialDiagnosticsAiDialog";
 
 const PLATFORM_ICONS: Record<SocialPlatformId, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
