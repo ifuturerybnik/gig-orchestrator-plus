@@ -31,6 +31,9 @@ export type SocialAccountRow = {
   connected_by: string;
   connected_at: string;
   updated_at: string;
+  auto_sync_inbox: boolean;
+  auto_ai_moderation: boolean;
+  sync_paused_until: string | null;
 };
 
 export type SocialPostRow = {
