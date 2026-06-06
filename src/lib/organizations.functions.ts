@@ -64,6 +64,7 @@ export async function loadEffectivePerms(
   modules: OrgModuleId[];
   budgetMode: BudgetPermissionMode;
   eventsMode: EventsPermissionMode;
+  aiStudioMode: AiStudioPermissionMode;
 }> {
   // owner?
   const { data: me } = await supabase
@@ -73,30 +74,30 @@ export async function loadEffectivePerms(
     .eq("user_id", userId)
     .maybeSingle();
   if (me?.role === "owner") {
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   // admin aplikacji?
   if (await isAppAdmin(supabase, userId)) {
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   if (!me) {
-    // nie jest członkiem — brak dostępu (overview/profile traktowane jako alwaysVisible po stronie UI)
-    return { isOrgAdmin: false, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: false, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   const { data: perm } = await supabase
     .from("organization_member_permissions")
-    .select("is_org_admin, modules, budget_mode, events_mode")
+    .select("is_org_admin, modules, budget_mode, events_mode, ai_studio_mode")
     .eq("member_id", me.id)
     .maybeSingle();
   if (!perm) {
     // kompatybilność wsteczna: brak wpisu = pełen dostęp
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   return {
     isOrgAdmin: Boolean(perm.is_org_admin),
     modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
     budgetMode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
     eventsMode: (perm.events_mode as EventsPermissionMode) ?? "full",
+    aiStudioMode: (perm.ai_studio_mode as AiStudioPermissionMode) ?? "full",
   };
 }
 
