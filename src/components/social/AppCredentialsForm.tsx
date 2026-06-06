@@ -303,6 +303,34 @@ export function AppCredentialsForm({
           </div>
         )}
 
+        {isYouTube && (
+          <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="yt-testing" className="text-sm">
+                  {t("social.setup.youtube.testing_label")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("social.setup.youtube.testing_desc")}
+                </p>
+              </div>
+              <input
+                id="yt-testing"
+                type="checkbox"
+                checked={youtubeTesting}
+                onChange={(e) => setYoutubeTesting(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-amber-600"
+              />
+            </div>
+            {youtubeTesting && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {t("social.setup.youtube.testing_warning")}
+              </p>
+            )}
+          </div>
+        )}
+
+
         <Button
           onClick={() => saveMut.mutate()}
           disabled={
