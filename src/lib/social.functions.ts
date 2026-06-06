@@ -510,7 +510,7 @@ function buildEventContext(args: {
 }
 
 async function callAiInternal(args: {
-  userId: string;
+  userId: string | null;
   userEmail: string | null;
   scenariusz: string;
   systemPrompt: string;
