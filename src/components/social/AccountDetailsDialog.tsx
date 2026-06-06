@@ -160,7 +160,7 @@ export function AccountDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {t(`social.platforms.${account.platform}.name`)} — {account.account_name}
