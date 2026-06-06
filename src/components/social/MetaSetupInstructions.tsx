@@ -168,8 +168,8 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           {t("social.meta.step4_title", "Krok 4 — Instagram (Business Login for Instagram)")}
         </h4>
         <p className="text-muted-foreground">
-          Instagram może być połączony bezpośrednio przez <i>Instagram API with Instagram Login</i> albo razem z Fanpage’em
-          przez <i>Facebook Login for Business</i>. Do komentarzy potrzebne jest uprawnienie zarządzania komentarzami.
+              Instagram do publikacji i komentarzy łączymy bezpośrednio przez <i>Instagram API with Instagram Login</i>.
+              Facebook Page łączymy osobno przez <i>Facebook Login for Business</i> z Configuration ID.
         </p>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
@@ -289,8 +289,8 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
             <code className="rounded bg-background px-1 py-0.5">instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments</code>
           </li>
           <li>
-            <b>Scopes FB:</b>{" "}
-            <code className="rounded bg-background px-1 py-0.5">pages_show_list, pages_read_engagement, pages_read_user_content, pages_manage_posts, pages_manage_engagement, pages_manage_metadata, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments</code>
+            <b>Facebook:</b>{" "}
+            <code className="rounded bg-background px-1 py-0.5">użyj Configuration ID z Facebook Login for Business — Concertivo nie wysyła już zaawansowanych scope’ów w parametrze scope</code>
           </li>
         </ul>
       </div>

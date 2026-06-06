@@ -1028,18 +1028,18 @@ export const instagramAdapter: PlatformAdapter = {
     const attempts: string[] = [];
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      const query = isIgApi ? "" : `access_token=${encodeURIComponent(account.access_token)}`;
-      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
-      const body = new URLSearchParams();
+      const queryParams = new URLSearchParams();
+      if (!isIgApi) queryParams.set("access_token", account.access_token);
       if (action === "hide" || action === "unhide") {
-        body.set(isIgApi ? "hide" : "is_hidden", action === "hide" ? "true" : "false");
+        queryParams.set("hide", action === "hide" ? "true" : "false");
       }
+      const query = queryParams.toString();
+      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: action === "delete" ? undefined : body,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
