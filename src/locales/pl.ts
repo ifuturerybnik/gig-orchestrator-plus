@@ -1534,8 +1534,18 @@ export default
         "paused_until": "Synchronizacja wstrzymana do: {{time}}",
         "resume": "Wznów synchronizację",
         "saved": "Zapisano ustawienia automatyzacji."
+      },
+      "youtube_refresh": {
+        "production_title": "Tryb Production — token bezterminowy",
+        "production_body": "Twój projekt Google OAuth jest w trybie Production. Aplikacja odświeża access token automatycznie; nie musisz nic robić.",
+        "testing_title": "Tryb Testing — pozostało {{days}} dni do ponownego połączenia",
+        "testing_body": "Google wygasza refresh_token co 7 dni, gdy projekt OAuth jest w trybie Testing. Aplikacja przypomni Ci e-mailem / powiadomieniem na 2 dni przed.",
+        "testing_expires_at": "Wygaśnięcie: {{date}}",
+        "expired_title": "Refresh token wygasł — wymagane ponowne połączenie",
+        "expired_body": "Aplikacja nie może już automatycznie odświeżać dostępu do YouTube. Rozłącz konto poniżej i połącz je ponownie."
       }
     },
+
     "post_status": {
       "draft": "Szkic",
       "scheduled": "Zaplanowany",
@@ -1593,6 +1603,12 @@ export default
       "save_update": "Zaktualizuj klucze",
       "saved": "Klucze zostały zapisane.",
       "deleted": "Klucze zostały usunięte.",
+      "youtube": {
+        "testing_label": "Tryb OAuth: Testing",
+        "testing_desc": "Zaznacz, jeśli w Google Cloud Console Twój projekt ma status OAuth = Testing (domyślny po utworzeniu).",
+        "testing_warning": "W trybie Testing Google wymusza wygaśnięcie refresh_tokena po 7 dniach. Aplikacja przypomni Ci o ponownym połączeniu na 2 dni przed."
+      },
+
       "x": {
         "intro": "Aby Concertivo mogło publikować w imieniu Twojej organizacji na X, musisz założyć własną aplikację deweloperską u X. Zajmuje to ~5 minut.",
         "open_portal": "Otwórz X Developer Portal",
