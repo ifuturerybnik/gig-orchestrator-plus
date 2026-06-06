@@ -44,6 +44,9 @@ import {
   type SocialAccountRow,
 } from "@/lib/social.functions";
 import { SOCIAL_PLATFORMS, type SocialPlatformId } from "@/lib/social-platforms";
+import { YouTubeRefreshBanner } from "./YouTubeRefreshBanner";
+
+
 
 function externalUrlFor(account: SocialAccountRow): string | null {
   const id = account.external_account_id;
@@ -231,6 +234,14 @@ export function AccountDetailsDialog({
               </div>
             </div>
           </div>
+
+          {account.platform === "youtube" && (
+            <YouTubeRefreshBanner
+              orgId={account.organization_id}
+              updatedAt={account.updated_at ?? account.connected_at}
+            />
+          )}
+
 
           {account.scopes?.length > 0 && (
             <div>
