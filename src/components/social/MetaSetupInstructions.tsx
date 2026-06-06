@@ -294,12 +294,25 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
         <h4 className="font-semibold">
           {t("social.meta.step6_title", "Krok 6 — Wklej dane do Concertivo i połącz")}
         </h4>
+        <p className="text-xs text-muted-foreground">
+          W Concertivo Facebook i Instagram mają <b>dwa osobne formularze</b> credentials — wartości są różne.
+        </p>
+        <div className="rounded-md border bg-background p-3 text-xs">
+          <p className="font-semibold">Formularz <i>Facebook</i>:</p>
+          <ul className="ml-4 mt-1 list-disc space-y-0.5 text-muted-foreground">
+            <li><b>App ID</b> + <b>App Secret</b> — z App settings → Basic</li>
+            <li><b>Configuration ID</b> — skopiowany z Facebook Login for Business → Configurations (Krok 3)</li>
+          </ul>
+          <p className="mt-2 font-semibold">Formularz <i>Instagram</i>:</p>
+          <ul className="ml-4 mt-1 list-disc space-y-0.5 text-muted-foreground">
+            <li><b>App ID</b> + <b>App Secret</b> — z Use cases → „Manage messaging &amp; content on Instagram" → API setup with Instagram business login (Krok 4)</li>
+            <li>Configuration ID nie istnieje — pole jest ukryte.</li>
+          </ul>
+        </div>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
+          <li>Wklej dane do właściwego formularza i <b>Zapisz</b>.</li>
           <li>
-            Wróć do tego okna i w formularzu powyżej wklej <b>App ID</b> i <b>App secret</b>, zapisz.
-          </li>
-          <li>
-            Kliknij <b>„Połącz z Facebook"</b> lub <b>„Połącz z Instagram"</b> — przekierujemy Cię do Meta.
+            Kliknij <b>„Połącz z Facebook"</b> lub <b>„Połącz z Instagram"</b> — przekierujemy Cię do Meta / Instagrama.
           </li>
           <li>
             Zaloguj się i potwierdź uprawnienia. Po powrocie konto pojawi się w zakładce <b>Platformy</b>.
@@ -312,6 +325,34 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
               Gotowe. Token Instagrama jest długoterminowy (≈ 60 dni) — Concertivo odświeża go automatycznie.
             </span>
           </div>
+        </div>
+      </section>
+
+      {/* === ETAP 7: Znane ograniczenia Instagram Graph API === */}
+      <section className="space-y-2">
+        <h4 className="font-semibold">
+          {t("social.meta.step7_title", "Znane ograniczenia Instagrama (nie wina Concertivo)")}
+        </h4>
+        <p className="text-xs text-muted-foreground">
+          Poniższe ograniczenia narzuca Meta — żadna aplikacja firm trzecich (Hootsuite, Buffer, Later) nie potrafi
+          ich obejść. Nie zgłaszaj ich jako błędu Concertivo.
+        </p>
+        <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-100">
+          <ul className="list-disc pl-4 space-y-1">
+            <li>
+              <b>Brak API polubień (Like)</b> dla kont biznesowych — Instagram nie udostępnia endpointu do
+              polubienia posta ani komentarza w imieniu konta. Polubienia można dawać wyłącznie z aplikacji mobilnej
+              IG. Próba kliknięcia „Polub" w Concertivo zwróci błąd Meta (<code>code 100, subcode 33</code>).
+            </li>
+            <li>
+              <b>Anonimowi komentujący</b> — pole <code>username</code> komentarza jest zwracane tylko gdy
+              komentujący ma konto Business/Creator. Dla kont prywatnych Meta ukrywa nick (RODO). W Concertivo
+              widzisz wtedy „Użytkownik Instagrama".
+            </li>
+            <li>
+              <b>Odpowiedzi na komentarze</b> — działają normalnie, w tym pod cudzymi komentarzami.
+            </li>
+          </ul>
         </div>
       </section>
 
