@@ -1562,7 +1562,7 @@ export const getAppCredentials = createServerFn({ method: "GET" })
         (rows ?? [])[0]) as null | {
         id: string;
         client_id: string;
-        extra?: { meta_config_id?: string | null };
+        extra?: { meta_config_id?: string | null; youtube_oauth_testing?: boolean | null };
         configured_at: string;
         configured_by: string;
         updated_at: string;
@@ -1572,11 +1572,13 @@ export const getAppCredentials = createServerFn({ method: "GET" })
       exists: !!r,
       clientId: r?.client_id ?? null,
       clientIdMasked: r ? maskClientIdLong(r.client_id) : null,
-      metaConfigId: ((r as { extra?: { meta_config_id?: string } } | null)?.extra?.meta_config_id ?? null) || null,
+      metaConfigId: (r?.extra?.meta_config_id ?? null) || null,
+      youtubeOauthTesting: !!r?.extra?.youtube_oauth_testing,
       configuredAt: r?.configured_at ?? null,
       updatedAt: r?.updated_at ?? null,
     };
   });
+
 
 function maskClientIdLong(s: string): string {
   if (s.length <= 8) return "•".repeat(s.length);
@@ -1593,6 +1595,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
         clientId: z.string().trim().min(3).max(512),
         clientSecret: z.string().trim().min(3).max(2048),
         metaConfigId: z.string().trim().max(256).optional(),
+        youtubeOauthTesting: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -1601,20 +1604,23 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     const secretEnc = encryptPii(data.clientSecret);
     if (!secretEnc) throw new Error("Nie udało się zaszyfrować Client Secret.");
 
-    let extra: Record<string, unknown> = {};
+    // Zacznij od istniejącego extra, by nie nadpisać innych kluczy.
+    const { data: existingRow } = await supabase
+      .from("social_app_credentials")
+      .select("extra")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", credPlatform(data.platform))
+      .maybeSingle();
+    const extra: Record<string, unknown> = {
+      ...((existingRow as { extra?: Record<string, unknown> } | null)?.extra ?? {}),
+    };
+
     if (data.platform === "facebook" || data.platform === "instagram") {
       const nextConfigId = data.metaConfigId?.trim() || null;
-      if (nextConfigId) {
-        extra = { meta_config_id: nextConfigId };
-      } else {
-        const { data: existing } = await supabase
-          .from("social_app_credentials")
-          .select("extra")
-          .eq("organization_id", data.organizationId)
-          .eq("platform", credPlatform(data.platform))
-          .maybeSingle();
-        extra = ((existing as { extra?: Record<string, unknown> } | null)?.extra ?? {}) as Record<string, unknown>;
-      }
+      if (nextConfigId) extra.meta_config_id = nextConfigId;
+    }
+    if (data.platform === "youtube") {
+      extra.youtube_oauth_testing = !!data.youtubeOauthTesting;
     }
 
     const { error } = await supabase
@@ -1634,6 +1640,41 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Aktualizacja samego flagi Testing dla YouTube — bez ponownego wpisywania Client Secret.
+export const setYouTubeOauthTesting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        testing: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error: selErr } = await supabase
+      .from("social_app_credentials")
+      .select("extra")
+      .eq("organization_id", data.organizationId)
+      .eq("platform", "youtube")
+      .maybeSingle();
+    if (selErr) throw new Error(selErr.message);
+    if (!row) throw new Error("Brak konfiguracji YouTube dla tej organizacji.");
+    const extra: Record<string, unknown> = {
+      ...((row as { extra?: Record<string, unknown> }).extra ?? {}),
+      youtube_oauth_testing: data.testing,
+    };
+    const { error } = await supabase
+      .from("social_app_credentials")
+      .update({ extra, updated_at: new Date().toISOString() })
+      .eq("organization_id", data.organizationId)
+      .eq("platform", "youtube");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 
 export const deleteAppCredentials = createServerFn({ method: "POST" })
