@@ -69,8 +69,8 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
     z.object({ organizationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<{ items: SocialAccountRow[] }> => {
-    const { supabase } = context;
-    const { data: rows, error } = await supabase
+    const { supabase, userId } = context;
+    let { data: rows, error } = await supabase
       .from("social_accounts")
       .select(
         "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
@@ -78,6 +78,52 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
       .eq("organization_id", data.organizationId)
       .order("connected_at", { ascending: false });
     if (error) throw new Error(error.message);
+    const visibleRows = (rows ?? []) as SocialAccountRow[];
+    const hasFacebook = visibleRows.some((r) => r.platform === "facebook" && r.status === "connected");
+    const hasInstagram = visibleRows.some((r) => r.platform === "instagram" && r.status === "connected");
+    if (hasFacebook && !hasInstagram) {
+      const { data: fbSecret } = await supabaseAdmin
+        .from("social_accounts")
+        .select("external_account_id, scopes, access_token_enc")
+        .eq("organization_id", data.organizationId)
+        .eq("platform", "facebook")
+        .maybeSingle();
+      const fb = fbSecret as null | { external_account_id: string; scopes?: string[] | null; access_token_enc: string | null };
+      const pageToken = fb?.access_token_enc ? decryptPii(fb.access_token_enc) : null;
+      if (fb && pageToken) {
+        const { fetchPageInstagramAccount } = await import("./platforms/meta.server");
+        const ig = await fetchPageInstagramAccount(fb.external_account_id, pageToken);
+        if (ig) {
+          await supabaseAdmin.from("social_accounts").upsert(
+            {
+              organization_id: data.organizationId,
+              platform: "instagram",
+              external_account_id: ig.id,
+              account_name: `@${ig.username}`,
+              account_avatar_url: ig.profile_picture_url ?? null,
+              scopes: fb.scopes ?? [],
+              access_token_enc: encryptPii(pageToken),
+              refresh_token_enc: null,
+              token_expires_at: null,
+              status: "connected",
+              last_error: null,
+              connected_by: userId,
+              connected_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "organization_id,platform" },
+          );
+          const refreshed = await supabase
+            .from("social_accounts")
+            .select(
+              "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
+            )
+            .eq("organization_id", data.organizationId)
+            .order("connected_at", { ascending: false });
+          if (!refreshed.error) rows = refreshed.data;
+        }
+      }
+    }
     return { items: (rows ?? []) as SocialAccountRow[] };
   });
 
