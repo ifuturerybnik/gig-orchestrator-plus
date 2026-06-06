@@ -980,82 +980,28 @@ export const instagramAdapter: PlatformAdapter = {
           const rp = new URLSearchParams({
             fields: "id,username,text,timestamp,like_count",
             limit: "50",
-            access_token: account.access_token,
           });
-          for (const base of igApiBases(account)) {
-            try {
-              const replies = await graphJson<{ data?: IgReply[] }>(
-                `${base}/${encodeURIComponent(c.id)}/replies?${rp.toString()}`,
-                { context: base === INSTAGRAM_GRAPH ? "IG /replies (Instagram API)" : "IG /replies" },
-              );
-              for (const reply of replies.data ?? []) pushReply(c.id, reply);
-              return;
-            } catch (e) {
-              lastError = e;
-            }
+          try {
+            const replies = await graphJson<{ data?: IgReply[] }>(
+              `${apiBase}/${encodeURIComponent(c.id)}/replies?${rp.toString()}`,
+              { headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG /replies (Instagram API)" },
+            );
+            for (const reply of replies.data ?? []) pushReply(c.id, reply);
+          } catch (e) {
+            console.warn("[meta] IG /replies failed:", e instanceof Error ? e.message : e);
           }
-          console.warn("[meta] IG /replies failed:", lastError instanceof Error ? lastError.message : lastError);
         }),
     );
     return out.filter((c) => !sinceTs || !c.postedAt || new Date(c.postedAt).getTime() > sinceTs);
   },
 
   async reply({ account, externalParentCommentId, text }): Promise<PlatformReplyResult> {
-    const scopes = account.scopes ?? [];
-    const usesInstagramLogin = isInstagramLoginAccount(account);
-    const hasInstagramLoginScopes = scopes.some((s) => s.startsWith("instagram_business_"));
-    if (!usesInstagramLogin && hasInstagramLoginScopes) {
-      throw new Error(
-        "Konto Instagram ma zapisany nieprawidłowy typ tokena po ostatnim połączeniu przez Facebook. " +
-          "Rozłącz Instagram i połącz go ponownie przyciskiem „Połącz z Instagram”, a nie przez Facebook.",
-      );
-    }
-    const requiredScope = usesInstagramLogin ? "instagram_business_manage_comments" : "instagram_manage_comments";
-    const hasKnownCommentScope = scopes.includes(requiredScope);
-    if (scopes.length > 0 && !hasKnownCommentScope) {
-      if (!usesInstagramLogin) {
-        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
-      } else {
-        throw new Error(
-          `Brak uprawnienia do zarządzania komentarzami Instagram. Aktualne scope'y: [${scopes.join(", ")}]. ` +
-            `Rozłącz i połącz Instagram ponownie, akceptując uprawnienie ${requiredScope}.`,
-        );
-      }
-    }
-    const endpoints = igApiBases(account);
+    const apiBase = ensureInstagramLoginAccount(account, "IG reply");
     const message = text.slice(0, 2200);
-    const attempts: string[] = [];
-    let j: { id: string } | null = null;
-    for (const base of endpoints) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      // graph.instagram.com wymaga Instagram User tokena, graph.facebook.com wymaga Page tokena.
-      const params = new URLSearchParams({ message });
-      if (!isIgApi) params.set("access_token", account.access_token);
-      try {
-        j = await graphJson<{ id: string }>(
-          `${base}/${encodeURIComponent(externalParentCommentId)}/replies`,
-          {
-            method: "POST",
-            body: params,
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? "IG reply (Instagram API)" : "IG reply",
-          },
-        );
-        break;
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
-      }
-    }
-    if (!j) {
-      if (attempts.some(isMetaMissingPermissionError)) {
-        throw new Error(explainMetaCommentPermissionError(account, "IG reply"));
-      }
-      throw new Error(
-        `IG reply: nie udało się wysłać odpowiedzi.\nScope'y konta: [${scopes.join(", ")}]\n` +
-          attempts.map((a) => `• ${a}`).join("\n"),
-      );
-    }
+    const j = await graphJson<{ id: string }>(
+      `${apiBase}/${encodeURIComponent(externalParentCommentId)}/replies`,
+      { method: "POST", body: new URLSearchParams({ message }), headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG reply (Instagram API)" },
+    );
     return { externalCommentId: j.id };
   },
 
