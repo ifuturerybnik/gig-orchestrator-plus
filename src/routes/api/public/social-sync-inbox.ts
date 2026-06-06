@@ -68,7 +68,11 @@ async function processTick() {
       if (!items.length) continue;
 
       // upsert — kluczem unikalności jest (account_id, external_comment_id) (zob. migr. 0029)
-      const rowsToInsert = items.map((it) => ({
+      // Deduplikacja po external_comment_id — Postgres odrzuca upsert,
+      // gdy ten sam wiersz docelowy zostałby dotknięty 2x w jednym statemencie.
+      const dedup = new Map<string, (typeof items)[number]>();
+      for (const it of items) dedup.set(it.externalCommentId, it);
+      const rowsToInsert = Array.from(dedup.values()).map((it) => ({
         organization_id: r.post!.organization_id,
         account_id: ctx.account.id,
         platform: r.platform,
