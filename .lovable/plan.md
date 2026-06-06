@@ -1,85 +1,100 @@
-# Plan zmian
+# Plan: kontrola synchronizacji social i auto-moderacja AI
 
-## 1) Domyślnie wszystkie uprawnienia WYŁĄCZONE w zaproszeniu
+Trzy warstwy zgodnie z ustaleniem: globalne crony zostają, użytkownik dostaje on/off per konto, administrator i-Future dostaje panel z limitami i historią ticków.
 
-W `src/routes/_authenticated.organizations.$orgId.members.tsx`:
-- Zmienić inicjalizację `inviteModules` z `new Set(CONFIGURABLE_MODULE_IDS)` na pusty `new Set()`.
-- `inviteIsOrgAdmin` zostaje `false` (już jest).
+## 1. Baza danych (migracja `supabase/migrations/0047_social_sync_controls.sql`)
 
-W `src/lib/organizations.functions.ts`:
-- `InvitationAccessSchema.modules.default` zmienić z `DEFAULT_INVITATION_MODULES` na `[]`.
+**`social_accounts` — nowe kolumny:**
+- `auto_sync_inbox boolean not null default true` — czy cron sync-inbox/metrics ma obsługiwać to konto
+- `auto_ai_moderation boolean not null default false` — czy nowe komentarze mają być automatycznie klasyfikowane przez OpenAI (sentyment + flagi hejt/spam)
+- `sync_paused_until timestamptz null` — opcjonalna ręczna pauza („wyłącz na 24h")
 
-## 2) Rola "właściciel" przy zaproszeniu
-
-W bieżącym modelu `organization_members.role` ma już `'owner'` / `'member'`. Dodajemy możliwość zapraszania od razu jako owner.
-
-**Migracja `0043_invitation_owner_role.sql`:**
-- `alter table organization_invitations add column if not exists initial_role text not null default 'member' check (initial_role in ('member','owner'));`
-
-**Backend (`organizations.functions.ts`):**
-- `InvitationAccessSchema` + nowe pole `asOwner: boolean` (default false).
-- W `inviteUserToOrganization`:
-  - Wymagać aby zapraszający był ownerem (lub super_admin), jeśli `asOwner === true`. Adminowie aplikacji ok.
-  - Zapis do `initial_role`.
-- W `acceptInvitation` (src/lib/invitations.functions.ts) — przy tworzeniu `organization_members` ustawić `role = invitation.initial_role`. Jeśli owner — nie wpisywać `organization_member_permissions` (owner ma pełen dostęp z definicji).
-
-**UI (members.tsx):**
-- Nowy switch "Zaproś jako właściciel" widoczny tylko jeśli `currentUserIsOwner` (z `detailsQuery.data`, dodać flagę).
-- Gdy zaznaczone — pola `OrgPermissionsFields` ukryte (owner = pełen dostęp).
-
-**Sidebar/uprawnienia:** istniejąca logika już daje ownerom pełen dostęp; nie zmieniamy.
-
-**Usuwanie org / zapraszanie ownerów:** `deleteOrganization` już dziś wymaga ownera (zachować). W `inviteUserToOrganization` dodać check `asOwner ⇒ caller is owner`.
-
-## 3) Miękkie usuwanie organizacji (7 dni)
-
-**Migracja `0044_org_pending_deletion.sql`:**
-```sql
-alter table public.organizations
-  add column if not exists deletion_requested_at timestamptz,
-  add column if not exists deletion_scheduled_for timestamptz,
-  add column if not exists deletion_requested_by uuid references auth.users(id);
-
-create index if not exists organizations_pending_deletion_idx
-  on public.organizations (deletion_scheduled_for)
-  where deletion_scheduled_for is not null;
+**Nowa tabela `app_settings` (singleton key/value, tylko admin):**
 ```
+key text primary key
+value jsonb not null
+updated_at timestamptz, updated_by uuid
+```
+Seed wartości startowych:
+- `social.sync_inbox.max_posts` = 200
+- `social.sync_inbox.window_days` = 30
+- `social.sync_metrics.max_posts` = 200
+- `social.sync_metrics.window_days` = 30
+- `social.import_posts.per_account_limit` = 25
+- `social.import_posts.max_accounts` = 500
+- `social.ai_moderation.daily_budget_per_org` = 500 (twardy limit calls do OpenAI dziennie / org)
 
-**Backend — `organizations.functions.ts`:**
-- Zamiast natychmiastowego `deleteOrganization` (zostawić jako `forceDeleteOrganization` dla admina aplikacji), nowe:
-  - `requestOrganizationDeletion({ organizationId })` — owner only. Ustawia `deletion_requested_at = now()`, `deletion_scheduled_for = now() + 7 days`, `deletion_requested_by = uid`. Wstawia `user_notifications` (kind `org_deletion_requested`) dla wszystkich członków org z payloadem `{organization_id, organization_name, scheduled_for}`.
-  - `cancelOrganizationDeletion({ organizationId })` — owner only. Zeruje pola. Wstawia notyfikacje `org_deletion_cancelled` dla członków.
-- `getOrganizationDetails` zwraca dodatkowo `deletionRequestedAt`, `deletionScheduledFor`, `deletionRequestedBy`.
+RLS: select dla `authenticated` (potrzebne, by zwykli userzy nie musieli czytać — ale przyda się np. do UI „kiedy ostatnio sync"), update/insert/delete tylko `service_role` (zapis przez server fn z guard `requireAdmin`).
 
-**Cron / auto-purge:**
-- Nowy endpoint `src/routes/api/public/org-deletion-tick.ts` (Bearer `CRON_SECRET`) — wybiera org z `deletion_scheduled_for <= now()`, dla każdej wykonuje pełne usunięcie (delegacja do helpera używanego przez stare `deleteOrganization`).
-- Wpis w `vps/server.mjs` cron (lub instrukcja dla użytkownika do pg_cron). Na razie dodam endpoint + dopiszę do istniejącego pliku cron-runnera jeśli jest, w przeciwnym razie udokumentuję w `vps/README` że trzeba dodać harmonogram.
+**Nowa tabela `social_sync_runs` (audit / monitoring):**
+```
+id uuid pk, job text (sync-inbox|sync-metrics|import-posts),
+started_at, finished_at, duration_ms int,
+processed int, inserted int, ok int, fail int,
+skipped_permission int, skipped_disabled int,
+error_summary jsonb (top 5 ostatnich błędów)
+```
+Indeks po `(job, started_at desc)`. RLS: select dla admin, insert tylko `service_role`.
 
-**UI:**
-- `src/routes/_authenticated.organizations.$orgId.profile.tsx` (lub miejsce z przyciskiem usuń, sprawdzę): zastąpić natychmiastowe usuwanie przyciskiem "Zaplanuj usunięcie organizacji za 7 dni" (owner). Gdy `deletion_scheduled_for` ustawione — pokaż banner z datą i przyciskiem "Anuluj usunięcie" (owner).
-- `src/routes/_authenticated.organizations.$orgId.tsx` (layout org): banner ostrzegawczy dla wszystkich członków gdy `deletion_scheduled_for IS NOT NULL` — informacja kto i kiedy zaplanował usunięcie, data finalna.
-- (Opcjonalnie) lista powiadomień jeśli istnieje komponent `PendingInvitations`/notyfikacji — dorzucić obsługę typu `org_deletion_requested|cancelled`. Jeżeli nie ma globalnej dzwoneczka — wystarczy in-app banner + e-mail w drugiej iteracji.
+## 2. Server functions (`src/lib/admin-social.functions.ts`, nowy plik)
 
-## 4) i18n
-Nowe klucze (`pl.ts`/`en.ts`):
-- `organizations.members.invite_as_owner`, `..._help`, `..._only_owner_can_invite_owner`.
-- `organizations.deletion.request`, `..._scheduled`, `..._cancel`, `..._banner`, `..._scheduled_for`.
+- `getSocialSettings()` — pobiera wszystkie klucze `social.*` z `app_settings`. Guard: `requireAdmin`.
+- `updateSocialSettings({ patch })` — walidacja Zod z twardymi min/max (np. `max_posts ∈ [10, 1000]`, `window_days ∈ [1, 90]`), zapis batch, audit do `app_admin_audit` (jeśli istnieje, inaczej tylko `updated_by`). Guard: `requireAdmin`.
+- `listSyncRuns({ job?, limit=50 })` — historia ticków dla panelu. Guard: `requireAdmin`.
 
-## 5) Migracje do wykonania ręcznie
-Użytkownik musi uruchomić w panelu Supabase:
-- `0043_invitation_owner_role.sql`
-- `0044_org_pending_deletion.sql`
+Helper `src/lib/social-settings.server.ts` z cache 60s w pamięci modułu (worker request) — żeby cron nie pytał DB 3× za każdym tickiem.
 
-## Pliki dotknięte
-- `supabase/migrations/0043_invitation_owner_role.sql` (nowy)
-- `supabase/migrations/0044_org_pending_deletion.sql` (nowy)
-- `src/lib/organizations.functions.ts`
-- `src/lib/invitations.functions.ts`
-- `src/routes/_authenticated.organizations.$orgId.members.tsx`
-- `src/routes/_authenticated.organizations.$orgId.profile.tsx` (lub sekcja delete — zweryfikuję podczas implementacji)
-- `src/routes/_authenticated.organizations.$orgId.tsx` (banner)
-- `src/routes/api/public/org-deletion-tick.ts` (nowy)
-- `src/locales/pl.ts`, `src/locales/en.ts`
+## 3. Cron endpoints — zmiany
 
-## Pytanie
-Czy potrwierdzasz powyższy plan, czy chcesz coś zmienić (np. inny okres niż 7 dni, e-mail zamiast in-app banner, brak wymogu „tylko owner zaprasza ownera")?
+Wszystkie trzy (`social-import-posts.ts`, `social-sync-inbox.ts`, `social-sync-metrics.ts`):
+1. Na początku tick'a czytają limity z `app_settings` (fallback do dotychczasowych stałych).
+2. Filtr SQL rozszerzony o:
+   - `social_accounts.auto_sync_inbox = true`
+   - `social_accounts.sync_paused_until is null or sync_paused_until < now()`
+3. Po zakończeniu: insert do `social_sync_runs` z metrykami (processed, inserted, fail, skipped_permission, skipped_disabled, error_summary).
+
+**`social-sync-inbox.ts` dodatkowo:**
+- Po pomyślnym upsert nowych komentarzy, jeśli konto ma `auto_ai_moderation = true` ORAZ org nie przekroczyła dziennego budżetu (`social.ai_moderation.daily_budget_per_org` vs count z `ai_uzycie` z dziś), wywołuje `aiModerateComment` dla świeżo wstawionych wierszy (max 20 / tick / konto — żeby nie zarżnąć OpenAI).
+- Wynik (sentyment + flagi) zapisywany do `social_comments.ai_sentiment` / `ai_flags` (kolumny już istnieją).
+- Limit dzienny — wystarczy zliczyć `ai_uzycie` z dziś per organizacja; przy przekroczeniu pomijamy z `skipped_budget++`.
+
+## 4. UI — użytkownik (per konto)
+
+**`AccountDetailsDialog.tsx`** — nowa sekcja „Automatyzacja":
+- Switch `t('social.account.auto_sync')` → `auto_sync_inbox`
+- Switch `t('social.account.auto_ai_moderation')` → `auto_ai_moderation` z notką „wymaga skonfigurowanego klucza OpenAI w organizacji"
+- Przycisk „Wstrzymaj sync na 24h" → ustawia `sync_paused_until = now() + 24h`, pokazuje countdown jeśli aktywna
+- Disabled switch auto-AI, jeśli organizacja nie ma `ai_konfiguracja` z OpenAI
+
+Zmiany zapisywane przez istniejący `updateSocialAccount` (rozszerzenie payloadu) lub nowy `setAccountAutomation`.
+
+## 5. UI — administrator i-Future
+
+**Nowa strona `/admin/social` (`_authenticated.admin.social.tsx`):**
+- Dwa taby: **Limity** + **Historia synchronizacji**
+- **Limity**: formularz z polami liczbowymi dla wszystkich kluczy `social.*`, każde z min/max i tooltipem („wpływa na cron co X minut, sumarycznie dla wszystkich organizacji"). Submit → `updateSocialSettings`.
+- **Historia**: tabela z `social_sync_runs` (filtr po job), kolumny: kiedy, czas trwania, processed, ok, fail, skipped, ostatnie błędy (rozwijane). Auto-refresh co 30s.
+- Wejście w sidebarze admina (ikona `Share2`).
+
+## 6. i18n
+
+Klucze do `pl.ts` + `en.ts`:
+- `social.account.automation.*` (sekcja w dialogu konta)
+- `admin.nav.social`, `admin.social.title`, `admin.social.limits.*`, `admin.social.runs.*`
+
+## 7. Co świadomie NIE robimy w tej iteracji
+
+- Webhooków Meta (osobny temat — wymaga app review).
+- Per-organizacyjnego ustawiania częstotliwości crona (zgodnie z ustaleniem — to globalny parametr aplikacji).
+- Alarmów e-mail przy fail rate > X% (można dodać później po zobaczeniu danych w historii).
+
+## 8. Kolejność wdrożenia
+
+1. Migracja 0047 (user wykonuje ręcznie w Supabase).
+2. `social-settings.server.ts` + `admin-social.functions.ts`.
+3. Modyfikacja 3 cronów (filtr + zapis run + auto-AI w inbox).
+4. UI per-konto w `AccountDetailsDialog`.
+5. UI `/admin/social` + wpis w nawigacji.
+6. i18n pl/en.
+
+Daj znać czy zatwierdzasz — wtedy startuję od migracji.

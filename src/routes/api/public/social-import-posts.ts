@@ -1,79 +1,89 @@
 // Cron: synchronizacja postów opublikowanych poza aplikacją.
 // POST + nagłówek X-Cron-Secret = process.env.CRON_SECRET. Częstotliwość: co 30 min.
-//
-// Iteruje po wszystkich aktywnych kontach social_accounts (status='connected',
-// posiadających access_token_enc) i dla każdego wywołuje importPostsFromAccount.
+// Pomija konta z auto_sync_inbox=false lub aktywną pauzą (sync_paused_until > now).
+// Limity (per-account, max kont) — w app_settings.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { importPostsFromAccount } from "@/lib/social-import.server";
 import { getAdapter } from "@/lib/platforms/index.server";
-
-const PER_ACCOUNT_LIMIT = 25;
+import { getSocialSettings, recordSyncRun } from "@/lib/social-settings.server";
 
 type AccountRow = {
   id: string;
   organization_id: string;
   platform: string;
+  auto_sync_inbox: boolean;
+  sync_paused_until: string | null;
 };
 
 async function processTick() {
+  const startedAt = Date.now();
+  const settings = await getSocialSettings();
+
   const { data, error } = await supabaseAdmin
     .from("social_accounts")
-    .select("id, organization_id, platform")
+    .select("id, organization_id, platform, auto_sync_inbox, sync_paused_until")
     .eq("status", "connected")
     .not("access_token_enc", "is", null)
-    .limit(500);
+    .limit(settings.importMaxAccounts);
   if (error) throw new Error(error.message);
   const accounts = (data ?? []) as AccountRow[];
 
-  const summary: Array<{
-    account_id: string;
-    platform: string;
-    fetched: number;
-    inserted: number;
-    skipped: number;
-    error?: string;
-  }> = [];
+  let ok = 0;
+  let fail = 0;
+  let skippedDisabled = 0;
+  let totalFetched = 0;
+  let totalInserted = 0;
+  let totalSkipped = 0;
+  const errors: Array<{ ref: string; message: string }> = [];
 
   for (const acc of accounts) {
     const adapter = getAdapter(acc.platform);
     if (!adapter?.listRecentPosts) continue;
+    const pausedActive =
+      !!acc.sync_paused_until && new Date(acc.sync_paused_until) > new Date();
+    if (!acc.auto_sync_inbox || pausedActive) {
+      skippedDisabled++;
+      continue;
+    }
     try {
       const res = await importPostsFromAccount({
         organizationId: acc.organization_id,
         platform: acc.platform,
-        limit: PER_ACCOUNT_LIMIT,
+        limit: settings.importPerAccountLimit,
       });
-      summary.push({
-        account_id: acc.id,
-        platform: acc.platform,
-        ...res,
-      });
+      ok++;
+      totalFetched += res.fetched;
+      totalInserted += res.inserted;
+      totalSkipped += res.skipped;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[social-import-posts]", acc.platform, acc.id, msg);
-      summary.push({
-        account_id: acc.id,
-        platform: acc.platform,
-        fetched: 0,
-        inserted: 0,
-        skipped: 0,
-        error: msg,
-      });
+      fail++;
+      if (errors.length < 10) errors.push({ ref: `${acc.platform}:${acc.id}`, message: msg });
     }
   }
 
-  const totals = summary.reduce(
-    (acc, r) => ({
-      fetched: acc.fetched + r.fetched,
-      inserted: acc.inserted + r.inserted,
-      skipped: acc.skipped + r.skipped,
-    }),
-    { fetched: 0, inserted: 0, skipped: 0 },
-  );
+  await recordSyncRun({
+    job: "import-posts",
+    startedAt,
+    processed: accounts.length,
+    inserted: totalInserted,
+    ok,
+    fail,
+    skippedDisabled,
+    errors,
+    notes: `fetched=${totalFetched} skipped=${totalSkipped}`,
+  });
 
-  return { processed: accounts.length, totals, items: summary };
+  return {
+    processed: accounts.length,
+    ok,
+    fail,
+    skippedDisabled,
+    totals: { fetched: totalFetched, inserted: totalInserted, skipped: totalSkipped },
+  };
 }
 
 export const Route = createFileRoute("/api/public/social-import-posts")({
@@ -86,7 +96,7 @@ export const Route = createFileRoute("/api/public/social-import-posts")({
           return new Response("Unauthorized", { status: 401 });
         try {
           const out = await processTick();
-          return Response.json({ ok: true, result: out });
+          return Response.json({ success: true, result: out });
         } catch (e) {
           return Response.json(
             { ok: false, error: e instanceof Error ? e.message : String(e) },
