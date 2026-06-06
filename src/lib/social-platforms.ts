@@ -56,7 +56,7 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatformId, SocialPlatformMeta> = {
       "pages_read_engagement",
       "pages_manage_posts",
       "pages_manage_metadata",
-      "Configuration ID wymagane dla pages_read_user_content/pages_manage_engagement i uprawnień Instagram przez Facebook Login for Business",
+      "Configuration ID zalecane dla pełnej moderacji Facebooka; Instagram łącz osobno przez Instagram Login",
     ],
     envClientIdKey: "META_APP_ID",
   },

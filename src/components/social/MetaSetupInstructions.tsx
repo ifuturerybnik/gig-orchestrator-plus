@@ -6,8 +6,8 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * dla Concertivo. Spisana na podstawie udanej integracji produkcyjnej.
  *
  * Ważne fakty, które już zostały zweryfikowane w boju:
- *  - Instagram działa przez Facebook Login for Business dla Page-connected IG albo alternatywnie
- *    przez Business Login for Instagram. Moderacja komentarzy wymaga odpowiedniego scope'a.
+ *  - Facebook działa przez Facebook Login for Business, Instagram przez Business Login for Instagram.
+ *    To produkty w jednym panelu Meta, ale w Concertivo zapisujemy osobne ID/Secret per platforma.
  *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
@@ -33,12 +33,12 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">
-              {t("social.meta.intro_title", "Jedna aplikacja Meta = Facebook + Instagram")}
+              {t("social.meta.intro_title", "Jedna aplikacja Meta, osobne dane Facebook i Instagram")}
             </p>
             <p className="mt-1">
               {t(
                 "social.meta.intro_body",
-                "Tworzysz JEDNĄ aplikację w Meta for Developers i używasz tego samego App ID / App Secret do logowania Facebooka i Instagrama. Wystarczy raz przejść konfigurację.",
+                "Tworzysz jedną aplikację w Meta for Developers, ale Facebook i Instagram mają osobne dane logowania: Facebook App ID/Secret oraz Instagram App ID/Secret z sekcji Instagram. Wklej je w Concertivo przy właściwej platformie.",
               )}
             </p>
           </div>
