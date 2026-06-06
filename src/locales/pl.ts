@@ -1361,6 +1361,11 @@ export default
   "social": {
     "title": "Organizacja SM",
     "subtitle": "Połącz konta w social mediach z tą organizacją i zarządzaj publikacjami w jednym miejscu.",
+    "deprecated": {
+      "title": "Ten moduł to teraz integracje i diagnostyka",
+      "description": "Codzienna praca z social mediami i stronami WWW odbywa się w module AI Studio. Tutaj zostaje wyłącznie zarządzanie połączonymi kontami, podgląd techniczny i diagnostyka — dla adminów i integratorów.",
+      "cta": "Przejdź do AI Studio"
+    },
     "tabs": {
       "accounts": "Połączone konta",
       "inbox": "Skrzynka",
