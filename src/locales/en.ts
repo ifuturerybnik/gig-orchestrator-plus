@@ -1500,8 +1500,18 @@ export default
         "paused_until": "Sync paused until: {{time}}",
         "resume": "Resume sync",
         "saved": "Automation settings saved."
+      },
+      "youtube_refresh": {
+        "production_title": "Production mode — token does not expire",
+        "production_body": "Your Google OAuth project is in Production. The app refreshes the access token automatically; no action needed.",
+        "testing_title": "Testing mode — {{days}} days left until reconnect",
+        "testing_body": "Google expires the refresh token every 7 days when the OAuth project is in Testing. The app will remind you 2 days before.",
+        "testing_expires_at": "Expires: {{date}}",
+        "expired_title": "Refresh token expired — reconnect required",
+        "expired_body": "The app can no longer refresh YouTube access automatically. Disconnect below and reconnect."
       }
     },
+
     "post_status": {
       "draft": "Draft",
       "scheduled": "Scheduled",
