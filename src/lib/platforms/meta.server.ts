@@ -1006,69 +1006,27 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
-    const scopes = account.scopes ?? [];
-    const requiredScope = isInstagramLoginAccount(account) ? "instagram_business_manage_comments" : "instagram_manage_comments";
-    if (scopes.length > 0 && !scopes.includes(requiredScope)) {
-      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
+    const apiBase = ensureInstagramLoginAccount(account, `IG comment ${action}`);
+    const queryParams = new URLSearchParams();
+    if (action === "hide" || action === "unhide") {
+      queryParams.set("hide", action === "hide" ? "true" : "false");
     }
-    const attempts: string[] = [];
-    for (const base of igApiBases(account)) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      const queryParams = new URLSearchParams();
-      if (!isIgApi) queryParams.set("access_token", account.access_token);
-      if (action === "hide" || action === "unhide") {
-        queryParams.set("hide", action === "hide" ? "true" : "false");
-      }
-      const query = queryParams.toString();
-      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
-      try {
-        await graphJson<{ success?: boolean }>(
-          url,
-          {
-            method: action === "delete" ? "DELETE" : "POST",
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
-          },
-        );
-        return { ok: true };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        attempts.push(`${isIgApi ? "graph.instagram.com" : "graph.facebook.com"}: ${msg}`);
-      }
-    }
-    if (attempts.some(isMetaMissingPermissionError)) {
-      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
-    }
-    throw new Error(
-      `IG comment ${action}: nie udało się wykonać operacji.\n` +
-        attempts.map((a) => `• ${a}`).join("\n"),
+    const query = queryParams.toString();
+    await graphJson<{ success?: boolean }>(
+      `${apiBase}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`,
+      { method: action === "delete" ? "DELETE" : "POST", headers: { Authorization: `Bearer ${account.access_token}` }, context: `IG comment ${action} (Instagram API)` },
     );
+    return { ok: true };
   },
 
   async like({ account, target, externalId }): Promise<{ ok: boolean }> {
-    let lastError: unknown = null;
-    for (const base of igApiBases(account)) {
-      const isIgApi = base === INSTAGRAM_GRAPH;
-      const params = new URLSearchParams({
-        [target === "comment" ? "comment_id" : "media_id"]: externalId,
-      });
-      if (!isIgApi) params.set("access_token", account.access_token);
-      try {
-        await graphJson<{ success?: boolean }>(
-          `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
-          {
-            method: "POST",
-            body: params,
-            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
-            context: isIgApi ? "IG like (Instagram API)" : "IG like",
-          },
-        );
-        return { ok: true };
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error("IG like: nie udało się polubić.");
+    const apiBase = ensureInstagramLoginAccount(account, "IG like");
+    const params = new URLSearchParams({ [target === "comment" ? "comment_id" : "media_id"]: externalId });
+    await graphJson<{ success?: boolean }>(
+      `${apiBase}/${encodeURIComponent(account.external_account_id)}/likes`,
+      { method: "POST", body: params, headers: { Authorization: `Bearer ${account.access_token}` }, context: "IG like (Instagram API)" },
+    );
+    return { ok: true };
   },
 
   async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
