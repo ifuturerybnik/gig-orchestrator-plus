@@ -50,6 +50,7 @@ import { Route as ApiPublicSocialTiktokCallbackRouteImport } from './routes/api/
 import { Route as ApiPublicSocialSpotifyCallbackRouteImport } from './routes/api/public/social.spotify-callback'
 import { Route as ApiPublicSocialMetaCallbackRouteImport } from './routes/api/public/social.meta-callback'
 import { Route as ApiPublicSocialLinkedinCallbackRouteImport } from './routes/api/public/social.linkedin-callback'
+import { Route as ApiPublicSocialInstagramCallbackRouteImport } from './routes/api/public/social.instagram-callback'
 import { Route as AuthenticatedOrganizationsOrgIdWebRouteImport } from './routes/_authenticated.organizations.$orgId.web'
 import { Route as AuthenticatedOrganizationsOrgIdSocialRouteImport } from './routes/_authenticated.organizations.$orgId.social'
 import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './routes/_authenticated.organizations.$orgId.profile'
@@ -298,6 +299,12 @@ const ApiPublicSocialLinkedinCallbackRoute =
     path: '/api/public/social/linkedin-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSocialInstagramCallbackRoute =
+  ApiPublicSocialInstagramCallbackRouteImport.update({
+    id: '/api/public/social/instagram-callback',
+    path: '/api/public/social/instagram-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOrganizationsOrgIdWebRoute =
   AuthenticatedOrganizationsOrgIdWebRouteImport.update({
     id: '/web',
@@ -470,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
+  '/api/public/social/instagram-callback': typeof ApiPublicSocialInstagramCallbackRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -530,6 +538,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
+  '/api/public/social/instagram-callback': typeof ApiPublicSocialInstagramCallbackRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -595,6 +604,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/profile': typeof AuthenticatedOrganizationsOrgIdProfileRoute
   '/_authenticated/organizations/$orgId/social': typeof AuthenticatedOrganizationsOrgIdSocialRoute
   '/_authenticated/organizations/$orgId/web': typeof AuthenticatedOrganizationsOrgIdWebRoute
+  '/api/public/social/instagram-callback': typeof ApiPublicSocialInstagramCallbackRoute
   '/api/public/social/linkedin-callback': typeof ApiPublicSocialLinkedinCallbackRoute
   '/api/public/social/meta-callback': typeof ApiPublicSocialMetaCallbackRoute
   '/api/public/social/spotify-callback': typeof ApiPublicSocialSpotifyCallbackRoute
@@ -660,6 +670,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
     | '/organizations/$orgId/web'
+    | '/api/public/social/instagram-callback'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -720,6 +731,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/profile'
     | '/organizations/$orgId/social'
     | '/organizations/$orgId/web'
+    | '/api/public/social/instagram-callback'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -784,6 +796,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/profile'
     | '/_authenticated/organizations/$orgId/social'
     | '/_authenticated/organizations/$orgId/web'
+    | '/api/public/social/instagram-callback'
     | '/api/public/social/linkedin-callback'
     | '/api/public/social/meta-callback'
     | '/api/public/social/spotify-callback'
@@ -822,6 +835,7 @@ export interface RootRouteChildren {
   ApiPublicSocialPublishScheduledRoute: typeof ApiPublicSocialPublishScheduledRoute
   ApiPublicSocialSyncInboxRoute: typeof ApiPublicSocialSyncInboxRoute
   ApiPublicSocialSyncMetricsRoute: typeof ApiPublicSocialSyncMetricsRoute
+  ApiPublicSocialInstagramCallbackRoute: typeof ApiPublicSocialInstagramCallbackRoute
   ApiPublicSocialLinkedinCallbackRoute: typeof ApiPublicSocialLinkedinCallbackRoute
   ApiPublicSocialMetaCallbackRoute: typeof ApiPublicSocialMetaCallbackRoute
   ApiPublicSocialSpotifyCallbackRoute: typeof ApiPublicSocialSpotifyCallbackRoute
@@ -1123,6 +1137,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/social/linkedin-callback'
       fullPath: '/api/public/social/linkedin-callback'
       preLoaderRoute: typeof ApiPublicSocialLinkedinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/social/instagram-callback': {
+      id: '/api/public/social/instagram-callback'
+      path: '/api/public/social/instagram-callback'
+      fullPath: '/api/public/social/instagram-callback'
+      preLoaderRoute: typeof ApiPublicSocialInstagramCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/organizations/$orgId/web': {
@@ -1439,6 +1460,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSocialPublishScheduledRoute: ApiPublicSocialPublishScheduledRoute,
   ApiPublicSocialSyncInboxRoute: ApiPublicSocialSyncInboxRoute,
   ApiPublicSocialSyncMetricsRoute: ApiPublicSocialSyncMetricsRoute,
+  ApiPublicSocialInstagramCallbackRoute: ApiPublicSocialInstagramCallbackRoute,
   ApiPublicSocialLinkedinCallbackRoute: ApiPublicSocialLinkedinCallbackRoute,
   ApiPublicSocialMetaCallbackRoute: ApiPublicSocialMetaCallbackRoute,
   ApiPublicSocialSpotifyCallbackRoute: ApiPublicSocialSpotifyCallbackRoute,
