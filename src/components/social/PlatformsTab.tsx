@@ -61,6 +61,13 @@ export function PlatformsTab({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setAiOpen(true)}>
+          <Bot className="mr-2 h-4 w-4" />
+          {t("social.diagnostics_ai.open", { defaultValue: "AI diagnostyka integracji" })}
+        </Button>
+      </div>
+
       <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
