@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -131,6 +131,12 @@ export function AppCredentialsForm({
   };
 
   const existing = credQ.data;
+
+  useEffect(() => {
+    if (platform === "facebook" && existing?.metaConfigId) {
+      setMetaConfigId(existing.metaConfigId);
+    }
+  }, [existing?.metaConfigId, platform]);
 
   return (
     <div className="space-y-4">
