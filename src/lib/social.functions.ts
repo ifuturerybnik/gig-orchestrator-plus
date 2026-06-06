@@ -77,7 +77,7 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
       )
       .eq("organization_id", data.organizationId)
       .order("connected_at", { ascending: false });
-    let rows = accountsResult.data;
+    const rows = accountsResult.data;
     const error = accountsResult.error;
     if (error) throw new Error(error.message);
     return { items: (rows ?? []) as SocialAccountRow[] };
@@ -1495,7 +1495,7 @@ export const publishPostNow = createServerFn({ method: "POST" })
 // (np. developer.x.com) i wklejają Client ID + Client Secret w UI.
 // Secret szyfrujemy AES-256-GCM (crypto.server.ts).
 
-import { encryptPii, decryptPii } from "./crypto.server";
+import { encryptPii } from "./crypto.server";
 import { randomBytes, createHash } from "crypto";
 
 export const getAppCredentials = createServerFn({ method: "GET" })
