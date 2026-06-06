@@ -39,6 +39,7 @@ import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_aut
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
 import { Route as AuthenticatedContactsMeRouteImport } from './routes/_authenticated.contacts.me'
 import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated.admin.storage'
+import { Route as AuthenticatedAdminSocialRouteImport } from './routes/_authenticated.admin.social'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
@@ -233,6 +234,12 @@ const AuthenticatedAdminStorageRoute =
   AuthenticatedAdminStorageRouteImport.update({
     id: '/storage',
     path: '/storage',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSocialRoute =
+  AuthenticatedAdminSocialRouteImport.update({
+    id: '/social',
+    path: '/social',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminApprovalsRoute =
@@ -447,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
@@ -509,6 +517,7 @@ export interface FileRoutesByTo {
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
@@ -574,6 +583,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/_authenticated/admin/social': typeof AuthenticatedAdminSocialRoute
   '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/_authenticated/contacts/me': typeof AuthenticatedContactsMeRoute
   '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
@@ -640,6 +650,7 @@ export interface FileRouteTypes {
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
+    | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
     | '/organizations/$orgId'
@@ -702,6 +713,7 @@ export interface FileRouteTypes {
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
+    | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
     | '/organizations/new'
@@ -766,6 +778,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/administrators'
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/approvals'
+    | '/_authenticated/admin/social'
     | '/_authenticated/admin/storage'
     | '/_authenticated/contacts/me'
     | '/_authenticated/organizations/$orgId'
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminStorageRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/social': {
+      id: '/_authenticated/admin/social'
+      path: '/social'
+      fullPath: '/admin/social'
+      preLoaderRoute: typeof AuthenticatedAdminSocialRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/approvals'
@@ -1300,6 +1320,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAdministratorsRoute: typeof AuthenticatedAdminAdministratorsRoute
   AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
+  AuthenticatedAdminSocialRoute: typeof AuthenticatedAdminSocialRoute
   AuthenticatedAdminStorageRoute: typeof AuthenticatedAdminStorageRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -1308,6 +1329,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAdministratorsRoute: AuthenticatedAdminAdministratorsRoute,
   AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
+  AuthenticatedAdminSocialRoute: AuthenticatedAdminSocialRoute,
   AuthenticatedAdminStorageRoute: AuthenticatedAdminStorageRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
