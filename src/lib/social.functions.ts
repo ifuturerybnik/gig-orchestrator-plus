@@ -76,7 +76,7 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
     const accountsResult = await supabase
       .from("social_accounts")
       .select(
-        "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
+        "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at, auto_sync_inbox, auto_ai_moderation, sync_paused_until",
       )
       .eq("organization_id", data.organizationId)
       .order("connected_at", { ascending: false });
