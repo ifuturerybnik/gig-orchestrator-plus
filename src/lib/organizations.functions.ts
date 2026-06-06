@@ -7,6 +7,8 @@ import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
 import { normalizeNip } from "@/lib/nip";
 import {
   CONFIGURABLE_MODULE_IDS,
+  AI_STUDIO_MODES,
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
