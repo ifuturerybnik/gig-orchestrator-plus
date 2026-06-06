@@ -70,7 +70,7 @@ export function AppCredentialsForm({
   const [clientSecret, setClientSecret] = useState("");
   const [metaConfigId, setMetaConfigId] = useState("");
   const [showSecret, setShowSecret] = useState(false);
-  const isMetaPlatform = platform === "facebook" || platform === "instagram";
+  const isFacebookPlatform = platform === "facebook";
 
   // Slug callback URL: X używa "x", Facebook+Instagram dzielą "meta",
   // Spotify używa skróconego "spotify", reszta = id platformy.
@@ -95,7 +95,7 @@ export function AppCredentialsForm({
           platform,
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
-          metaConfigId: isMetaPlatform ? metaConfigId.trim() : undefined,
+          metaConfigId: isFacebookPlatform ? metaConfigId.trim() : undefined,
         },
       }),
     onSuccess: () => {
@@ -263,7 +263,7 @@ export function AppCredentialsForm({
           </p>
         </div>
 
-        {isMetaPlatform && (
+        {isFacebookPlatform && (
           <div className="space-y-2">
             <Label htmlFor="meta-config-id">Facebook Login for Business — Configuration ID</Label>
             <Input

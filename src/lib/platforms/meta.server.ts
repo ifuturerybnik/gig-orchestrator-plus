@@ -276,15 +276,15 @@ export async function exchangeLongLivedInstagramToken(args: {
 
 export async function fetchInstagramLoginProfile(accessToken: string): Promise<{ id: string; username: string }> {
   const j = await graphJson<{
-    user_id?: string;
+    id?: string;
     username?: string;
-    data?: Array<{ user_id?: string; username?: string }>;
-  }>(`${INSTAGRAM_GRAPH}/me?fields=user_id,username&access_token=${encodeURIComponent(accessToken)}`, {
+    data?: Array<{ id?: string; username?: string }>;
+  }>(`${INSTAGRAM_GRAPH}/me?fields=id,username&access_token=${encodeURIComponent(accessToken)}`, {
     context: "Instagram /me",
   });
   const item = j.data?.[0] ?? j;
-  if (!item.user_id || !item.username) throw new Error("Instagram /me: brak user_id lub username.");
-  return { id: String(item.user_id), username: item.username };
+  if (!item.id || !item.username) throw new Error("Instagram /me: brak id lub username.");
+  return { id: String(item.id), username: item.username };
 }
 
 export type MetaPage = {
@@ -851,12 +851,13 @@ export const instagramAdapter: PlatformAdapter = {
     let views = 0;
     try {
       const ins = await graphJson<{
-        data?: Array<{ name: string; values?: Array<{ value: number }> }>;
+        data?: Array<{ name: string; total_value?: { value?: number }; values?: Array<{ value: number }> }>;
       }>(
         `${apiBase}/${encodeURIComponent(externalPostId)}/insights?metric=reach&access_token=${encodeURIComponent(account.access_token)}`,
         { context: "IG insights" },
       );
-      views = ins.data?.find((d) => d.name === "reach")?.values?.[0]?.value ?? 0;
+      const reach = ins.data?.find((d) => d.name === "reach");
+      views = reach?.total_value?.value ?? reach?.values?.[0]?.value ?? 0;
     } catch {
       views = 0;
     }
@@ -1025,21 +1026,26 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async moderateComment({ account, externalCommentId, action }): Promise<{ ok: boolean }> {
+    const scopes = account.scopes ?? [];
+    const requiredScope = isInstagramLoginAccount(account) ? "instagram_business_manage_comments" : "instagram_manage_comments";
+    if (scopes.length > 0 && !scopes.includes(requiredScope)) {
+      throw new Error(explainMetaCommentPermissionError(account, `IG comment ${action}`));
+    }
     const attempts: string[] = [];
     for (const base of igApiBases(account)) {
       const isIgApi = base === INSTAGRAM_GRAPH;
-      const query = isIgApi ? "" : `access_token=${encodeURIComponent(account.access_token)}`;
-      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
-      const body = new URLSearchParams();
+      const queryParams = new URLSearchParams();
+      if (!isIgApi) queryParams.set("access_token", account.access_token);
       if (action === "hide" || action === "unhide") {
-        body.set(isIgApi ? "hide" : "is_hidden", action === "hide" ? "true" : "false");
+        queryParams.set("hide", action === "hide" ? "true" : "false");
       }
+      const query = queryParams.toString();
+      const url = `${base}/${encodeURIComponent(externalCommentId)}${query ? `?${query}` : ""}`;
       try {
         await graphJson<{ success?: boolean }>(
           url,
           {
             method: action === "delete" ? "DELETE" : "POST",
-            body: action === "delete" ? undefined : body,
             headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
             context: isIgApi ? `IG comment ${action} (Instagram API)` : `IG comment ${action}`,
           },
@@ -1060,16 +1066,22 @@ export const instagramAdapter: PlatformAdapter = {
   },
 
   async like({ account, target, externalId }): Promise<{ ok: boolean }> {
-    const params = new URLSearchParams({
-      access_token: account.access_token,
-      [target === "comment" ? "comment_id" : "media_id"]: externalId,
-    });
     let lastError: unknown = null;
-    for (const base of [GRAPH, INSTAGRAM_GRAPH]) {
+    for (const base of igApiBases(account)) {
+      const isIgApi = base === INSTAGRAM_GRAPH;
+      const params = new URLSearchParams({
+        [target === "comment" ? "comment_id" : "media_id"]: externalId,
+      });
+      if (!isIgApi) params.set("access_token", account.access_token);
       try {
         await graphJson<{ success?: boolean }>(
           `${base}/${encodeURIComponent(account.external_account_id)}/likes`,
-          { method: "POST", body: params, context: base === INSTAGRAM_GRAPH ? "IG like (Instagram API)" : "IG like" },
+          {
+            method: "POST",
+            body: params,
+            headers: isIgApi ? { Authorization: `Bearer ${account.access_token}` } : undefined,
+            context: isIgApi ? "IG like (Instagram API)" : "IG like",
+          },
         );
         return { ok: true };
       } catch (e) {
