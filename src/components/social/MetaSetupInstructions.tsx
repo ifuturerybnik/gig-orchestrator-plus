@@ -6,9 +6,8 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * dla Concertivo. Spisana na podstawie udanej integracji produkcyjnej.
  *
  * Ważne fakty, które już zostały zweryfikowane w boju:
- *  - Facebook Login for Business może zapisać Facebook Page oraz powiązany Instagram Business/Creator.
- *  - Osobny Instagram Login zostaje jako alternatywna ścieżka dla bezpośredniego tokena IG.
- *  - Minimalne scope'y dla wykrycia IG przez Page: instagram_basic + pages_show_list.
+ *  - Facebook Login for Business zapisuje tylko Facebook Page.
+ *  - Instagram Login API zapisuje osobny token IG wymagany do publikacji i moderacji komentarzy.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
  *  - Redirect URI musi być DOKŁADNIE taki sam jak callbackUrl poniżej (z https://).
@@ -33,12 +32,12 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">
-              {t("social.meta.intro_title", "Facebook może podłączyć też powiązany Instagram")}
+              {t("social.meta.intro_title", "Facebook i Instagram łączymy osobnymi flow")}
             </p>
             <p className="mt-1">
               {t(
                 "social.meta.intro_body",
-                "Jeśli konto Instagram Business/Creator jest połączone z wybraną stroną Facebook, Concertivo zapisze oba konta po autoryzacji Facebook Login for Business. Osobny Instagram Login jest potrzebny tylko jako alternatywna ścieżka bezpośredniego tokena IG.",
+                "Facebook Login for Business zapisuje wyłącznie stronę Facebook. Instagram musi być połączony osobno przyciskiem „Połącz z Instagram”, aby używać tokena Instagram Login API z uprawnieniem instagram_business_manage_comments.",
               )}
             </p>
           </div>
@@ -281,7 +280,7 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
             <b>App domain:</b> <code className="rounded bg-background px-1 py-0.5">{appDomain}</code>
           </li>
           <li>
-            <b>Redirect URI (FB + IG, identyczny):</b>{" "}
+             <b>Redirect URI tej platformy:</b>{" "}
             <code className="break-all rounded bg-background px-1 py-0.5">{callbackUrl}</code>
           </li>
           <li>
