@@ -27,7 +27,7 @@ import {
   listSocialSyncRuns,
   type SyncRunRow,
 } from "@/lib/admin-social.functions";
-import { SOCIAL_SETTINGS_BOUNDS, type SocialSettings } from "@/lib/social-settings.server";
+import { SOCIAL_SETTINGS_BOUNDS, type SocialSettings } from "@/lib/social-settings";
 
 export const Route = createFileRoute("/_authenticated/admin/social")({
   component: AdminSocialPage,
