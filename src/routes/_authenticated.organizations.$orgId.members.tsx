@@ -239,6 +239,8 @@ function OrganizationMembersPage() {
                   onBudgetModeChange={setInviteBudgetMode}
                   eventsMode={inviteEventsMode}
                   onEventsModeChange={setInviteEventsMode}
+                  aiStudioMode={inviteAiStudioMode}
+                  onAiStudioModeChange={setInviteAiStudioMode}
                   fieldIdPrefix="invite-permissions"
                 />
               </div>
