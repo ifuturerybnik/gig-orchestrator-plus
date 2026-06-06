@@ -61,6 +61,12 @@ function AdminLayout() {
       icon: HardDrive,
       show: true,
     },
+    {
+      to: "/admin/social",
+      label: t("admin.nav.social"),
+      icon: Share2,
+      show: true,
+    },
   ];
 
   return (
