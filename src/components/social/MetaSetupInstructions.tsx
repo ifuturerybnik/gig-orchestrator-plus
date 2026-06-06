@@ -124,31 +124,55 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
         <h4 className="font-semibold">
           {t("social.meta.step3_title", "Krok 3 — Facebook Login for Business (dla Facebooka)")}
         </h4>
+        <p className="text-muted-foreground text-xs">
+          Facebook Login for Business używa <b>Configuration ID</b> — to „szablon" uprawnień, który dostajesz po
+          utworzeniu konfiguracji. Bez Configuration ID Facebook nie pozwoli się połączyć.
+        </p>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
             W menu po lewej kliknij <b>Add product</b> i przy <b>Facebook Login for Business</b> kliknij <b>Set up</b>.
           </li>
           <li>
-            Wejdź w <b>Facebook Login for Business</b> → <b>Settings</b>.
-          </li>
-          <li>
-            <b>Client OAuth login:</b> <b>Yes</b>
-          </li>
-          <li>
-            <b>Web OAuth login:</b> <b>Yes</b>
-          </li>
-          <li>
-            <b>Enforce HTTPS:</b> <b>Yes</b>
-          </li>
-          <li>
-            <b>Valid OAuth Redirect URIs</b> — wklej DOKŁADNIE ten adres (musi się zgadzać co do znaku):
-            <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
-          </li>
-          <li>
-            Utwórz konfigurację w <b>Facebook Login for Business → Configurations</b> z dostępem do Facebook Pages oraz Instagram i skopiuj jej <b>Configuration ID</b> do formularza w Concertivo.
-          </li>
-          <li>
+            Wejdź w <b>Facebook Login for Business</b> → <b>Settings</b> i ustaw:
+            <ul className="ml-1 mt-1 list-disc space-y-0.5 pl-5">
+              <li><b>Client OAuth login:</b> Yes</li>
+              <li><b>Web OAuth login:</b> Yes</li>
+              <li><b>Enforce HTTPS:</b> Yes</li>
+              <li>
+                <b>Valid OAuth Redirect URIs</b> — wklej DOKŁADNIE (skopiuj przyciskiem, nie przepisuj):
+                <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
+              </li>
+            </ul>
             Kliknij <b>Save changes</b>.
+          </li>
+          <li>
+            Przejdź do <b>Facebook Login for Business → Configurations</b> i kliknij <b>Create configuration</b>.
+          </li>
+          <li>
+            <b>Access token type:</b> zaznacz <b>User access token</b> (NIE „System-user") → <b>Next</b>.
+          </li>
+          <li>
+            Krok <b>Assets</b> może być niedostępny przy User access token — to normalne, użytkownik wybierze Strony/IG
+            podczas logowania.
+          </li>
+          <li>
+            <b>Select permissions</b> — zaznacz:
+            <div className="mt-1 flex flex-wrap gap-1">
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">pages_show_list</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">pages_read_engagement</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">pages_manage_posts</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">pages_manage_metadata</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">pages_read_user_content</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">business_management</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">public_profile</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_basic</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_content_publish</code>
+            </div>
+            Kliknij <b>Create</b>.
+          </li>
+          <li>
+            Skopiuj <b>Configuration ID</b> (długi numer) z listy konfiguracji — wkleisz go w formularzu Facebook
+            w Concertivo razem z App ID i App secret.
           </li>
         </ol>
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
@@ -164,49 +188,67 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
       {/* === ETAP 4: Instagram === */}
       <section className="space-y-2">
         <h4 className="font-semibold">
-          {t("social.meta.step4_title", "Krok 4 — Instagram (Business Login for Instagram)")}
+          {t("social.meta.step4_title", "Krok 4 — Instagram (API with Instagram Login)")}
         </h4>
         <p className="text-muted-foreground">
-              Instagram do publikacji i komentarzy łączymy bezpośrednio przez <i>Instagram API with Instagram Login</i>.
-              Facebook Page łączymy osobno przez <i>Facebook Login for Business</i> z Configuration ID.
+          Instagram w Concertivo łączymy <b>osobnym flow</b>, niezależnym od Facebooka. Instagram ma własne App ID,
+          App Secret, własny Redirect URI i własny token. To NIE jest token z Facebook Login for Business.
         </p>
         <ol className="ml-1 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
-            W menu po lewej kliknij <b>Add product</b> i przy <b>Instagram</b> kliknij <b>Set up</b>.
+            W lewym sidebarze rozwiń <b>Use cases</b> (Przykłady użycia) i przy
+            <b> „Manage messaging &amp; content on Instagram"</b> kliknij <b>Customize</b>.
+            <span className="block text-xs mt-0.5">
+              (Jeśli use case nie jest dodany — kliknij <b>Add use cases</b> w prawym górnym rogu i wybierz go z listy.)
+            </span>
           </li>
           <li>
-            Wejdź w <b>Instagram</b> → <b>API setup with Instagram login</b>.
+            Wejdź w <b>API setup with Instagram business login</b>. Zobaczysz 5 ponumerowanych sekcji.
           </li>
           <li>
-            W sekcji <b>2. Generate access tokens</b> kliknij <b>Add account</b> i połącz konto Instagram <b>Business</b> lub <b>Creator</b>, którym chcesz zarządzać przez Concertivo.
+            Sekcja <b>1. Generate access tokens</b> → kliknij <b>Add all required permissions</b>. Doda:
+            <div className="mt-1 flex flex-wrap gap-1">
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_basic</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_content_publish</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_manage_comments</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_manage_messages</code>
+            </div>
           </li>
           <li>
-            W sekcji <b>3. Configure webhooks</b> możesz na razie pominąć (Concertivo synchronizuje po API).
+            Sekcja <b>2. Generate access tokens</b> → <b>Add account</b> → zaloguj się kontem IG <b>Business</b> lub
+            <b> Creator</b>, które ma być zarządzane przez Concertivo, i autoryzuj.
           </li>
           <li>
-            W sekcji <b>4. Set up Instagram business login</b> kliknij <b>Set up</b>:
+            Sekcja <b>3. Configure webhooks</b> — <b>pomiń</b>. Concertivo synchronizuje przez polling.
+          </li>
+          <li>
+            Sekcja <b>4. Set up Instagram business login</b> → <b>Set up</b>:
             <ul className="ml-1 mt-1 list-disc space-y-1 pl-5">
               <li>
-                <b>OAuth redirect URI:</b> wklej DOKŁADNIE:
+                <b>OAuth Redirect URIs</b> — pole przyjmuje <b>tylko JEDEN URL</b>. Wpisz DOKŁADNIE:
                 <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-xs">{callbackUrl}</code>
+                <span className="block text-xs mt-0.5">
+                  Jeśli chcesz testować z preview Lovable, tymczasowo zmień ten URL na adres preview i wróć do
+                  produkcyjnego przy publikacji.
+                </span>
               </li>
               <li>
-                <b>Deauthorize callback URL</b> i <b>Data deletion request URL:</b> możesz wpisać{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs">https://{appDomain}/privacy</code>{" "}
-                (Meta tego wymaga, ale dla MVP wystarczy strona polityki).
+                <b>Deauthorize callback URL:</b>{" "}
+                <code className="break-all rounded bg-muted px-1 py-0.5 text-xs">https://{appDomain}/api/public/meta-data-deletion</code>
               </li>
               <li>
-                <b>Permissions</b> — zaznacz minimum:
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_basic</code>
-                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_content_publish</code>
-                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">instagram_business_manage_comments</code>
-                </div>
+                <b>Data deletion request URL:</b>{" "}
+                <code className="break-all rounded bg-muted px-1 py-0.5 text-xs">https://{appDomain}/api/public/meta-data-deletion</code>
+              </li>
+              <li>
+                <b>Embed URL</b> (jeśli pole jest): <code className="rounded bg-muted px-1 py-0.5 text-xs">https://{appDomain}</code>
               </li>
             </ul>
+            Kliknij <b>Save</b>. Krok 4 musi mieć zielony ✓.
           </li>
           <li>
-            Kliknij <b>Save changes</b>.
+            W tej samej sekcji skopiuj <b>Instagram App ID</b> oraz <b>Instagram App Secret</b> — to są <b>inne wartości</b>
+            niż App ID/Secret z App Settings → Basic (które dotyczą Facebooka). Wkleisz je w formularzu Instagram w Concertivo.
           </li>
         </ol>
         <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-100">
