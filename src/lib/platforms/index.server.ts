@@ -36,18 +36,19 @@ export async function getAppCredentialsServer(
   organizationId: string,
   platform: string,
 ): Promise<{ clientId: string; clientSecret: string } | null> {
-  // Facebook Login i Instagram Login to osobne produkty OAuth — nie mieszamy
-  // Client ID/Secret między platformami.
-  const lookupPlatform = platform;
+  // Instagram może być podłączony na dwa sposoby:
+  // 1) osobny Instagram Login (credentials pod platform="instagram"),
+  // 2) Facebook Login for Business jako IG powiązany ze stroną (fallback na platform="facebook").
+  const lookupPlatforms = platform === "instagram" ? ["instagram", "facebook"] : [platform];
   const { data, error } = await supabaseAdmin
     .from("social_app_credentials")
-    .select("client_id, client_secret_enc")
+    .select("client_id, client_secret_enc, platform")
     .eq("organization_id", organizationId)
-    .eq("platform", lookupPlatform)
-    .maybeSingle();
+    .in("platform", lookupPlatforms);
   if (error) throw new Error(error.message);
-  if (!data) return null;
-  const row = data as { client_id: string; client_secret_enc: string };
+  const rows = (data ?? []) as Array<{ client_id: string; client_secret_enc: string; platform: string }>;
+  const row = rows.find((r) => r.platform === platform) ?? rows[0] ?? null;
+  if (!row) return null;
   const secret = decryptPii(row.client_secret_enc);
   if (!secret) throw new Error("Nie udało się odszyfrować Client Secret.");
   return { clientId: row.client_id, clientSecret: secret };
