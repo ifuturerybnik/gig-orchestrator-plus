@@ -146,15 +146,14 @@ function maskClientId(s: string): string {
   return `${s.slice(0, 4)}${"•".repeat(Math.max(4, s.length - 8))}${s.slice(-4)}`;
 }
 
-// Meta: Instagram dzieli aplikację z Facebookiem — credentials zapisujemy
-// zawsze pod platformą "facebook", niezależnie od karty w UI.
+// Meta ma jedną aplikację developerską, ale dwa różne produkty OAuth:
+// Facebook Login for Business i Instagram Login. Credentials trzymamy osobno,
+// bo Instagram Login używa Instagram App ID/Secret z panelu Instagram.
 function credPlatform(p: string): string {
-  return p === "instagram" ? "facebook" : p;
+  return p;
 }
 function credPlatformCandidates(p: string): string[] {
-  return p === "instagram" || p === "facebook"
-    ? ["facebook", "instagram"]
-    : [p];
+  return [p];
 }
 
 
