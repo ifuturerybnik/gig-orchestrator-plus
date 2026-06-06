@@ -11,21 +11,41 @@ export function YouTubeSetupInstructions({ callbackUrl }: { callbackUrl: string 
         <li>
           Otwórz{" "}
           <a
-            href="https://console.cloud.google.com/apis/dashboard"
+            href="https://console.cloud.google.com/"
             target="_blank"
             rel="noreferrer"
             className="text-primary underline"
           >
             Google Cloud Console <ExternalLink className="inline h-3 w-3" />
           </a>{" "}
-          i utwórz projekt (lub wybierz istniejący).
+          i utwórz nowy projekt (lub wybierz istniejący).
         </li>
         <li>
-          W „APIs &amp; Services → Library" włącz <b>YouTube Data API v3</b>.
+          Włącz <b>YouTube Data API v3</b>: przejdź do{" "}
+          <i>APIs &amp; Services → Library</i>, wyszukaj „YouTube Data API v3" i kliknij <b>Enable</b>.
         </li>
         <li>
-          W „APIs &amp; Services → OAuth consent screen" wybierz <b>External</b>, wypełnij
-          nazwę, e-mail wsparcia. W sekcji <b>Scopes</b> dodaj:
+          Przejdź do <i>APIs &amp; Services → OAuth consent screen</i> (obecnie nazywane{" "}
+          <b>Platforma uwierzytelniania Google</b>).
+          Kliknij <b>Utwórz</b> / <b>Rozpocznij</b> i przejdź przez kroki:
+          <ol className="ml-5 mt-1 list-[lower-alpha] space-y-1">
+            <li>
+              <b>Informacje o aplikacji</b> — Nazwa: <code>Concertivo</code>; E-mail wsparcia: Twój adres Google.
+            </li>
+            <li>
+              <b>Odbiorcy</b> — wybierz <b>Zewnętrzni (External)</b>.
+            </li>
+            <li>
+              <b>Dane kontaktowe</b> — wpisz ten sam e-mail.
+            </li>
+            <li>
+              <b>Zakończ</b> — zaakceptuj warunki i utwórz.
+            </li>
+          </ol>
+        </li>
+        <li>
+          Dodaj zakresy YouTube: w lewym menu kliknij <b>Dostęp do danych</b> →{" "}
+          <b>Dodaj lub usuń zakresy</b>. W filtrze wpisz <code>youtube</code> i zaznacz:
           <code className="ml-1 block break-all rounded bg-muted px-1.5 py-1 text-xs">
             https://www.googleapis.com/auth/youtube.upload
             <br />
@@ -33,18 +53,28 @@ export function YouTubeSetupInstructions({ callbackUrl }: { callbackUrl: string 
             <br />
             https://www.googleapis.com/auth/youtube.force-ssl
           </code>
-          W sekcji <b>Test users</b> dodaj swój e-mail Google (zanim app przejdzie
-          weryfikację Google, tylko test users mogą się autoryzować).
         </li>
         <li>
-          W „APIs &amp; Services → Credentials" kliknij <b>Create Credentials → OAuth client ID</b>
-          , typ <b>Web application</b>. W polu <b>Authorized redirect URIs</b> wklej:
+          Dodaj użytkownika testowego: w lewym menu kliknij <b>Odbiorcy</b> → w sekcji{" "}
+          <b>Użytkownicy testowi</b> dodaj swój e-mail Google. Bez tego Google zablokuje logowanie
+          zanim aplikacja przejdzie weryfikację.
+        </li>
+        <li>
+          Utwórz Client ID: na górze strony kliknij <b>Utwórz klienta OAuth</b> (lub przejdź do{" "}
+          <i>Credentials → Create Credentials → OAuth client ID</i>).
+          Wybierz typ <b>Aplikacja internetowa</b>.
+          W sekcji <b>Autoryzowane identyfikatory URI przekierowania</b> kliknij <b>Dodaj URI</b> i wklej:
           <code className="ml-1 block break-all rounded bg-muted px-1.5 py-1 text-xs">
             {callbackUrl}
           </code>
+          (dodaj też wersję produkcyjną, np.{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">https://concertivo.eu/api/public/social/youtube-callback</code>, jeśli masz już domenę).
         </li>
         <li>
-          Skopiuj <b>Client ID</b> i <b>Client Secret</b> i wklej je poniżej.
+          Skopiuj <b>Identyfikator klienta</b> i <b>Tajny klucz klienta</b>.
+          Identyfikator to losowy ciąg znaków (np. 12 cyfr + myślnik + znaki) kończący się{" "}
+          <code>.apps.googleusercontent.com</code> — to normalny format.
+          Wklej oba pola poniżej.
         </li>
       </ol>
       <p className="text-xs text-muted-foreground">
