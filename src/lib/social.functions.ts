@@ -69,7 +69,7 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
     z.object({ organizationId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<{ items: SocialAccountRow[] }> => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
     const accountsResult = await supabase
       .from("social_accounts")
       .select(
