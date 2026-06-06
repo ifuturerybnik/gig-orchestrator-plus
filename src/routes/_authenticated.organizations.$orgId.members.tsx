@@ -54,6 +54,7 @@ function OrganizationMembersPage() {
   );
   const [inviteBudgetMode, setInviteBudgetMode] = useState<BudgetPermissionMode>("full");
   const [inviteEventsMode, setInviteEventsMode] = useState<EventsPermissionMode>("full");
+  const [inviteAiStudioMode, setInviteAiStudioMode] = useState<AiStudioPermissionMode>("full");
   const [permMember, setPermMember] = useState<{ id: string; label: string } | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
