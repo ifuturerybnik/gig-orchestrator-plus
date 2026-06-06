@@ -126,7 +126,37 @@ export function AccountDetailsDialog({
       toast.error(e instanceof Error ? e.message : String(e)),
   });
 
+  const automationFn = useServerFn(setAccountAutomation);
+  const [autoSync, setAutoSync] = useState<boolean>(account.auto_sync_inbox);
+  const [autoAi, setAutoAi] = useState<boolean>(account.auto_ai_moderation);
+  const pausedUntil = account.sync_paused_until
+    ? new Date(account.sync_paused_until)
+    : null;
+  const isPaused = !!pausedUntil && pausedUntil > new Date();
+
+  const automationM = useMutation({
+    mutationFn: (patch: {
+      autoSyncInbox?: boolean;
+      autoAiModeration?: boolean;
+      syncPausedUntil?: string | null;
+    }) =>
+      automationFn({
+        data: {
+          organizationId: account.organization_id,
+          accountId: account.id,
+          ...patch,
+        },
+      }),
+    onSuccess: () => {
+      toast.success(t("social.account_details.automation.saved"));
+      qc.invalidateQueries({ queryKey: ["social-accounts", account.organization_id] });
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
   const isError = account.status === "error" || !!account.last_error;
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
