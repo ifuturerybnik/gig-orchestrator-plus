@@ -1560,6 +1560,22 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
     const secretEnc = encryptPii(data.clientSecret);
     if (!secretEnc) throw new Error("Nie udało się zaszyfrować Client Secret.");
 
+    let extra: Record<string, unknown> = {};
+    if (data.platform === "facebook" || data.platform === "instagram") {
+      const nextConfigId = data.metaConfigId?.trim() || null;
+      if (nextConfigId) {
+        extra = { meta_config_id: nextConfigId };
+      } else {
+        const { data: existing } = await supabase
+          .from("social_app_credentials")
+          .select("extra")
+          .eq("organization_id", data.organizationId)
+          .eq("platform", credPlatform(data.platform))
+          .maybeSingle();
+        extra = ((existing as { extra?: Record<string, unknown> } | null)?.extra ?? {}) as Record<string, unknown>;
+      }
+    }
+
     const { error } = await supabase
       .from("social_app_credentials")
       .upsert(
@@ -1568,9 +1584,7 @@ export const saveAppCredentials = createServerFn({ method: "POST" })
           platform: credPlatform(data.platform),
           client_id: data.clientId,
           client_secret_enc: secretEnc,
-          extra: data.platform === "facebook" || data.platform === "instagram"
-            ? { meta_config_id: data.metaConfigId?.trim() || null }
-            : {},
+          extra,
           configured_by: userId,
           updated_at: new Date().toISOString(),
         },
