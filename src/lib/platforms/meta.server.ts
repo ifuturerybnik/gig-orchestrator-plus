@@ -341,6 +341,37 @@ export async function listUserPages(userAccessToken: string): Promise<MetaPage[]
   }));
 }
 
+export async function fetchPageInstagramAccount(
+  pageId: string,
+  pageAccessToken: string,
+): Promise<MetaPage["instagram"] | null> {
+  try {
+    const params = new URLSearchParams({
+      fields: "instagram_business_account{id,username,profile_picture_url}",
+      access_token: pageAccessToken,
+    });
+    const j = await graphJson<{
+      instagram_business_account?: {
+        id: string;
+        username: string;
+        profile_picture_url?: string;
+      };
+    }>(`${GRAPH}/${encodeURIComponent(pageId)}?${params.toString()}`, {
+      context: "Meta Page instagram_business_account",
+    });
+    return j.instagram_business_account
+      ? {
+          id: j.instagram_business_account.id,
+          username: j.instagram_business_account.username,
+          profile_picture_url: j.instagram_business_account.profile_picture_url ?? null,
+        }
+      : null;
+  } catch (e) {
+    console.warn("[meta] Page instagram_business_account fallback failed:", e);
+    return null;
+  }
+}
+
 /** Diagnostyka: lista uprawnień (granted/declined) dla user tokena. */
 export async function listUserPermissions(
   userAccessToken: string,

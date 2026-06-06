@@ -6,9 +6,9 @@ import { ExternalLink, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
  * dla Concertivo. Spisana na podstawie udanej integracji produkcyjnej.
  *
  * Ważne fakty, które już zostały zweryfikowane w boju:
- *  - Facebook działa przez Facebook Login for Business, Instagram przez Business Login for Instagram.
- *    To produkty w jednym panelu Meta, ale w Concertivo zapisujemy osobne ID/Secret per platforma.
- *  - Wymagane scope'y to: instagram_business_basic, instagram_business_content_publish, instagram_business_manage_comments.
+ *  - Facebook Login for Business może zapisać Facebook Page oraz powiązany Instagram Business/Creator.
+ *  - Osobny Instagram Login zostaje jako alternatywna ścieżka dla bezpośredniego tokena IG.
+ *  - Minimalne scope'y dla wykrycia IG przez Page: instagram_basic + pages_show_list.
  *  - Konto IG musi być Business lub Creator (Personal NIE zadziała).
  *  - Endpoint OAuth: https://www.instagram.com/oauth/authorize
  *  - Redirect URI musi być DOKŁADNIE taki sam jak callbackUrl poniżej (z https://).
@@ -33,12 +33,12 @@ export function MetaSetupInstructions({ callbackUrl }: { callbackUrl: string }) 
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">
-              {t("social.meta.intro_title", "Jedna aplikacja Meta, osobne dane Facebook i Instagram")}
+              {t("social.meta.intro_title", "Facebook może podłączyć też powiązany Instagram")}
             </p>
             <p className="mt-1">
               {t(
                 "social.meta.intro_body",
-                "Tworzysz jedną aplikację w Meta for Developers, ale Facebook i Instagram mają osobne dane logowania: Facebook App ID/Secret oraz Instagram App ID/Secret z sekcji Instagram. Wklej je w Concertivo przy właściwej platformie.",
+                "Jeśli konto Instagram Business/Creator jest połączone z wybraną stroną Facebook, Concertivo zapisze oba konta po autoryzacji Facebook Login for Business. Osobny Instagram Login jest potrzebny tylko jako alternatywna ścieżka bezpośredniego tokena IG.",
               )}
             </p>
           </div>
