@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   ORG_MODULES,
   ORG_MODULE_GROUPS,
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
@@ -21,6 +22,8 @@ interface OrgPermissionsFieldsProps {
   onBudgetModeChange: (value: BudgetPermissionMode) => void;
   eventsMode: EventsPermissionMode;
   onEventsModeChange: (value: EventsPermissionMode) => void;
+  aiStudioMode: AiStudioPermissionMode;
+  onAiStudioModeChange: (value: AiStudioPermissionMode) => void;
   fieldIdPrefix: string;
 }
 
@@ -33,6 +36,8 @@ export function OrgPermissionsFields({
   onBudgetModeChange,
   eventsMode,
   onEventsModeChange,
+  aiStudioMode,
+  onAiStudioModeChange,
   fieldIdPrefix,
 }: OrgPermissionsFieldsProps) {
   const { t } = useTranslation();
