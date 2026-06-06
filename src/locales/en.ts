@@ -1429,7 +1429,20 @@ export default
       "import_desc": "Fetches the latest 25 posts published directly on the platform (outside Concertivo) and adds them to Schedule as \"published\". Comments and metrics will sync automatically.",
       "import_button": "Import 25 posts",
       "import_auto_note": "The app pulls new posts from this platform every 30 minutes automatically — use manual import only to refresh now or backfill history.",
-      "import_success": "Imported {{inserted}} new posts (checked: {{fetched}})."
+      "import_success": "Imported {{inserted}} new posts (checked: {{fetched}}).",
+      "automation": {
+        "title": "Automation",
+        "subtitle": "Control whether the app pulls data from this account automatically and whether AI moderates comments.",
+        "auto_sync_label": "Automatic sync",
+        "auto_sync_desc": "Every few minutes the app fetches new comments, messages, and metrics from this account. Turn off if you want to do it only manually.",
+        "auto_ai_label": "Automatic AI moderation",
+        "auto_ai_desc": "New comments are automatically analysed by AI for hate, spam, and topic (requires the organization's OpenAI key). Only runs when automatic sync is on.",
+        "pause_desc": "Temporarily pause all sync for this account for 24 hours — useful when hitting platform rate limits.",
+        "pause_24h": "Pause for 24h",
+        "paused_until": "Sync paused until: {{time}}",
+        "resume": "Resume sync",
+        "saved": "Automation settings saved."
+      }
     },
     "post_status": {
       "draft": "Draft",
