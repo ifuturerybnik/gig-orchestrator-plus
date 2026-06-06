@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { OrgPermissionsFields } from "@/components/organizations/OrgPermissionsFields";
 import {
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
@@ -53,6 +54,7 @@ export function MemberPermissionsDialog({
   const [modules, setModules] = useState<Set<OrgModuleId>>(new Set());
   const [budgetMode, setBudgetMode] = useState<BudgetPermissionMode>("full");
   const [eventsMode, setEventsMode] = useState<EventsPermissionMode>("full");
+  const [aiStudioMode, setAiStudioMode] = useState<AiStudioPermissionMode>("full");
 
   useEffect(() => {
     if (!open) return;
@@ -63,11 +65,15 @@ export function MemberPermissionsDialog({
         setModules(new Set(p.modules));
         setBudgetMode(p.budget_mode);
         setEventsMode((p as { events_mode?: EventsPermissionMode }).events_mode ?? "full");
+        setAiStudioMode(
+          (p as { ai_studio_mode?: AiStudioPermissionMode }).ai_studio_mode ?? "full",
+        );
       } else {
         setIsOrgAdmin(true);
         setModules(new Set());
         setBudgetMode("full");
         setEventsMode("full");
+        setAiStudioMode("full");
       }
     }
   }, [open, query.data]);
@@ -81,6 +87,7 @@ export function MemberPermissionsDialog({
           modules: Array.from(modules),
           budgetMode,
           eventsMode,
+          aiStudioMode,
         },
       }),
     onSuccess: () => {
@@ -115,6 +122,8 @@ export function MemberPermissionsDialog({
             onBudgetModeChange={setBudgetMode}
             eventsMode={eventsMode}
             onEventsModeChange={setEventsMode}
+            aiStudioMode={aiStudioMode}
+            onAiStudioModeChange={setAiStudioMode}
             fieldIdPrefix={`member-permissions-${memberId ?? "new"}`}
           />
         )}

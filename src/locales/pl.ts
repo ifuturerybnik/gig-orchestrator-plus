@@ -524,6 +524,13 @@ export default
         "view_only": "Tylko podgląd",
         "view_confirmed_only": "Tylko podgląd wydarzeń potwierdzonych",
         "help": "„Pełny dostęp” pozwala dodawać, edytować i usuwać wydarzenia. „Tylko podgląd” – wyłącznie odczyt. „Tylko podgląd wydarzeń potwierdzonych” – widoczne są jedynie wydarzenia o statusie potwierdzonym."
+      },
+      "ai_studio": {
+        "full": "Pełny dostęp",
+        "create_only": "Tylko tworzenie i planowanie (Tworzenie, Kalendarz, Biblioteka)",
+        "moderation_only": "Tylko moderacja (Skrzynka, Asystent AI)",
+        "view_only": "Tylko podgląd (Dashboard, Biblioteka, Analityka)",
+        "help": "Tryb pracy członka w module AI Studio. „Pełny dostęp” odblokowuje wszystkie zakładki: Dashboard, Tworzenie, Kalendarz, Skrzynka, Biblioteka, Analityka, Asystent AI."
       }
     },
     "detail": {
@@ -1354,6 +1361,11 @@ export default
   "social": {
     "title": "Organizacja SM",
     "subtitle": "Połącz konta w social mediach z tą organizacją i zarządzaj publikacjami w jednym miejscu.",
+    "deprecated": {
+      "title": "Ten moduł to teraz integracje i diagnostyka",
+      "description": "Codzienna praca z social mediami i stronami WWW odbywa się w module AI Studio. Tutaj zostaje wyłącznie zarządzanie połączonymi kontami, podgląd techniczny i diagnostyka — dla adminów i integratorów.",
+      "cta": "Przejdź do AI Studio"
+    },
     "tabs": {
       "accounts": "Połączone konta",
       "inbox": "Skrzynka",

@@ -7,6 +7,8 @@ import { ORG_TYPES, ARTIST_KINDS } from "@/lib/orgTypes";
 import { normalizeNip } from "@/lib/nip";
 import {
   CONFIGURABLE_MODULE_IDS,
+  AI_STUDIO_MODES,
+  type AiStudioPermissionMode,
   type BudgetPermissionMode,
   type EventsPermissionMode,
   type OrgModuleId,
@@ -21,6 +23,9 @@ const EventsModeEnum = z.enum([
   "view_only",
   "view_confirmed_only",
 ] as const);
+const AiStudioModeEnum = z.enum(
+  AI_STUDIO_MODES as unknown as [AiStudioPermissionMode, ...AiStudioPermissionMode[]],
+);
 // Domyślnie zaproszony użytkownik nie ma dostępu do żadnego modułu konfigurowalnego.
 // Owner zaproszenia musi świadomie zaznaczyć moduły lub przełącznik administratora.
 const InvitationAccessSchema = z
@@ -59,6 +64,7 @@ export async function loadEffectivePerms(
   modules: OrgModuleId[];
   budgetMode: BudgetPermissionMode;
   eventsMode: EventsPermissionMode;
+  aiStudioMode: AiStudioPermissionMode;
 }> {
   // owner?
   const { data: me } = await supabase
@@ -68,30 +74,30 @@ export async function loadEffectivePerms(
     .eq("user_id", userId)
     .maybeSingle();
   if (me?.role === "owner") {
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   // admin aplikacji?
   if (await isAppAdmin(supabase, userId)) {
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   if (!me) {
-    // nie jest członkiem — brak dostępu (overview/profile traktowane jako alwaysVisible po stronie UI)
-    return { isOrgAdmin: false, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: false, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   const { data: perm } = await supabase
     .from("organization_member_permissions")
-    .select("is_org_admin, modules, budget_mode, events_mode")
+    .select("is_org_admin, modules, budget_mode, events_mode, ai_studio_mode")
     .eq("member_id", me.id)
     .maybeSingle();
   if (!perm) {
     // kompatybilność wsteczna: brak wpisu = pełen dostęp
-    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full" };
+    return { isOrgAdmin: true, modules: [], budgetMode: "full", eventsMode: "full", aiStudioMode: "full" };
   }
   return {
     isOrgAdmin: Boolean(perm.is_org_admin),
     modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
     budgetMode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
     eventsMode: (perm.events_mode as EventsPermissionMode) ?? "full",
+    aiStudioMode: (perm.ai_studio_mode as AiStudioPermissionMode) ?? "full",
   };
 }
 
@@ -1063,7 +1069,7 @@ export const getMemberPermissions = createServerFn({ method: "GET" })
 
     const { data: perm } = await supabaseAdmin
       .from("organization_member_permissions")
-      .select("is_org_admin, modules, budget_mode, events_mode")
+      .select("is_org_admin, modules, budget_mode, events_mode, ai_studio_mode")
       .eq("member_id", data.memberId)
       .maybeSingle();
 
@@ -1075,6 +1081,7 @@ export const getMemberPermissions = createServerFn({ method: "GET" })
             modules: Array.isArray(perm.modules) ? (perm.modules as OrgModuleId[]) : [],
             budget_mode: (perm.budget_mode as BudgetPermissionMode) ?? "full",
             events_mode: (perm.events_mode as EventsPermissionMode) ?? "full",
+            ai_studio_mode: (perm.ai_studio_mode as AiStudioPermissionMode) ?? "full",
           }
         : null,
     };
@@ -1094,6 +1101,7 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
         modules: z.array(ModuleIdEnum).max(CONFIGURABLE_MODULE_IDS.length),
         budgetMode: BudgetModeEnum,
         eventsMode: EventsModeEnum,
+        aiStudioMode: AiStudioModeEnum,
       })
       .parse(input),
   )
@@ -1127,6 +1135,8 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
 
     const budgetMode = data.isOrgAdmin || !modules.includes("budget") ? "full" : data.budgetMode;
     const eventsMode = data.isOrgAdmin || !modules.includes("events") ? "full" : data.eventsMode;
+    const aiStudioMode =
+      data.isOrgAdmin || !modules.includes("ai_studio") ? "full" : data.aiStudioMode;
 
     const { error } = await supabaseAdmin
       .from("organization_member_permissions")
@@ -1139,6 +1149,7 @@ export const setMemberPermissions = createServerFn({ method: "POST" })
           modules,
           budget_mode: budgetMode,
           events_mode: eventsMode,
+          ai_studio_mode: aiStudioMode,
           updated_at: new Date().toISOString(),
           updated_by: userId,
         },
