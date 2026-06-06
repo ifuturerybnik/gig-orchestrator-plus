@@ -1,11 +1,12 @@
 // Cron: synchronizacja metryk dla opublikowanych postów (per platforma z adapterem).
-// POST + nagłówek X-Cron-Secret = process.env.CRON_SECRET.
-// Częstotliwość zalecana: co 1h.
+// POST + nagłówek X-Cron-Secret = process.env.CRON_SECRET. Częstotliwość zalecana: co 1h.
+// Pomija konta z auto_sync_inbox=false (wspólny przełącznik na automatyzację) lub aktywną pauzą.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getAdapter, getValidAccount } from "@/lib/platforms/index.server";
 import { MetaPermissionError } from "@/lib/platforms/meta.server";
+import { getSocialSettings, recordSyncRun } from "@/lib/social-settings.server";
 
 type ResultRow = {
   post_id: string;
@@ -14,9 +15,18 @@ type ResultRow = {
   post: { organization_id: string } | null;
 };
 
+type AccountFlags = {
+  auto_sync_inbox: boolean;
+  sync_paused_until: string | null;
+};
+
 async function processTick() {
-  // Bierzemy posty opublikowane w ostatnich 30 dniach (metryki rosną głównie krótko po publikacji).
-  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  const startedAt = Date.now();
+  const settings = await getSocialSettings();
+  const since = new Date(
+    Date.now() - settings.syncMetricsWindowDays * 24 * 3600 * 1000,
+  ).toISOString();
+
   const { data, error } = await supabaseAdmin
     .from("social_post_results")
     .select(
@@ -25,13 +35,16 @@ async function processTick() {
     .eq("status", "success")
     .not("external_post_id", "is", null)
     .gte("published_at", since)
-    .limit(200);
+    .limit(settings.syncMetricsMaxPosts);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as ResultRow[];
 
   let okCount = 0;
   let fail = 0;
   let skippedPermission = 0;
+  let skippedDisabled = 0;
+  const errors: Array<{ ref: string; message: string }> = [];
+
   for (const r of rows) {
     if (!r.external_post_id || !r.post) continue;
     const adapter = getAdapter(r.platform);
@@ -42,6 +55,23 @@ async function processTick() {
         platform: r.platform,
       });
       if (!ctx) continue;
+
+      const { data: accFlags } = await supabaseAdmin
+        .from("social_accounts")
+        .select("auto_sync_inbox, sync_paused_until")
+        .eq("id", ctx.account.id)
+        .maybeSingle();
+      const flags = (accFlags as AccountFlags | null) ?? {
+        auto_sync_inbox: true,
+        sync_paused_until: null,
+      };
+      const pausedActive =
+        !!flags.sync_paused_until && new Date(flags.sync_paused_until) > new Date();
+      if (!flags.auto_sync_inbox || pausedActive) {
+        skippedDisabled++;
+        continue;
+      }
+
       const m = await adapter.fetchMetrics({
         account: ctx.account,
         externalPostId: r.external_post_id,
@@ -64,10 +94,24 @@ async function processTick() {
         continue;
       }
       fail++;
-      console.error("[social-sync-metrics]", r.platform, r.post_id, e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[social-sync-metrics]", r.platform, r.post_id, msg);
+      if (errors.length < 10) errors.push({ ref: `${r.platform}:${r.post_id}`, message: msg });
     }
   }
-  return { processed: rows.length, ok: okCount, fail, skippedPermission };
+
+  await recordSyncRun({
+    job: "sync-metrics",
+    startedAt,
+    processed: rows.length,
+    ok: okCount,
+    fail,
+    skippedPermission,
+    skippedDisabled,
+    errors,
+  });
+
+  return { processed: rows.length, ok: okCount, fail, skippedPermission, skippedDisabled };
 }
 
 export const Route = createFileRoute("/api/public/social-sync-metrics")({
@@ -80,7 +124,7 @@ export const Route = createFileRoute("/api/public/social-sync-metrics")({
           return new Response("Unauthorized", { status: 401 });
         try {
           const out = await processTick();
-          return Response.json({ ok: true, result: out });
+          return Response.json({ success: true, result: out });
         } catch (e) {
           return Response.json(
             { ok: false, error: e instanceof Error ? e.message : String(e) },

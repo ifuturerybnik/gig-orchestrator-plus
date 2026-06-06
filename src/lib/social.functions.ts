@@ -31,6 +31,9 @@ export type SocialAccountRow = {
   connected_by: string;
   connected_at: string;
   updated_at: string;
+  auto_sync_inbox: boolean;
+  auto_ai_moderation: boolean;
+  sync_paused_until: string | null;
 };
 
 export type SocialPostRow = {
@@ -73,7 +76,7 @@ export const listSocialAccounts = createServerFn({ method: "GET" })
     const accountsResult = await supabase
       .from("social_accounts")
       .select(
-        "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at",
+        "id, organization_id, platform, external_account_id, account_name, account_avatar_url, scopes, token_expires_at, last_sync_at, status, last_error, connected_by, connected_at, updated_at, auto_sync_inbox, auto_ai_moderation, sync_paused_until",
       )
       .eq("organization_id", data.organizationId)
       .order("connected_at", { ascending: false });
@@ -98,6 +101,42 @@ export const disconnectSocialAccount = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("social_accounts")
       .delete()
+      .eq("id", data.accountId)
+      .eq("organization_id", data.organizationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
+ * Ustawia per-konto przełączniki automatyzacji (auto sync inbox, auto AI moderation,
+ * ewentualna ręczna pauza). RLS chroni: tylko członek organizacji może zmienić.
+ */
+export const setAccountAutomation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        organizationId: z.string().uuid(),
+        accountId: z.string().uuid(),
+        autoSyncInbox: z.boolean().optional(),
+        autoAiModeration: z.boolean().optional(),
+        // null = wyczyść pauzę; string ISO = ustaw nowy timestamp; undefined = nie zmieniaj
+        syncPausedUntil: z.string().datetime().nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase } = context;
+    const patch: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof data.autoSyncInbox === "boolean") patch.auto_sync_inbox = data.autoSyncInbox;
+    if (typeof data.autoAiModeration === "boolean")
+      patch.auto_ai_moderation = data.autoAiModeration;
+    if (data.syncPausedUntil !== undefined) patch.sync_paused_until = data.syncPausedUntil;
+    const { error } = await supabase
+      .from("social_accounts")
+      .update(patch)
       .eq("id", data.accountId)
       .eq("organization_id", data.organizationId);
     if (error) throw new Error(error.message);
@@ -470,8 +509,8 @@ function buildEventContext(args: {
   return lines.join("\n");
 }
 
-async function callAiInternal(args: {
-  userId: string;
+export async function callAiInternal(args: {
+  userId: string | null;
   userEmail: string | null;
   scenariusz: string;
   systemPrompt: string;
