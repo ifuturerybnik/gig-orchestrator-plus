@@ -4,14 +4,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { invalidateSocialSettingsCache } from "./social-settings.server";
 import {
   SOCIAL_SETTINGS_BOUNDS,
   SOCIAL_SETTINGS_DEFAULTS,
   SOCIAL_SETTINGS_KEYS,
   type SocialSettings,
-  invalidateSocialSettingsCache,
   settingKeyFor,
-} from "./social-settings.server";
+} from "./social-settings";
 
 async function requireAdmin(ctx: {
   supabase: import("@supabase/supabase-js").SupabaseClient;
