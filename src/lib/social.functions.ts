@@ -1809,6 +1809,7 @@ export const startSocialOAuth = createServerFn({ method: "POST" })
             "pages_read_engagement",
             "pages_manage_posts",
             "pages_manage_metadata",
+            "instagram_basic",
           ].join(","),
         );
       }
