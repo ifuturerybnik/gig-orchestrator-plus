@@ -16,6 +16,18 @@ function html(title: string, body: string, ok: boolean, redirectTo?: string): Re
   );
 }
 
+function getPublicOrigin(request: Request): string {
+  const h = request.headers;
+  const xfHost = h.get("x-forwarded-host") ?? h.get("host");
+  const xfProto = h.get("x-forwarded-proto");
+  if (xfHost) {
+    const isLocal = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?)/i.test(xfHost);
+    const proto = xfProto ?? (isLocal ? "http" : "https");
+    return `${proto}://${xfHost}`;
+  }
+  return new URL(request.url).origin;
+}
+
 export const Route = createFileRoute("/api/public/social/youtube-callback")({
   server: {
     handlers: {
@@ -36,7 +48,7 @@ export const Route = createFileRoute("/api/public/social/youtube-callback")({
           return html("Błąd autoryzacji", "<p>Brak parametrów <code>code</code> lub <code>state</code>.</p>", false);
         }
 
-        const callbackUrl = `${url.origin}/api/public/social/youtube-callback`;
+        const callbackUrl = `${getPublicOrigin(request)}/api/public/social/youtube-callback`;
         try {
           const res = await handleYouTubeOAuthCallback({ code, state, callbackUrl });
           const back = res.redirectBack ?? `/organizations/${res.orgId}/social`;
