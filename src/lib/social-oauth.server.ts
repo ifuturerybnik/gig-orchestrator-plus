@@ -334,15 +334,15 @@ export async function handleMetaOAuthCallback(args: {
     }
   }
 
-  // 3) credentials — zawsze pod platform="facebook"
+  // 3) credentials — Facebook i Instagram mają osobne produkty OAuth.
   const { data: credRow, error: credErr } = await admin
     .from("social_app_credentials")
     .select("client_id, client_secret_enc")
     .eq("organization_id", s.organization_id)
-    .eq("platform", "facebook")
+    .eq("platform", s.platform)
     .maybeSingle();
   if (credErr) throw new Error(credErr.message);
-  if (!credRow) throw new Error("Brak credentials aplikacji Meta dla organizacji.");
+  if (!credRow) throw new Error(`Brak credentials aplikacji ${s.platform === "instagram" ? "Instagram" : "Facebook"} dla organizacji.`);
   const { client_id, client_secret_enc } = credRow as {
     client_id: string;
     client_secret_enc: string;
@@ -476,12 +476,29 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG.
-  // To jest oficjalny wariant „Instagram API with Facebook Login”: IG używa Page tokena
-  // i hosta graph.facebook.com. Osobny Instagram Login nadal jest obsługiwany jako alternatywa.
+  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG
+  // tylko wtedy, gdy nie istnieje już osobny token Instagram Login.
   let igUsername: string | null = null;
   if (page.instagram) {
     igUsername = page.instagram.username;
+    const { data: existingIg } = await admin
+      .from("social_accounts")
+      .select("scopes")
+      .eq("organization_id", s.organization_id)
+      .eq("platform", "instagram")
+      .maybeSingle();
+    const hasInstagramLoginToken = ((existingIg as { scopes?: string[] } | null)?.scopes ?? [])
+      .some((scope) => scope.startsWith("instagram_business_"));
+    if (hasInstagramLoginToken) {
+      await admin.from("social_oauth_states").delete().eq("state", args.state);
+      return {
+        orgId: s.organization_id,
+        facebookPageName: page.name,
+        instagramUsername: igUsername,
+        redirectBack,
+        diagnostics: buildDiag(page.id),
+      };
+    }
     const { error: upIgErr } = await admin.from("social_accounts").upsert(
       {
         organization_id: s.organization_id,

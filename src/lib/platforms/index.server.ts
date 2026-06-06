@@ -36,8 +36,9 @@ export async function getAppCredentialsServer(
   organizationId: string,
   platform: string,
 ): Promise<{ clientId: string; clientSecret: string } | null> {
-  // Instagram dzieli credentials Meta z Facebookiem (jeden App ID).
-  const lookupPlatform = platform === "instagram" ? "facebook" : platform;
+  // Facebook Login i Instagram Login to osobne produkty OAuth — nie mieszamy
+  // Client ID/Secret między platformami.
+  const lookupPlatform = platform;
   const { data, error } = await supabaseAdmin
     .from("social_app_credentials")
     .select("client_id, client_secret_enc")
