@@ -82,7 +82,9 @@ export function AccountDetailsDialog({
   const meta = SOCIAL_PLATFORMS[account.platform as SocialPlatformId];
   const externalUrl = externalUrlFor(account);
   const supportsImport =
-    account.platform === "facebook" || account.platform === "instagram";
+    account.platform === "facebook" ||
+    account.platform === "instagram" ||
+    account.platform === "youtube";
   const isLegacyInstagram =
     account.platform === "instagram" &&
     !(account.scopes ?? []).some((scope) => scope.startsWith("instagram_business_"));
