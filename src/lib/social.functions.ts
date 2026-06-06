@@ -153,7 +153,7 @@ function credPlatform(p: string): string {
   return p;
 }
 function credPlatformCandidates(p: string): string[] {
-  return p === "instagram" ? ["instagram", "facebook"] : [p];
+  return [p];
 }
 
 

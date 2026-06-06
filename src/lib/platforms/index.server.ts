@@ -42,11 +42,12 @@ export async function getAppCredentialsServer(
   const lookupPlatforms = platform === "instagram" ? ["instagram", "facebook"] : [platform];
   const { data, error } = await supabaseAdmin
     .from("social_app_credentials")
-    .select("client_id, client_secret_enc")
+    .select("client_id, client_secret_enc, platform")
     .eq("organization_id", organizationId)
     .in("platform", lookupPlatforms);
   if (error) throw new Error(error.message);
-  const row = ((data ?? [])[0] ?? null) as { client_id: string; client_secret_enc: string } | null;
+  const rows = (data ?? []) as Array<{ client_id: string; client_secret_enc: string; platform: string }>;
+  const row = rows.find((r) => r.platform === platform) ?? rows[0] ?? null;
   if (!row) return null;
   const secret = decryptPii(row.client_secret_enc);
   if (!secret) throw new Error("Nie udało się odszyfrować Client Secret.");
