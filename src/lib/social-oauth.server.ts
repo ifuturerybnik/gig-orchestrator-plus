@@ -484,15 +484,12 @@ export async function handleMetaOAuthCallback(args: {
   );
   if (upFbErr) throw new Error(`Zapis konta Facebook: ${upFbErr.message}`);
 
-  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG
-  // tylko wtedy, gdy nie istnieje już osobny token Instagram Login.
+  // 8) Jeżeli strona FB ma podłączone konto Instagram Business, zapisujemy też IG.
+  // Sam zapis nie może zależeć od kompletu scope'ów do publikacji/komentarzy:
+  // Meta potrafi zwrócić IG powiązany ze stroną nawet wtedy, gdy część uprawnień
+  // czeka na App Review. Braki uprawnień obsługujemy później przy konkretnych akcjach.
   let igUsername: string | null = null;
-  if (
-    page.instagram &&
-    perms.granted.includes("instagram_basic") &&
-    perms.granted.includes("instagram_content_publish") &&
-    perms.granted.includes("instagram_manage_comments")
-  ) {
+  if (page.instagram) {
     igUsername = page.instagram.username;
     const { data: existingIg } = await admin
       .from("social_accounts")
