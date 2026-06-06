@@ -265,6 +265,98 @@ export function AccountDetailsDialog({
 
           <Separator />
 
+          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+            <div>
+              <div className="text-sm font-medium">
+                {t("social.account_details.automation.title")}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {t("social.account_details.automation.subtitle")}
+              </div>
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label htmlFor={`auto-sync-${account.id}`} className="text-sm">
+                  {t("social.account_details.automation.auto_sync_label")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("social.account_details.automation.auto_sync_desc")}
+                </p>
+              </div>
+              <Switch
+                id={`auto-sync-${account.id}`}
+                checked={autoSync}
+                disabled={automationM.isPending}
+                onCheckedChange={(v) => {
+                  setAutoSync(v);
+                  automationM.mutate({ autoSyncInbox: v });
+                }}
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <Label htmlFor={`auto-ai-${account.id}`} className="text-sm">
+                  {t("social.account_details.automation.auto_ai_label")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("social.account_details.automation.auto_ai_desc")}
+                </p>
+              </div>
+              <Switch
+                id={`auto-ai-${account.id}`}
+                checked={autoAi}
+                disabled={automationM.isPending || !autoSync}
+                onCheckedChange={(v) => {
+                  setAutoAi(v);
+                  automationM.mutate({ autoAiModeration: v });
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              {isPaused ? (
+                <>
+                  <div className="text-xs text-amber-600">
+                    {t("social.account_details.automation.paused_until", {
+                      time: pausedUntil!.toLocaleString(),
+                    })}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={automationM.isPending}
+                    onClick={() => automationM.mutate({ syncPausedUntil: null })}
+                  >
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    {t("social.account_details.automation.resume")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground">
+                    {t("social.account_details.automation.pause_desc")}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={automationM.isPending}
+                    onClick={() => {
+                      const until = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+                      automationM.mutate({ syncPausedUntil: until });
+                    }}
+                  >
+                    <PauseCircle className="mr-2 h-4 w-4" />
+                    {t("social.account_details.automation.pause_24h")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
           {supportsImport && (
             <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
