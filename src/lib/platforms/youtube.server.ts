@@ -361,6 +361,70 @@ export const youtubeAdapter: PlatformAdapter = {
     if (!j.id) throw new Error("YouTube reply: brak id w odpowiedzi");
     return { externalCommentId: j.id };
   },
+
+  async listRecentPosts({ account, limit }): Promise<PlatformRecentPost[]> {
+    // 1) pobierz id playlisty "uploads" kanału
+    const chRes = await fetch(
+      `${YT_API}/channels?part=contentDetails&mine=true`,
+      { headers: { Authorization: `Bearer ${account.access_token}` } },
+    );
+    if (!chRes.ok) {
+      const t = await chRes.text();
+      throw new Error(`YouTube /channels ${chRes.status}: ${t.slice(0, 300)}`);
+    }
+    const chJ = (await chRes.json()) as {
+      items?: Array<{
+        contentDetails?: { relatedPlaylists?: { uploads?: string } };
+      }>;
+    };
+    const uploadsId = chJ.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsId) return [];
+
+    // 2) pobierz N najnowszych filmów z tej playlisty
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+    const plRes = await fetch(
+      `${YT_API}/playlistItems?part=snippet,contentDetails&playlistId=${encodeURIComponent(uploadsId)}&maxResults=${safeLimit}`,
+      { headers: { Authorization: `Bearer ${account.access_token}` } },
+    );
+    if (!plRes.ok) {
+      const t = await plRes.text();
+      throw new Error(`YouTube /playlistItems ${plRes.status}: ${t.slice(0, 300)}`);
+    }
+    const plJ = (await plRes.json()) as {
+      items?: Array<{
+        snippet?: {
+          title?: string;
+          description?: string;
+          publishedAt?: string;
+          thumbnails?: { high?: { url?: string }; default?: { url?: string } };
+          resourceId?: { videoId?: string };
+        };
+        contentDetails?: { videoId?: string; videoPublishedAt?: string };
+      }>;
+    };
+    const out: PlatformRecentPost[] = [];
+    for (const it of plJ.items ?? []) {
+      const videoId =
+        it.contentDetails?.videoId ?? it.snippet?.resourceId?.videoId ?? null;
+      if (!videoId) continue;
+      const title = it.snippet?.title ?? "";
+      const description = it.snippet?.description ?? "";
+      const text = [title, description].filter(Boolean).join("\n\n");
+      const thumb =
+        it.snippet?.thumbnails?.high?.url ??
+        it.snippet?.thumbnails?.default?.url ??
+        null;
+      out.push({
+        externalPostId: videoId,
+        externalUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        text,
+        mediaUrls: thumb ? [thumb] : [],
+        postedAt:
+          it.contentDetails?.videoPublishedAt ?? it.snippet?.publishedAt ?? null,
+      });
+    }
+    return out;
+  },
 };
 
 // =============================================================================
