@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/public/social/youtube-callback")({
           return html("Błąd autoryzacji", "<p>Brak parametrów <code>code</code> lub <code>state</code>.</p>", false);
         }
 
-        const callbackUrl = `${url.origin}/api/public/social/youtube-callback`;
+        const callbackUrl = `${getPublicOrigin(request)}/api/public/social/youtube-callback`;
         try {
           const res = await handleYouTubeOAuthCallback({ code, state, callbackUrl });
           const back = res.redirectBack ?? `/organizations/${res.orgId}/social`;
