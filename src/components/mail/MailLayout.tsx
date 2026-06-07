@@ -353,7 +353,10 @@ export function MailLayout({ orgId }: Props) {
             {wiadomosci.map((w) => (
               <button
                 key={w.id}
-                onClick={() => setSelectedId(w.id)}
+                onClick={() => {
+                  setSelectedId(w.id);
+                  setMobilePane("message");
+                }}
                 className={cn(
                   "w-full text-left px-3 py-2 border-b border-border hover:bg-accent/40 transition",
                   selectedId === w.id && "bg-accent",
@@ -374,7 +377,22 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Podgląd */}
-        <Card className="flex-1 overflow-hidden flex flex-col">
+        <Card
+          className={cn(
+            "flex-1 overflow-hidden flex-col",
+            mobilePane === "message" ? "flex" : "hidden md:flex",
+          )}
+        >
+          <div className="md:hidden flex items-center gap-2 border-b border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobilePane("list")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {t("correspondence.mail.title")}
+            </Button>
+          </div>
           {!selected && (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
               {t("correspondence.mail.select_message")}
