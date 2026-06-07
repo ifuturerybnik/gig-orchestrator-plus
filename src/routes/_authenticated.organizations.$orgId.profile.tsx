@@ -122,12 +122,18 @@ function OrganizationProfilePage() {
         },
       });
     },
-    onSuccess: () => {
-      toast.success(t("organizations.detail.saved"));
+    onSuccess: (res: { pending?: boolean }) => {
+      if (res?.pending) {
+        toast.success(t("organizations.detail.change_pending"));
+      } else {
+        toast.success(t("organizations.detail.saved"));
+      }
       queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-org-change", orgId] });
       navigate({ to: "/organizations/$orgId", params: { orgId } });
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
