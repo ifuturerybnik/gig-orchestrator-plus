@@ -21,8 +21,10 @@ import {
   cancelInvitation,
   getOrganizationDetails,
   inviteUserToOrganization,
+  promoteMemberToOwner,
   removeOrganizationMember,
 } from "@/lib/organizations.functions";
+
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/members",
