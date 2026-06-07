@@ -1121,11 +1121,16 @@ export default
       "created_at": "Data zgłoszenia:",
       "tab_orgs": "Nowe organizacje",
       "tab_joins": "Prośby o dołączenie",
+      "tab_changes": "Zmiany danych organizacji",
+      "changes_empty": "Brak oczekujących wniosków o zmianę.",
+      "change_approved": "Zmiana zatwierdzona.",
+      "change_rejected": "Zmiana odrzucona.",
       "joins_empty": "Brak próśb o dołączenie.",
       "join_message": "Wiadomość:",
       "join_approved": "Zaakceptowano — użytkownik dodany jako członek.",
       "join_rejected": "Prośba odrzucona."
     },
+
     "assistant": {
       "title": "Asystent Concertivo — baza wiedzy",
       "subtitle": "Zarządzaj indeksem dokumentacji i kodu, z którego korzysta asystent AI w organizacjach.",
