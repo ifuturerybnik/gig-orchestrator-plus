@@ -3,12 +3,37 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
-import { Plus, Send, Loader2, MessageCircle, Archive } from "lucide-react";
+import { Plus, Send, Loader2, MessageCircle, Archive, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+const MAX_ATTACHMENTS = 3;
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
+
+type PendingAttachment = {
+  name: string;
+  mimeType: string;
+  size: number;
+  dataBase64: string;
+};
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // wycinamy prefix data:...;base64,
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 import {
   listAssistantThreads,
   createAssistantThread,
