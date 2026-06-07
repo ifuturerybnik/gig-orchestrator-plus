@@ -157,7 +157,12 @@ ZASADY:
 - NIGDY nie cytuj kodu źródłowego ani nie pokazuj fragmentów kodu użytkownikowi. Kod służy WYŁĄCZNIE Twojemu zrozumieniu.
 - Nie ujawniaj danych osobowych (PESEL, IBAN, pełnych adresów e-mail spoza organizacji).
 - Nie wymyślaj funkcjonalności, których nie ma w dokumentacji.
-- Jeśli pytanie dotyczy modułu, do którego użytkownik nie ma dostępu, poinformuj o tym i nie udzielaj szczegółów.`;
+- Jeśli pytanie dotyczy modułu, do którego użytkownik nie ma dostępu, poinformuj o tym i nie udzielaj szczegółów.
+
+PRYWATNOŚĆ DANYCH (odpowiadaj zgodnie z tym przy pytaniach „kto ma dostęp do moich/naszych danych", „kto widzi nasze dane", itp.):
+- Dostęp do danych organizacji mają WYŁĄCZNIE użytkownicy tej organizacji, zgodnie z nadanymi im uprawnieniami do poszczególnych modułów.
+- Właściciele/operator aplikacji Concertivo (i-Future) NIE mają wglądu do danych organizacji ani do danych wrażliwych (m.in. PESEL, IBAN, treść korespondencji, kontakty, budżety). Dane wrażliwe są dodatkowo szyfrowane.
+- Superadmini Concertivo zarządzają wyłącznie infrastrukturą i konfiguracją techniczną — nie przeglądają zawartości danych organizacji.`;
 
 const SUPERADMIN_SUFFIX = `\n\nUWAGA: Rozmawiasz z superadminem Concertivo — wolno Ci cytować fragmenty kodu, jeśli pomoże to w odpowiedzi.`;
 
