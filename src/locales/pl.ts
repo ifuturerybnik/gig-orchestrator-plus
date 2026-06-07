@@ -486,8 +486,12 @@ export default
       "no_name": "(bez imienia)",
       "expires": "Ważne do",
       "invite_as_owner": "Zaproś jako właściciel",
-      "invite_as_owner_help": "Właściciele mają pełen dostęp, mogą zapraszać innych właścicieli oraz zaplanować usunięcie organizacji. Tylko obecny właściciel może wystawić takie zaproszenie."
+      "invite_as_owner_help": "Właściciele mają pełen dostęp, mogą zapraszać innych właścicieli oraz zaplanować usunięcie organizacji. Tylko obecny właściciel może wystawić takie zaproszenie.",
+      "promote_to_owner": "Nadaj rolę właściciela",
+      "promote_confirm": "Nadać temu członkowi status właściciela organizacji? Otrzyma pełne uprawnienia.",
+      "promoted_to_owner": "Nadano status właściciela."
     },
+
     "deletion": {
       "title": "Strefa niebezpieczna",
       "description": "Po kliknięciu poniżej organizacja zostanie zaplanowana do usunięcia za 7 dni. Wszyscy członkowie zostaną powiadomieni i będą mogli w tym czasie zarezerwować dane lub poprosić Cię o anulowanie.",
