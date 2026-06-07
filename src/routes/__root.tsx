@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { PWARegister } from "@/components/pwa-register";
+import { AppEventsBadge } from "@/components/app-events-badge";
 
 function NotFoundComponent() {
   return (
@@ -135,6 +136,7 @@ function RootComponent() {
         <AuthProvider>
           <AuthSync />
           <PWARegister />
+          <AppEventsBadge />
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
               <Outlet />
