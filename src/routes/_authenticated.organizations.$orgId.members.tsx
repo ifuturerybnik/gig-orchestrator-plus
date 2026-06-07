@@ -183,6 +183,21 @@ function OrganizationMembersPage() {
                     >
                       <Settings2 className="h-4 w-4" />
                     </Button>
+                    {isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t("organizations.members.promote_confirm"))) {
+                            promoteMutation.mutate(m.id);
+                          }
+                        }}
+                        disabled={promoteMutation.isPending}
+                      >
+                        {t("organizations.members.promote_to_owner")}
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="sm"
