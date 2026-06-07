@@ -81,26 +81,35 @@ export function YouTubeSetupInstructions({ callbackUrl }: { callbackUrl: string 
 
       <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-xs dark:border-sky-900 dark:bg-sky-950/40">
         <div className="font-semibold text-sky-900 dark:text-sky-100">
-          Tryb Testing vs Production — co wybrać?
+          Trzy ścieżki — wybierz tę, która pasuje Twojej organizacji
         </div>
         <ul className="ml-5 mt-1 list-disc space-y-1 text-sky-900/90 dark:text-sky-100/90">
           <li>
-            <b>Testing</b> (domyślny po utworzeniu projektu): działa od razu, ale{" "}
-            <b>refresh_token wygasa co 7 dni</b> i trzeba klikać „Połącz ponownie".
-            Max 100 użytkowników testowych.
+            <b>Testing</b> (domyślny): zero formalności, ale{" "}
+            <b>refresh_token wygasa co 7 dni</b>. Max 100 użytkowników testowych.
+            Aplikacja sama przypomni o ponownym połączeniu. Dobra opcja na start.
           </li>
           <li>
-            <b>Production</b>: bez wygasania, ale dla zakresów{" "}
-            <code>youtube.upload</code> / <code>youtube.force-ssl</code>{" "}
-            Google wymaga <b>weryfikacji aplikacji</b> (formularz + nagranie wideo,
-            ok. 4–6 tygodni).
+            <b>Production (niezweryfikowana)</b>: kliknij <b>Publish App</b> w Google Cloud
+            Console — token przestaje wygasać po 7 dniach. Dla zakresów{" "}
+            <code>youtube.upload</code> / <code>youtube.force-ssl</code> Google pokaże
+            duży czerwony ekran „unverified app" przy pierwszym łączeniu konta.
+            Limit: 100 nowych użytkowników/dzień. Wystarczy dla małych zespołów (1–5 osób).
+          </li>
+          <li>
+            <b>Production (zweryfikowana)</b>: pełna weryfikacja Google — brak ekranu
+            „unverified app", brak limitu 100 użytkowników. Wymaga formularza w
+            Verification Center, linków do polityki prywatności / regulaminu,
+            weryfikacji domeny oraz nagrania wideo (max 5 min) pokazującego przebieg
+            OAuth i użycie zakresów. Czas oczekiwania: ok. <b>4–6 tygodni</b>.
+            W tym czasie możesz normalnie korzystać z Testing.
           </li>
         </ul>
       </div>
 
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs dark:border-emerald-900 dark:bg-emerald-950/40">
         <div className="font-semibold text-emerald-900 dark:text-emerald-100">
-          Chcesz przejść z Testing → Production (bez 7-dniowego limitu)?
+          Jak przejść na Production (bez weryfikacji lub ze weryfikacją)?
         </div>
         <ol className="ml-5 mt-1 list-decimal space-y-1 text-emerald-900/90 dark:text-emerald-100/90">
           <li>
@@ -108,20 +117,18 @@ export function YouTubeSetupInstructions({ callbackUrl }: { callbackUrl: string 
             → <b>Publish App</b>.
           </li>
           <li>
-            Otwórz formularz <b>Verification Center</b>. Wymagane będą m.in.:
+            Jeśli wybierasz <b>weryfikację</b> — otworzy się <b>Verification Center</b>:
             <ul className="ml-5 mt-0.5 list-[circle] space-y-0.5">
               <li>Link do publicznej polityki prywatności i regulaminu.</li>
               <li>Link do publicznej strony domowej aplikacji.</li>
+              <li>Weryfikacja własności domeny w Google Search Console.</li>
               <li>Nagranie wideo (max 5 min) pokazujące przebieg OAuth oraz każdy używany zakres.</li>
               <li>Uzasadnienie dla zakresów wrażliwych <code>youtube.upload</code> i <code>youtube.force-ssl</code>.</li>
             </ul>
           </li>
           <li>
-            Weryfikacja trwa ok. <b>4–6 tygodni</b>. W tym czasie aplikacja działa
-            normalnie w Testing dla użytkowników testowych.
-          </li>
-          <li>
-            Po zatwierdzeniu — wróć tutaj i <b>odznacz</b> opcję „Tryb OAuth Testing".
+            Po zatwierdzeniu (lub od razu, jeśli pozostajesz niezweryfikowany) —
+            wróć tutaj i <b>odznacz</b> opcję „Tryb OAuth Testing".
             Token od tej pory przestaje wygasać po 7 dniach.
           </li>
         </ol>
