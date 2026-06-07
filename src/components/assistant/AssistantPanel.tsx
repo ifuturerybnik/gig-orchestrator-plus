@@ -101,7 +101,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   });
 
   const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (vars: { content: string; attachments: PendingAttachment[] }) => {
       let threadId = activeId;
       if (!threadId) {
         const { id } = await createThread({ data: { orgId } });
@@ -109,6 +109,9 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
         setActiveId(id);
         qc.invalidateQueries({ queryKey: ["assistant-threads", orgId] });
       }
+      const summary = vars.attachments.length
+        ? `\n\n📎 ${vars.attachments.map((a) => a.name).join(", ")}`
+        : "";
       // optimistic: dodaj usera od razu
       qc.setQueryData<AssistantMessage[]>(
         ["assistant-messages", threadId],
@@ -117,13 +120,23 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
           {
             id: `tmp-${Date.now()}`,
             role: "user",
-            content,
+            content: vars.content + summary,
             created_at: new Date().toISOString(),
             cost_usd: 0,
           },
         ],
       );
-      return sendMessage({ data: { threadId, content } });
+      return sendMessage({
+        data: {
+          threadId,
+          content: vars.content,
+          attachments: vars.attachments.map((a) => ({
+            name: a.name,
+            mimeType: a.mimeType,
+            dataBase64: a.dataBase64,
+          })),
+        },
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assistant-messages", activeId] });
@@ -140,12 +153,39 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length, sendMutation.isPending]);
 
+  async function onPickFiles(files: FileList | null) {
+    if (!files) return;
+    const remaining = MAX_ATTACHMENTS - attachments.length;
+    if (remaining <= 0) {
+      toast.error(t("organizations.assistant.attach_limit", { max: MAX_ATTACHMENTS }));
+      return;
+    }
+    const picked = Array.from(files).slice(0, remaining);
+    const next: PendingAttachment[] = [];
+    for (const f of picked) {
+      if (!ALLOWED_MIMES.includes(f.type)) {
+        toast.error(t("organizations.assistant.attach_bad_type", { name: f.name }));
+        continue;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error(t("organizations.assistant.attach_too_big", { name: f.name }));
+        continue;
+      }
+      const dataBase64 = await fileToBase64(f);
+      next.push({ name: f.name, mimeType: f.type, size: f.size, dataBase64 });
+    }
+    setAttachments((prev) => [...prev, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const content = input.trim();
     if (!content || sendMutation.isPending) return;
+    const atts = attachments;
     setInput("");
-    sendMutation.mutate(content);
+    setAttachments([]);
+    sendMutation.mutate({ content, attachments: atts });
   }
 
   return (
