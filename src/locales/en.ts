@@ -523,7 +523,12 @@ export default
       "edit": "Edit organization",
       "save": "Save changes",
       "saved": "Changes saved",
+      "change_pending": "Change submitted for approval by the app administrator.",
+      "change_pending_banner_title": "Awaiting approval",
+      "change_pending_banner_body": "Changes to name, description or music genre are awaiting approval from the app administrator. Other fields have been saved.",
+      "moderated_fields_hint": "Changes to organization name, description and music genre require approval by the app administrator.",
       "rejection_reason": "Rejection reason",
+
       "basic": "Basic info",
       "address": {
         "title": "Headquarters / base address",
