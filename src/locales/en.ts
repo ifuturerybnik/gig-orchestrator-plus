@@ -856,6 +856,8 @@ export default
       "thinking": "Assistant is thinking…",
       "rename": "Rename",
       "archive": "Archive",
+      "delete": "Delete conversation",
+      "delete_confirm": "Delete this conversation? This cannot be undone.",
       "cost": "Conversation cost: {{cost}} USD",
       "limit": "Monthly limit: {{used}} / {{limit}} USD",
       "error": "Failed to send message: {{msg}}",
