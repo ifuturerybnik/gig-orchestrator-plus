@@ -94,6 +94,15 @@ export function OrgSidebar({
   });
   const perms = permsQuery.data?.permissions ?? null;
 
+  const fetchUnreadMail = useServerFn(countOrgUnreadMail);
+  const unreadMailQuery = useQuery({
+    queryKey: ["org-unread-mail", orgId],
+    queryFn: () => fetchUnreadMail({ data: { organizationId: orgId } }),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const unreadMail = unreadMailQuery.data?.unread ?? 0;
+
   const base = `/organizations/${orgId}`;
   const allItems: Item[] = [
     {
