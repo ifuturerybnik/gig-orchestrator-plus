@@ -865,7 +865,10 @@ export default
       "attach": "Attach a file (image or PDF)",
       "attach_limit": "Maximum {{max}} files per message.",
       "attach_bad_type": "Unsupported file type: {{name}}. Allowed: PNG, JPG, WEBP, PDF.",
-      "attach_too_big": "File “{{name}}” exceeds the 5 MB limit."
+      "attach_too_big": "File “{{name}}” exceeds the 5 MB limit.",
+      "delete_message": "Delete message",
+      "delete_message_confirm": "Delete this message? This action cannot be undone.",
+      "orphan_thread": "Untitled conversation"
     }
 
   },
