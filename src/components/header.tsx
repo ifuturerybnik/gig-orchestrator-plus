@@ -14,7 +14,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getMyProfile } from "@/lib/profile.functions";
-import { listPendingOrganizations } from "@/lib/organizations.functions";
+import {
+  listPendingOrganizations,
+  listPendingOrgChangeRequests,
+} from "@/lib/organizations.functions";
 import { listJoinRequests } from "@/lib/counterparties.functions";
 import logoUrl from "@/assets/logo.png";
 
