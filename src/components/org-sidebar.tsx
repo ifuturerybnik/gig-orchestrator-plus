@@ -18,6 +18,7 @@ import {
   Megaphone,
   Sparkles,
   HardDrive,
+  MessageCircle,
   ChevronDown,
 } from "lucide-react";
 import {
