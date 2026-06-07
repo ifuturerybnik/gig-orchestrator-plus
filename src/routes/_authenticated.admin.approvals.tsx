@@ -243,7 +243,73 @@ function AdminApprovalsPage() {
             </ul>
           )}
         </TabsContent>
+
+        <TabsContent value="changes" className="mt-4">
+          {changesQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : changes.length === 0 ? (
+            <p className="mt-4 rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              {t("admin.approvals.changes_empty")}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {changes.map((c) => {
+                const cur = c.organizations;
+                const diff = (label: string, oldV: string | null | undefined, newV: string | null | undefined) =>
+                  (oldV ?? "") !== (newV ?? "") ? (
+                    <div className="text-xs">
+                      <p className="font-medium text-foreground">{label}</p>
+                      <p className="text-muted-foreground line-through">{oldV || "—"}</p>
+                      <p className="text-foreground">{newV || "—"}</p>
+                    </div>
+                  ) : null;
+                const oldGenres = (cur?.genres ?? []).join(", ");
+                const newGenres = (c.genres ?? []).join(", ");
+                return (
+                  <li key={c.id} className="rounded-md border border-border bg-card p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <p className="font-medium text-foreground">
+                          {cur?.name ?? c.name}
+                        </p>
+                        {diff(t("organizations.form.name"), cur?.name ?? null, c.name)}
+                        {diff(t("organizations.form.description"), cur?.description ?? null, c.description)}
+                        {diff(t("organizations.detail.genres.title"), oldGenres, newGenres)}
+                        <p className="text-xs text-muted-foreground">
+                          {t("admin.approvals.created_at")}{" "}
+                          {new Date(c.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            changeMutation.mutate({ requestId: c.id, decision: "approved" })
+                          }
+                          disabled={changeMutation.isPending}
+                        >
+                          {t("common.approve")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            changeMutation.mutate({ requestId: c.id, decision: "rejected" })
+                          }
+                          disabled={changeMutation.isPending}
+                        >
+                          {t("common.reject")}
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }
