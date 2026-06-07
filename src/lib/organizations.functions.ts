@@ -663,31 +663,221 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase
+    const { supabase, userId } = context;
+    const callerIsAppAdmin = await isAppAdmin(supabase, userId);
+
+    // Pobierz bieżące wartości pól wymagających moderacji.
+    const { data: current, error: curErr } = await supabase
       .from("organizations")
-      .update({
+      .select("name, description, genres")
+      .eq("id", data.organizationId)
+      .maybeSingle();
+    if (curErr) throw new Error(curErr.message);
+    if (!current) throw new Error("Not found");
+
+    const newGenres = data.genres ?? [];
+    const curGenres = Array.isArray((current as { genres?: unknown }).genres)
+      ? ((current as { genres?: string[] }).genres ?? [])
+      : [];
+    const sameGenres =
+      newGenres.length === curGenres.length &&
+      newGenres.every((g, i) => g === curGenres[i]);
+
+    const nameChanged = data.name !== (current as { name?: string }).name;
+    const descChanged =
+      (data.description ?? null) !== ((current as { description?: string | null }).description ?? null);
+    const genresChanged = data.genres !== undefined && !sameGenres;
+    const moderatedChanged = nameChanged || descChanged || genresChanged;
+
+    // Pola które aktualizujemy zawsze (poza moderowanymi).
+    const directUpdate: Record<string, unknown> = {
+      address_street: data.address_street,
+      address_city: data.address_city,
+      address_postal_code: data.address_postal_code,
+      address_country: data.address_country,
+      ...(data.currency !== undefined ? { currency: data.currency } : {}),
+      legal_name: data.legal_name,
+      tax_id: data.tax_id,
+      registration_number: data.registration_number,
+      court_register_number: data.court_register_number,
+      bank_account: data.bank_account,
+      bank_name: data.bank_name,
+      signatory_name: data.signatory_name,
+      signatory_position: data.signatory_position,
+      contact_email: data.contact_email,
+      contact_phone: data.contact_phone,
+      website: data.website,
+    };
+
+    // Admin aplikacji aktualizuje wszystko od razu (włącznie z moderowanymi polami).
+    if (callerIsAppAdmin) {
+      const adminUpdate: Record<string, unknown> = {
+        ...directUpdate,
         name: data.name,
         description: data.description,
-        address_street: data.address_street,
-        address_city: data.address_city,
-        address_postal_code: data.address_postal_code,
-        address_country: data.address_country,
         ...(data.genres !== undefined ? { genres: data.genres } : {}),
-        ...(data.currency !== undefined ? { currency: data.currency } : {}),
-        legal_name: data.legal_name,
-        tax_id: data.tax_id,
-        registration_number: data.registration_number,
-        court_register_number: data.court_register_number,
-        bank_account: data.bank_account,
-        bank_name: data.bank_name,
-        signatory_name: data.signatory_name,
-        signatory_position: data.signatory_position,
-        contact_email: data.contact_email,
-        contact_phone: data.contact_phone,
-        website: data.website,
-      })
+      };
+      const { error } = await supabase
+        .from("organizations")
+        .update(adminUpdate)
+        .eq("id", data.organizationId);
+      if (error) throw new Error(error.message);
+      return { ok: true, pending: false as const };
+    }
+
+    // Zwykły użytkownik (owner / org admin): zapis pozostałych pól od razu.
+    const { error: upErr } = await supabase
+      .from("organizations")
+      .update(directUpdate)
       .eq("id", data.organizationId);
+    if (upErr) throw new Error(upErr.message);
+
+    // Jeśli zmieniono nazwę / opis / gatunek — utwórz wniosek dla admina.
+    if (moderatedChanged) {
+      // usuń poprzedni pending tej organizacji (zastąp nowym snapshotem)
+      await supabaseAdmin
+        .from("organization_change_requests")
+        .delete()
+        .eq("organization_id", data.organizationId)
+        .eq("status", "pending");
+
+      const { error: insErr } = await supabaseAdmin
+        .from("organization_change_requests")
+        .insert({
+          organization_id: data.organizationId,
+          requested_by: userId,
+          name: data.name,
+          description: data.description,
+          genres: data.genres ?? curGenres,
+        });
+      if (insErr) throw new Error(insErr.message);
+      return { ok: true, pending: true as const };
+    }
+
+    return { ok: true, pending: false as const };
+  });
+
+export const getPendingOrgChangeRequest = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ organizationId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: req, error } = await supabase
+      .from("organization_change_requests")
+      .select("id, name, description, genres, requested_by, created_at")
+      .eq("organization_id", data.organizationId)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { request: req ?? null };
+  });
+
+export const listPendingOrgChangeRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    if (!(await isAppAdmin(supabase, userId))) throw new Error("Forbidden");
+    const { data: reqs, error } = await supabaseAdmin
+      .from("organization_change_requests")
+      .select(
+        "id, organization_id, requested_by, name, description, genres, created_at, organizations(name, description, genres)",
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { requests: reqs ?? [] };
+  });
+
+export const decideOrgChangeRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        requestId: z.string().uuid(),
+        decision: z.enum(["approved", "rejected"]),
+        rejectionReason: z.string().trim().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    if (!(await isAppAdmin(supabase, userId))) throw new Error("Forbidden");
+
+    const { data: req, error: rErr } = await supabaseAdmin
+      .from("organization_change_requests")
+      .select("id, organization_id, name, description, genres, status")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!req) throw new Error("Not found");
+    if ((req as { status: string }).status !== "pending") {
+      throw new Error("Already decided");
+    }
+
+    if (data.decision === "approved") {
+      const { error: upErr } = await supabaseAdmin
+        .from("organizations")
+        .update({
+          name: (req as { name: string }).name,
+          description: (req as { description: string | null }).description,
+          genres: (req as { genres: string[] }).genres ?? [],
+        })
+        .eq("id", (req as { organization_id: string }).organization_id);
+      if (upErr) throw new Error(upErr.message);
+    }
+
+    const { error: updErr } = await supabaseAdmin
+      .from("organization_change_requests")
+      .update({
+        status: data.decision,
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString(),
+        rejection_reason:
+          data.decision === "rejected" ? data.rejectionReason ?? null : null,
+      })
+      .eq("id", data.requestId);
+    if (updErr) throw new Error(updErr.message);
+
+    return { ok: true };
+  });
+
+export const promoteMemberToOwner = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ memberId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: target, error: tErr } = await supabase
+      .from("organization_members")
+      .select("id, organization_id, role")
+      .eq("id", data.memberId)
+      .maybeSingle();
+    if (tErr) throw new Error(tErr.message);
+    if (!target) throw new Error("Not found");
+    if ((target as { role: string }).role === "owner") {
+      return { ok: true };
+    }
+
+    // Caller MUSI być właścicielem TEJ samej organizacji
+    // (admin aplikacji NIE może mianować — wymóg użytkownika).
+    const { data: me } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", (target as { organization_id: string }).organization_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!me || (me as { role: string }).role !== "owner") {
+      throw new Error("Only an owner of this organization can promote members");
+    }
+
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ role: "owner" })
+      .eq("id", data.memberId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -707,6 +897,7 @@ export const removeOrganizationMember = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const cancelInvitation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
