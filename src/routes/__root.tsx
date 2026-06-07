@@ -136,6 +136,7 @@ function RootComponent() {
         <AuthProvider>
           <AuthSync />
           <PWARegister />
+          <AppEventsBadge />
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
               <Outlet />
