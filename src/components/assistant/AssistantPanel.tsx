@@ -62,6 +62,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const createThread = useServerFn(createAssistantThread);
   const archiveThread = useServerFn(archiveAssistantThread);
   const sendMessage = useServerFn(sendAssistantMessage);
+  const deleteMessage = useServerFn(deleteAssistantMessage);
 
   const threadsQuery = useQuery({
     queryKey: ["assistant-threads", orgId],
@@ -71,10 +72,15 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const threads = (threadsQuery.data ?? []) as AssistantThread[];
   const activeThread = threads.find((t) => t.id === activeId) ?? null;
 
-  // auto-select most recent thread
+  // auto-select most recent thread + wyczyść activeId, jeśli wątek zniknął z listy (np. po archiwizacji)
   useEffect(() => {
+    if (threadsQuery.isLoading) return;
+    if (activeId && !threads.find((t) => t.id === activeId)) {
+      setActiveId(threads[0]?.id ?? null);
+      return;
+    }
     if (!activeId && threads.length > 0) setActiveId(threads[0].id);
-  }, [threads, activeId]);
+  }, [threads, activeId, threadsQuery.isLoading]);
 
   const messagesQuery = useQuery({
     queryKey: ["assistant-messages", activeId],
