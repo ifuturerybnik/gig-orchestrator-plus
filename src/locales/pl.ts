@@ -885,7 +885,10 @@ export default
       "attach": "Dodaj załącznik (obraz lub PDF)",
       "attach_limit": "Maksymalnie {{max}} plików na wiadomość.",
       "attach_bad_type": "Nieobsługiwany typ pliku: {{name}}. Dozwolone: PNG, JPG, WEBP, PDF.",
-      "attach_too_big": "Plik \"{{name}}\" przekracza limit 5 MB."
+      "attach_too_big": "Plik \"{{name}}\" przekracza limit 5 MB.",
+      "delete_message": "Usuń wiadomość",
+      "delete_message_confirm": "Usunąć tę wiadomość? Tej operacji nie da się cofnąć.",
+      "orphan_thread": "Rozmowa bez tytułu"
     }
 
   },
