@@ -53,6 +53,8 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchThreads = useServerFn(listAssistantThreads);
   const fetchMessages = useServerFn(listAssistantMessages);
