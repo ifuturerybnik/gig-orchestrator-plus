@@ -108,6 +108,16 @@ function OrganizationMembersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const promoteMutation = useMutation({
+    mutationFn: (memberId: string) => promoteFn({ data: { memberId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.members.promoted_to_owner"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   if (detailsQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
