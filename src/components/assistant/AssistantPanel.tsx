@@ -171,8 +171,8 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
       </aside>
 
       {/* Czat */}
-      <section className="flex flex-col">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
+      <section className="flex min-h-0 flex-col">
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4">
           {messages.length === 0 && !messagesQuery.isLoading ? (
             <p className="mt-8 text-center text-sm text-muted-foreground">
               {t("organizations.assistant.no_messages")}
