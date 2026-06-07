@@ -843,6 +843,23 @@ export default
       "created": "Organization submitted. An admin will review it.",
       "approved": "Organization approved.",
       "rejected": "Organization rejected."
+    },
+    "assistant": {
+      "title": "Concertivo Assistant",
+      "subtitle": "Ask anything about Concertivo or your organization. The assistant knows the documentation, understands the app, and only reads data you have access to.",
+      "new_thread": "New conversation",
+      "no_threads": "No conversations yet. Start one to chat with the assistant.",
+      "no_messages": "Type your first question to start the conversation.",
+      "composer_placeholder": "Ask the assistant…",
+      "send": "Send",
+      "sending": "Sending…",
+      "thinking": "Assistant is thinking…",
+      "rename": "Rename",
+      "archive": "Archive",
+      "cost": "Conversation cost: {{cost}} USD",
+      "limit": "Monthly limit: {{used}} / {{limit}} USD",
+      "error": "Failed to send message: {{msg}}",
+      "disabled": "The assistant is currently disabled for this organization."
     }
 
   },
