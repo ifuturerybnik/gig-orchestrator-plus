@@ -19,20 +19,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set listener BEFORE checking session, per Supabase guidance.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession);
-        setLoading(false);
-      }
-    );
+    let mounted = true;
 
+    // 1) Najpierw odtwórz sesję z localStorage — w iOS standalone PWA
+    //    INITIAL_SESSION potrafi pojawić się z null'em, zanim storage
+    //    zostanie odczytany; dlatego loading zdejmujemy dopiero po getSession.
     supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
       setSession(data.session);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // 2) Subskrypcja na późniejsze zmiany (login/logout/refresh).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (!mounted) return;
+        setSession(newSession);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
