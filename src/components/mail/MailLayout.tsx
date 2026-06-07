@@ -274,16 +274,24 @@ export function MailLayout({ orgId }: Props) {
         </Button>
       </div>
 
-      <div className="flex gap-0 h-[calc(100vh-180px)] min-h-[500px] -mx-4">
+      <div className="flex gap-0 h-[calc(100vh-180px)] min-h-[500px] md:-mx-4">
         {/* Sidebar: skrzynki + foldery */}
-        <Card className="w-48 shrink-0 p-2 overflow-y-auto">
+        <Card
+          className={cn(
+            "w-full md:w-48 shrink-0 p-2 overflow-y-auto",
+            mobilePane === "nav" ? "block" : "hidden md:block",
+          )}
+        >
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
             {t("correspondence.mail.mailboxes")}
           </div>
           {skrzynki.map((s) => (
             <button
               key={s.id}
-              onClick={() => setSkrzynkaId(s.id)}
+              onClick={() => {
+                setSkrzynkaId(s.id);
+                setMobilePane("list");
+              }}
               className={cn(
                 "w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent truncate",
                 skrzynkaId === s.id && "bg-accent font-medium",
@@ -300,7 +308,10 @@ export function MailLayout({ orgId }: Props) {
             return (
               <button
                 key={f.id}
-                onClick={() => setFolder(f.id)}
+                onClick={() => {
+                  setFolder(f.id);
+                  setMobilePane("list");
+                }}
                 className={cn(
                   "w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-sm hover:bg-accent",
                   folder === f.id && "bg-accent font-medium",
@@ -314,7 +325,22 @@ export function MailLayout({ orgId }: Props) {
         </Card>
 
         {/* Lista wiadomości */}
-        <Card className="w-80 shrink-0 overflow-hidden flex flex-col">
+        <Card
+          className={cn(
+            "w-full md:w-80 shrink-0 overflow-hidden flex-col",
+            mobilePane === "list" ? "flex" : "hidden md:flex",
+          )}
+        >
+          <div className="md:hidden flex items-center gap-2 border-b border-border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobilePane("nav")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {t("correspondence.mail.folders.label")}
+            </Button>
+          </div>
           <ScrollArea className="flex-1">
             {wiadQ.isLoading && (
               <div className="p-3 text-sm text-muted-foreground">{t("common.loading")}</div>
