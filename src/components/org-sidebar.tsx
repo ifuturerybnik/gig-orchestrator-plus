@@ -284,6 +284,14 @@ export function OrgSidebar({
                             <span className="flex-1 text-left">
                               {t(item.labelKey)}
                             </span>
+                            {item.id === "correspondence" && unreadMail > 0 && (
+                              <span
+                                aria-label={String(unreadMail)}
+                                className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:right-1 group-data-[collapsible=icon]:top-1 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:min-w-[16px] group-data-[collapsible=icon]:text-[10px]"
+                              >
+                                {unreadMail}
+                              </span>
+                            )}
                             <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -292,6 +300,8 @@ export function OrgSidebar({
                             {item.children.map((child) => {
                               const ChildIcon = child.icon;
                               const childActive = isActive(child.to);
+                              const showMailBadge =
+                                child.moduleId === "mail" && unreadMail > 0;
                               return (
                                 <SidebarMenuSubItem key={child.to}>
                                   <SidebarMenuSubButton
@@ -303,7 +313,15 @@ export function OrgSidebar({
                                       className="flex items-center gap-2"
                                     >
                                       <ChildIcon className="h-4 w-4" />
-                                      <span>{t(child.labelKey)}</span>
+                                      <span className="flex-1">{t(child.labelKey)}</span>
+                                      {showMailBadge && (
+                                        <span
+                                          aria-label={String(unreadMail)}
+                                          className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white"
+                                        >
+                                          {unreadMail}
+                                        </span>
+                                      )}
                                     </Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
