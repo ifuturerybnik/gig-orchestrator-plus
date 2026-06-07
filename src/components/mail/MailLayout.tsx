@@ -98,6 +98,11 @@ export function MailLayout({ orgId }: Props) {
   const [view, setView] = useState<"mail" | "szablony">("mail");
   const [bodyLoadingId, setBodyLoadingId] = useState<string | null>(null);
   const [bodyError, setBodyError] = useState<{ id: string; message: string } | null>(null);
+  // Mobilna nawigacja: pokazujemy jeden panel naraz (nav -> list -> message).
+  // Na md+ wszystkie 3 panele są widoczne równolegle.
+  const [mobilePane, setMobilePane] = useState<"nav" | "list" | "message">("nav");
+
+
 
   useEffect(() => {
     if (!skrzynkaId && skrzynki.length > 0) {
