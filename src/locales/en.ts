@@ -588,6 +588,7 @@ export default
       "media_web": "Media & Web",
       "web": "Web",
       "ai_studio": "AI Studio",
+      "assistant": "AI Assistant",
       "dysk": "Drive"
     },
     "events": {
