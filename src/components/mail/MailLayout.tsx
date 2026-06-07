@@ -17,6 +17,7 @@ import {
   Trash2,
   PenSquare,
   FileText,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
