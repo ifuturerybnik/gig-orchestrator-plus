@@ -30,7 +30,9 @@ function AdminApprovalsPage() {
   const setStatus = useServerFn(setOrganizationStatus);
   const fetchJoins = useServerFn(listJoinRequests);
   const decideJoin = useServerFn(decideJoinRequest);
-  const [tab, setTab] = useState<"orgs" | "joins">("orgs");
+  const fetchChanges = useServerFn(listPendingOrgChangeRequests);
+  const decideChange = useServerFn(decideOrgChangeRequest);
+  const [tab, setTab] = useState<"orgs" | "joins" | "changes">("orgs");
 
   const pendingQuery = useQuery({
     queryKey: ["pending-organizations"],
@@ -40,6 +42,11 @@ function AdminApprovalsPage() {
   const joinsQuery = useQuery({
     queryKey: ["pending-join-requests"],
     queryFn: () => fetchJoins(),
+  });
+
+  const changesQuery = useQuery({
+    queryKey: ["pending-org-changes"],
+    queryFn: () => fetchChanges(),
   });
 
   const mutation = useMutation({
@@ -69,6 +76,22 @@ function AdminApprovalsPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const changeMutation = useMutation({
+    mutationFn: (input: { requestId: string; decision: "approved" | "rejected" }) =>
+      decideChange({ data: input }),
+    onSuccess: (_d, vars) => {
+      toast.success(
+        vars.decision === "approved"
+          ? t("admin.approvals.change_approved")
+          : t("admin.approvals.change_rejected"),
+      );
+      queryClient.invalidateQueries({ queryKey: ["pending-org-changes"] });
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
 
   const orgs = pendingQuery.data?.organizations ?? [];
   const joins = joinsQuery.data?.requests ?? [];
