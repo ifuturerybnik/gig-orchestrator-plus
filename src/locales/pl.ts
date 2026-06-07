@@ -894,6 +894,7 @@ export default
       "administrators": "Administratorzy",
       "approvals": "Zatwierdzenia",
       "ai": "Integracja AI",
+      "assistant": "Asystent — baza wiedzy",
       "storage": "Storage (R2)"
     },
     "storage": {
