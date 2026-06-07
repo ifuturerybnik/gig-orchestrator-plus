@@ -3,12 +3,37 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
-import { Plus, Send, Loader2, MessageCircle, Archive } from "lucide-react";
+import { Plus, Send, Loader2, MessageCircle, Archive, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+const MAX_ATTACHMENTS = 3;
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
+
+type PendingAttachment = {
+  name: string;
+  mimeType: string;
+  size: number;
+  dataBase64: string;
+};
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // wycinamy prefix data:...;base64,
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 import {
   listAssistantThreads,
   createAssistantThread,
@@ -28,6 +53,8 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchThreads = useServerFn(listAssistantThreads);
   const fetchMessages = useServerFn(listAssistantMessages);
@@ -74,7 +101,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   });
 
   const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (vars: { content: string; attachments: PendingAttachment[] }) => {
       let threadId = activeId;
       if (!threadId) {
         const { id } = await createThread({ data: { orgId } });
@@ -82,6 +109,9 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
         setActiveId(id);
         qc.invalidateQueries({ queryKey: ["assistant-threads", orgId] });
       }
+      const summary = vars.attachments.length
+        ? `\n\n📎 ${vars.attachments.map((a) => a.name).join(", ")}`
+        : "";
       // optimistic: dodaj usera od razu
       qc.setQueryData<AssistantMessage[]>(
         ["assistant-messages", threadId],
@@ -90,13 +120,23 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
           {
             id: `tmp-${Date.now()}`,
             role: "user",
-            content,
+            content: vars.content + summary,
             created_at: new Date().toISOString(),
             cost_usd: 0,
           },
         ],
       );
-      return sendMessage({ data: { threadId, content } });
+      return sendMessage({
+        data: {
+          threadId,
+          content: vars.content,
+          attachments: vars.attachments.map((a) => ({
+            name: a.name,
+            mimeType: a.mimeType,
+            dataBase64: a.dataBase64,
+          })),
+        },
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assistant-messages", activeId] });
@@ -113,12 +153,39 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length, sendMutation.isPending]);
 
+  async function onPickFiles(files: FileList | null) {
+    if (!files) return;
+    const remaining = MAX_ATTACHMENTS - attachments.length;
+    if (remaining <= 0) {
+      toast.error(t("organizations.assistant.attach_limit", { max: MAX_ATTACHMENTS }));
+      return;
+    }
+    const picked = Array.from(files).slice(0, remaining);
+    const next: PendingAttachment[] = [];
+    for (const f of picked) {
+      if (!ALLOWED_MIMES.includes(f.type)) {
+        toast.error(t("organizations.assistant.attach_bad_type", { name: f.name }));
+        continue;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error(t("organizations.assistant.attach_too_big", { name: f.name }));
+        continue;
+      }
+      const dataBase64 = await fileToBase64(f);
+      next.push({ name: f.name, mimeType: f.type, size: f.size, dataBase64 });
+    }
+    setAttachments((prev) => [...prev, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const content = input.trim();
     if (!content || sendMutation.isPending) return;
+    const atts = attachments;
     setInput("");
-    sendMutation.mutate(content);
+    setAttachments([]);
+    sendMutation.mutate({ content, attachments: atts });
   }
 
   return (
@@ -195,7 +262,50 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
         </div>
 
         <form onSubmit={onSubmit} className="border-t p-3">
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachments.map((a, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  <span className="max-w-[180px] truncate">{a.name}</span>
+                  <span className="text-muted-foreground">
+                    {(a.size / 1024).toFixed(0)} KB
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-0.5 text-muted-foreground hover:text-destructive"
+                    onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                    aria-label="remove"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              accept={ALLOWED_MIMES.join(",")}
+              onChange={(e) => onPickFiles(e.target.files)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-[60px] w-10 shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sendMutation.isPending || attachments.length >= MAX_ATTACHMENTS}
+              title={t("organizations.assistant.attach")}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

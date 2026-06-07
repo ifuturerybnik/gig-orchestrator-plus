@@ -859,7 +859,11 @@ export default
       "cost": "Conversation cost: {{cost}} USD",
       "limit": "Monthly limit: {{used}} / {{limit}} USD",
       "error": "Failed to send message: {{msg}}",
-      "disabled": "The assistant is currently disabled for this organization."
+      "disabled": "The assistant is currently disabled for this organization.",
+      "attach": "Attach a file (image or PDF)",
+      "attach_limit": "Maximum {{max}} files per message.",
+      "attach_bad_type": "Unsupported file type: {{name}}. Allowed: PNG, JPG, WEBP, PDF.",
+      "attach_too_big": "File “{{name}}” exceeds the 5 MB limit."
     }
 
   },

@@ -879,7 +879,11 @@ export default
       "cost": "Koszt rozmowy: {{cost}} USD",
       "limit": "Limit miesięczny: {{used}} / {{limit}} USD",
       "error": "Nie udało się wysłać wiadomości: {{msg}}",
-      "disabled": "Asystent jest obecnie wyłączony dla tej organizacji."
+      "disabled": "Asystent jest obecnie wyłączony dla tej organizacji.",
+      "attach": "Dodaj załącznik (obraz lub PDF)",
+      "attach_limit": "Maksymalnie {{max}} plików na wiadomość.",
+      "attach_bad_type": "Nieobsługiwany typ pliku: {{name}}. Dozwolone: PNG, JPG, WEBP, PDF.",
+      "attach_too_big": "Plik „{{name}}” przekracza limit 5 MB."
     }
 
   },
