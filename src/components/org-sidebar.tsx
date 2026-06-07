@@ -191,6 +191,13 @@ export function OrgSidebar({
     },
     {
       kind: "leaf",
+      to: `${base}/assistant`,
+      labelKey: "organizations.sidebar.assistant",
+      icon: MessageCircle,
+      moduleId: "assistant",
+    },
+    {
+      kind: "leaf",
       to: `${base}/dysk`,
       labelKey: "organizations.sidebar.dysk",
       icon: HardDrive,
