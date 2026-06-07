@@ -41,6 +41,8 @@ function OrganizationMembersPage() {
   const inviteFn = useServerFn(inviteUserToOrganization);
   const removeFn = useServerFn(removeOrganizationMember);
   const cancelFn = useServerFn(cancelInvitation);
+  const promoteFn = useServerFn(promoteMemberToOwner);
+
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
