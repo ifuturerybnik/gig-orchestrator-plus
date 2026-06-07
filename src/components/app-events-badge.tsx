@@ -49,6 +49,27 @@ export function AppEventsBadge() {
     refetchOnWindowFocus: true,
   });
 
+  // iOS/Android wymagają zgody na powiadomienia, żeby setAppBadge zadziałał
+  // na ikonie aplikacji. Prosimy o nią raz, przy pierwszej interakcji użytkownika.
+  useEffect(() => {
+    if (!user) return;
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "default") return;
+
+    const ask = () => {
+      Notification.requestPermission().catch(() => undefined);
+      window.removeEventListener("pointerdown", ask);
+      window.removeEventListener("keydown", ask);
+    };
+    window.addEventListener("pointerdown", ask, { once: true });
+    window.addEventListener("keydown", ask, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", ask);
+      window.removeEventListener("keydown", ask);
+    };
+  }, [user]);
+
   useEffect(() => {
     const total = query.data?.total ?? 0;
     const nav = navigator as BadgeNavigator;
