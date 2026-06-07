@@ -14,7 +14,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getMyProfile } from "@/lib/profile.functions";
-import { listPendingOrganizations } from "@/lib/organizations.functions";
+import {
+  listPendingOrganizations,
+  listPendingOrgChangeRequests,
+} from "@/lib/organizations.functions";
 import { listJoinRequests } from "@/lib/counterparties.functions";
 import logoUrl from "@/assets/logo.png";
 
@@ -46,6 +49,7 @@ export function Header() {
 
   const fetchPendingOrgs = useServerFn(listPendingOrganizations);
   const fetchJoinReqs = useServerFn(listJoinRequests);
+  const fetchPendingChanges = useServerFn(listPendingOrgChangeRequests);
   const pendingOrgsQuery = useQuery({
     queryKey: ["pending-organizations"],
     queryFn: () => fetchPendingOrgs(),
@@ -58,9 +62,16 @@ export function Header() {
     enabled: isAdmin,
     staleTime: 30_000,
   });
+  const pendingChangesQuery = useQuery({
+    queryKey: ["pending-org-changes"],
+    queryFn: () => fetchPendingChanges(),
+    enabled: isAdmin,
+    staleTime: 30_000,
+  });
   const pendingCount =
     (pendingOrgsQuery.data?.organizations?.length ?? 0) +
-    (joinReqsQuery.data?.requests?.length ?? 0);
+    (joinReqsQuery.data?.requests?.length ?? 0) +
+    (pendingChangesQuery.data?.requests?.length ?? 0);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

@@ -119,9 +119,13 @@ function AuthSync() {
   const router = useRouter();
   const queryClient = useQueryClient();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      // Reaguj tylko na realne zmiany tożsamości — INITIAL_SESSION i TOKEN_REFRESHED
+      // (co ~1h + na focus karty) inaczej wywołują pełny refetch wszystkich zapytań.
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
-      queryClient.invalidateQueries();
+      // Po wylogowaniu nie odświeżaj — chronione zapytania i tak zwrócą 401.
+      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
     return () => subscription.unsubscribe();
   }, [router, queryClient]);
