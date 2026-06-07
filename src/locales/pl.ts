@@ -608,6 +608,7 @@ export default
       "media_web": "Media & Web",
       "web": "Web",
       "ai_studio": "AI Studio",
+      "assistant": "Asystent AI",
       "dysk": "Dysk"
     },
     "events": {
@@ -862,6 +863,23 @@ export default
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
       "approved": "Organizacja zatwierdzona.",
       "rejected": "Organizacja odrzucona."
+    },
+    "assistant": {
+      "title": "Asystent Concertivo",
+      "subtitle": "Zadawaj pytania o Concertivo i o swoją organizację. Asystent zna dokumentację, rozumie aplikację i sięga tylko po dane, do których masz dostęp.",
+      "new_thread": "Nowa rozmowa",
+      "no_threads": "Brak rozmów. Zacznij nową, by porozmawiać z asystentem.",
+      "no_messages": "Napisz pierwsze pytanie, by zacząć rozmowę.",
+      "composer_placeholder": "Zadaj pytanie asystentowi…",
+      "send": "Wyślij",
+      "sending": "Wysyłanie…",
+      "thinking": "Asystent myśli…",
+      "rename": "Zmień nazwę",
+      "archive": "Archiwizuj",
+      "cost": "Koszt rozmowy: {{cost}} USD",
+      "limit": "Limit miesięczny: {{used}} / {{limit}} USD",
+      "error": "Nie udało się wysłać wiadomości: {{msg}}",
+      "disabled": "Asystent jest obecnie wyłączony dla tej organizacji."
     }
 
   },
@@ -893,6 +911,7 @@ export default
       "administrators": "Administratorzy",
       "approvals": "Zatwierdzenia",
       "ai": "Integracja AI",
+      "assistant": "Asystent — baza wiedzy",
       "storage": "Storage (R2)"
     },
     "storage": {
@@ -1086,6 +1105,23 @@ export default
       "join_message": "Wiadomość:",
       "join_approved": "Zaakceptowano — użytkownik dodany jako członek.",
       "join_rejected": "Prośba odrzucona."
+    },
+    "assistant": {
+      "title": "Asystent Concertivo — baza wiedzy",
+      "subtitle": "Zarządzaj indeksem dokumentacji i kodu, z którego korzysta asystent AI w organizacjach.",
+      "status": {
+        "total": "Łącznie fragmentów",
+        "docs": "Dokumentacja",
+        "code": "Kod",
+        "last_run": "Ostatni reindeks",
+        "last_run_never": "nigdy",
+        "stale_warning": "Minęło {{days}} dni od ostatniego reindeksu — rozważ aktualizację bazy wiedzy."
+      },
+      "reindex": "Reindeksuj teraz",
+      "reindex_running": "Indeksowanie…",
+      "reindex_done": "Zaindeksowano {{chunks}} fragmentów (koszt ~{{cost}} USD).",
+      "reindex_error": "Reindeks nie powiódł się: {{msg}}",
+      "hint": "Pełen reindeks usuwa istniejące fragmenty i zaczytuje wszystko od nowa. Tylko superadmin."
     }
   },
   "contacts": {

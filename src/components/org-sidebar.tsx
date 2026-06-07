@@ -18,6 +18,7 @@ import {
   Megaphone,
   Sparkles,
   HardDrive,
+  MessageCircle,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -187,6 +188,13 @@ export function OrgSidebar({
           moduleId: "web",
         },
       ],
+    },
+    {
+      kind: "leaf",
+      to: `${base}/assistant`,
+      labelKey: "organizations.sidebar.assistant",
+      icon: MessageCircle,
+      moduleId: "assistant",
     },
     {
       kind: "leaf",

@@ -588,6 +588,7 @@ export default
       "media_web": "Media & Web",
       "web": "Web",
       "ai_studio": "AI Studio",
+      "assistant": "AI Assistant",
       "dysk": "Drive"
     },
     "events": {
@@ -842,6 +843,23 @@ export default
       "created": "Organization submitted. An admin will review it.",
       "approved": "Organization approved.",
       "rejected": "Organization rejected."
+    },
+    "assistant": {
+      "title": "Concertivo Assistant",
+      "subtitle": "Ask anything about Concertivo or your organization. The assistant knows the documentation, understands the app, and only reads data you have access to.",
+      "new_thread": "New conversation",
+      "no_threads": "No conversations yet. Start one to chat with the assistant.",
+      "no_messages": "Type your first question to start the conversation.",
+      "composer_placeholder": "Ask the assistant…",
+      "send": "Send",
+      "sending": "Sending…",
+      "thinking": "Assistant is thinking…",
+      "rename": "Rename",
+      "archive": "Archive",
+      "cost": "Conversation cost: {{cost}} USD",
+      "limit": "Monthly limit: {{used}} / {{limit}} USD",
+      "error": "Failed to send message: {{msg}}",
+      "disabled": "The assistant is currently disabled for this organization."
     }
 
   },
@@ -873,6 +891,7 @@ export default
       "administrators": "Administrators",
       "approvals": "Approvals",
       "ai": "AI Integration",
+      "assistant": "Assistant — knowledge base",
       "storage": "Storage (R2)"
     },
     "storage": {
@@ -1066,6 +1085,23 @@ export default
       "join_message": "Message:",
       "join_approved": "Approved — user added as a member.",
       "join_rejected": "Request rejected."
+    },
+    "assistant": {
+      "title": "Concertivo Assistant — knowledge base",
+      "subtitle": "Manage the documentation and code index used by the AI assistant inside organizations.",
+      "status": {
+        "total": "Total chunks",
+        "docs": "Documentation",
+        "code": "Code",
+        "last_run": "Last reindex",
+        "last_run_never": "never",
+        "stale_warning": "{{days}} days since the last reindex — consider refreshing the knowledge base."
+      },
+      "reindex": "Reindex now",
+      "reindex_running": "Indexing…",
+      "reindex_done": "Indexed {{chunks}} chunks (~{{cost}} USD).",
+      "reindex_error": "Reindex failed: {{msg}}",
+      "hint": "Full reindex wipes existing chunks and reloads everything. Super admin only."
     }
   },
   "contacts": {

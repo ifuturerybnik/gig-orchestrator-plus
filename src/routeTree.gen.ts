@@ -41,6 +41,7 @@ import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_a
 import { Route as AuthenticatedContactsMeRouteImport } from './routes/_authenticated.contacts.me'
 import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated.admin.storage'
 import { Route as AuthenticatedAdminSocialRouteImport } from './routes/_authenticated.admin.social'
+import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated.admin.assistant'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated.admin.ai'
 import { Route as AuthenticatedAdminAdministratorsRouteImport } from './routes/_authenticated.admin.administrators'
@@ -64,6 +65,7 @@ import { Route as AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport } fro
 import { Route as AuthenticatedOrganizationsOrgIdContactsRouteImport } from './routes/_authenticated.organizations.$orgId.contacts'
 import { Route as AuthenticatedOrganizationsOrgIdBudgetRouteImport } from './routes/_authenticated.organizations.$orgId.budget'
 import { Route as AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport } from './routes/_authenticated.organizations.$orgId.autokorespondencja'
+import { Route as AuthenticatedOrganizationsOrgIdAssistantRouteImport } from './routes/_authenticated.organizations.$orgId.assistant'
 import { Route as AuthenticatedOrganizationsOrgIdAiStudioRouteImport } from './routes/_authenticated.organizations.$orgId.ai-studio'
 import { Route as AuthenticatedContactsOrgOrgIdRouteImport } from './routes/_authenticated.contacts.org.$orgId'
 import { Route as ApiPublicV1OrgsSlugSitemapDotxmlRouteImport } from './routes/api/public/v1.orgs.$slug.sitemap[.]xml'
@@ -249,6 +251,12 @@ const AuthenticatedAdminSocialRoute =
     path: '/social',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAssistantRoute =
+  AuthenticatedAdminAssistantRouteImport.update({
+    id: '/assistant',
+    path: '/assistant',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminApprovalsRoute =
   AuthenticatedAdminApprovalsRouteImport.update({
     id: '/approvals',
@@ -385,6 +393,12 @@ const AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute =
     path: '/autokorespondencja',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdAssistantRoute =
+  AuthenticatedOrganizationsOrgIdAssistantRouteImport.update({
+    id: '/assistant',
+    path: '/assistant',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdAiStudioRoute =
   AuthenticatedOrganizationsOrgIdAiStudioRouteImport.update({
     id: '/ai-studio',
@@ -461,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -482,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
+  '/organizations/$orgId/assistant': typeof AuthenticatedOrganizationsOrgIdAssistantRoute
   '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -525,6 +541,7 @@ export interface FileRoutesByTo {
   '/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -545,6 +562,7 @@ export interface FileRoutesByTo {
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
+  '/organizations/$orgId/assistant': typeof AuthenticatedOrganizationsOrgIdAssistantRoute
   '/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -592,6 +610,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/administrators': typeof AuthenticatedAdminAdministratorsRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/social': typeof AuthenticatedAdminSocialRoute
   '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/_authenticated/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -613,6 +632,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/contacts/org/$orgId': typeof AuthenticatedContactsOrgOrgIdRoute
   '/_authenticated/organizations/$orgId/ai-studio': typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
+  '/_authenticated/organizations/$orgId/assistant': typeof AuthenticatedOrganizationsOrgIdAssistantRoute
   '/_authenticated/organizations/$orgId/autokorespondencja': typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   '/_authenticated/organizations/$orgId/budget': typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   '/_authenticated/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -660,6 +680,7 @@ export interface FileRouteTypes {
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
+    | '/admin/assistant'
     | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
@@ -681,6 +702,7 @@ export interface FileRouteTypes {
     | '/organizations/'
     | '/contacts/org/$orgId'
     | '/organizations/$orgId/ai-studio'
+    | '/organizations/$orgId/assistant'
     | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
@@ -724,6 +746,7 @@ export interface FileRouteTypes {
     | '/admin/administrators'
     | '/admin/ai'
     | '/admin/approvals'
+    | '/admin/assistant'
     | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
@@ -744,6 +767,7 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/contacts/org/$orgId'
     | '/organizations/$orgId/ai-studio'
+    | '/organizations/$orgId/assistant'
     | '/organizations/$orgId/autokorespondencja'
     | '/organizations/$orgId/budget'
     | '/organizations/$orgId/contacts'
@@ -790,6 +814,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/administrators'
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/approvals'
+    | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/social'
     | '/_authenticated/admin/storage'
     | '/_authenticated/contacts/me'
@@ -811,6 +836,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/'
     | '/_authenticated/contacts/org/$orgId'
     | '/_authenticated/organizations/$orgId/ai-studio'
+    | '/_authenticated/organizations/$orgId/assistant'
     | '/_authenticated/organizations/$orgId/autokorespondencja'
     | '/_authenticated/organizations/$orgId/budget'
     | '/_authenticated/organizations/$orgId/contacts'
@@ -1103,6 +1129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSocialRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/assistant': {
+      id: '/_authenticated/admin/assistant'
+      path: '/assistant'
+      fullPath: '/admin/assistant'
+      preLoaderRoute: typeof AuthenticatedAdminAssistantRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/approvals'
@@ -1264,6 +1297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/assistant': {
+      id: '/_authenticated/organizations/$orgId/assistant'
+      path: '/assistant'
+      fullPath: '/organizations/$orgId/assistant'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdAssistantRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/ai-studio': {
       id: '/_authenticated/organizations/$orgId/ai-studio'
       path: '/ai-studio'
@@ -1341,6 +1381,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAdministratorsRoute: typeof AuthenticatedAdminAdministratorsRoute
   AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
+  AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminSocialRoute: typeof AuthenticatedAdminSocialRoute
   AuthenticatedAdminStorageRoute: typeof AuthenticatedAdminStorageRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -1350,6 +1391,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAdministratorsRoute: AuthenticatedAdminAdministratorsRoute,
   AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
+  AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminSocialRoute: AuthenticatedAdminSocialRoute,
   AuthenticatedAdminStorageRoute: AuthenticatedAdminStorageRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
@@ -1377,6 +1419,7 @@ const AuthenticatedContactsRouteWithChildren =
 
 interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdAiStudioRoute: typeof AuthenticatedOrganizationsOrgIdAiStudioRoute
+  AuthenticatedOrganizationsOrgIdAssistantRoute: typeof AuthenticatedOrganizationsOrgIdAssistantRoute
   AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute: typeof AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute
   AuthenticatedOrganizationsOrgIdBudgetRoute: typeof AuthenticatedOrganizationsOrgIdBudgetRoute
   AuthenticatedOrganizationsOrgIdContactsRoute: typeof AuthenticatedOrganizationsOrgIdContactsRoute
@@ -1395,6 +1438,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
   {
     AuthenticatedOrganizationsOrgIdAiStudioRoute:
       AuthenticatedOrganizationsOrgIdAiStudioRoute,
+    AuthenticatedOrganizationsOrgIdAssistantRoute:
+      AuthenticatedOrganizationsOrgIdAssistantRoute,
     AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute:
       AuthenticatedOrganizationsOrgIdAutokorespondencjaRoute,
     AuthenticatedOrganizationsOrgIdBudgetRoute:
