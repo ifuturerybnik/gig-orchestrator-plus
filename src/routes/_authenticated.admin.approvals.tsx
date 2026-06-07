@@ -95,6 +95,15 @@ function AdminApprovalsPage() {
 
   const orgs = pendingQuery.data?.organizations ?? [];
   const joins = joinsQuery.data?.requests ?? [];
+  const changes = (changesQuery.data?.requests ?? []) as Array<{
+    id: string;
+    organization_id: string;
+    name: string;
+    description: string | null;
+    genres: string[] | null;
+    created_at: string;
+    organizations?: { name?: string; description?: string | null; genres?: string[] | null } | null;
+  }>;
 
   return (
     <div>
@@ -102,7 +111,7 @@ function AdminApprovalsPage() {
         {t("admin.approvals.title")}
       </h1>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "orgs" | "joins")} className="mt-6">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "orgs" | "joins" | "changes")} className="mt-6">
         <TabsList>
           <TabsTrigger value="orgs">
             {t("admin.approvals.tab_orgs")} ({orgs.length})
@@ -110,7 +119,11 @@ function AdminApprovalsPage() {
           <TabsTrigger value="joins">
             {t("admin.approvals.tab_joins")} ({joins.length})
           </TabsTrigger>
+          <TabsTrigger value="changes">
+            {t("admin.approvals.tab_changes")} ({changes.length})
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="orgs" className="mt-4">
           {pendingQuery.isLoading ? (
