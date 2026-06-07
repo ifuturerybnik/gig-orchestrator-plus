@@ -266,16 +266,18 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
 
       {/* Czat */}
       <section className="flex min-h-0 flex-col">
-        {activeThread && (
+        {(activeThread || (activeId && messages.length > 0)) && (
           <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
-            <h3 className="min-w-0 truncate text-sm font-medium">{activeThread.title}</h3>
+            <h3 className="min-w-0 truncate text-sm font-medium">
+              {activeThread?.title ?? t("organizations.assistant.orphan_thread")}
+            </h3>
             <Button
               variant="ghost"
               size="sm"
               className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
               onClick={() => {
                 if (window.confirm(t("organizations.assistant.delete_confirm"))) {
-                  archiveMutation.mutate(activeThread.id);
+                  archiveMutation.mutate((activeThread?.id ?? activeId) as string);
                 }
               }}
             >
@@ -294,7 +296,20 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
               {messages
                 .filter((m) => m.role === "user" || m.role === "assistant")
                 .map((m) => (
-                  <MessageBubble key={m.id} message={m} />
+                  <MessageBubble
+                    key={m.id}
+                    message={m}
+                    onDelete={
+                      m.id.startsWith("tmp-")
+                        ? undefined
+                        : () => {
+                            if (window.confirm(t("organizations.assistant.delete_message_confirm"))) {
+                              deleteMessageMutation.mutate(m.id);
+                            }
+                          }
+                    }
+                    deleteLabel={t("organizations.assistant.delete_message")}
+                  />
                 ))}
               {sendMutation.isPending && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
