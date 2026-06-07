@@ -13,6 +13,7 @@ export type OrgModuleId =
   | "mail"
   | "autokorespondencja"
   | "ai_studio"
+  | "assistant"
   | "social"
   | "web"
   | "dysk"
