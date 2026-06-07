@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { PWARegister } from "@/components/pwa-register";
 
 function NotFoundComponent() {
   return (
