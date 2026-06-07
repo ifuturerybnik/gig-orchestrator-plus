@@ -172,6 +172,12 @@ function stripCodeBlocks(text: string): string {
   return text.replace(/```(?:ts|tsx|js|jsx|sql|bash|sh|json|py|html|css)?\n[\s\S]*?```/g, "[fragment kodu ukryty]");
 }
 
+const AttachmentSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  mimeType: z.string().trim().min(1).max(120),
+  dataBase64: z.string().min(1).max(8_000_000), // ~6 MB po dekodzie; twardy limit per plik 5 MB sprawdzamy dalej
+});
+
 export const sendAssistantMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -179,6 +185,7 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       .object({
         threadId: UUID,
         content: z.string().trim().min(1).max(8000),
+        attachments: z.array(AttachmentSchema).max(3).optional(),
       })
       .parse(input),
   )
@@ -225,14 +232,11 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       );
     }
 
-    // 3) Zapis wiadomości użytkownika
-    await supabase.from("ai_assistant_messages").insert({
-      thread_id: data.threadId,
-      role: "user",
-      content: data.content,
-    });
+    // 3) Przetwórz załączniki (obrazy + PDF) PRZED zapisem
+    const { processAttachments } = await import("@/lib/assistant-attachments.server");
+    const processed = await processAttachments(data.attachments ?? []);
 
-    // 4) Pobierz historię (ostatnie 20)
+    // 4) Pobierz historię PRZED zapisem bieżącej wiadomości
     const { data: history } = await supabase
       .from("ai_assistant_messages")
       .select("role, content")
@@ -243,7 +247,17 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       .reverse()
       .filter((m) => m.role === "user" || m.role === "assistant");
 
-    // 5) RAG — wyszukaj kontekst (doc + code), oddzielnie żeby zachować równowagę
+    // 5) Zapis wiadomości użytkownika (z notatką o załącznikach)
+    const contentForStorage = processed.summary
+      ? `${data.content}\n\n📎 Załączniki: ${processed.summary}`
+      : data.content;
+    await supabase.from("ai_assistant_messages").insert({
+      thread_id: data.threadId,
+      role: "user",
+      content: contentForStorage,
+    });
+
+    // 6) RAG — kontekst (na bazie samego tekstu pytania)
     const { searchKb } = await import("@/lib/assistant-rag.server");
     const [docHits, codeHits] = await Promise.all([
       searchKb(data.content, { sourceTypes: ["doc"], matchCount: 5 }).catch(() => []),
@@ -259,7 +273,7 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
 
     const isSuper = await isSuperAdmin(supabase, userId);
 
-    // 5b) Uprawnienia i dostępne narzędzia
+    // 6b) Uprawnienia i dostępne narzędzia
     const { loadEffectivePerms } = await import("@/lib/organizations.functions");
     const perms = await loadEffectivePerms(supabase, userId, orgId);
     const { buildAvailableTools, toOpenAiTools, findTool } = await import(
@@ -281,11 +295,14 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       (docCtx ? `\n\nKONTEKST — DOKUMENTACJA:\n${docCtx}` : "") +
       (codeCtx ? `\n\nKONTEKST — KOD (do Twojego zrozumienia, NIE cytuj):\n${codeCtx}` : "");
 
-    // 6) Pętla z tool-callami (max 3 iteracje)
+    // 7) Pętla z tool-callami (max 4 iteracje)
     const model = "gpt-5-mini";
+    type ContentPart =
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string; detail?: "auto" | "low" | "high" } };
     type OaiMsg = {
       role: "system" | "user" | "assistant" | "tool";
-      content: string | null;
+      content: string | ContentPart[] | null;
       tool_calls?: Array<{
         id: string;
         type: "function";
@@ -294,9 +311,25 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       tool_call_id?: string;
       name?: string;
     };
+
+    // Budujemy treść bieżącej wiadomości user — multimodalna, gdy są obrazy/PDF
+    const userTextWithPdf = processed.pdfText
+      ? `${data.content}\n\n${processed.pdfText}`
+      : data.content;
+    const currentUser: OaiMsg = processed.imageParts.length
+      ? {
+          role: "user",
+          content: [
+            { type: "text", text: userTextWithPdf },
+            ...processed.imageParts,
+          ],
+        }
+      : { role: "user", content: userTextWithPdf };
+
     const messages: OaiMsg[] = [
       { role: "system", content: systemPrompt },
       ...past.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+      currentUser,
     ];
 
     let totalIn = 0;
