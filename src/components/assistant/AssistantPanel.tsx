@@ -262,7 +262,50 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
         </div>
 
         <form onSubmit={onSubmit} className="border-t p-3">
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachments.map((a, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  <span className="max-w-[180px] truncate">{a.name}</span>
+                  <span className="text-muted-foreground">
+                    {(a.size / 1024).toFixed(0)} KB
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-0.5 text-muted-foreground hover:text-destructive"
+                    onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                    aria-label="remove"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              accept={ALLOWED_MIMES.join(",")}
+              onChange={(e) => onPickFiles(e.target.files)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-[60px] w-10 shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sendMutation.isPending || attachments.length >= MAX_ATTACHMENTS}
+              title={t("organizations.assistant.attach")}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
