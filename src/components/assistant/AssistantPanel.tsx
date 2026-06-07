@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
-import { Plus, Send, Loader2, MessageCircle, Archive, Paperclip, X } from "lucide-react";
+import { Plus, Send, Loader2, MessageCircle, Trash2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,6 +68,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   });
 
   const threads = (threadsQuery.data ?? []) as AssistantThread[];
+  const activeThread = threads.find((t) => t.id === activeId) ?? null;
 
   // auto-select most recent thread
   useEffect(() => {
@@ -211,26 +212,37 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
               </p>
             ) : (
               threads.map((th) => (
-                <button
+                <div
                   key={th.id}
-                  onClick={() => setActiveId(th.id)}
                   className={cn(
-                    "group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors",
+                    "group flex w-full items-center gap-1 rounded-md pr-1 text-sm transition-colors",
                     th.id === activeId
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                   )}
                 >
-                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span className="flex-1 truncate">{th.title}</span>
-                  <Archive
-                    className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-60"
+                  <button
+                    onClick={() => setActiveId(th.id)}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span className="flex-1 truncate">{th.title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("organizations.assistant.delete")}
+                    title={t("organizations.assistant.delete")}
+                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
-                      archiveMutation.mutate(th.id);
+                      if (window.confirm(t("organizations.assistant.delete_confirm"))) {
+                        archiveMutation.mutate(th.id);
+                      }
                     }}
-                  />
-                </button>
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))
             )}
           </div>
@@ -239,6 +251,24 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
 
       {/* Czat */}
       <section className="flex min-h-0 flex-col">
+        {activeThread && (
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
+            <h3 className="min-w-0 truncate text-sm font-medium">{activeThread.title}</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                if (window.confirm(t("organizations.assistant.delete_confirm"))) {
+                  archiveMutation.mutate(activeThread.id);
+                }
+              }}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              {t("organizations.assistant.delete")}
+            </Button>
+          </div>
+        )}
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4">
           {messages.length === 0 && !messagesQuery.isLoading ? (
             <p className="mt-8 text-center text-sm text-muted-foreground">
