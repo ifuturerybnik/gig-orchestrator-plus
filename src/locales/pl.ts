@@ -863,6 +863,23 @@ export default
       "created": "Organizacja zgłoszona. Administrator ją zweryfikuje.",
       "approved": "Organizacja zatwierdzona.",
       "rejected": "Organizacja odrzucona."
+    },
+    "assistant": {
+      "title": "Asystent Concertivo",
+      "subtitle": "Zadawaj pytania o Concertivo i o swoją organizację. Asystent zna dokumentację, rozumie aplikację i sięga tylko po dane, do których masz dostęp.",
+      "new_thread": "Nowa rozmowa",
+      "no_threads": "Brak rozmów. Zacznij nową, by porozmawiać z asystentem.",
+      "no_messages": "Napisz pierwsze pytanie, by zacząć rozmowę.",
+      "composer_placeholder": "Zadaj pytanie asystentowi…",
+      "send": "Wyślij",
+      "sending": "Wysyłanie…",
+      "thinking": "Asystent myśli…",
+      "rename": "Zmień nazwę",
+      "archive": "Archiwizuj",
+      "cost": "Koszt rozmowy: {{cost}} USD",
+      "limit": "Limit miesięczny: {{used}} / {{limit}} USD",
+      "error": "Nie udało się wysłać wiadomości: {{msg}}",
+      "disabled": "Asystent jest obecnie wyłączony dla tej organizacji."
     }
 
   },
