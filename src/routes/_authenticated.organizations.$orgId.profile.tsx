@@ -52,12 +52,18 @@ function OrganizationProfilePage() {
   const updateFn = useServerFn(updateOrganization);
   const requestDeleteFn = useServerFn(requestOrganizationDeletion);
   const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
+  const fetchPendingChange = useServerFn(getPendingOrgChangeRequest);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
     queryKey,
     queryFn: () => fetchDetails({ data: { organizationId: orgId } }),
   });
+  const pendingChangeQuery = useQuery({
+    queryKey: ["pending-org-change", orgId],
+    queryFn: () => fetchPendingChange({ data: { organizationId: orgId } }),
+  });
+
 
   const [form, setForm] = useState({
     name: "",
