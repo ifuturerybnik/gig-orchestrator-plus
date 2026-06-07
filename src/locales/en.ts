@@ -1101,10 +1101,15 @@ export default
       "created_at": "Submitted at:",
       "tab_orgs": "New organizations",
       "tab_joins": "Join requests",
+      "tab_changes": "Organization data changes",
+      "changes_empty": "No pending change requests.",
+      "change_approved": "Change approved.",
+      "change_rejected": "Change rejected.",
       "joins_empty": "No join requests.",
       "join_message": "Message:",
       "join_approved": "Approved — user added as a member.",
       "join_rejected": "Request rejected."
+
     },
     "assistant": {
       "title": "Concertivo Assistant — knowledge base",
