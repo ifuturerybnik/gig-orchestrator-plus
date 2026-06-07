@@ -1088,6 +1088,23 @@ export default
       "join_message": "Wiadomość:",
       "join_approved": "Zaakceptowano — użytkownik dodany jako członek.",
       "join_rejected": "Prośba odrzucona."
+    },
+    "assistant": {
+      "title": "Asystent Concertivo — baza wiedzy",
+      "subtitle": "Zarządzaj indeksem dokumentacji i kodu, z którego korzysta asystent AI w organizacjach.",
+      "status": {
+        "total": "Łącznie fragmentów",
+        "docs": "Dokumentacja",
+        "code": "Kod",
+        "last_run": "Ostatni reindeks",
+        "last_run_never": "nigdy",
+        "stale_warning": "Minęło {{days}} dni od ostatniego reindeksu — rozważ aktualizację bazy wiedzy."
+      },
+      "reindex": "Reindeksuj teraz",
+      "reindex_running": "Indeksowanie…",
+      "reindex_done": "Zaindeksowano {{chunks}} fragmentów (koszt ~{{cost}} USD).",
+      "reindex_error": "Reindeks nie powiódł się: {{msg}}",
+      "hint": "Pełen reindeks usuwa istniejące fragmenty i zaczytuje wszystko od nowa. Tylko superadmin."
     }
   },
   "contacts": {
