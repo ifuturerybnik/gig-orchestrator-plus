@@ -41,6 +41,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { listBudgetEntries, getMyOrgPermissions } from "@/lib/organizations.functions";
+import { countOrgUnreadMail } from "@/lib/mail-counts.functions";
 import { hasModuleAccess, type OrgModuleId } from "@/lib/org-modules";
 
 type LeafItem = {
