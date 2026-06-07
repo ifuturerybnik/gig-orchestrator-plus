@@ -900,6 +900,8 @@ export default
     "empty": "Brak skrzynek. Tylko właściciel organizacji może je dodawać.",
     "sync": "Synchronizuj",
     "sync_started": "Synchronizacja uruchomiona",
+    "my_title": "Moja skrzynka e-mail",
+    "my_subtitle": "Twoja prywatna skrzynka IMAP/SMTP. Hasła są szyfrowane, dostęp masz tylko Ty.",
     "form": {
       "nazwa": "Nazwa wewnętrzna",
       "nazwa_placeholder": "np. Sekretariat, Booking",

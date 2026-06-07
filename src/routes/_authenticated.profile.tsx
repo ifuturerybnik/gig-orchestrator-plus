@@ -27,6 +27,7 @@ import { PrivacySection } from "@/components/privacy-section";
 import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
+import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -492,6 +493,10 @@ function ProfilePage() {
             </Button>
           </form>
         )}
+
+        <div className="mt-12">
+          <MyMailboxesSection />
+        </div>
 
         <div className="mt-12">
           <StopkiManager scope={{ kind: "user" }} />
