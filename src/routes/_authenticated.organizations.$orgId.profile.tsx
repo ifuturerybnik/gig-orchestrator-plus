@@ -26,9 +26,11 @@ import { currencyForCountry } from "@/lib/currencies";
 import {
   cancelOrganizationDeletion,
   getOrganizationDetails,
+  getPendingOrgChangeRequest,
   requestOrganizationDeletion,
   updateOrganization,
 } from "@/lib/organizations.functions";
+
 import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { OrgStorageSection } from "@/components/organizations/OrgStorageSection";
@@ -50,12 +52,18 @@ function OrganizationProfilePage() {
   const updateFn = useServerFn(updateOrganization);
   const requestDeleteFn = useServerFn(requestOrganizationDeletion);
   const cancelDeleteFn = useServerFn(cancelOrganizationDeletion);
+  const fetchPendingChange = useServerFn(getPendingOrgChangeRequest);
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
     queryKey,
     queryFn: () => fetchDetails({ data: { organizationId: orgId } }),
   });
+  const pendingChangeQuery = useQuery({
+    queryKey: ["pending-org-change", orgId],
+    queryFn: () => fetchPendingChange({ data: { organizationId: orgId } }),
+  });
+
 
   const [form, setForm] = useState({
     name: "",
@@ -122,12 +130,18 @@ function OrganizationProfilePage() {
         },
       });
     },
-    onSuccess: () => {
-      toast.success(t("organizations.detail.saved"));
+    onSuccess: (res: { pending?: boolean }) => {
+      if (res?.pending) {
+        toast.success(t("organizations.detail.change_pending"));
+      } else {
+        toast.success(t("organizations.detail.saved"));
+      }
       queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-org-change", orgId] });
       navigate({ to: "/organizations/$orgId", params: { orgId } });
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -207,8 +221,20 @@ function OrganizationProfilePage() {
         {t("organizations.sidebar.profile")}
       </h1>
 
+      {pendingChangeQuery.data?.request && (
+        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-foreground">
+          <p className="font-medium">{t("organizations.detail.change_pending_banner_title")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("organizations.detail.change_pending_banner_body")}
+          </p>
+        </div>
+      )}
+
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <h2 className="text-lg font-semibold">{t("organizations.detail.basic")}</h2>
+        <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
+          {t("organizations.detail.moderated_fields_hint")}
+        </p>
         <div className="space-y-2">
           <Label htmlFor="name">{t("organizations.form.name")}</Label>
           <Input
@@ -231,6 +257,7 @@ function OrganizationProfilePage() {
           />
         </div>
       </section>
+
 
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <div>

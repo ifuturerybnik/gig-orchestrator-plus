@@ -467,8 +467,12 @@ export default
       "no_name": "(no name)",
       "expires": "Expires",
       "invite_as_owner": "Invite as owner",
-      "invite_as_owner_help": "Owners get full access, can invite other owners and schedule organization deletion. Only a current owner can issue this kind of invitation."
+      "invite_as_owner_help": "Owners get full access, can invite other owners and schedule organization deletion. Only a current owner can issue this kind of invitation.",
+      "promote_to_owner": "Grant owner role",
+      "promote_confirm": "Grant this member the Owner role? They will receive full permissions.",
+      "promoted_to_owner": "Owner role granted."
     },
+
     "deletion": {
       "title": "Danger zone",
       "description": "Clicking the button below schedules deletion of this organization in 7 days. All members will be notified and can ask you to cancel during that window.",
@@ -519,7 +523,12 @@ export default
       "edit": "Edit organization",
       "save": "Save changes",
       "saved": "Changes saved",
+      "change_pending": "Change submitted for approval by the app administrator.",
+      "change_pending_banner_title": "Awaiting approval",
+      "change_pending_banner_body": "Changes to name, description or music genre are awaiting approval from the app administrator. Other fields have been saved.",
+      "moderated_fields_hint": "Changes to organization name, description and music genre require approval by the app administrator.",
       "rejection_reason": "Rejection reason",
+
       "basic": "Basic info",
       "address": {
         "title": "Headquarters / base address",
@@ -1092,10 +1101,15 @@ export default
       "created_at": "Submitted at:",
       "tab_orgs": "New organizations",
       "tab_joins": "Join requests",
+      "tab_changes": "Organization data changes",
+      "changes_empty": "No pending change requests.",
+      "change_approved": "Change approved.",
+      "change_rejected": "Change rejected.",
       "joins_empty": "No join requests.",
       "join_message": "Message:",
       "join_approved": "Approved — user added as a member.",
       "join_rejected": "Request rejected."
+
     },
     "assistant": {
       "title": "Concertivo Assistant — knowledge base",

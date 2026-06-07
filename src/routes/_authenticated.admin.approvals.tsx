@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 import {
+  decideOrgChangeRequest,
   listPendingOrganizations,
+  listPendingOrgChangeRequests,
   setOrganizationStatus,
 } from "@/lib/organizations.functions";
 import {
   listJoinRequests,
   decideJoinRequest,
 } from "@/lib/counterparties.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/approvals")({
   component: AdminApprovalsPage,
@@ -27,7 +30,9 @@ function AdminApprovalsPage() {
   const setStatus = useServerFn(setOrganizationStatus);
   const fetchJoins = useServerFn(listJoinRequests);
   const decideJoin = useServerFn(decideJoinRequest);
-  const [tab, setTab] = useState<"orgs" | "joins">("orgs");
+  const fetchChanges = useServerFn(listPendingOrgChangeRequests);
+  const decideChange = useServerFn(decideOrgChangeRequest);
+  const [tab, setTab] = useState<"orgs" | "joins" | "changes">("orgs");
 
   const pendingQuery = useQuery({
     queryKey: ["pending-organizations"],
@@ -37,6 +42,11 @@ function AdminApprovalsPage() {
   const joinsQuery = useQuery({
     queryKey: ["pending-join-requests"],
     queryFn: () => fetchJoins(),
+  });
+
+  const changesQuery = useQuery({
+    queryKey: ["pending-org-changes"],
+    queryFn: () => fetchChanges(),
   });
 
   const mutation = useMutation({
@@ -67,8 +77,33 @@ function AdminApprovalsPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const changeMutation = useMutation({
+    mutationFn: (input: { requestId: string; decision: "approved" | "rejected" }) =>
+      decideChange({ data: input }),
+    onSuccess: (_d, vars) => {
+      toast.success(
+        vars.decision === "approved"
+          ? t("admin.approvals.change_approved")
+          : t("admin.approvals.change_rejected"),
+      );
+      queryClient.invalidateQueries({ queryKey: ["pending-org-changes"] });
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+
   const orgs = pendingQuery.data?.organizations ?? [];
   const joins = joinsQuery.data?.requests ?? [];
+  const changes = (changesQuery.data?.requests ?? []) as Array<{
+    id: string;
+    organization_id: string;
+    name: string;
+    description: string | null;
+    genres: string[] | null;
+    created_at: string;
+    organizations?: { name?: string; description?: string | null; genres?: string[] | null } | null;
+  }>;
 
   return (
     <div>
@@ -76,7 +111,7 @@ function AdminApprovalsPage() {
         {t("admin.approvals.title")}
       </h1>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "orgs" | "joins")} className="mt-6">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "orgs" | "joins" | "changes")} className="mt-6">
         <TabsList>
           <TabsTrigger value="orgs">
             {t("admin.approvals.tab_orgs")} ({orgs.length})
@@ -84,7 +119,11 @@ function AdminApprovalsPage() {
           <TabsTrigger value="joins">
             {t("admin.approvals.tab_joins")} ({joins.length})
           </TabsTrigger>
+          <TabsTrigger value="changes">
+            {t("admin.approvals.tab_changes")} ({changes.length})
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="orgs" className="mt-4">
           {pendingQuery.isLoading ? (
@@ -204,7 +243,73 @@ function AdminApprovalsPage() {
             </ul>
           )}
         </TabsContent>
+
+        <TabsContent value="changes" className="mt-4">
+          {changesQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : changes.length === 0 ? (
+            <p className="mt-4 rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              {t("admin.approvals.changes_empty")}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {changes.map((c) => {
+                const cur = c.organizations;
+                const diff = (label: string, oldV: string | null | undefined, newV: string | null | undefined) =>
+                  (oldV ?? "") !== (newV ?? "") ? (
+                    <div className="text-xs">
+                      <p className="font-medium text-foreground">{label}</p>
+                      <p className="text-muted-foreground line-through">{oldV || "—"}</p>
+                      <p className="text-foreground">{newV || "—"}</p>
+                    </div>
+                  ) : null;
+                const oldGenres = (cur?.genres ?? []).join(", ");
+                const newGenres = (c.genres ?? []).join(", ");
+                return (
+                  <li key={c.id} className="rounded-md border border-border bg-card p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <p className="font-medium text-foreground">
+                          {cur?.name ?? c.name}
+                        </p>
+                        {diff(t("organizations.form.name"), cur?.name ?? null, c.name)}
+                        {diff(t("organizations.form.description"), cur?.description ?? null, c.description)}
+                        {diff(t("organizations.detail.genres.title"), oldGenres, newGenres)}
+                        <p className="text-xs text-muted-foreground">
+                          {t("admin.approvals.created_at")}{" "}
+                          {new Date(c.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            changeMutation.mutate({ requestId: c.id, decision: "approved" })
+                          }
+                          disabled={changeMutation.isPending}
+                        >
+                          {t("common.approve")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            changeMutation.mutate({ requestId: c.id, decision: "rejected" })
+                          }
+                          disabled={changeMutation.isPending}
+                        >
+                          {t("common.reject")}
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }

@@ -486,8 +486,12 @@ export default
       "no_name": "(bez imienia)",
       "expires": "Ważne do",
       "invite_as_owner": "Zaproś jako właściciel",
-      "invite_as_owner_help": "Właściciele mają pełen dostęp, mogą zapraszać innych właścicieli oraz zaplanować usunięcie organizacji. Tylko obecny właściciel może wystawić takie zaproszenie."
+      "invite_as_owner_help": "Właściciele mają pełen dostęp, mogą zapraszać innych właścicieli oraz zaplanować usunięcie organizacji. Tylko obecny właściciel może wystawić takie zaproszenie.",
+      "promote_to_owner": "Nadaj rolę właściciela",
+      "promote_confirm": "Nadać temu członkowi status właściciela organizacji? Otrzyma pełne uprawnienia.",
+      "promoted_to_owner": "Nadano status właściciela."
     },
+
     "deletion": {
       "title": "Strefa niebezpieczna",
       "description": "Po kliknięciu poniżej organizacja zostanie zaplanowana do usunięcia za 7 dni. Wszyscy członkowie zostaną powiadomieni i będą mogli w tym czasie zarezerwować dane lub poprosić Cię o anulowanie.",
@@ -538,7 +542,12 @@ export default
       "edit": "Edytuj organizację",
       "save": "Zapisz zmiany",
       "saved": "Zapisano zmiany",
+      "change_pending": "Zmiana wysłana do zatwierdzenia przez administratora aplikacji.",
+      "change_pending_banner_title": "Oczekuje na zatwierdzenie",
+      "change_pending_banner_body": "Zmiany nazwy, opisu lub gatunku muzycznego czekają na akceptację administratora aplikacji. Pozostałe pola zostały zapisane.",
+      "moderated_fields_hint": "Zmiana nazwy organizacji, opisu i gatunku muzycznego wymaga zatwierdzenia przez administratora aplikacji.",
       "rejection_reason": "Powód odrzucenia",
+
       "basic": "Dane podstawowe",
       "address": {
         "title": "Adres siedziby / bazy",
@@ -1112,11 +1121,16 @@ export default
       "created_at": "Data zgłoszenia:",
       "tab_orgs": "Nowe organizacje",
       "tab_joins": "Prośby o dołączenie",
+      "tab_changes": "Zmiany danych organizacji",
+      "changes_empty": "Brak oczekujących wniosków o zmianę.",
+      "change_approved": "Zmiana zatwierdzona.",
+      "change_rejected": "Zmiana odrzucona.",
       "joins_empty": "Brak próśb o dołączenie.",
       "join_message": "Wiadomość:",
       "join_approved": "Zaakceptowano — użytkownik dodany jako członek.",
       "join_rejected": "Prośba odrzucona."
     },
+
     "assistant": {
       "title": "Asystent Concertivo — baza wiedzy",
       "subtitle": "Zarządzaj indeksem dokumentacji i kodu, z którego korzysta asystent AI w organizacjach.",

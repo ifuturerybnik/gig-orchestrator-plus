@@ -21,8 +21,10 @@ import {
   cancelInvitation,
   getOrganizationDetails,
   inviteUserToOrganization,
+  promoteMemberToOwner,
   removeOrganizationMember,
 } from "@/lib/organizations.functions";
+
 
 export const Route = createFileRoute(
   "/_authenticated/organizations/$orgId/members",
@@ -39,6 +41,8 @@ function OrganizationMembersPage() {
   const inviteFn = useServerFn(inviteUserToOrganization);
   const removeFn = useServerFn(removeOrganizationMember);
   const cancelFn = useServerFn(cancelInvitation);
+  const promoteFn = useServerFn(promoteMemberToOwner);
+
 
   const queryKey = ["organization", orgId];
   const detailsQuery = useQuery({
@@ -103,6 +107,16 @@ function OrganizationMembersPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const promoteMutation = useMutation({
+    mutationFn: (memberId: string) => promoteFn({ data: { memberId } }),
+    onSuccess: () => {
+      toast.success(t("organizations.members.promoted_to_owner"));
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
 
   if (detailsQuery.isLoading) {
@@ -169,6 +183,21 @@ function OrganizationMembersPage() {
                     >
                       <Settings2 className="h-4 w-4" />
                     </Button>
+                    {isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t("organizations.members.promote_confirm"))) {
+                            promoteMutation.mutate(m.id);
+                          }
+                        }}
+                        disabled={promoteMutation.isPending}
+                      >
+                        {t("organizations.members.promote_to_owner")}
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="sm"
