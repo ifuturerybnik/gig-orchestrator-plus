@@ -467,8 +467,12 @@ export default
       "no_name": "(no name)",
       "expires": "Expires",
       "invite_as_owner": "Invite as owner",
-      "invite_as_owner_help": "Owners get full access, can invite other owners and schedule organization deletion. Only a current owner can issue this kind of invitation."
+      "invite_as_owner_help": "Owners get full access, can invite other owners and schedule organization deletion. Only a current owner can issue this kind of invitation.",
+      "promote_to_owner": "Grant owner role",
+      "promote_confirm": "Grant this member the Owner role? They will receive full permissions.",
+      "promoted_to_owner": "Owner role granted."
     },
+
     "deletion": {
       "title": "Danger zone",
       "description": "Clicking the button below schedules deletion of this organization in 7 days. All members will be notified and can ask you to cancel during that window.",
