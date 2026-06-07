@@ -880,6 +880,8 @@ export default
     "empty": "No mailboxes yet. Only the organization owner can add them.",
     "sync": "Sync",
     "sync_started": "Sync started",
+    "my_title": "My email mailbox",
+    "my_subtitle": "Your private IMAP/SMTP mailbox. Passwords are encrypted, only you have access.",
     "form": {
       "nazwa": "Internal name",
       "nazwa_placeholder": "e.g. Office, Booking",

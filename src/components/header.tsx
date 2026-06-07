@@ -14,6 +14,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getMyProfile } from "@/lib/profile.functions";
+import { listPendingOrganizations } from "@/lib/organizations.functions";
+import { listJoinRequests } from "@/lib/counterparties.functions";
 import logoUrl from "@/assets/logo.png";
 
 export function Header() {
@@ -41,6 +43,24 @@ export function Header() {
   });
   const hasMfa = !!mfaQuery.data?.totp?.some((f) => f.status === "verified");
   const showMfaWarning = mfaRecommended && !mfaQuery.isLoading && !hasMfa;
+
+  const fetchPendingOrgs = useServerFn(listPendingOrganizations);
+  const fetchJoinReqs = useServerFn(listJoinRequests);
+  const pendingOrgsQuery = useQuery({
+    queryKey: ["pending-organizations"],
+    queryFn: () => fetchPendingOrgs(),
+    enabled: isAdmin,
+    staleTime: 30_000,
+  });
+  const joinReqsQuery = useQuery({
+    queryKey: ["pending-join-requests"],
+    queryFn: () => fetchJoinReqs(),
+    enabled: isAdmin,
+    staleTime: 30_000,
+  });
+  const pendingCount =
+    (pendingOrgsQuery.data?.organizations?.length ?? 0) +
+    (joinReqsQuery.data?.requests?.length ?? 0);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -93,8 +113,19 @@ export function Header() {
                 </Tooltip>
               </TooltipProvider>
               {isAdmin && (
-                <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
+                <Link
+                  to="/admin"
+                  className="relative inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                >
                   {t("nav.admin")}
+                  {pendingCount > 0 && (
+                    <span
+                      aria-label={String(pendingCount)}
+                      className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
+                    >
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               )}
               <ThemeSwitcher />
