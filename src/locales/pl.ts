@@ -538,7 +538,12 @@ export default
       "edit": "Edytuj organizację",
       "save": "Zapisz zmiany",
       "saved": "Zapisano zmiany",
+      "change_pending": "Zmiana wysłana do zatwierdzenia przez administratora aplikacji.",
+      "change_pending_banner_title": "Oczekuje na zatwierdzenie",
+      "change_pending_banner_body": "Zmiany nazwy, opisu lub gatunku muzycznego czekają na akceptację administratora aplikacji. Pozostałe pola zostały zapisane.",
+      "moderated_fields_hint": "Zmiana nazwy organizacji, opisu i gatunku muzycznego wymaga zatwierdzenia przez administratora aplikacji.",
       "rejection_reason": "Powód odrzucenia",
+
       "basic": "Dane podstawowe",
       "address": {
         "title": "Adres siedziby / bazy",
