@@ -221,8 +221,20 @@ function OrganizationProfilePage() {
         {t("organizations.sidebar.profile")}
       </h1>
 
+      {pendingChangeQuery.data?.request && (
+        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-foreground">
+          <p className="font-medium">{t("organizations.detail.change_pending_banner_title")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("organizations.detail.change_pending_banner_body")}
+          </p>
+        </div>
+      )}
+
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <h2 className="text-lg font-semibold">{t("organizations.detail.basic")}</h2>
+        <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
+          {t("organizations.detail.moderated_fields_hint")}
+        </p>
         <div className="space-y-2">
           <Label htmlFor="name">{t("organizations.form.name")}</Label>
           <Input
@@ -245,6 +257,7 @@ function OrganizationProfilePage() {
           />
         </div>
       </section>
+
 
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
         <div>
