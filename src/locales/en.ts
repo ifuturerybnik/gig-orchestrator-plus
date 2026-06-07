@@ -1068,6 +1068,23 @@ export default
       "join_message": "Message:",
       "join_approved": "Approved — user added as a member.",
       "join_rejected": "Request rejected."
+    },
+    "assistant": {
+      "title": "Concertivo Assistant — knowledge base",
+      "subtitle": "Manage the documentation and code index used by the AI assistant inside organizations.",
+      "status": {
+        "total": "Total chunks",
+        "docs": "Documentation",
+        "code": "Code",
+        "last_run": "Last reindex",
+        "last_run_never": "never",
+        "stale_warning": "{{days}} days since the last reindex — consider refreshing the knowledge base."
+      },
+      "reindex": "Reindex now",
+      "reindex_running": "Indexing…",
+      "reindex_done": "Indexed {{chunks}} chunks (~{{cost}} USD).",
+      "reindex_error": "Reindex failed: {{msg}}",
+      "hint": "Full reindex wipes existing chunks and reloads everything. Super admin only."
     }
   },
   "contacts": {
