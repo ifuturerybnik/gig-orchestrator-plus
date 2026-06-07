@@ -250,6 +250,24 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
 
       {/* Czat */}
       <section className="flex min-h-0 flex-col">
+        {activeThread && (
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
+            <h3 className="min-w-0 truncate text-sm font-medium">{activeThread.title}</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                if (window.confirm(t("organizations.assistant.delete_confirm"))) {
+                  archiveMutation.mutate(activeThread.id);
+                }
+              }}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              {t("organizations.assistant.delete")}
+            </Button>
+          </div>
+        )}
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4">
           {messages.length === 0 && !messagesQuery.isLoading ? (
             <p className="mt-8 text-center text-sm text-muted-foreground">
