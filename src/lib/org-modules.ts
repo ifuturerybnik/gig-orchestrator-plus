@@ -58,6 +58,7 @@ export const ORG_MODULES: OrgModuleDef[] = [
   { id: "ai_studio", labelKey: "organizations.sidebar.ai_studio", group: "media_web", configurable: true },
   { id: "social", labelKey: "organizations.sidebar.social", group: "media_web", configurable: true },
   { id: "web", labelKey: "organizations.sidebar.web", group: "media_web", configurable: true },
+  { id: "assistant", labelKey: "organizations.sidebar.assistant", configurable: true },
   { id: "dysk", labelKey: "organizations.sidebar.dysk", configurable: true },
 ];
 
