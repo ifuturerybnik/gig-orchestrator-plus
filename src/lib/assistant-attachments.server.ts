@@ -42,16 +42,14 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 async function extractPdfText(bytes: Uint8Array, fileName: string): Promise<string> {
-  // unpdf używa pdfjs pod spodem
   const pdf = await getDocumentProxy(bytes);
   const totalPages = pdf.numPages;
-  const usePages = Math.min(totalPages, PDF_PAGE_LIMIT);
   const truncated = totalPages > PDF_PAGE_LIMIT;
+  const { text } = await extractText(pdf, { mergePages: false });
+  const pages: string[] = Array.isArray(text) ? text : [String(text ?? "")];
   let combined = "";
-  for (let p = 1; p <= usePages; p++) {
-    const { text } = await extractText(pdf, { mergePages: false, pageNumbers: [p] });
-    const pageText = Array.isArray(text) ? text[0] ?? "" : String(text ?? "");
-    combined += `\n\n--- Strona ${p} ---\n${pageText.trim()}`;
+  for (let i = 0; i < Math.min(pages.length, PDF_PAGE_LIMIT); i++) {
+    combined += `\n\n--- Strona ${i + 1} ---\n${(pages[i] ?? "").trim()}`;
     if (combined.length > PDF_TEXT_LIMIT) break;
   }
   let out = combined.trim();
