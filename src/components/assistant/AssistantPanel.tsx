@@ -40,6 +40,7 @@ import {
   archiveAssistantThread,
   listAssistantMessages,
   sendAssistantMessage,
+  deleteAssistantMessage,
   type AssistantThread,
   type AssistantMessage,
 } from "@/lib/assistant.functions";
