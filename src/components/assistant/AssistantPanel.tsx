@@ -401,10 +401,29 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   );
 }
 
-function MessageBubble({ message }: { message: AssistantMessage }) {
+function MessageBubble({
+  message,
+  onDelete,
+  deleteLabel,
+}: {
+  message: AssistantMessage;
+  onDelete?: () => void;
+  deleteLabel?: string;
+}) {
   const isUser = message.role === "user";
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("group flex items-start gap-2", isUser ? "justify-end" : "justify-start")}>
+      {isUser && onDelete && (
+        <button
+          type="button"
+          aria-label={deleteLabel}
+          title={deleteLabel}
+          onClick={onDelete}
+          className="mt-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
       <div
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2 text-sm",
@@ -421,6 +440,17 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
           </div>
         )}
       </div>
+      {!isUser && onDelete && (
+        <button
+          type="button"
+          aria-label={deleteLabel}
+          title={deleteLabel}
+          onClick={onDelete}
+          className="mt-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }
