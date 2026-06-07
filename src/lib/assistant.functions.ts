@@ -350,7 +350,7 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
           model,
           messages,
           ...(toolsForOpenAi.length ? { tools: toolsForOpenAi, tool_choice: "auto" } : {}),
-          max_completion_tokens: 1200,
+          max_completion_tokens: 4000,
         }),
       });
       totalDuration += Date.now() - startedAt;
