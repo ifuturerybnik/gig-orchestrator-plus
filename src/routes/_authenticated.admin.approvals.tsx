@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrgTypesText } from "@/components/organizations/OrgTypesText";
 import {
+  decideOrgChangeRequest,
   listPendingOrganizations,
+  listPendingOrgChangeRequests,
   setOrganizationStatus,
 } from "@/lib/organizations.functions";
 import {
   listJoinRequests,
   decideJoinRequest,
 } from "@/lib/counterparties.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/approvals")({
   component: AdminApprovalsPage,
