@@ -40,6 +40,7 @@ import {
   archiveAssistantThread,
   listAssistantMessages,
   sendAssistantMessage,
+  deleteAssistantMessage,
   type AssistantThread,
   type AssistantMessage,
 } from "@/lib/assistant.functions";
@@ -61,6 +62,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const createThread = useServerFn(createAssistantThread);
   const archiveThread = useServerFn(archiveAssistantThread);
   const sendMessage = useServerFn(sendAssistantMessage);
+  const deleteMessage = useServerFn(deleteAssistantMessage);
 
   const threadsQuery = useQuery({
     queryKey: ["assistant-threads", orgId],
@@ -70,10 +72,15 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   const threads = (threadsQuery.data ?? []) as AssistantThread[];
   const activeThread = threads.find((t) => t.id === activeId) ?? null;
 
-  // auto-select most recent thread
+  // auto-select most recent thread + wyczyść activeId, jeśli wątek zniknął z listy (np. po archiwizacji)
   useEffect(() => {
+    if (threadsQuery.isLoading) return;
+    if (activeId && !threads.find((t) => t.id === activeId)) {
+      setActiveId(threads[0]?.id ?? null);
+      return;
+    }
     if (!activeId && threads.length > 0) setActiveId(threads[0].id);
-  }, [threads, activeId]);
+  }, [threads, activeId, threadsQuery.isLoading]);
 
   const messagesQuery = useQuery({
     queryKey: ["assistant-messages", activeId],
@@ -97,6 +104,14 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
     onSuccess: () => {
       setActiveId(null);
       qc.invalidateQueries({ queryKey: ["assistant-threads", orgId] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteMessageMutation = useMutation({
+    mutationFn: (messageId: string) => deleteMessage({ data: { messageId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assistant-messages", activeId] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -251,16 +266,18 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
 
       {/* Czat */}
       <section className="flex min-h-0 flex-col">
-        {activeThread && (
+        {(activeThread || (activeId && messages.length > 0)) && (
           <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
-            <h3 className="min-w-0 truncate text-sm font-medium">{activeThread.title}</h3>
+            <h3 className="min-w-0 truncate text-sm font-medium">
+              {activeThread?.title ?? t("organizations.assistant.orphan_thread")}
+            </h3>
             <Button
               variant="ghost"
               size="sm"
               className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
               onClick={() => {
                 if (window.confirm(t("organizations.assistant.delete_confirm"))) {
-                  archiveMutation.mutate(activeThread.id);
+                  archiveMutation.mutate((activeThread?.id ?? activeId) as string);
                 }
               }}
             >
@@ -279,7 +296,20 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
               {messages
                 .filter((m) => m.role === "user" || m.role === "assistant")
                 .map((m) => (
-                  <MessageBubble key={m.id} message={m} />
+                  <MessageBubble
+                    key={m.id}
+                    message={m}
+                    onDelete={
+                      m.id.startsWith("tmp-")
+                        ? undefined
+                        : () => {
+                            if (window.confirm(t("organizations.assistant.delete_message_confirm"))) {
+                              deleteMessageMutation.mutate(m.id);
+                            }
+                          }
+                    }
+                    deleteLabel={t("organizations.assistant.delete_message")}
+                  />
                 ))}
               {sendMutation.isPending && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -371,10 +401,29 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   );
 }
 
-function MessageBubble({ message }: { message: AssistantMessage }) {
+function MessageBubble({
+  message,
+  onDelete,
+  deleteLabel,
+}: {
+  message: AssistantMessage;
+  onDelete?: () => void;
+  deleteLabel?: string;
+}) {
   const isUser = message.role === "user";
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("group flex items-start gap-2", isUser ? "justify-end" : "justify-start")}>
+      {isUser && onDelete && (
+        <button
+          type="button"
+          aria-label={deleteLabel}
+          title={deleteLabel}
+          onClick={onDelete}
+          className="mt-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
       <div
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2 text-sm",
@@ -391,6 +440,17 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
           </div>
         )}
       </div>
+      {!isUser && onDelete && (
+        <button
+          type="button"
+          aria-label={deleteLabel}
+          title={deleteLabel}
+          onClick={onDelete}
+          className="mt-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }

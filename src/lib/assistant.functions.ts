@@ -111,10 +111,31 @@ export const archiveAssistantThread = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ threadId: UUID }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase
+    // Hard delete — kasujemy wątek i powiązane wiadomości (ON DELETE CASCADE w schemacie).
+    // Najpierw spróbuj usunąć; jeśli RLS/FK się postawi, zarchiwizuj.
+    const del = await supabase
       .from("ai_assistant_threads")
-      .update({ archived: true })
+      .delete()
       .eq("id", data.threadId);
+    if (del.error) {
+      const upd = await supabase
+        .from("ai_assistant_threads")
+        .update({ archived: true })
+        .eq("id", data.threadId);
+      if (upd.error) throw new Error(upd.error.message);
+    }
+    return { ok: true };
+  });
+
+export const deleteAssistantMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ messageId: UUID }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("ai_assistant_messages")
+      .delete()
+      .eq("id", data.messageId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
