@@ -131,6 +131,7 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <AuthSync />
+          <PWARegister />
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
               <Outlet />
