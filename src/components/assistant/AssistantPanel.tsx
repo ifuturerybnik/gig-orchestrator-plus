@@ -68,6 +68,7 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
   });
 
   const threads = (threadsQuery.data ?? []) as AssistantThread[];
+  const activeThread = threads.find((t) => t.id === activeId) ?? null;
 
   // auto-select most recent thread
   useEffect(() => {
