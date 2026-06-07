@@ -608,6 +608,7 @@ export default
       "media_web": "Media & Web",
       "web": "Web",
       "ai_studio": "AI Studio",
+      "assistant": "Asystent AI",
       "dysk": "Dysk"
     },
     "events": {
