@@ -108,6 +108,14 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const deleteMessageMutation = useMutation({
+    mutationFn: (messageId: string) => deleteMessage({ data: { messageId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assistant-messages", activeId] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const sendMutation = useMutation({
     mutationFn: async (vars: { content: string; attachments: PendingAttachment[] }) => {
       let threadId = activeId;
