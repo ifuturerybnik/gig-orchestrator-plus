@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AssistantToolResult } from "@/lib/assistant-tools.server";
 
 const UUID = z.string().uuid();
 
@@ -257,74 +258,177 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       .join("\n\n");
 
     const isSuper = await isSuperAdmin(supabase, userId);
+
+    // 5b) Uprawnienia i dostępne narzędzia
+    const { loadEffectivePerms } = await import("@/lib/organizations.functions");
+    const perms = await loadEffectivePerms(supabase, userId, orgId);
+    const { buildAvailableTools, toOpenAiTools, findTool } = await import(
+      "@/lib/assistant-tools.server"
+    );
+    const availableTools = buildAvailableTools(perms);
+    const toolsForOpenAi = toOpenAiTools(availableTools);
+    const allowedToolNames = new Set(availableTools.map((t) => t.name));
+
+    const toolsHint = availableTools.length
+      ? `\n\nDOSTĘPNE NARZĘDZIA (wywołaj, gdy potrzebujesz aktualnych danych organizacji):\n` +
+        availableTools.map((t) => `- ${t.name}: ${t.description}`).join("\n")
+      : "\n\nNie masz dostępu do żadnych narzędzi odczytu danych organizacji w tej sesji.";
+
     const systemPrompt =
       SYSTEM_PROMPT_BASE +
       (isSuper ? SUPERADMIN_SUFFIX : "") +
+      toolsHint +
       (docCtx ? `\n\nKONTEKST — DOKUMENTACJA:\n${docCtx}` : "") +
       (codeCtx ? `\n\nKONTEKST — KOD (do Twojego zrozumienia, NIE cytuj):\n${codeCtx}` : "");
 
-    // 6) Wywołanie OpenAI Chat Completions
+    // 6) Pętla z tool-callami (max 3 iteracje)
     const model = "gpt-5-mini";
-    const startedAt = Date.now();
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...past.map((m) => ({ role: m.role, content: m.content })),
-        ],
-        max_completion_tokens: 1200,
-      }),
-    });
-    const duration = Date.now() - startedAt;
-    const text = await resp.text();
-    let payload: {
-      error?: { message?: string };
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-      choices?: Array<{ message?: { content?: string } }>;
-    } | null = null;
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      // pomijamy
-    }
-    if (!resp.ok) {
-      const errMsg = payload?.error?.message || `OpenAI ${resp.status}`;
-      await supabaseAdmin.from("ai_uzycie").insert({
-        user_id: userId,
-        user_email: userEmail,
-        scenariusz: "assistant",
-        model,
-        status: "error",
-        error: errMsg.slice(0, 500),
-        duration_ms: duration,
-        org_id: orgId,
-        thread_id: data.threadId,
+    type OaiMsg = {
+      role: "system" | "user" | "assistant" | "tool";
+      content: string | null;
+      tool_calls?: Array<{
+        id: string;
+        type: "function";
+        function: { name: string; arguments: string };
+      }>;
+      tool_call_id?: string;
+      name?: string;
+    };
+    const messages: OaiMsg[] = [
+      { role: "system", content: systemPrompt },
+      ...past.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    ];
+
+    let totalIn = 0;
+    let totalOut = 0;
+    let totalDuration = 0;
+    let finalContent = "";
+    const toolLog: Array<{ name: string; ok: boolean; ms: number }> = [];
+
+    for (let iter = 0; iter < 4; iter++) {
+      const startedAt = Date.now();
+      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          ...(toolsForOpenAi.length ? { tools: toolsForOpenAi, tool_choice: "auto" } : {}),
+          max_completion_tokens: 1200,
+        }),
       });
-      throw new Error(errMsg);
+      totalDuration += Date.now() - startedAt;
+      const text = await resp.text();
+      let payload: {
+        error?: { message?: string };
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        choices?: Array<{
+          message?: {
+            content?: string | null;
+            tool_calls?: Array<{
+              id: string;
+              type: "function";
+              function: { name: string; arguments: string };
+            }>;
+          };
+          finish_reason?: string;
+        }>;
+      } | null = null;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        /* noop */
+      }
+      if (!resp.ok) {
+        const errMsg = payload?.error?.message || `OpenAI ${resp.status}`;
+        await supabaseAdmin.from("ai_uzycie").insert({
+          user_id: userId,
+          user_email: userEmail,
+          scenariusz: "assistant",
+          model,
+          status: "error",
+          error: errMsg.slice(0, 500),
+          duration_ms: totalDuration,
+          org_id: orgId,
+          thread_id: data.threadId,
+        });
+        throw new Error(errMsg);
+      }
+      totalIn += Number(payload?.usage?.prompt_tokens ?? 0);
+      totalOut += Number(payload?.usage?.completion_tokens ?? 0);
+
+      const choice = payload?.choices?.[0];
+      const msg = choice?.message;
+      const toolCalls = msg?.tool_calls ?? [];
+
+      if (toolCalls.length === 0) {
+        finalContent = msg?.content ?? "";
+        break;
+      }
+
+      // Dopisz wiadomość asystenta z tool_calls
+      messages.push({
+        role: "assistant",
+        content: msg?.content ?? "",
+        tool_calls: toolCalls,
+      });
+
+      // Wykonaj każde wywołanie narzędzia
+      for (const tc of toolCalls) {
+        const def = findTool(tc.function.name);
+        const ms0 = Date.now();
+        let result: AssistantToolResult;
+        if (!def) {
+          result = { ok: false, error: `Nieznane narzędzie: ${tc.function.name}` };
+        } else if (!allowedToolNames.has(def.name)) {
+          result = { ok: false, error: `Brak uprawnień do narzędzia: ${def.name}` };
+        } else {
+          let parsed: Record<string, unknown> = {};
+          try {
+            parsed = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+          } catch {
+            parsed = {};
+          }
+          try {
+            result = await def.handler(parsed, { orgId, userId, perms });
+          } catch (e) {
+            result = { ok: false, error: e instanceof Error ? e.message : String(e) };
+          }
+        }
+        const ms = Date.now() - ms0;
+        toolLog.push({ name: tc.function.name, ok: result.ok, ms });
+
+        // Zapis do historii (rola 'tool') — pomocne w debug i ciągłości wątku
+        await supabase.from("ai_assistant_messages").insert({
+          thread_id: data.threadId,
+          role: "tool",
+          content: JSON.stringify(result).slice(0, 8000),
+          tool_call_id: tc.id,
+        });
+
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: JSON.stringify(result).slice(0, 8000),
+        });
+      }
     }
 
-    const tIn = Number(payload?.usage?.prompt_tokens ?? 0);
-    const tOut = Number(payload?.usage?.completion_tokens ?? 0);
     // gpt-5-mini: 0.25 / 2.00 per 1M
-    const cost = (tIn / 1_000_000) * 0.25 + (tOut / 1_000_000) * 2.0;
-    let content = payload?.choices?.[0]?.message?.content ?? "";
+    const cost = (totalIn / 1_000_000) * 0.25 + (totalOut / 1_000_000) * 2.0;
+    if (!isSuper) finalContent = stripCodeBlocks(finalContent);
 
-    // 7) Post-filter — nie cytuj kodu dla nie-superadminów
-    if (!isSuper) content = stripCodeBlocks(content);
-
-    // 8) Zapis odpowiedzi + log kosztów
+    // 7) Zapis odpowiedzi + log kosztów
     await supabase.from("ai_assistant_messages").insert({
       thread_id: data.threadId,
       role: "assistant",
-      content,
-      tokens_in: tIn,
-      tokens_out: tOut,
+      content: finalContent,
+      tokens_in: totalIn,
+      tokens_out: totalOut,
       cost_usd: cost,
     });
 
@@ -333,20 +437,21 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       user_email: userEmail,
       scenariusz: "assistant",
       model,
-      tokens_in: tIn,
-      tokens_out: tOut,
+      tokens_in: totalIn,
+      tokens_out: totalOut,
       cost_usd: cost,
-      duration_ms: duration,
+      duration_ms: totalDuration,
       status: "ok",
       org_id: orgId,
       thread_id: data.threadId,
     });
 
     return {
-      content,
+      content: finalContent,
       cost_usd: cost,
       monthly_used: monthlyUsed + cost,
       monthly_limit: monthlyLimit,
+      tools_used: toolLog,
     };
   });
 

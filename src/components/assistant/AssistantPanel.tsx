@@ -179,9 +179,11 @@ export function AssistantPanel({ orgId }: AssistantPanelProps) {
             </p>
           ) : (
             <div className="space-y-4">
-              {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} />
-              ))}
+              {messages
+                .filter((m) => m.role === "user" || m.role === "assistant")
+                .map((m) => (
+                  <MessageBubble key={m.id} message={m} />
+                ))}
               {sendMutation.isPending && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
