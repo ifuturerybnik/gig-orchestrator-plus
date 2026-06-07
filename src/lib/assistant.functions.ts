@@ -350,7 +350,7 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
           model,
           messages,
           ...(toolsForOpenAi.length ? { tools: toolsForOpenAi, tool_choice: "auto" } : {}),
-          max_completion_tokens: 1200,
+          max_completion_tokens: 4000,
         }),
       });
       totalDuration += Date.now() - startedAt;
@@ -454,6 +454,11 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
     // gpt-5-mini: 0.25 / 2.00 per 1M
     const cost = (totalIn / 1_000_000) * 0.25 + (totalOut / 1_000_000) * 2.0;
     if (!isSuper) finalContent = stripCodeBlocks(finalContent);
+    if (!finalContent || !finalContent.trim()) {
+      finalContent = toolLog.length
+        ? "Odebrałem dane z narzędzi, ale nie udało mi się wygenerować odpowiedzi. Spróbuj zadać pytanie inaczej lub bardziej szczegółowo."
+        : "Nie udało mi się wygenerować odpowiedzi. Spróbuj ponownie lub przeformułuj pytanie.";
+    }
 
     // 7) Zapis odpowiedzi + log kosztów
     await supabase.from("ai_assistant_messages").insert({
@@ -464,6 +469,18 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       tokens_out: totalOut,
       cost_usd: cost,
     });
+
+    // 7b) Auto-tytuł rozmowy (jeśli to pierwsza wiadomość użytkownika w wątku)
+    if (past.length === 0) {
+      const raw = data.content.replace(/\s+/g, " ").trim();
+      const title = raw.length > 60 ? raw.slice(0, 57) + "…" : raw;
+      if (title) {
+        await supabase
+          .from("ai_assistant_threads")
+          .update({ title })
+          .eq("id", data.threadId);
+      }
+    }
 
     await supabaseAdmin.from("ai_uzycie").insert({
       user_id: userId,
