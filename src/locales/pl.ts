@@ -739,6 +739,7 @@ export default
         "date_required": "Data wydarzenia jest wymagana",
         "status_required": "Status jest wymagany",
         "event_kind_required": "Rodzaj wydarzenia jest wymagany",
+        "time_required": "Godzina rozpoczęcia jest wymagana dla potwierdzonego wydarzenia",
         "required": "Pole wymagane",
         "cp_link_missing": "Nie można otworzyć szczegółów kontrahenta — brak powiązania w tej organizacji."
       }
