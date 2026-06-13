@@ -166,3 +166,28 @@ export const updateMyAvatar = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const updateMyLandingPath = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        landing_path: z
+          .string()
+          .trim()
+          .regex(/^\/[A-Za-z0-9/_-]{0,300}$/, "Invalid path")
+          .nullable()
+          .optional()
+          .transform((v) => (v && v.length > 0 ? v : null)),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ landing_path: data.landing_path })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
