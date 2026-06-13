@@ -76,6 +76,7 @@ export function MyMailboxesSection() {
         data: {
           nazwa: form.nazwa,
           nazwa_wyswietlana: form.nazwa_wyswietlana || null,
+          ikona_url: form.ikona_url || null,
           typ: "osobista",
           organizationId: null,
           email: form.email,
