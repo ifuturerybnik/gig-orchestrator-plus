@@ -29,6 +29,7 @@ import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
+import { LandingPreferenceField } from "@/components/profile-landing-field";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -180,6 +181,9 @@ function ProfilePage() {
                 {t("nav.logout")}
               </Button>
             </div>
+            <LandingPreferenceField
+              currentPath={(profileQuery.data?.profile as { landing_path?: string | null } | null | undefined)?.landing_path ?? null}
+            />
             <ProfileAvatarField
               value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
             />

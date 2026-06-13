@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { decryptPii, encryptPii } from "./crypto.server";
 
 const PROFILE_COLUMNS =
-  "id, first_name, last_name, phone, preferred_language, user_kinds, avatar_url, address_street, address_city, address_postal_code, address_country, settlement_form, settlement_employer_org_id, settlement_other_description, billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account_enc, billing_pesel_enc, billing_tax_office, billing_zus_title, billing_default_rate, billing_default_currency";
+  "id, first_name, last_name, phone, preferred_language, user_kinds, avatar_url, landing_path, address_street, address_city, address_postal_code, address_country, settlement_form, settlement_employer_org_id, settlement_other_description, billing_company_name, billing_tax_id, billing_is_vat_payer, billing_bank_account_enc, billing_pesel_enc, billing_tax_office, billing_zus_title, billing_default_rate, billing_default_currency";
 
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -162,6 +162,31 @@ export const updateMyAvatar = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("profiles")
       .update({ avatar_url: data.avatar_url })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateMyLandingPath = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        landing_path: z
+          .string()
+          .trim()
+          .regex(/^\/[A-Za-z0-9/_-]{0,300}$/, "Invalid path")
+          .nullable()
+          .optional()
+          .transform((v) => (v && v.length > 0 ? v : null)),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ landing_path: data.landing_path })
       .eq("id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
