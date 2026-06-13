@@ -34,10 +34,28 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
 
   // MFA challenge state
   const [mfaStep, setMfaStep] = useState<null | { factorId: string; userId: string }>(null);
   const [mfaCode, setMfaCode] = useState("");
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    setResending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(t("auth.errors.confirmation_resent"));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
