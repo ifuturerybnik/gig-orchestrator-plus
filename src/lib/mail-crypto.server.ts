@@ -8,21 +8,8 @@ import { createCipheriv, randomBytes } from "crypto";
 const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
 
-let cachedKey: Buffer | null = null;
-export function readMailEncryptionKey(): string | undefined {
-  // Dot notation is intentional: the TanStack/Vite runtime exposes configured
-  // secrets through direct process.env.<NAME> reads in server handlers.
-  const direct = process.env.MAIL_ENCRYPTION_KEY?.trim();
-  if (direct) return direct;
-  return process.env.EXT_MAIL_ENCRYPTION_KEY?.trim();
-}
-
 function normalizeMailEncryptionKey(raw: string | undefined): Buffer {
   if (!raw) {
-    console.error("Mail encryption key missing at runtime", {
-      hasMailKey: !!process.env.MAIL_ENCRYPTION_KEY,
-      hasExtMailKey: !!process.env.EXT_MAIL_ENCRYPTION_KEY,
-    });
     throw new Error(
       "Brak klucza szyfrowania poczty. Ustaw sekret MAIL_ENCRYPTION_KEY z tą samą wartością, która jest używana w mail-proxy.",
     );
@@ -41,24 +28,15 @@ function normalizeMailEncryptionKey(raw: string | undefined): Buffer {
   return Buffer.from(cleaned, "hex");
 }
 
-function getKey(): Buffer {
-  if (cachedKey) return cachedKey;
-  cachedKey = normalizeMailEncryptionKey(readMailEncryptionKey());
-  return cachedKey;
-}
-
 /**
  * Szyfruje hasło i zwraca string w formacie `\x<hex>` gotowy do wstawienia
  * jako bytea przez supabase-js (PostgREST akceptuje hex escape).
  */
 export function encryptMailPassword(plain: string): string {
-  if (!plain) throw new Error("Empty password");
-  const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, getKey(), iv);
-  const ct = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  const out = Buffer.concat([iv, ct, tag]);
-  return "\\x" + out.toString("hex");
+  return encryptMailPasswordWithKey(
+    plain,
+    process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY,
+  );
 }
 
 export function encryptMailPasswordWithKey(plain: string, rawKey: string | undefined): string {
