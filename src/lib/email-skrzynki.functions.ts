@@ -184,46 +184,28 @@ export const listSkrzynki = createServerFn({ method: "GET" })
       if (!(await userIsMember(userId, data.organizationId))) {
         throw new Error("Forbidden");
       }
-      let { data: rows, error } = await supabaseAdmin
-        .from("email_skrzynki")
-        .select(columnsForSelect())
-        .eq("organization_id", data.organizationId)
-        .eq("typ", "wspolna")
-        .order("created_at", { ascending: false });
-      if (isMissingIkonaColumnError(error)) {
-        supportsIkonaUrlColumn = false;
-        const fallback = await supabaseAdmin
+      const { data: rows, error } = await runWithOptionalColumnFallback(() =>
+        supabaseAdmin
           .from("email_skrzynki")
-          .select(SAFE_COLUMNS_BASE)
+          .select(columnsForSelect())
           .eq("organization_id", data.organizationId)
           .eq("typ", "wspolna")
-          .order("created_at", { ascending: false });
-        rows = fallback.data;
-        error = fallback.error;
-      }
+          .order("created_at", { ascending: false }),
+      );
       if (error) throw new Error(error.message);
-      return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
+      return { skrzynki: withOptionalFallback(rows as unknown as Record<string, unknown>[]) };
     }
 
-    let { data: rows, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .select(columnsForSelect())
-      .eq("owner_user_id", userId)
-      .eq("typ", "osobista")
-      .order("created_at", { ascending: false });
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: rows, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .select(SAFE_COLUMNS_BASE)
+        .select(columnsForSelect())
         .eq("owner_user_id", userId)
         .eq("typ", "osobista")
-        .order("created_at", { ascending: false });
-      rows = fallback.data;
-      error = fallback.error;
-    }
+        .order("created_at", { ascending: false }),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
+    return { skrzynki: withOptionalFallback(rows as unknown as Record<string, unknown>[]) };
   });
 
 // ---------------------------------------------------------------------------
