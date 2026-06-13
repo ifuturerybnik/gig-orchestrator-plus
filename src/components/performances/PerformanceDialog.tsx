@@ -258,6 +258,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
       const payload = {
         organizationId,
         performanceDate: format(date, "yyyy-MM-dd"),
+        performanceTime: time && /^\d{2}:\d{2}$/.test(time) ? time : null,
         status: status as PerformanceStatus,
         visibility,
         eventKind: resolvedEventKind,
