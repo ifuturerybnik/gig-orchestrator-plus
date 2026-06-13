@@ -29,6 +29,8 @@ import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
