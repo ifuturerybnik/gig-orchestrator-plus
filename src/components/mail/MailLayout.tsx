@@ -34,6 +34,7 @@ import {
   markWiadomosc,
   deleteWiadomoscRemote,
   markSpamWiadomosc,
+  markNotSpamWiadomosc,
   bulkActionWiadomosci,
 } from "@/lib/email-wiadomosci.functions";
 import { ComposeDialog } from "./ComposeDialog";
