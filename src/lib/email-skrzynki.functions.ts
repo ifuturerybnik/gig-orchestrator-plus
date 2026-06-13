@@ -110,7 +110,15 @@ const MAIL_CIPHER_IV_LEN = 12;
 
 function readMailboxEncryptionSecret(): string | undefined {
   const env = process.env as Record<string, string | undefined>;
-  return env.EXT_MAIL_ENCRYPTION_KEY?.trim() || env["EXT_MAIL_ENCRYPTION_KEY"]?.trim() || env.MAIL_ENCRYPTION_KEY?.trim() || env["MAIL_ENCRYPTION_KEY"]?.trim();
+  const secret = env.EXT_MAIL_ENCRYPTION_KEY?.trim() || env["EXT_MAIL_ENCRYPTION_KEY"]?.trim() || env.MAIL_ENCRYPTION_KEY?.trim() || env["MAIL_ENCRYPTION_KEY"]?.trim();
+  if (!secret) {
+    console.error("mailbox encryption secret unavailable", {
+      hasExtMailKey: !!env.EXT_MAIL_ENCRYPTION_KEY,
+      hasMailKey: !!env.MAIL_ENCRYPTION_KEY,
+      envKeysVisible: Object.keys(env).filter((key) => key.includes("MAIL") || key.includes("SUPABASE")).sort(),
+    });
+  }
+  return secret;
 }
 
 function normalizeMailboxEncryptionKey(raw: string | undefined): Buffer {
