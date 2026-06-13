@@ -20,6 +20,7 @@ import {
   HardDrive,
   MessageCircle,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import {
   Collapsible,
@@ -107,14 +108,6 @@ export function OrgSidebar({
   const allItems: Item[] = [
     {
       kind: "leaf",
-      to: base,
-      labelKey: "organizations.sidebar.overview",
-      icon: LayoutDashboard,
-      exact: true,
-      moduleId: "overview",
-    },
-    {
-      kind: "leaf",
       to: `${base}/events`,
       labelKey: "organizations.sidebar.events",
       icon: CalendarDays,
@@ -126,13 +119,6 @@ export function OrgSidebar({
       labelKey: "organizations.sidebar.budget",
       icon: Wallet,
       moduleId: "budget",
-    },
-    {
-      kind: "leaf",
-      to: `${base}/profile`,
-      labelKey: "organizations.sidebar.profile",
-      icon: Building2,
-      moduleId: "profile",
     },
     {
       kind: "leaf",
@@ -214,11 +200,26 @@ export function OrgSidebar({
       moduleId: "dysk",
     },
     {
-      kind: "leaf",
-      to: `${base}/members`,
-      labelKey: "organizations.sidebar.members",
-      icon: Users,
-      moduleId: "members",
+      kind: "group",
+      id: "settings",
+      labelKey: "organizations.sidebar.settings",
+      icon: Settings,
+      children: [
+        {
+          kind: "leaf",
+          to: `${base}/profile`,
+          labelKey: "organizations.sidebar.edit_organization",
+          icon: Building2,
+          moduleId: "profile",
+        },
+        {
+          kind: "leaf",
+          to: `${base}/members`,
+          labelKey: "organizations.sidebar.members",
+          icon: Users,
+          moduleId: "members",
+        },
+      ],
     },
   ];
 
