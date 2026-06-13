@@ -97,6 +97,7 @@ export function MailLayout({ scope }: Props) {
   const markFn = useServerFn(markWiadomosc);
   const deleteRemoteFn = useServerFn(deleteWiadomoscRemote);
   const markSpamFn = useServerFn(markSpamWiadomosc);
+  const markNotSpamFn = useServerFn(markNotSpamWiadomosc);
   const bulkFn = useServerFn(bulkActionWiadomosci);
 
   // Skrzynki organizacji (tylko gdy scope=org)
