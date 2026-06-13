@@ -485,6 +485,25 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
               </Popover>
             </div>
 
+            {/* Godzina */}
+            <div className="space-y-2">
+              <Label>
+                {t("organizations.performances.fields.time")}
+                {isConfirmed && <span className="text-destructive"> *</span>}
+                {!isConfirmed && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {t("organizations.performances.fields.time_optional_hint")}
+                  </span>
+                )}
+              </Label>
+              <TimeStepper value={time} onChange={setTime} />
+              {errors.time && (
+                <p className="text-xs text-destructive">{errors.time}</p>
+              )}
+            </div>
+
+
+
             {/* Rodzaj wydarzenia */}
             <div className="space-y-2">
               <Label>
