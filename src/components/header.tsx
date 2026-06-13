@@ -25,7 +25,7 @@ import logoUrl from "@/assets/logo.png";
 export function Header() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const router = useRouter();
+  
   const fetchProfile = useServerFn(getMyProfile);
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
