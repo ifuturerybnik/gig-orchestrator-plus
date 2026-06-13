@@ -1288,6 +1288,8 @@ export default
       "spam": "Spam",
       "mark_spam": "Oznacz jako spam",
       "marked_spam": "Przeniesiono do spamu",
+      "not_spam": "To nie jest spam",
+      "marked_not_spam": "Przeniesiono do Odebranych",
       "bulk_selected_count": "Zaznaczone: {{count}}",
       "bulk_delete": "Usuń zaznaczone",
       "bulk_spam": "Do spamu",
