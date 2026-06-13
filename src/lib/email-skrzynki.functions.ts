@@ -8,8 +8,35 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
-const SAFE_COLUMNS =
-  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
+const SAFE_COLUMNS: string =
+  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
+const SAFE_COLUMNS_BASE: string =
+  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
+let supportsIkonaUrlColumn: boolean | null = null;
+
+type SkrzynkaSafeRow = {
+  id: string;
+  nazwa: string;
+  nazwa_wyswietlana: string | null;
+  ikona_url: string | null;
+  typ: "osobista" | "wspolna";
+  owner_user_id: string | null;
+  organization_id: string | null;
+  email: string;
+  imap_host: string;
+  imap_port: number;
+  imap_login: string;
+  imap_use_ssl: boolean;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_login: string;
+  smtp_use_ssl: boolean;
+  aktywna: boolean;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
@@ -59,6 +86,24 @@ const skrzynkaUpdateSchema = z.object({
   smtp_use_ssl: z.boolean(),
 });
 
+function isMissingIkonaColumnError(error: { message?: string; code?: string } | null): boolean {
+  return !!error && /ikona_url/i.test(error.message ?? "");
+}
+
+function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
+  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as unknown as SkrzynkaSafeRow[];
+}
+
+function columnsForSelect(): string {
+  return supportsIkonaUrlColumn === false ? SAFE_COLUMNS_BASE : SAFE_COLUMNS;
+}
+
+function omitIkonaIfUnsupported<T extends Record<string, unknown>>(row: T): T {
+  if (supportsIkonaUrlColumn !== false) return row;
+  const { ikona_url: _ikonaUrl, ...withoutIkona } = row;
+  return withoutIkona as T;
+}
+
 
 async function userIsMember(userId: string, organizationId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
@@ -102,24 +147,46 @@ export const listSkrzynki = createServerFn({ method: "GET" })
       if (!(await userIsMember(userId, data.organizationId))) {
         throw new Error("Forbidden");
       }
-      const { data: rows, error } = await supabaseAdmin
+      let { data: rows, error } = await supabaseAdmin
         .from("email_skrzynki")
-        .select(SAFE_COLUMNS)
+        .select(columnsForSelect())
         .eq("organization_id", data.organizationId)
         .eq("typ", "wspolna")
         .order("created_at", { ascending: false });
+      if (isMissingIkonaColumnError(error)) {
+        supportsIkonaUrlColumn = false;
+        const fallback = await supabaseAdmin
+          .from("email_skrzynki")
+          .select(SAFE_COLUMNS_BASE)
+          .eq("organization_id", data.organizationId)
+          .eq("typ", "wspolna")
+          .order("created_at", { ascending: false });
+        rows = fallback.data;
+        error = fallback.error;
+      }
       if (error) throw new Error(error.message);
-      return { skrzynki: rows ?? [] };
+      return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
     }
 
-    const { data: rows, error } = await supabaseAdmin
+    let { data: rows, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .select(SAFE_COLUMNS)
+      .select(columnsForSelect())
       .eq("owner_user_id", userId)
       .eq("typ", "osobista")
       .order("created_at", { ascending: false });
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .select(SAFE_COLUMNS_BASE)
+        .eq("owner_user_id", userId)
+        .eq("typ", "osobista")
+        .order("created_at", { ascending: false });
+      rows = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynki: rows ?? [] };
+    return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
   });
 
 // ---------------------------------------------------------------------------
@@ -161,13 +228,23 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     };
 
 
-    const { data: created, error } = await supabaseAdmin
+    let { data: created, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .insert(row)
-      .select(SAFE_COLUMNS)
+      .insert(omitIkonaIfUnsupported(row))
+      .select(columnsForSelect())
       .single();
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .insert(omitIkonaIfUnsupported(row))
+        .select(SAFE_COLUMNS_BASE)
+        .single();
+      created = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynka: created };
+    return { skrzynka: withMissingIkonaFallback([created as unknown as Record<string, unknown>])[0] };
   });
 
 // ---------------------------------------------------------------------------
@@ -219,14 +296,25 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    let { data: updated, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .update(patch)
+      .update(omitIkonaIfUnsupported(patch))
       .eq("id", data.skrzynkaId)
-      .select(SAFE_COLUMNS)
+      .select(columnsForSelect())
       .single();
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .update(omitIkonaIfUnsupported(patch))
+        .eq("id", data.skrzynkaId)
+        .select(SAFE_COLUMNS_BASE)
+        .single();
+      updated = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynka: updated };
+    return { skrzynka: withMissingIkonaFallback([updated as unknown as Record<string, unknown>])[0] };
   });
 
 
