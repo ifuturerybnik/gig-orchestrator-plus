@@ -96,6 +96,9 @@ export function Header() {
               <Link to="/contacts" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.contacts")}
               </Link>
+              <Link to="/correspondence" className="text-sm text-muted-foreground hover:text-foreground">
+                {t("nav.correspondence")}
+              </Link>
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>

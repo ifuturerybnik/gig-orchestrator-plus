@@ -38,6 +38,7 @@ export default
     "dashboard": "Pulpit",
     "organizations": "Organizacje",
     "contacts": "Kontakty",
+    "correspondence": "Korespondencja",
     "profile": "Profil",
     "admin": "Administracja",
     "approvals": "Zatwierdzenia",
