@@ -653,6 +653,8 @@ export default
       "fields": {
         "date": "Event date",
         "date_placeholder": "Pick a date",
+        "time": "Start time",
+        "time_optional_hint": "(optional for inquiry / tentative)",
         "event_kind": "Event type",
         "event_kind_placeholder": "Select event type",
         "event_kind_custom_placeholder": "Enter a custom event type",
@@ -717,6 +719,7 @@ export default
         "date_required": "Event date is required",
         "status_required": "Status is required",
         "event_kind_required": "Event type is required",
+        "time_required": "Start time is required for a confirmed event",
         "required": "Required field",
         "cp_link_missing": "Cannot open counterparty details — no link in this organization."
       }

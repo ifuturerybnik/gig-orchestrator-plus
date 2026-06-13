@@ -261,6 +261,7 @@ function OrganizationPerformancesPage() {
     setEditing({
       id: p.id,
       performance_date: p.performance_date,
+      performance_time: (p as { performance_time?: string | null }).performance_time ?? null,
       status: p.status as PerformanceStatus,
       visibility: p.visibility as PerformanceVisibility,
       event_kind: p.event_kind,

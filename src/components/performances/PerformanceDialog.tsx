@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
-import { CalendarIcon, X, UserPlus, Building2, Check } from "lucide-react";
+import { CalendarIcon, X, UserPlus, Building2, Check, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,7 @@ import {
 export interface PerformanceInitial {
   id: string;
   performance_date: string;
+  performance_time: string | null;
   status: PerformanceStatus;
   visibility: PerformanceVisibility;
   event_kind: string;
@@ -95,6 +96,128 @@ type ContactRef = { id: string; name: string };
 type CounterpartyRef = { id: string; name: string };
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
+
+function parseHM(v: string): { h: number; m: number } {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(v);
+  if (!match) return { h: 12, m: 0 };
+  const h = Math.max(0, Math.min(23, parseInt(match[1], 10)));
+  const m = Math.max(0, Math.min(59, parseInt(match[2], 10)));
+  return { h, m };
+}
+function fmtHM(h: number, m: number) {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function TimeStepper({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const hasValue = /^\d{2}:\d{2}$/.test(value);
+  const { h, m } = hasValue ? parseHM(value) : { h: 12, m: 0 };
+
+  const setH = (next: number) => onChange(fmtHM((next + 24) % 24, m));
+  const setM = (next: number) => onChange(fmtHM(h, (next + 60) % 60));
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="inline-flex items-center rounded-md border border-input">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-r-none"
+          onClick={() => setH(h - 1)}
+          aria-label="-1h"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min={0}
+          max={23}
+          value={hasValue ? h : ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "") {
+              onChange("");
+              return;
+            }
+            const n = parseInt(v, 10);
+            if (!Number.isFinite(n)) return;
+            onChange(fmtHM(Math.max(0, Math.min(23, n)), m));
+          }}
+          placeholder="HH"
+          className="h-9 w-14 rounded-none border-0 text-center focus-visible:ring-0"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-l-none"
+          onClick={() => setH(h + 1)}
+          aria-label="+1h"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <span className="text-muted-foreground">:</span>
+      <div className="inline-flex items-center rounded-md border border-input">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-r-none"
+          onClick={() => setM(m - 5)}
+          aria-label="-5m"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min={0}
+          max={59}
+          value={hasValue ? m : ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "") {
+              onChange("");
+              return;
+            }
+            const n = parseInt(v, 10);
+            if (!Number.isFinite(n)) return;
+            onChange(fmtHM(h, Math.max(0, Math.min(59, n))));
+          }}
+          placeholder="MM"
+          className="h-9 w-14 rounded-none border-0 text-center focus-visible:ring-0"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-l-none"
+          onClick={() => setM(m + 5)}
+          aria-label="+5m"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      {hasValue && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange("")}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 
 export function PerformanceDialog({ open, onOpenChange, organizationId, initial, initialDate }: Props) {
   const { t } = useTranslation();
@@ -151,6 +274,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
   }, []);
 
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState<string>(""); // "HH:MM" or ""
   const [status, setStatus] = useState<PerformanceStatus | "">("");
   const [visibility, setVisibility] = useState<PerformanceVisibility>("private");
   // eventKindSelection holds either a preset slug, a custom-kind label, or "__custom__"
@@ -185,6 +309,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
     if (!open || !initial) return;
     const [y, m, d] = initial.performance_date.split("-").map(Number);
     setDate(new Date(y, m - 1, d));
+    setTime(initial.performance_time ? initial.performance_time.slice(0, 5) : "");
     setStatus(initial.status);
     setVisibility(initial.visibility);
     setEventKindSelection(initial.event_kind);
@@ -228,6 +353,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
 
   const reset = () => {
     setDate(undefined);
+    setTime("");
     setStatus("");
     setVisibility("private");
     setEventKindSelection("");
@@ -254,6 +380,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
       const payload = {
         organizationId,
         performanceDate: format(date, "yyyy-MM-dd"),
+        performanceTime: time && /^\d{2}:\d{2}$/.test(time) ? time : null,
         status: status as PerformanceStatus,
         visibility,
         eventKind: resolvedEventKind,
@@ -299,13 +426,15 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
       if (!postalCode.trim()) e.postalCode = t("organizations.performances.errors.required");
       if (!street.trim()) e.street = t("organizations.performances.errors.required");
       if (!streetNumber.trim()) e.streetNumber = t("organizations.performances.errors.required");
+      if (!/^\d{2}:\d{2}$/.test(time))
+        e.time = t("organizations.performances.errors.time_required");
     }
     if (isPublicFull && !googleMapsUrl.trim()) {
       e.googleMapsUrl = t("organizations.performances.errors.required");
     }
     return e;
   }, [
-    date, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
+    date, time, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
     isPublicFull, googleMapsUrl, t,
   ]);
 
@@ -477,6 +606,25 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* Godzina */}
+            <div className="space-y-2">
+              <Label>
+                {t("organizations.performances.fields.time")}
+                {isConfirmed && <span className="text-destructive"> *</span>}
+                {!isConfirmed && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {t("organizations.performances.fields.time_optional_hint")}
+                  </span>
+                )}
+              </Label>
+              <TimeStepper value={time} onChange={setTime} />
+              {errors.time && (
+                <p className="text-xs text-destructive">{errors.time}</p>
+              )}
+            </div>
+
+
 
             {/* Rodzaj wydarzenia */}
             <div className="space-y-2">
