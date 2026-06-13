@@ -241,6 +241,18 @@ export function MailLayout({ scope }: Props) {
     };
   }, [selected, fetchBodyFn, qc, skrzynkaId, folder, t]);
 
+  // Auto-oznaczanie jako przeczytana po 10 sekundach od otwarcia wiadomości.
+  useEffect(() => {
+    if (!selected || selected.przeczytana) return;
+    const id = selected.id;
+    const timer = setTimeout(() => {
+      markFn({ data: { wiadomoscId: id, action: "read" } })
+        .then(() => qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] }))
+        .catch(() => {});
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [selected, markFn, qc, skrzynkaId]);
+
   async function handleSync() {
     if (!skrzynkaId) return;
     setSyncing(true);
