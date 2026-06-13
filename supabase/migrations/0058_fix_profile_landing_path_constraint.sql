@@ -1,6 +1,6 @@
--- Preferowana strona, na którą użytkownik ma być przekierowany po zalogowaniu.
--- Pełna ścieżka URL (np. "/profile" lub "/organizations/<uuid>/events").
--- NULL = domyślnie /dashboard.
+-- Naprawa ustawienia "Wejdź po zalogowaniu".
+-- PostgreSQL zgłasza błąd dla zapisu {0,300}, więc długość ścieżki
+-- walidujemy osobno funkcją length().
 
 alter table public.profiles
   add column if not exists landing_path text;

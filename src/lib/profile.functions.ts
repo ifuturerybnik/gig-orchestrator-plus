@@ -175,7 +175,8 @@ export const updateMyLandingPath = createServerFn({ method: "POST" })
         landing_path: z
           .string()
           .trim()
-          .regex(/^\/[A-Za-z0-9/_-]{0,300}$/, "Invalid path")
+          .max(300)
+          .regex(/^\/[A-Za-z0-9/_-]*$/, "Invalid path")
           .nullable()
           .optional()
           .transform((v) => (v && v.length > 0 ? v : null)),
