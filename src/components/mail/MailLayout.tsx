@@ -94,23 +94,38 @@ export function MailLayout({ scope }: Props) {
   const fetchBodyFn = useServerFn(fetchWiadomoscBody);
   const markFn = useServerFn(markWiadomosc);
   const deleteRemoteFn = useServerFn(deleteWiadomoscRemote);
+  const markSpamFn = useServerFn(markSpamWiadomosc);
+  const bulkFn = useServerFn(bulkActionWiadomosci);
 
-  const skrzynkiQ = useQuery({
-    queryKey:
-      scope.kind === "org"
-        ? ["org-skrzynki", scope.orgId]
-        : ["user-skrzynki"],
+  // Skrzynki organizacji (tylko gdy scope=org)
+  const orgSkrzynkiQ = useQuery({
+    queryKey: scope.kind === "org" ? ["org-skrzynki", scope.orgId] : ["org-skrzynki", "none"],
+    enabled: scope.kind === "org",
     queryFn: () =>
-      scope.kind === "org"
-        ? listSkrzynkiFn({ data: { scope: "organization", organizationId: scope.orgId } })
-        : listSkrzynkiFn({ data: { scope: "mine" } }),
+      listSkrzynkiFn({
+        data: { scope: "organization", organizationId: scope.kind === "org" ? scope.orgId : "" },
+      }),
   });
-  const skrzynki = (skrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+
+  // Skrzynki osobiste — zawsze (w org module też pokazujemy "Moje skrzynki")
+  const mySkrzynkiQ = useQuery({
+    queryKey: ["user-skrzynki"],
+    queryFn: () => listSkrzynkiFn({ data: { scope: "mine" } }),
+  });
+
+  const orgSkrzynki = (orgSkrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+  const mySkrzynki = (mySkrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+  const skrzynki: SkrzynkaSummary[] =
+    scope.kind === "org" ? [...orgSkrzynki, ...mySkrzynki] : mySkrzynki;
+  const skrzynkiLoading =
+    scope.kind === "org" ? orgSkrzynkiQ.isLoading || mySkrzynkiQ.isLoading : mySkrzynkiQ.isLoading;
 
   const [skrzynkaId, setSkrzynkaId] = useState<string | null>(null);
   const [folder, setFolder] = useState("INBOX");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeReply, setComposeReply] = useState<Wiadomosc | null>(null);
   const [view, setView] = useState<"mail" | "szablony">("mail");
@@ -127,6 +142,11 @@ export function MailLayout({ scope }: Props) {
       setSkrzynkaId(skrzynki[0].id);
     }
   }, [skrzynki, skrzynkaId]);
+
+  // Reset zaznaczenia przy zmianie skrzynki / folderu
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [skrzynkaId, folder]);
 
   const wiadQ = useQuery({
     queryKey: ["email_wiadomosci", skrzynkaId, folder],
