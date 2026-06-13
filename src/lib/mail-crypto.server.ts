@@ -9,15 +9,28 @@ const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
 
 let cachedKey: Buffer | null = null;
+function readMailEncryptionKey(): string | undefined {
+  // Bracket notation avoids build-time env inlining in preview/server bundles.
+  return process.env["MAIL_ENCRYPTION_KEY"] ?? process.env["EXT_MAIL_ENCRYPTION_KEY"];
+}
+
 function getKey(): Buffer {
   if (cachedKey) return cachedKey;
-  const raw = process.env.MAIL_ENCRYPTION_KEY;
-  if (!raw) throw new Error("Missing MAIL_ENCRYPTION_KEY");
-  const cleaned = raw.trim();
+  const raw = readMailEncryptionKey();
+  if (!raw) {
+    throw new Error(
+      "Brak klucza szyfrowania poczty. Ustaw sekret MAIL_ENCRYPTION_KEY z tą samą wartością, która jest używana w mail-proxy.",
+    );
+  }
+  const cleaned = raw
+    .trim()
+    .replace(/^\s*(?:MAIL_ENCRYPTION_KEY|EXT_MAIL_ENCRYPTION_KEY)\s*=\s*/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
   // Wymagamy hex 64 znaki — tak generuje instrukcja w README proxy.
   if (!/^[0-9a-fA-F]{64}$/.test(cleaned)) {
     throw new Error(
-      "MAIL_ENCRYPTION_KEY must be 64 hex chars (32 bytes). Generate with: openssl rand -hex 32",
+      "MAIL_ENCRYPTION_KEY musi mieć 64 znaki hex (32 bajty). Wygeneruj: openssl rand -hex 32 i użyj tej samej wartości w aplikacji oraz mail-proxy.",
     );
   }
   cachedKey = Buffer.from(cleaned, "hex");
