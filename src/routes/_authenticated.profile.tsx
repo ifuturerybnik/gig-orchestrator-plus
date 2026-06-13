@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +29,8 @@ import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -51,9 +53,16 @@ type UserKind = (typeof USER_KINDS)[number];
 function ProfilePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const fetchProfile = useServerFn(getMyProfile);
   const updateFn = useServerFn(updateMyProfile);
   const fetchOrgs = useServerFn(listMyOrganizations);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/login" });
+  };
+
 
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
@@ -166,9 +175,15 @@ function ProfilePage() {
           <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
+                {t("nav.logout")}
+              </Button>
+            </div>
             <ProfileAvatarField
               value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
             />
+
             <section className="space-y-4 rounded-md border border-border bg-card p-4">
               <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
