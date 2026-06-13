@@ -132,7 +132,7 @@ function omitUnsupportedOptionalColumns<T extends Record<string, unknown>>(row: 
 }
 
 async function runWithOptionalColumnFallback<T>(
-  operation: () => Promise<{ data: T | null; error: { message?: string; code?: string } | null }>,
+  operation: () => PromiseLike<{ data: T | null; error: { message?: string; code?: string } | null }>,
 ): Promise<{ data: T | null; error: { message?: string; code?: string } | null }> {
   for (let attempt = 0; attempt <= OPTIONAL_COLUMNS.length; attempt += 1) {
     const result = await operation();
