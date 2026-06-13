@@ -85,6 +85,7 @@ export function OrgMailboxesSection({ orgId }: { orgId: string }) {
         data: {
           nazwa: form.nazwa,
           nazwa_wyswietlana: form.nazwa_wyswietlana || null,
+          ikona_url: form.ikona_url || null,
           typ: "wspolna",
           organizationId: orgId,
           email: form.email,
