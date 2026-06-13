@@ -51,6 +51,12 @@ const createInput = z
   .object({
     organizationId: z.string().uuid(),
     performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    performanceTime: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/)
+      .nullable()
+      .optional()
+      .or(z.literal("").transform(() => null)),
     status: z.enum(PERFORMANCE_STATUSES),
     visibility: z.enum(PERFORMANCE_VISIBILITIES),
     eventKind: z.string().trim().min(1).max(120),
@@ -82,6 +88,7 @@ const createInput = z
         ["postalCode", d.postalCode],
         ["street", d.street],
         ["streetNumber", d.streetNumber],
+        ["performanceTime", d.performanceTime],
       ] as const;
       for (const [k, v] of fields) {
         if (!required(v))
