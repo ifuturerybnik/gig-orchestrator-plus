@@ -34,18 +34,44 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
 
   // MFA challenge state
   const [mfaStep, setMfaStep] = useState<null | { factorId: string; userId: string }>(null);
   const [mfaCode, setMfaCode] = useState("");
 
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    setResending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(t("auth.errors.confirmation_resent"));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setNeedsConfirmation(false);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      toast.error(t("auth.errors.invalid_credentials"));
+      const code = (error as { code?: string }).code ?? "";
+      const msg = error.message?.toLowerCase() ?? "";
+      if (code === "email_not_confirmed" || msg.includes("not confirmed") || msg.includes("confirm")) {
+        setNeedsConfirmation(true);
+        toast.error(t("auth.errors.email_not_confirmed"));
+      } else {
+        toast.error(t("auth.errors.invalid_credentials"));
+      }
       return;
     }
 
@@ -134,6 +160,21 @@ function LoginPage() {
           </form>
         ) : (
           <div className="mt-6">
+            {needsConfirmation && (
+              <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground">
+                <p>{t("auth.errors.email_not_confirmed")}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleResendConfirmation}
+                  disabled={resending || !email}
+                >
+                  {t("auth.errors.resend_confirmation")}
+                </Button>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.login.email")}</Label>
