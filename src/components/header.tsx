@@ -87,9 +87,6 @@ export function Header() {
         <nav className="flex items-center gap-4">
           {user ? (
             <>
-              <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-                {t("nav.dashboard")}
-              </Link>
               <Link to="/organizations" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.organizations")}
               </Link>
