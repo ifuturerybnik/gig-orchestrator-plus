@@ -137,6 +137,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
 
     const row = {
       nazwa: data.nazwa,
+      nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
       typ: data.typ,
       owner_user_id: data.typ === "osobista" ? userId : null,
       organization_id: data.typ === "wspolna" ? data.organizationId : null,
@@ -152,6 +153,73 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       smtp_haslo_encrypted: encryptMailPassword(data.smtp_haslo),
       smtp_use_ssl: data.smtp_use_ssl,
     };
+
+    const { data: created, error } = await supabaseAdmin
+      .from("email_skrzynki")
+      .insert(row)
+      .select(SAFE_COLUMNS)
+      .single();
+    if (error) throw new Error(error.message);
+    return { skrzynka: created };
+  });
+
+// ---------------------------------------------------------------------------
+// UPDATE
+// ---------------------------------------------------------------------------
+export const updateSkrzynka = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: existing, error: readErr } = await supabaseAdmin
+      .from("email_skrzynki")
+      .select("id, typ, owner_user_id, organization_id")
+      .eq("id", data.skrzynkaId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!existing) throw new Error("Not found");
+
+    if (existing.typ === "osobista" && existing.owner_user_id !== userId) {
+      throw new Error("Forbidden");
+    }
+    if (
+      existing.typ === "wspolna" &&
+      !(await userIsOwner(userId, existing.organization_id as string))
+    ) {
+      throw new Error("Forbidden");
+    }
+
+    const patch: Record<string, unknown> = {
+      nazwa: data.nazwa,
+      nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
+      email: data.email,
+      imap_host: data.imap_host,
+      imap_port: data.imap_port,
+      imap_login: data.imap_login,
+      imap_use_ssl: data.imap_use_ssl,
+      smtp_host: data.smtp_host,
+      smtp_port: data.smtp_port,
+      smtp_login: data.smtp_login,
+      smtp_use_ssl: data.smtp_use_ssl,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.imap_haslo && data.imap_haslo.length > 0) {
+      patch.imap_haslo_encrypted = encryptMailPassword(data.imap_haslo);
+    }
+    if (data.smtp_haslo && data.smtp_haslo.length > 0) {
+      patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from("email_skrzynki")
+      .update(patch)
+      .eq("id", data.skrzynkaId)
+      .select(SAFE_COLUMNS)
+      .single();
+    if (error) throw new Error(error.message);
+    return { skrzynka: updated };
+  });
 
     const { data: created, error } = await supabaseAdmin
       .from("email_skrzynki")
