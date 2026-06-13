@@ -8,11 +8,28 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
-const SAFE_COLUMNS: string =
-  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
-const SAFE_COLUMNS_BASE: string =
-  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
-let supportsIkonaUrlColumn: boolean | null = null;
+const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
+const BASE_COLUMNS = [
+  "id",
+  "nazwa",
+  "typ",
+  "owner_user_id",
+  "organization_id",
+  "email",
+  "imap_host",
+  "imap_port",
+  "imap_login",
+  "imap_use_ssl",
+  "smtp_host",
+  "smtp_port",
+  "smtp_login",
+  "smtp_use_ssl",
+  "aktywna",
+  "last_sync_at",
+  "last_sync_error",
+  "created_at",
+  "updated_at",
+] as const;
 
 type SkrzynkaSafeRow = {
   id: string;
@@ -86,22 +103,42 @@ const skrzynkaUpdateSchema = z.object({
   smtp_use_ssl: z.boolean(),
 });
 
-function isMissingIkonaColumnError(error: { message?: string; code?: string } | null): boolean {
-  return !!error && /ikona_url/i.test(error.message ?? "");
+const unsupportedOptionalColumns = new Set<string>();
+
+function markMissingOptionalColumn(error: { message?: string; code?: string } | null): boolean {
+  const message = error?.message ?? "";
+  const missing = OPTIONAL_COLUMNS.find((column) => message.includes(column));
+  if (!missing) return false;
+  unsupportedOptionalColumns.add(missing);
+  return true;
 }
 
-function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
-  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as unknown as SkrzynkaSafeRow[];
+function withOptionalFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
+  return (rows ?? []).map((row) => ({
+    nazwa_wyswietlana: null,
+    ikona_url: null,
+    ...row,
+  })) as unknown as SkrzynkaSafeRow[];
 }
 
 function columnsForSelect(): string {
-  return supportsIkonaUrlColumn === false ? SAFE_COLUMNS_BASE : SAFE_COLUMNS;
+  return [...BASE_COLUMNS, ...OPTIONAL_COLUMNS.filter((column) => !unsupportedOptionalColumns.has(column))].join(", ");
 }
 
-function omitIkonaIfUnsupported<T extends Record<string, unknown>>(row: T): T {
-  if (supportsIkonaUrlColumn !== false) return row;
-  const { ikona_url: _ikonaUrl, ...withoutIkona } = row;
-  return withoutIkona as T;
+function omitUnsupportedOptionalColumns<T extends Record<string, unknown>>(row: T): T {
+  const next = { ...row };
+  for (const column of unsupportedOptionalColumns) delete next[column];
+  return next as T;
+}
+
+async function runWithOptionalColumnFallback<T>(
+  operation: () => PromiseLike<{ data: T | null; error: { message?: string; code?: string } | null }>,
+): Promise<{ data: T | null; error: { message?: string; code?: string } | null }> {
+  for (let attempt = 0; attempt <= OPTIONAL_COLUMNS.length; attempt += 1) {
+    const result = await operation();
+    if (!result.error || !markMissingOptionalColumn(result.error)) return result;
+  }
+  return operation();
 }
 
 
@@ -147,46 +184,28 @@ export const listSkrzynki = createServerFn({ method: "GET" })
       if (!(await userIsMember(userId, data.organizationId))) {
         throw new Error("Forbidden");
       }
-      let { data: rows, error } = await supabaseAdmin
-        .from("email_skrzynki")
-        .select(columnsForSelect())
-        .eq("organization_id", data.organizationId)
-        .eq("typ", "wspolna")
-        .order("created_at", { ascending: false });
-      if (isMissingIkonaColumnError(error)) {
-        supportsIkonaUrlColumn = false;
-        const fallback = await supabaseAdmin
+      const { data: rows, error } = await runWithOptionalColumnFallback(() =>
+        supabaseAdmin
           .from("email_skrzynki")
-          .select(SAFE_COLUMNS_BASE)
+          .select(columnsForSelect())
           .eq("organization_id", data.organizationId)
           .eq("typ", "wspolna")
-          .order("created_at", { ascending: false });
-        rows = fallback.data;
-        error = fallback.error;
-      }
+          .order("created_at", { ascending: false }),
+      );
       if (error) throw new Error(error.message);
-      return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
+      return { skrzynki: withOptionalFallback(rows as unknown as Record<string, unknown>[]) };
     }
 
-    let { data: rows, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .select(columnsForSelect())
-      .eq("owner_user_id", userId)
-      .eq("typ", "osobista")
-      .order("created_at", { ascending: false });
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: rows, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .select(SAFE_COLUMNS_BASE)
+        .select(columnsForSelect())
         .eq("owner_user_id", userId)
         .eq("typ", "osobista")
-        .order("created_at", { ascending: false });
-      rows = fallback.data;
-      error = fallback.error;
-    }
+        .order("created_at", { ascending: false }),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
+    return { skrzynki: withOptionalFallback(rows as unknown as Record<string, unknown>[]) };
   });
 
 // ---------------------------------------------------------------------------
@@ -228,23 +247,15 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     };
 
 
-    let { data: created, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .insert(omitIkonaIfUnsupported(row))
-      .select(columnsForSelect())
-      .single();
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: created, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .insert(omitIkonaIfUnsupported(row))
-        .select(SAFE_COLUMNS_BASE)
-        .single();
-      created = fallback.data;
-      error = fallback.error;
-    }
+        .insert(omitUnsupportedOptionalColumns(row))
+        .select(columnsForSelect())
+        .single(),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynka: withMissingIkonaFallback([created as unknown as Record<string, unknown>])[0] };
+    return { skrzynka: withOptionalFallback([created as unknown as Record<string, unknown>])[0] };
   });
 
 // ---------------------------------------------------------------------------
@@ -296,25 +307,16 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
     }
 
-    let { data: updated, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .update(omitIkonaIfUnsupported(patch))
-      .eq("id", data.skrzynkaId)
-      .select(columnsForSelect())
-      .single();
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: updated, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .update(omitIkonaIfUnsupported(patch))
+        .update(omitUnsupportedOptionalColumns(patch))
         .eq("id", data.skrzynkaId)
-        .select(SAFE_COLUMNS_BASE)
-        .single();
-      updated = fallback.data;
-      error = fallback.error;
-    }
+        .select(columnsForSelect())
+        .single(),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynka: withMissingIkonaFallback([updated as unknown as Record<string, unknown>])[0] };
+    return { skrzynka: withOptionalFallback([updated as unknown as Record<string, unknown>])[0] };
   });
 
 
