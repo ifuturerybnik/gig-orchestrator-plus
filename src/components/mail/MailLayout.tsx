@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,8 @@ import {
   fetchWiadomoscBody,
   markWiadomosc,
   deleteWiadomoscRemote,
+  markSpamWiadomosc,
+  bulkActionWiadomosci,
 } from "@/lib/email-wiadomosci.functions";
 import { ComposeDialog } from "./ComposeDialog";
 import { SzablonyManager } from "./SzablonyManager";
