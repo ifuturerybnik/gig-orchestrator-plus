@@ -274,3 +274,97 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+function IkonaField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("skrzynki.form.ikona_only_images", "Wybierz plik graficzny."));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t("skrzynki.form.ikona_too_big", "Maksymalny rozmiar to 2 MB."));
+      return;
+    }
+    setBusy(true);
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file, 128);
+      onChange(dataUrl);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-border p-3">
+      <Label className="text-xs">
+        {t("skrzynki.form.ikona", "Awatar skrzynki (wewnętrzny)")}
+      </Label>
+      <div className="flex items-center gap-3">
+        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
+          {value ? (
+            <img src={value} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileRef.current?.click()}
+              disabled={busy}
+            >
+              {value
+                ? t("skrzynki.form.ikona_change", "Zmień")
+                : t("skrzynki.form.ikona_upload", "Wgraj obraz")}
+            </Button>
+            {value && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange("")}
+                disabled={busy}
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("common.remove", "Usuń")}
+              </Button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onFile}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {t(
+          "skrzynki.form.ikona_hint",
+          "Awatar jest widoczny tylko w Concertivo (np. na liście skrzynek i w wątkach). Awatar widoczny u adresatów w ich poczcie (Gmail, Outlook itp.) musi być skonfigurowany po stronie serwera pocztowego — przez Gravatar (zarejestrowany na ten sam adres e-mail) lub BIMI (rekord DNS + logo SVG).",
+        )}
+      </p>
+    </div>
+  );
+}
+
+}
