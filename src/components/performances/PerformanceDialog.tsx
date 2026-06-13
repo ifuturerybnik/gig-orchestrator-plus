@@ -304,13 +304,15 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
       if (!postalCode.trim()) e.postalCode = t("organizations.performances.errors.required");
       if (!street.trim()) e.street = t("organizations.performances.errors.required");
       if (!streetNumber.trim()) e.streetNumber = t("organizations.performances.errors.required");
+      if (!/^\d{2}:\d{2}$/.test(time))
+        e.time = t("organizations.performances.errors.time_required");
     }
     if (isPublicFull && !googleMapsUrl.trim()) {
       e.googleMapsUrl = t("organizations.performances.errors.required");
     }
     return e;
   }, [
-    date, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
+    date, time, status, resolvedEventKind, isConfirmed, name, city, postalCode, street, streetNumber,
     isPublicFull, googleMapsUrl, t,
   ]);
 
