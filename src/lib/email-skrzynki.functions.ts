@@ -247,23 +247,15 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     };
 
 
-    let { data: created, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .insert(omitIkonaIfUnsupported(row))
-      .select(columnsForSelect())
-      .single();
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: created, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .insert(omitIkonaIfUnsupported(row))
-        .select(SAFE_COLUMNS_BASE)
-        .single();
-      created = fallback.data;
-      error = fallback.error;
-    }
+        .insert(omitUnsupportedOptionalColumns(row))
+        .select(columnsForSelect())
+        .single(),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynka: withMissingIkonaFallback([created as unknown as Record<string, unknown>])[0] };
+    return { skrzynka: withOptionalFallback([created as unknown as Record<string, unknown>])[0] };
   });
 
 // ---------------------------------------------------------------------------
@@ -315,25 +307,16 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
     }
 
-    let { data: updated, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .update(omitIkonaIfUnsupported(patch))
-      .eq("id", data.skrzynkaId)
-      .select(columnsForSelect())
-      .single();
-    if (isMissingIkonaColumnError(error)) {
-      supportsIkonaUrlColumn = false;
-      const fallback = await supabaseAdmin
+    const { data: updated, error } = await runWithOptionalColumnFallback(() =>
+      supabaseAdmin
         .from("email_skrzynki")
-        .update(omitIkonaIfUnsupported(patch))
+        .update(omitUnsupportedOptionalColumns(patch))
         .eq("id", data.skrzynkaId)
-        .select(SAFE_COLUMNS_BASE)
-        .single();
-      updated = fallback.data;
-      error = fallback.error;
-    }
+        .select(columnsForSelect())
+        .single(),
+    );
     if (error) throw new Error(error.message);
-    return { skrzynka: withMissingIkonaFallback([updated as unknown as Record<string, unknown>])[0] };
+    return { skrzynka: withOptionalFallback([updated as unknown as Record<string, unknown>])[0] };
   });
 
 
