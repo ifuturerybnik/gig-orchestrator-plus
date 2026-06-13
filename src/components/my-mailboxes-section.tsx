@@ -107,6 +107,7 @@ export function MyMailboxesSection() {
           skrzynkaId: id,
           nazwa: form.nazwa,
           nazwa_wyswietlana: form.nazwa_wyswietlana || null,
+          ikona_url: form.ikona_url || null,
           email: form.email,
           imap_host: form.imap_host,
           imap_port: Number(form.imap_port),
