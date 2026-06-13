@@ -38,6 +38,7 @@ export default
     "dashboard": "Dashboard",
     "organizations": "Organizations",
     "contacts": "Contacts",
+    "correspondence": "Correspondence",
     "profile": "Profile",
     "admin": "Admin",
     "approvals": "Approvals",
