@@ -719,6 +719,7 @@ export default
         "date_required": "Event date is required",
         "status_required": "Status is required",
         "event_kind_required": "Event type is required",
+        "time_required": "Start time is required for a confirmed event",
         "required": "Required field",
         "cp_link_missing": "Cannot open counterparty details — no link in this organization."
       }
