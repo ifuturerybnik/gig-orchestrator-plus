@@ -114,61 +114,60 @@ export function Header() {
               )}
               <ThemeSwitcher />
               <LanguageSwitcher />
-              {profileQuery.data?.profile && (
-                <TooltipProvider delayDuration={150}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link
-                        to="/profile"
-                        className="relative flex items-center gap-2 rounded-full px-2 py-1 hover:bg-accent"
-                        title={t("nav.profile")}
-                      >
-                        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground">
-                          {(profileQuery.data.profile as { avatar_url?: string | null }).avatar_url ? (
-                            <img
-                              src={(profileQuery.data.profile as { avatar_url?: string | null }).avatar_url!}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span>
-                              {(
-                                ((profileQuery.data.profile as { first_name?: string }).first_name ?? "")
-                                  .charAt(0) +
-                                ((profileQuery.data.profile as { last_name?: string }).last_name ?? "")
-                                  .charAt(0)
-                              ).toUpperCase() || "?"}
+              {(() => {
+                const profile = profileQuery.data?.profile as
+                  | { avatar_url?: string | null; first_name?: string; last_name?: string }
+                  | undefined;
+                const firstName = profile?.first_name ?? "";
+                const lastName = profile?.last_name ?? "";
+                const initials =
+                  (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() ||
+                  (user.email ?? "?").charAt(0).toUpperCase();
+                const fullName = [firstName, lastName].filter(Boolean).join(" ") || (user.email ?? "");
+                return (
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/profile"
+                          className="relative flex items-center gap-2 rounded-full px-2 py-1 hover:bg-accent"
+                          title={t("nav.profile")}
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground">
+                            {profile?.avatar_url ? (
+                              <img
+                                src={profile.avatar_url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{initials}</span>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium text-foreground">
+                            {fullName}
+                          </span>
+                          {showMfaWarning && (
+                            <span
+                              aria-label={t("security.mfa.warning_aria")}
+                              className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
+                            >
+                              !
                             </span>
                           )}
-                        </div>
-                        <span className="hidden text-sm font-medium text-foreground sm:inline">
-                          {[
-                            (profileQuery.data.profile as { first_name?: string }).first_name,
-                            (profileQuery.data.profile as { last_name?: string }).last_name,
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                        </span>
-                        {showMfaWarning && (
-                          <span
-                            aria-label={t("security.mfa.warning_aria")}
-                            className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
-                          >
-                            !
-                          </span>
-                        )}
-                      </Link>
-                    </TooltipTrigger>
-                    {showMfaWarning && (
-                      <TooltipContent side="bottom" className="max-w-xs">
-                        <p className="text-xs leading-snug">
-                          {t("security.mfa.warning_tooltip")}
-                        </p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+                        </Link>
+                      </TooltipTrigger>
+                      {showMfaWarning && (
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <p className="text-xs leading-snug">
+                            {t("security.mfa.warning_tooltip")}
+                          </p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })()}
 
             </>
           ) : (
