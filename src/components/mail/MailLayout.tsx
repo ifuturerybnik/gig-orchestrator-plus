@@ -18,6 +18,7 @@ import {
   PenSquare,
   FileText,
   ArrowLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +34,7 @@ import {
   markWiadomosc,
   deleteWiadomoscRemote,
   markSpamWiadomosc,
+  markNotSpamWiadomosc,
   bulkActionWiadomosci,
 } from "@/lib/email-wiadomosci.functions";
 import { ComposeDialog } from "./ComposeDialog";
@@ -95,6 +97,7 @@ export function MailLayout({ scope }: Props) {
   const markFn = useServerFn(markWiadomosc);
   const deleteRemoteFn = useServerFn(deleteWiadomoscRemote);
   const markSpamFn = useServerFn(markSpamWiadomosc);
+  const markNotSpamFn = useServerFn(markNotSpamWiadomosc);
   const bulkFn = useServerFn(bulkActionWiadomosci);
 
   // Skrzynki organizacji (tylko gdy scope=org)
@@ -238,6 +241,18 @@ export function MailLayout({ scope }: Props) {
     };
   }, [selected, fetchBodyFn, qc, skrzynkaId, folder, t]);
 
+  // Auto-oznaczanie jako przeczytana po 10 sekundach od otwarcia wiadomości.
+  useEffect(() => {
+    if (!selected || selected.przeczytana) return;
+    const id = selected.id;
+    const timer = setTimeout(() => {
+      markFn({ data: { wiadomoscId: id, action: "read" } })
+        .then(() => qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] }))
+        .catch(() => {});
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [selected, markFn, qc, skrzynkaId]);
+
   async function handleSync() {
     if (!skrzynkaId) return;
     setSyncing(true);
@@ -279,6 +294,17 @@ export function MailLayout({ scope }: Props) {
       if (selectedId === w.id) setSelectedId(null);
       qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
       toast.success(t("correspondence.mail.marked_spam"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    }
+  }
+
+  async function handleNotSpam(w: Wiadomosc) {
+    try {
+      await markNotSpamFn({ data: { wiadomoscId: w.id } });
+      if (selectedId === w.id) setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.marked_not_spam"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
     }
@@ -624,14 +650,26 @@ export function MailLayout({ scope }: Props) {
                   >
                     {t("correspondence.mail.reply")}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSpam(selected)}
-                    title={t("correspondence.mail.mark_spam")}
-                  >
-                    <ShieldAlert className="h-4 w-4" />
-                  </Button>
+                  {folder === "Spam" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleNotSpam(selected)}
+                      title={t("correspondence.mail.not_spam")}
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-1" />
+                      {t("correspondence.mail.not_spam")}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSpam(selected)}
+                      title={t("correspondence.mail.mark_spam")}
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(selected)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
