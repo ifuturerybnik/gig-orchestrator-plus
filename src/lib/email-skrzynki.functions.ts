@@ -147,24 +147,46 @@ export const listSkrzynki = createServerFn({ method: "GET" })
       if (!(await userIsMember(userId, data.organizationId))) {
         throw new Error("Forbidden");
       }
-      const { data: rows, error } = await supabaseAdmin
+      let { data: rows, error } = await supabaseAdmin
         .from("email_skrzynki")
-        .select(SAFE_COLUMNS)
+        .select(columnsForSelect())
         .eq("organization_id", data.organizationId)
         .eq("typ", "wspolna")
         .order("created_at", { ascending: false });
+      if (isMissingIkonaColumnError(error)) {
+        supportsIkonaUrlColumn = false;
+        const fallback = await supabaseAdmin
+          .from("email_skrzynki")
+          .select(SAFE_COLUMNS_BASE)
+          .eq("organization_id", data.organizationId)
+          .eq("typ", "wspolna")
+          .order("created_at", { ascending: false });
+        rows = fallback.data;
+        error = fallback.error;
+      }
       if (error) throw new Error(error.message);
-      return { skrzynki: rows ?? [] };
+      return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
     }
 
-    const { data: rows, error } = await supabaseAdmin
+    let { data: rows, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .select(SAFE_COLUMNS)
+      .select(columnsForSelect())
       .eq("owner_user_id", userId)
       .eq("typ", "osobista")
       .order("created_at", { ascending: false });
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .select(SAFE_COLUMNS_BASE)
+        .eq("owner_user_id", userId)
+        .eq("typ", "osobista")
+        .order("created_at", { ascending: false });
+      rows = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynki: rows ?? [] };
+    return { skrzynki: withMissingIkonaFallback(rows as unknown as Record<string, unknown>[]) };
   });
 
 // ---------------------------------------------------------------------------
