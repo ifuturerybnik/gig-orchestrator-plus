@@ -244,13 +244,14 @@ export function MailConfigAiAssistant({ currentEmail, onApply }: Props) {
         )}
       </div>
 
-      <form onSubmit={send} className="flex items-end gap-2">
+      <div className="flex items-end gap-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
+              e.stopPropagation();
               void send();
             }
           }}
@@ -262,11 +263,17 @@ export function MailConfigAiAssistant({ currentEmail, onApply }: Props) {
           className="min-h-[44px] flex-1 resize-none text-sm"
           disabled={loading}
         />
-        <Button type="submit" size="sm" disabled={loading || !input.trim()} className="gap-1">
+        <Button
+          type="button"
+          size="sm"
+          disabled={loading || !input.trim()}
+          className="gap-1"
+          onClick={() => void send()}
+        >
           <Send className="h-3.5 w-3.5" />
           {t("mail_ai.send", "Wyślij")}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }
