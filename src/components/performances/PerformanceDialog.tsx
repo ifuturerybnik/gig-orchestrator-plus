@@ -187,6 +187,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
     if (!open || !initial) return;
     const [y, m, d] = initial.performance_date.split("-").map(Number);
     setDate(new Date(y, m - 1, d));
+    setTime(initial.performance_time ? initial.performance_time.slice(0, 5) : "");
     setStatus(initial.status);
     setVisibility(initial.visibility);
     setEventKindSelection(initial.event_kind);
