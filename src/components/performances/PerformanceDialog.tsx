@@ -97,6 +97,128 @@ type CounterpartyRef = { id: string; name: string };
 
 const CONFIRMED: PerformanceStatus[] = ["confirmed", "confirmed_signing", "confirmed_signed"];
 
+function parseHM(v: string): { h: number; m: number } {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(v);
+  if (!match) return { h: 12, m: 0 };
+  const h = Math.max(0, Math.min(23, parseInt(match[1], 10)));
+  const m = Math.max(0, Math.min(59, parseInt(match[2], 10)));
+  return { h, m };
+}
+function fmtHM(h: number, m: number) {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function TimeStepper({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const hasValue = /^\d{2}:\d{2}$/.test(value);
+  const { h, m } = hasValue ? parseHM(value) : { h: 12, m: 0 };
+
+  const setH = (next: number) => onChange(fmtHM((next + 24) % 24, m));
+  const setM = (next: number) => onChange(fmtHM(h, (next + 60) % 60));
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="inline-flex items-center rounded-md border border-input">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-r-none"
+          onClick={() => setH(h - 1)}
+          aria-label="-1h"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min={0}
+          max={23}
+          value={hasValue ? h : ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "") {
+              onChange("");
+              return;
+            }
+            const n = parseInt(v, 10);
+            if (!Number.isFinite(n)) return;
+            onChange(fmtHM(Math.max(0, Math.min(23, n)), m));
+          }}
+          placeholder="HH"
+          className="h-9 w-14 rounded-none border-0 text-center focus-visible:ring-0"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-l-none"
+          onClick={() => setH(h + 1)}
+          aria-label="+1h"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <span className="text-muted-foreground">:</span>
+      <div className="inline-flex items-center rounded-md border border-input">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-r-none"
+          onClick={() => setM(m - 5)}
+          aria-label="-5m"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min={0}
+          max={59}
+          value={hasValue ? m : ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "") {
+              onChange("");
+              return;
+            }
+            const n = parseInt(v, 10);
+            if (!Number.isFinite(n)) return;
+            onChange(fmtHM(h, Math.max(0, Math.min(59, n))));
+          }}
+          placeholder="MM"
+          className="h-9 w-14 rounded-none border-0 text-center focus-visible:ring-0"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-l-none"
+          onClick={() => setM(m + 5)}
+          aria-label="+5m"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      {hasValue && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange("")}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+
 export function PerformanceDialog({ open, onOpenChange, organizationId, initial, initialDate }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
