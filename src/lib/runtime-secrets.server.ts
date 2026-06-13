@@ -11,18 +11,14 @@ function readFromRecord(source: Record<string, unknown> | undefined, names: stri
   return undefined;
 }
 
-async function readCloudflareEnv(names: string[]): Promise<string | undefined> {
-  try {
-    const mod = (await import("cloudflare:workers")) as { env?: Record<string, unknown> };
-    return readFromRecord(mod.env, names);
-  } catch {
-    return undefined;
-  }
+function readFromGlobalRuntimeEnv(names: string[]): string | undefined {
+  const runtimeEnv = (globalThis as typeof globalThis & {
+    __CONCERTIVO_RUNTIME_ENV__?: Record<string, unknown>;
+  }).__CONCERTIVO_RUNTIME_ENV__;
+
+  return readFromRecord(runtimeEnv, names);
 }
 
 export async function readRuntimeSecret(names: string[]): Promise<string | undefined> {
-  return (
-    readFromRecord(process.env as Record<string, unknown>, names) ||
-    (await readCloudflareEnv(names))
-  );
+  return readFromRecord(process.env as Record<string, unknown>, names) || readFromGlobalRuntimeEnv(names);
 }
