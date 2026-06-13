@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { encryptMailPassword } from "./mail-crypto.server";
+import { encryptMailPasswordWithKey, readMailEncryptionKey } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
 const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
@@ -216,6 +216,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const mailEncryptionKey = readMailEncryptionKey();
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -237,12 +238,12 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       imap_host: data.imap_host,
       imap_port: data.imap_port,
       imap_login: data.imap_login,
-      imap_haslo_encrypted: encryptMailPassword(data.imap_haslo),
+      imap_haslo_encrypted: encryptMailPasswordWithKey(data.imap_haslo, mailEncryptionKey),
       imap_use_ssl: data.imap_use_ssl,
       smtp_host: data.smtp_host,
       smtp_port: data.smtp_port,
       smtp_login: data.smtp_login,
-      smtp_haslo_encrypted: encryptMailPassword(data.smtp_haslo),
+      smtp_haslo_encrypted: encryptMailPasswordWithKey(data.smtp_haslo, mailEncryptionKey),
       smtp_use_ssl: data.smtp_use_ssl,
     };
 
@@ -266,6 +267,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const mailEncryptionKey = readMailEncryptionKey();
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
@@ -301,10 +303,10 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     };
     if (data.imap_haslo && data.imap_haslo.length > 0) {
-      patch.imap_haslo_encrypted = encryptMailPassword(data.imap_haslo);
+      patch.imap_haslo_encrypted = encryptMailPasswordWithKey(data.imap_haslo, mailEncryptionKey);
     }
     if (data.smtp_haslo && data.smtp_haslo.length > 0) {
-      patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
+      patch.smtp_haslo_encrypted = encryptMailPasswordWithKey(data.smtp_haslo, mailEncryptionKey);
     }
 
     const { data: updated, error } = await runWithOptionalColumnFallback(() =>
