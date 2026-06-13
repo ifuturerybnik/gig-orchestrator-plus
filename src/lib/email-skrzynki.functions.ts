@@ -374,6 +374,7 @@ export const deleteSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ skrzynkaId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
@@ -416,6 +417,7 @@ export const syncSkrzynka = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
