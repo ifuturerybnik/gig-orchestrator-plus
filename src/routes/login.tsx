@@ -160,6 +160,21 @@ function LoginPage() {
           </form>
         ) : (
           <div className="mt-6">
+            {needsConfirmation && (
+              <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground">
+                <p>{t("auth.errors.email_not_confirmed")}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleResendConfirmation}
+                  disabled={resending || !email}
+                >
+                  {t("auth.errors.resend_confirmation")}
+                </Button>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.login.email")}</Label>
