@@ -1268,6 +1268,8 @@ export default
       "spam": "Spam",
       "mark_spam": "Mark as spam",
       "marked_spam": "Moved to spam",
+      "not_spam": "Not spam",
+      "marked_not_spam": "Moved to Inbox",
       "bulk_selected_count": "Selected: {{count}}",
       "bulk_delete": "Delete selected",
       "bulk_spam": "Move to spam",
