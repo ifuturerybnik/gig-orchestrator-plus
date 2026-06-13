@@ -108,9 +108,12 @@ const unsupportedOptionalColumns = new Set<string>();
 const MAIL_CIPHER_ALGO = "aes-256-gcm";
 const MAIL_CIPHER_IV_LEN = 12;
 
-function readMailboxEncryptionKey(): Buffer {
-  const raw =
-    process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
+function readMailboxEncryptionSecret(): string | undefined {
+  const env = process.env as Record<string, string | undefined>;
+  return env.EXT_MAIL_ENCRYPTION_KEY?.trim() || env["EXT_MAIL_ENCRYPTION_KEY"]?.trim() || env.MAIL_ENCRYPTION_KEY?.trim() || env["MAIL_ENCRYPTION_KEY"]?.trim();
+}
+
+function normalizeMailboxEncryptionKey(raw: string | undefined): Buffer {
   const cleaned = raw
     ?.replace(/^\s*(?:MAIL_ENCRYPTION_KEY|EXT_MAIL_ENCRYPTION_KEY)\s*=\s*/i, "")
     .replace(/^["']|["']$/g, "")
@@ -124,10 +127,10 @@ function readMailboxEncryptionKey(): Buffer {
   return Buffer.from(cleaned, "hex");
 }
 
-function encryptMailboxPassword(plain: string): string {
+function encryptMailboxPassword(plain: string, rawKey: string | undefined): string {
   if (!plain) throw new Error("Empty password");
   const iv = randomBytes(MAIL_CIPHER_IV_LEN);
-  const cipher = createCipheriv(MAIL_CIPHER_ALGO, readMailboxEncryptionKey(), iv);
+  const cipher = createCipheriv(MAIL_CIPHER_ALGO, normalizeMailboxEncryptionKey(rawKey), iv);
   const ct = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return "\\x" + Buffer.concat([iv, ct, tag]).toString("hex");
@@ -244,6 +247,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const mailEncryptionKey = readMailboxEncryptionSecret();
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -265,12 +269,12 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       imap_host: data.imap_host,
       imap_port: data.imap_port,
       imap_login: data.imap_login,
-      imap_haslo_encrypted: encryptMailboxPassword(data.imap_haslo),
+      imap_haslo_encrypted: encryptMailboxPassword(data.imap_haslo, mailEncryptionKey),
       imap_use_ssl: data.imap_use_ssl,
       smtp_host: data.smtp_host,
       smtp_port: data.smtp_port,
       smtp_login: data.smtp_login,
-      smtp_haslo_encrypted: encryptMailboxPassword(data.smtp_haslo),
+      smtp_haslo_encrypted: encryptMailboxPassword(data.smtp_haslo, mailEncryptionKey),
       smtp_use_ssl: data.smtp_use_ssl,
     };
 
@@ -294,6 +298,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const mailEncryptionKey = readMailboxEncryptionSecret();
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
@@ -329,10 +334,10 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     };
     if (data.imap_haslo && data.imap_haslo.length > 0) {
-      patch.imap_haslo_encrypted = encryptMailboxPassword(data.imap_haslo);
+      patch.imap_haslo_encrypted = encryptMailboxPassword(data.imap_haslo, mailEncryptionKey);
     }
     if (data.smtp_haslo && data.smtp_haslo.length > 0) {
-      patch.smtp_haslo_encrypted = encryptMailboxPassword(data.smtp_haslo);
+      patch.smtp_haslo_encrypted = encryptMailboxPassword(data.smtp_haslo, mailEncryptionKey);
     }
 
     const { data: updated, error } = await runWithOptionalColumnFallback(() =>
