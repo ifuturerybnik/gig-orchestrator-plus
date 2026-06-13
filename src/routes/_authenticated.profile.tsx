@@ -53,9 +53,16 @@ type UserKind = (typeof USER_KINDS)[number];
 function ProfilePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const fetchProfile = useServerFn(getMyProfile);
   const updateFn = useServerFn(updateMyProfile);
   const fetchOrgs = useServerFn(listMyOrganizations);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/login" });
+  };
+
 
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
