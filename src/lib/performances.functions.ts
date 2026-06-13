@@ -354,6 +354,7 @@ export const updatePerformance = createServerFn({ method: "POST" })
       .from("performances")
       .update({
         performance_date: data.performanceDate,
+        performance_time: data.performanceTime ? data.performanceTime : null,
         status: data.status,
         visibility: data.visibility,
         event_kind: kind,
