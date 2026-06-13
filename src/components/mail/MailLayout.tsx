@@ -273,7 +273,7 @@ export function MailLayout({ scope }: Props) {
     }
   }
 
-  if (skrzynkiQ.isLoading) {
+  if (skrzynkiLoading) {
     return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
   }
 
