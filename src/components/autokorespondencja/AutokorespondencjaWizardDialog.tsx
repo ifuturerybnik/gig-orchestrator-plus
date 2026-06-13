@@ -41,6 +41,12 @@ interface Props {
   editId?: string | null;
 }
 
+type SkrzynkaOption = {
+  id: string;
+  nazwa: string;
+  email: string;
+};
+
 const DAYS = [
   { v: 1, k: "pn" },
   { v: 2, k: "wt" },
@@ -194,7 +200,7 @@ export function AutokorespondencjaWizardDialog({ open, onOpenChange, orgId, edit
               <Select value={skrzynkaId} onValueChange={setSkrzynkaId}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
-                  {(skrzynkiQ.data?.skrzynki ?? []).map((s) => (
+                  {((skrzynkiQ.data?.skrzynki ?? []) as SkrzynkaOption[]).map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.nazwa} ({s.email})</SelectItem>
                   ))}
                 </SelectContent>
