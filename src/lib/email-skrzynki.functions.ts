@@ -8,9 +8,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
+const SAFE_COLUMNS =
+  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
 const SAFE_COLUMNS_BASE =
-  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
-const SAFE_COLUMNS = SAFE_COLUMNS_BASE.replace("nazwa_wyswietlana,", "nazwa_wyswietlana, ikona_url,");
+  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
 
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
@@ -64,11 +65,8 @@ function isMissingIkonaColumnError(error: { message?: string; code?: string } | 
   return !!error && /ikona_url/i.test(error.message ?? "");
 }
 
-async function selectSkrzynki(query: ReturnType<typeof supabaseAdmin.from>) {
-  const { data: rows, error } = await query.select(SAFE_COLUMNS);
-  if (!isMissingIkonaColumnError(error)) return { rows, error };
-  const { data: fallbackRows, error: fallbackError } = await query.select(SAFE_COLUMNS_BASE);
-  return { rows: fallbackRows, error: fallbackError };
+function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
+  return (rows ?? []).map((row) => ({ ikona_url: null, ...row }));
 }
 
 
