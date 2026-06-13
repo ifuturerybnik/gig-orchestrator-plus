@@ -273,6 +273,53 @@ export function MailLayout({ scope }: Props) {
     }
   }
 
+  async function handleSpam(w: Wiadomosc) {
+    try {
+      await markSpamFn({ data: { wiadomoscId: w.id } });
+      if (selectedId === w.id) setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.marked_spam"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      if (prev.size === wiadomosci.length && wiadomosci.length > 0) return new Set();
+      return new Set(wiadomosci.map((w) => w.id));
+    });
+  }
+
+  async function handleBulk(action: "delete" | "spam" | "read" | "unread") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (action === "delete" && !confirm(t("correspondence.mail.bulk_delete_confirm", { count: ids.length }))) {
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      await bulkFn({ data: { ids, action } });
+      setSelectedIds(new Set());
+      if (action === "delete" || action === "spam") setSelectedId(null);
+      await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.bulk_done", { count: ids.length }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   if (skrzynkiLoading) {
     return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
   }
