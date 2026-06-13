@@ -88,7 +88,7 @@ export function MailboxForm({ mode, initial, submitting, onSubmit, onCancel }: P
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
               "skrzynki.form.nazwa_hint",
-              "Etykieta widoczna tylko w aplikacji (np. „Sekretariat").",
+              'Etykieta widoczna tylko w aplikacji (np. „Sekretariat").',
             )}
           </p>
         </Field>
