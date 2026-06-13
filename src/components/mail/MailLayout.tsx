@@ -650,14 +650,26 @@ export function MailLayout({ scope }: Props) {
                   >
                     {t("correspondence.mail.reply")}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSpam(selected)}
-                    title={t("correspondence.mail.mark_spam")}
-                  >
-                    <ShieldAlert className="h-4 w-4" />
-                  </Button>
+                  {folder === "Spam" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleNotSpam(selected)}
+                      title={t("correspondence.mail.not_spam")}
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-1" />
+                      {t("correspondence.mail.not_spam")}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSpam(selected)}
+                      title={t("correspondence.mail.mark_spam")}
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(selected)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
