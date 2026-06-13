@@ -66,6 +66,27 @@ export default
       "optional": "Optional — you can fill this in at any time.",
       "benefit_user": "💡 Providing your address lets the system automatically optimize tour routes, plan travel and handle logistics (accommodation, travel costs)."
     },
+    "landing": {
+      "title": "Where to go after sign-in",
+      "help": "Choose the page the app should open right after you sign in. Pick any tab of your profile or a specific menu inside one of your organizations. You can change this any time.",
+      "kind": {
+        "profile": "My profile",
+        "profile_desc": "Jump straight to the chosen tab of your profile.",
+        "organization": "My organization",
+        "organization_desc": "Jump straight to the chosen menu of one of your organizations."
+      },
+      "profile_page": "Profile page",
+      "profile_pages": {
+        "main": "My profile — main page"
+      },
+      "choose_org": "Organization",
+      "choose_org_ph": "Select organization",
+      "choose_page": "Organization menu",
+      "choose_page_ph": "Select page",
+      "saved": "Preference saved",
+      "reset": "Reset to default",
+      "current": "Currently"
+    },
     "my_orgs": {
       "title": "My organizations",
       "empty": "You're not assigned to any organization yet."

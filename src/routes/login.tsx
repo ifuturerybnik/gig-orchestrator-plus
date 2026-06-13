@@ -24,8 +24,26 @@ function LoginPage() {
   const { t } = useTranslation();
   
   const { redirect: redirectTo } = Route.useSearch();
-  const goNext = () => {
-    const target = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+  const goNext = async () => {
+    let target = redirectTo && redirectTo.startsWith("/") ? redirectTo : "";
+    if (!target) {
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const uid = u.user?.id;
+        if (uid) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("landing_path")
+            .eq("id", uid)
+            .maybeSingle();
+          const lp = (prof as { landing_path?: string | null } | null)?.landing_path;
+          if (lp && lp.startsWith("/")) target = lp;
+        }
+      } catch {
+        // ignore — fallback to /dashboard
+      }
+    }
+    if (!target) target = "/dashboard";
     // Twardy reload — gwarantuje że AuthProvider odczyta świeżą sesję z localStorage
     // przed renderem chronionej strony (eliminuje flash ekranu logowania).
     window.location.assign(target);
