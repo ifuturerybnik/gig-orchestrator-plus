@@ -313,6 +313,7 @@ const updateInput = z
         ["postalCode", d.postalCode],
         ["street", d.street],
         ["streetNumber", d.streetNumber],
+        ["performanceTime", d.performanceTime],
       ] as const;
       for (const [k, v] of fields) {
         if (!required(v))
