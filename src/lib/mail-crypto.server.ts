@@ -10,14 +10,19 @@ const IV_LEN = 12;
 
 let cachedKey: Buffer | null = null;
 export function readMailEncryptionKey(): string | undefined {
-  // Bracket notation avoids build-time env inlining in preview/server bundles.
-  const direct = process.env["MAIL_ENCRYPTION_KEY"]?.trim();
+  // Dot notation is intentional: the TanStack/Vite runtime exposes configured
+  // secrets through direct process.env.<NAME> reads in server handlers.
+  const direct = process.env.MAIL_ENCRYPTION_KEY?.trim();
   if (direct) return direct;
-  return process.env["EXT_MAIL_ENCRYPTION_KEY"]?.trim();
+  return process.env.EXT_MAIL_ENCRYPTION_KEY?.trim();
 }
 
 function normalizeMailEncryptionKey(raw: string | undefined): Buffer {
   if (!raw) {
+    console.error("Mail encryption key missing at runtime", {
+      hasMailKey: !!process.env.MAIL_ENCRYPTION_KEY,
+      hasExtMailKey: !!process.env.EXT_MAIL_ENCRYPTION_KEY,
+    });
     throw new Error(
       "Brak klucza szyfrowania poczty. Ustaw sekret MAIL_ENCRYPTION_KEY z tą samą wartością, która jest używana w mail-proxy.",
     );
