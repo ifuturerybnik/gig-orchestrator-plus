@@ -219,6 +219,7 @@ export const listSkrzynki = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.scope === "organization") {
       if (!data.organizationId) throw new Error("organizationId is required");
@@ -257,6 +258,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const mailEncryptionKey = await readMailboxEncryptionSecret();
 
     if (data.typ === "wspolna") {
@@ -308,6 +310,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const mailEncryptionKey = await readMailboxEncryptionSecret();
 
     const { data: existing, error: readErr } = await supabaseAdmin
