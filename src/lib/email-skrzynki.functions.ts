@@ -228,13 +228,23 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     };
 
 
-    const { data: created, error } = await supabaseAdmin
+    let { data: created, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .insert(row)
-      .select(SAFE_COLUMNS)
+      .insert(omitIkonaIfUnsupported(row))
+      .select(columnsForSelect())
       .single();
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .insert(omitIkonaIfUnsupported(row))
+        .select(SAFE_COLUMNS_BASE)
+        .single();
+      created = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynka: created };
+    return { skrzynka: withMissingIkonaFallback([created as unknown as Record<string, unknown>])[0] };
   });
 
 // ---------------------------------------------------------------------------
@@ -286,14 +296,25 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       patch.smtp_haslo_encrypted = encryptMailPassword(data.smtp_haslo);
     }
 
-    const { data: updated, error } = await supabaseAdmin
+    let { data: updated, error } = await supabaseAdmin
       .from("email_skrzynki")
-      .update(patch)
+      .update(omitIkonaIfUnsupported(patch))
       .eq("id", data.skrzynkaId)
-      .select(SAFE_COLUMNS)
+      .select(columnsForSelect())
       .single();
+    if (isMissingIkonaColumnError(error)) {
+      supportsIkonaUrlColumn = false;
+      const fallback = await supabaseAdmin
+        .from("email_skrzynki")
+        .update(omitIkonaIfUnsupported(patch))
+        .eq("id", data.skrzynkaId)
+        .select(SAFE_COLUMNS_BASE)
+        .single();
+      updated = fallback.data;
+      error = fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { skrzynka: updated };
+    return { skrzynka: withMissingIkonaFallback([updated as unknown as Record<string, unknown>])[0] };
   });
 
 
