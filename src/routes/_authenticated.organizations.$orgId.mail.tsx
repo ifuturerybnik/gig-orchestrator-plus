@@ -7,5 +7,5 @@ export const Route = createFileRoute("/_authenticated/organizations/$orgId/mail"
 
 function OrgMailPage() {
   const { orgId } = Route.useParams();
-  return <MailLayout orgId={orgId} />;
+  return <MailLayout scope={{ kind: "org", orgId }} />;
 }

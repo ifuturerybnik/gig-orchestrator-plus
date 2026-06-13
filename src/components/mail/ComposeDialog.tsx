@@ -25,6 +25,7 @@ import { WysiwygEditor } from "@/components/ui/wysiwyg-editor";
 import { StopkaPicker } from "@/components/email/StopkaPicker";
 import { sendEmail } from "@/lib/email-send.functions";
 import { listSzablony } from "@/lib/email-szablony.functions";
+import type { MailScope } from "./MailLayout";
 
 interface Wiadomosc {
   id: string;
@@ -37,16 +38,17 @@ interface Wiadomosc {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  orgId: string;
+  scope: MailScope;
   skrzynkaId: string;
   replyTo?: Wiadomosc | null;
 }
 
-export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }: Props) {
+export function ComposeDialog({ open, onOpenChange, scope, skrzynkaId, replyTo }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const sendFn = useServerFn(sendEmail);
   const listSzablonyFn = useServerFn(listSzablony);
+  const orgId = scope.kind === "org" ? scope.orgId : null;
 
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
@@ -56,13 +58,15 @@ export function ComposeDialog({ open, onOpenChange, orgId, skrzynkaId, replyTo }
   const editorApiRef = useRef<{ insertText: (t: string) => void } | null>(null);
 
   const szablonyQ = useQuery({
-    queryKey: ["szablony-org", orgId, open],
+    queryKey: ["szablony-compose", orgId ?? "user", open],
     enabled: open,
     queryFn: async () => {
-      const [u, o] = await Promise.all([
-        listSzablonyFn({ data: { scope: "user" } }),
-        listSzablonyFn({ data: { scope: "organization", organizationId: orgId } }),
-      ]);
+      // Osobiste szablony zawsze; szablony org tylko jeśli mamy orgId.
+      const userP = listSzablonyFn({ data: { scope: "user" } });
+      const orgP = orgId
+        ? listSzablonyFn({ data: { scope: "organization", organizationId: orgId } })
+        : Promise.resolve({ szablony: [] as Array<{ id: string; nazwa: string; kategoria: string | null; temat: string; body_html: string }> });
+      const [u, o] = await Promise.all([userP, orgP]);
       return [...(u.szablony ?? []), ...(o.szablony ?? [])];
     },
   });

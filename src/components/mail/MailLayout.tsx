@@ -35,8 +35,11 @@ import {
 import { ComposeDialog } from "./ComposeDialog";
 import { SzablonyManager } from "./SzablonyManager";
 
+export type MailScope = { kind: "user" } | { kind: "org"; orgId: string };
+
 interface Props {
-  orgId: string;
+  /** Zakres skrzynek: osobiste (kind:'user') lub organizacja (kind:'org'). */
+  scope: MailScope;
 }
 
 interface Wiadomosc {
@@ -74,7 +77,7 @@ function fmt(d: string | null): string {
   );
 }
 
-export function MailLayout({ orgId }: Props) {
+export function MailLayout({ scope }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const listSkrzynkiFn = useServerFn(listSkrzynki);
@@ -84,8 +87,14 @@ export function MailLayout({ orgId }: Props) {
   const deleteRemoteFn = useServerFn(deleteWiadomoscRemote);
 
   const skrzynkiQ = useQuery({
-    queryKey: ["org-skrzynki", orgId],
-    queryFn: () => listSkrzynkiFn({ data: { scope: "organization", organizationId: orgId } }),
+    queryKey:
+      scope.kind === "org"
+        ? ["org-skrzynki", scope.orgId]
+        : ["user-skrzynki"],
+    queryFn: () =>
+      scope.kind === "org"
+        ? listSkrzynkiFn({ data: { scope: "organization", organizationId: scope.orgId } })
+        : listSkrzynkiFn({ data: { scope: "mine" } }),
   });
   const skrzynki = skrzynkiQ.data?.skrzynki ?? [];
 
@@ -250,7 +259,7 @@ export function MailLayout({ orgId }: Props) {
   if (view === "szablony") {
     return (
       <SzablonyManager
-        orgId={orgId}
+        scope={scope}
         onBack={() => setView("mail")}
       />
     );
@@ -467,7 +476,7 @@ export function MailLayout({ orgId }: Props) {
         <ComposeDialog
           open={composeOpen}
           onOpenChange={setComposeOpen}
-          orgId={orgId}
+          scope={scope}
           skrzynkaId={skrzynkaId}
           replyTo={composeReply}
         />
