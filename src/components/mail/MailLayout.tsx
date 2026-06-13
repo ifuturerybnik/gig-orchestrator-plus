@@ -59,6 +59,12 @@ interface Wiadomosc {
   body_text: string | null;
 }
 
+type SkrzynkaSummary = {
+  id: string;
+  nazwa: string;
+  email: string;
+};
+
 const FOLDERS = [
   { id: "INBOX", labelKey: "correspondence.mail.folders.inbox", icon: Inbox },
   { id: "Sent", labelKey: "correspondence.mail.folders.sent", icon: Send },
@@ -96,7 +102,7 @@ export function MailLayout({ scope }: Props) {
         ? listSkrzynkiFn({ data: { scope: "organization", organizationId: scope.orgId } })
         : listSkrzynkiFn({ data: { scope: "mine" } }),
   });
-  const skrzynki = skrzynkiQ.data?.skrzynki ?? [];
+  const skrzynki = (skrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
 
   const [skrzynkaId, setSkrzynkaId] = useState<string | null>(null);
   const [folder, setFolder] = useState("INBOX");
