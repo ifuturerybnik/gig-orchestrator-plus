@@ -5,7 +5,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { createCipheriv, randomBytes } from "crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callMailProxy } from "./mail-proxy.server";
 import { readRuntimeSecret } from "./runtime-secrets.server";
 
@@ -183,6 +182,7 @@ async function runWithOptionalColumnFallback<T>(
 
 
 async function userIsMember(userId: string, organizationId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("organization_members")
     .select("id")
@@ -193,6 +193,7 @@ async function userIsMember(userId: string, organizationId: string): Promise<boo
 }
 
 async function userIsOwner(userId: string, organizationId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("organization_members")
     .select("id")
