@@ -60,10 +60,18 @@ function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setNeedsConfirmation(false);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      toast.error(t("auth.errors.invalid_credentials"));
+      const code = (error as { code?: string }).code ?? "";
+      const msg = error.message?.toLowerCase() ?? "";
+      if (code === "email_not_confirmed" || msg.includes("not confirmed") || msg.includes("confirm")) {
+        setNeedsConfirmation(true);
+        toast.error(t("auth.errors.email_not_confirmed"));
+      } else {
+        toast.error(t("auth.errors.invalid_credentials"));
+      }
       return;
     }
 
