@@ -5,13 +5,55 @@
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const PORT = process.env.PORT || 3000;
 const CLIENT_DIR = resolve(__dirname, "../dist/client");
+
+function parseEnvFile(filePath) {
+  if (!existsSync(filePath)) return {};
+
+  const entries = {};
+  const content = readFileSync(filePath, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    entries[key] = rawValue.trim().replace(/^(["'])(.*)\1$/, "$2");
+  }
+  return entries;
+}
+
+function applyEnv(entries, options = {}) {
+  for (const [key, value] of Object.entries(entries)) {
+    if (!value) continue;
+    if (options.only && !options.only.includes(key)) continue;
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+applyEnv(parseEnvFile(resolve(__dirname, "../.env.production")));
+applyEnv(parseEnvFile(resolve(__dirname, "../.env")));
+
+const proxyEnv = {
+  ...parseEnvFile("/opt/mail-proxy-concertivo/.env"),
+  ...parseEnvFile(resolve(__dirname, "mail-proxy-concertivo/.env")),
+};
+applyEnv(proxyEnv, { only: ["MAIL_ENCRYPTION_KEY"] });
+if (!process.env.MAIL_PROXY_TOKEN && proxyEnv.PROXY_TOKEN) {
+  process.env.MAIL_PROXY_TOKEN = proxyEnv.PROXY_TOKEN;
+}
+if (!process.env.EXT_MAIL_ENCRYPTION_KEY && process.env.MAIL_ENCRYPTION_KEY) {
+  process.env.EXT_MAIL_ENCRYPTION_KEY = process.env.MAIL_ENCRYPTION_KEY;
+}
+if (!process.env.MAIL_ENCRYPTION_KEY && process.env.EXT_MAIL_ENCRYPTION_KEY) {
+  process.env.MAIL_ENCRYPTION_KEY = process.env.EXT_MAIL_ENCRYPTION_KEY;
+}
 
 // MIME types for static assets
 const MIME_TYPES = {
