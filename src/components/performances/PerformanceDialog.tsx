@@ -66,6 +66,7 @@ import {
 export interface PerformanceInitial {
   id: string;
   performance_date: string;
+  performance_time: string | null;
   status: PerformanceStatus;
   visibility: PerformanceVisibility;
   event_kind: string;
