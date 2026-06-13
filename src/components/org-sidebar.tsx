@@ -200,11 +200,26 @@ export function OrgSidebar({
       moduleId: "dysk",
     },
     {
-      kind: "leaf",
-      to: `${base}/members`,
-      labelKey: "organizations.sidebar.members",
-      icon: Users,
-      moduleId: "members",
+      kind: "group",
+      id: "settings",
+      labelKey: "organizations.sidebar.settings",
+      icon: Settings,
+      children: [
+        {
+          kind: "leaf",
+          to: `${base}/profile`,
+          labelKey: "organizations.sidebar.edit_organization",
+          icon: Building2,
+          moduleId: "profile",
+        },
+        {
+          kind: "leaf",
+          to: `${base}/members`,
+          labelKey: "organizations.sidebar.members",
+          icon: Users,
+          moduleId: "members",
+        },
+      ],
     },
   ];
 
