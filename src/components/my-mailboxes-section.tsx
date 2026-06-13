@@ -13,11 +13,13 @@ import {
 } from "@/lib/email-skrzynki.functions";
 import { Trash2, RefreshCw, Plus, Pencil } from "lucide-react";
 import { MailboxForm, type MailboxFormState } from "@/components/mail/MailboxForm";
+import { MailboxAvatar } from "@/components/mail/MailboxAvatar";
 
 type SkrzynkaRow = {
   id: string;
   nazwa: string;
   nazwa_wyswietlana: string | null;
+  ikona_url: string | null;
   email: string;
   imap_host: string;
   imap_port: number;
@@ -34,6 +36,7 @@ function rowToForm(s: SkrzynkaRow): MailboxFormState {
   return {
     nazwa: s.nazwa,
     nazwa_wyswietlana: s.nazwa_wyswietlana ?? "",
+    ikona_url: s.ikona_url ?? "",
     email: s.email,
     imap_host: s.imap_host,
     imap_port: String(s.imap_port ?? 993),
@@ -47,6 +50,7 @@ function rowToForm(s: SkrzynkaRow): MailboxFormState {
     smtp_use_ssl: !!s.smtp_use_ssl,
   };
 }
+
 
 export function MyMailboxesSection() {
   const { t } = useTranslation();
@@ -73,6 +77,7 @@ export function MyMailboxesSection() {
         data: {
           nazwa: form.nazwa,
           nazwa_wyswietlana: form.nazwa_wyswietlana || null,
+          ikona_url: form.ikona_url || null,
           typ: "osobista",
           organizationId: null,
           email: form.email,
@@ -103,6 +108,7 @@ export function MyMailboxesSection() {
           skrzynkaId: id,
           nazwa: form.nazwa,
           nazwa_wyswietlana: form.nazwa_wyswietlana || null,
+          ikona_url: form.ikona_url || null,
           email: form.email,
           imap_host: form.imap_host,
           imap_port: Number(form.imap_port),
@@ -186,23 +192,26 @@ export function MyMailboxesSection() {
           {skrzynki.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between rounded-md border border-border bg-background p-3"
+              className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-3"
             >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {s.nazwa}
-                  {s.nazwa_wyswietlana && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      ({t("skrzynki.from_label", "Od")}: {s.nazwa_wyswietlana})
-                    </span>
+              <div className="flex min-w-0 items-center gap-3">
+                <MailboxAvatar src={s.ikona_url} name={s.nazwa_wyswietlana ?? s.nazwa} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {s.nazwa}
+                    {s.nazwa_wyswietlana && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        ({t("skrzynki.from_label", "Od")}: {s.nazwa_wyswietlana})
+                      </span>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {s.email} · IMAP {s.imap_host}:{s.imap_port} · SMTP {s.smtp_host}:{s.smtp_port}
+                  </p>
+                  {s.last_sync_error && (
+                    <p className="mt-1 text-xs text-destructive">{s.last_sync_error}</p>
                   )}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {s.email} · IMAP {s.imap_host}:{s.imap_port} · SMTP {s.smtp_host}:{s.smtp_port}
-                </p>
-                {s.last_sync_error && (
-                  <p className="mt-1 text-xs text-destructive">{s.last_sync_error}</p>
-                )}
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <Button

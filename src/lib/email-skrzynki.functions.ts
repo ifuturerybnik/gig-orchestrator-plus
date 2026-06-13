@@ -9,7 +9,7 @@ import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
 const SAFE_COLUMNS =
-  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
+  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
 
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
@@ -17,10 +17,13 @@ const portSchema = z.number().int().min(1).max(65535);
 const hostSchema = z.string().trim().min(1).max(255);
 const loginSchema = z.string().trim().min(1).max(255);
 const emailSchema = z.string().trim().toLowerCase().email().max(255);
+// data URL (base64) lub https URL — cap ~200KB.
+const ikonaSchema = z.string().trim().max(200_000).nullable().optional();
 
 const skrzynkaInputSchema = z.object({
   nazwa: z.string().trim().min(1).max(120),
   nazwa_wyswietlana: z.string().trim().max(160).nullable().optional(),
+  ikona_url: ikonaSchema,
   typ: TypEnum,
   organizationId: z.string().uuid().nullable().optional(),
   email: emailSchema,
@@ -42,6 +45,7 @@ const skrzynkaUpdateSchema = z.object({
   skrzynkaId: z.string().uuid(),
   nazwa: z.string().trim().min(1).max(120),
   nazwa_wyswietlana: z.string().trim().max(160).nullable().optional(),
+  ikona_url: ikonaSchema,
   email: emailSchema,
   imap_host: hostSchema,
   imap_port: portSchema,
@@ -54,6 +58,7 @@ const skrzynkaUpdateSchema = z.object({
   smtp_haslo: z.string().max(500).optional().nullable(),
   smtp_use_ssl: z.boolean(),
 });
+
 
 async function userIsMember(userId: string, organizationId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
@@ -138,6 +143,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     const row = {
       nazwa: data.nazwa,
       nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
+      ikona_url: data.ikona_url?.trim() || null,
       typ: data.typ,
       owner_user_id: data.typ === "osobista" ? userId : null,
       organization_id: data.typ === "wspolna" ? data.organizationId : null,
@@ -153,6 +159,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       smtp_haslo_encrypted: encryptMailPassword(data.smtp_haslo),
       smtp_use_ssl: data.smtp_use_ssl,
     };
+
 
     const { data: created, error } = await supabaseAdmin
       .from("email_skrzynki")
@@ -193,6 +200,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = {
       nazwa: data.nazwa,
       nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
+      ikona_url: data.ikona_url?.trim() || null,
       email: data.email,
       imap_host: data.imap_host,
       imap_port: data.imap_port,
