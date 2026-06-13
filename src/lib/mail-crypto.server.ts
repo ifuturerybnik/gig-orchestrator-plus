@@ -11,7 +11,9 @@ const IV_LEN = 12;
 let cachedKey: Buffer | null = null;
 function readMailEncryptionKey(): string | undefined {
   // Bracket notation avoids build-time env inlining in preview/server bundles.
-  return process.env["MAIL_ENCRYPTION_KEY"] ?? process.env["EXT_MAIL_ENCRYPTION_KEY"];
+  const direct = process.env["MAIL_ENCRYPTION_KEY"]?.trim();
+  if (direct) return direct;
+  return process.env["EXT_MAIL_ENCRYPTION_KEY"]?.trim();
 }
 
 function getKey(): Buffer {
