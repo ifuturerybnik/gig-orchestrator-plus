@@ -131,6 +131,16 @@ function omitUnsupportedOptionalColumns<T extends Record<string, unknown>>(row: 
   return next as T;
 }
 
+async function runWithOptionalColumnFallback<T>(
+  operation: () => Promise<{ data: T | null; error: { message?: string; code?: string } | null }>,
+): Promise<{ data: T | null; error: { message?: string; code?: string } | null }> {
+  for (let attempt = 0; attempt <= OPTIONAL_COLUMNS.length; attempt += 1) {
+    const result = await operation();
+    if (!result.error || !markMissingOptionalColumn(result.error)) return result;
+  }
+  return operation();
+}
+
 
 async function userIsMember(userId: string, organizationId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
