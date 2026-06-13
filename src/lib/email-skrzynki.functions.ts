@@ -2,10 +2,10 @@
 // CRUD przez supabaseAdmin (bo INSERT/UPDATE/DELETE są zablokowane RLS — szyfrowanie
 // haseł musi iść przez serwer).
 import { createServerFn } from "@tanstack/react-start";
+import { createCipheriv, randomBytes } from "crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { encryptMailPasswordWithKey } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
 const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
@@ -104,6 +104,34 @@ const skrzynkaUpdateSchema = z.object({
 });
 
 const unsupportedOptionalColumns = new Set<string>();
+
+const MAIL_CIPHER_ALGO = "aes-256-gcm";
+const MAIL_CIPHER_IV_LEN = 12;
+
+function readMailboxEncryptionKey(): Buffer {
+  const raw =
+    process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
+  const cleaned = raw
+    ?.replace(/^\s*(?:MAIL_ENCRYPTION_KEY|EXT_MAIL_ENCRYPTION_KEY)\s*=\s*/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+  if (!cleaned) {
+    throw new Error("Brak klucza szyfrowania poczty w konfiguracji serwera.");
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(cleaned)) {
+    throw new Error("Klucz szyfrowania poczty musi mieć 64 znaki hex.");
+  }
+  return Buffer.from(cleaned, "hex");
+}
+
+function encryptMailboxPassword(plain: string): string {
+  if (!plain) throw new Error("Empty password");
+  const iv = randomBytes(MAIL_CIPHER_IV_LEN);
+  const cipher = createCipheriv(MAIL_CIPHER_ALGO, readMailboxEncryptionKey(), iv);
+  const ct = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return "\\x" + Buffer.concat([iv, ct, tag]).toString("hex");
+}
 
 function markMissingOptionalColumn(error: { message?: string; code?: string } | null): boolean {
   const message = error?.message ?? "";
