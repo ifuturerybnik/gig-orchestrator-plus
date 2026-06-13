@@ -316,28 +316,55 @@ export function MailLayout({ scope }: Props) {
         {/* Sidebar: skrzynki + foldery */}
         <Card
           className={cn(
-            "w-full md:w-48 shrink-0 p-2 overflow-y-auto",
+            "w-full md:w-56 shrink-0 p-2 overflow-y-auto",
             mobilePane === "nav" ? "block" : "hidden md:block",
           )}
         >
-          <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
-            {t("correspondence.mail.mailboxes")}
-          </div>
-          {skrzynki.map((s) => (
+          {scope.kind === "org" && orgSkrzynki.length > 0 && (
+            <>
+              <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
+                {t("correspondence.mail.mailbox_section_org")}
+              </div>
+              {orgSkrzynki.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSkrzynkaId(s.id); setMobilePane("list"); }}
+                  className={cn(
+                    "w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent truncate",
+                    skrzynkaId === s.id && "bg-accent font-medium",
+                  )}
+                  title={s.email}
+                >
+                  {s.nazwa}
+                </button>
+              ))}
+            </>
+          )}
+
+          {scope.kind === "org" && mySkrzynki.length > 0 && (
+            <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mt-4 mb-1">
+              {t("correspondence.mail.mailbox_section_mine")}
+            </div>
+          )}
+          {scope.kind !== "org" && skrzynki.length > 0 && (
+            <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
+              {t("correspondence.mail.mailboxes")}
+            </div>
+          )}
+          {(scope.kind === "org" ? mySkrzynki : skrzynki).map((s) => (
             <button
               key={s.id}
-              onClick={() => {
-                setSkrzynkaId(s.id);
-                setMobilePane("list");
-              }}
+              onClick={() => { setSkrzynkaId(s.id); setMobilePane("list"); }}
               className={cn(
                 "w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent truncate",
                 skrzynkaId === s.id && "bg-accent font-medium",
               )}
+              title={s.email}
             >
               {s.nazwa}
             </button>
           ))}
+
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mt-4 mb-1">
             {t("correspondence.mail.folders.label")}
           </div>
