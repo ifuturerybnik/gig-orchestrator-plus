@@ -117,6 +117,13 @@ for RUNTIME_ENV in EXT_SUPABASE_SERVICE_ROLE_KEY EXT_PII_ENCRYPTION_KEY; do
   fi
 done
 
+if [ -z "${MAIL_ENCRYPTION_KEY:-}" ] && [ -z "${EXT_MAIL_ENCRYPTION_KEY:-}" ] && [ -f "/opt/mail-proxy-concertivo/.env" ]; then
+  warn "MAIL_ENCRYPTION_KEY nie ma w $(basename "$ENV_FILE") — aplikacja spróbuje użyć /opt/mail-proxy-concertivo/.env"
+fi
+if [ -z "${MAIL_ENCRYPTION_KEY:-}" ] && [ -z "${EXT_MAIL_ENCRYPTION_KEY:-}" ] && [ ! -f "/opt/mail-proxy-concertivo/.env" ]; then
+  warn "Brak MAIL_ENCRYPTION_KEY/EXT_MAIL_ENCRYPTION_KEY w env aplikacji; zapis skrzynek pocztowych będzie niedostępny do czasu dodania klucza"
+fi
+
 ok "Env OK — kontynuuję build"
 
 # 2) Dependencies
