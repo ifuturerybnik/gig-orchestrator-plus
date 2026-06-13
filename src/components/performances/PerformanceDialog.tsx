@@ -231,6 +231,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
 
   const reset = () => {
     setDate(undefined);
+    setTime("");
     setStatus("");
     setVisibility("private");
     setEventKindSelection("");
