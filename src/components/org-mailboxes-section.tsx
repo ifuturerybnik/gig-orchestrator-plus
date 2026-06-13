@@ -14,6 +14,11 @@ import {
   syncSkrzynka,
 } from "@/lib/email-skrzynki.functions";
 import { getOrganizationDetails } from "@/lib/organizations.functions";
+import {
+  MailConfigAiAssistant,
+  applyMailSuggestion,
+  type MailFormSuggestion,
+} from "@/components/mail/MailConfigAiAssistant";
 import { Trash2, RefreshCw, Plus } from "lucide-react";
 
 type FormState = {
