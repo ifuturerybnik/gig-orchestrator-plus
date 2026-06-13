@@ -108,14 +108,6 @@ export function OrgSidebar({
   const allItems: Item[] = [
     {
       kind: "leaf",
-      to: base,
-      labelKey: "organizations.sidebar.overview",
-      icon: LayoutDashboard,
-      exact: true,
-      moduleId: "overview",
-    },
-    {
-      kind: "leaf",
       to: `${base}/events`,
       labelKey: "organizations.sidebar.events",
       icon: CalendarDays,
@@ -127,13 +119,6 @@ export function OrgSidebar({
       labelKey: "organizations.sidebar.budget",
       icon: Wallet,
       moduleId: "budget",
-    },
-    {
-      kind: "leaf",
-      to: `${base}/profile`,
-      labelKey: "organizations.sidebar.profile",
-      icon: Building2,
-      moduleId: "profile",
     },
     {
       kind: "leaf",
