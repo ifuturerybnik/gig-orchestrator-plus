@@ -673,6 +673,8 @@ export default
       "fields": {
         "date": "Data wydarzenia",
         "date_placeholder": "Wybierz datę",
+        "time": "Godzina rozpoczęcia",
+        "time_optional_hint": "(opcjonalnie dla zapytania / wstępnej rezerwacji)",
         "event_kind": "Rodzaj wydarzenia",
         "event_kind_placeholder": "Wybierz rodzaj wydarzenia",
         "event_kind_custom_placeholder": "Wpisz własny rodzaj wydarzenia",
