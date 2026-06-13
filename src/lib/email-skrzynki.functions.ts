@@ -216,7 +216,8 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY;
+    const mailEncryptionKey =
+      process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -267,7 +268,8 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY;
+    const mailEncryptionKey =
+      process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")

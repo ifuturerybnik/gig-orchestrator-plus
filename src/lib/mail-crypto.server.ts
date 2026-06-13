@@ -35,7 +35,7 @@ function normalizeMailEncryptionKey(raw: string | undefined): Buffer {
 export function encryptMailPassword(plain: string): string {
   return encryptMailPasswordWithKey(
     plain,
-    process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY,
+    process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim(),
   );
 }
 
