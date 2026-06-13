@@ -218,6 +218,12 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     const { userId } = context;
     const mailEncryptionKey =
       process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
+    console.error("mailbox create encryption key diagnostics", {
+      typ: data.typ,
+      hasExtMailEncryptionKey: !!process.env.EXT_MAIL_ENCRYPTION_KEY?.trim(),
+      hasMailEncryptionKey: !!process.env.MAIL_ENCRYPTION_KEY?.trim(),
+      selectedKeyPresent: !!mailEncryptionKey,
+    });
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -270,6 +276,12 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
     const { userId } = context;
     const mailEncryptionKey =
       process.env.EXT_MAIL_ENCRYPTION_KEY?.trim() || process.env.MAIL_ENCRYPTION_KEY?.trim();
+    console.error("mailbox update encryption key diagnostics", {
+      hasExtMailEncryptionKey: !!process.env.EXT_MAIL_ENCRYPTION_KEY?.trim(),
+      hasMailEncryptionKey: !!process.env.MAIL_ENCRYPTION_KEY?.trim(),
+      selectedKeyPresent: !!mailEncryptionKey,
+      passwordPatchRequested: !!data.imap_haslo || !!data.smtp_haslo,
+    });
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
