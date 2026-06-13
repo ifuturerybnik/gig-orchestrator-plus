@@ -15,6 +15,7 @@ import {
 } from "@/lib/email-skrzynki.functions";
 import {
   MailConfigAiAssistant,
+  applyMailSuggestion,
   type MailFormSuggestion,
 } from "@/components/mail/MailConfigAiAssistant";
 import { Trash2, RefreshCw, Plus } from "lucide-react";
