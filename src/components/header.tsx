@@ -102,33 +102,6 @@ export function Header() {
               <Link to="/correspondence" className="text-sm text-muted-foreground hover:text-foreground">
                 {t("nav.correspondence")}
               </Link>
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to="/profile"
-                      className="relative inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      {t("nav.profile")}
-                      {showMfaWarning && (
-                        <span
-                          aria-label={t("security.mfa.warning_aria")}
-                          className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
-                        >
-                          !
-                        </span>
-                      )}
-                    </Link>
-                  </TooltipTrigger>
-                  {showMfaWarning && (
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      <p className="text-xs leading-snug">
-                        {t("security.mfa.warning_tooltip")}
-                      </p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
               {isAdmin && (
                 <Link
                   to="/admin"
@@ -147,10 +120,62 @@ export function Header() {
               )}
               <ThemeSwitcher />
               <LanguageSwitcher />
+              {profileQuery.data?.profile && (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to="/profile"
+                        className="relative flex items-center gap-2 rounded-full px-2 py-1 hover:bg-accent"
+                        title={t("nav.profile")}
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground">
+                          {(profileQuery.data.profile as { avatar_url?: string | null }).avatar_url ? (
+                            <img
+                              src={(profileQuery.data.profile as { avatar_url?: string | null }).avatar_url!}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span>
+                              {(
+                                ((profileQuery.data.profile as { first_name?: string }).first_name ?? "")
+                                  .charAt(0) +
+                                ((profileQuery.data.profile as { last_name?: string }).last_name ?? "")
+                                  .charAt(0)
+                              ).toUpperCase() || "?"}
+                            </span>
+                          )}
+                        </div>
+                        <span className="hidden text-sm font-medium text-foreground sm:inline">
+                          {[
+                            (profileQuery.data.profile as { first_name?: string }).first_name,
+                            (profileQuery.data.profile as { last_name?: string }).last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
+                        {showMfaWarning && (
+                          <span
+                            aria-label={t("security.mfa.warning_aria")}
+                            className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
+                          >
+                            !
+                          </span>
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    {showMfaWarning && (
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        <p className="text-xs leading-snug">
+                          {t("security.mfa.warning_tooltip")}
+                        </p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
 
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                {t("nav.logout")}
-              </Button>
             </>
           ) : (
             <>
