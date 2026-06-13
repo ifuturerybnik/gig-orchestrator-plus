@@ -19,6 +19,7 @@ type SkrzynkaRow = {
   id: string;
   nazwa: string;
   nazwa_wyswietlana: string | null;
+  ikona_url: string | null;
   email: string;
   imap_host: string;
   imap_port: number;
@@ -35,6 +36,7 @@ function rowToForm(s: SkrzynkaRow): MailboxFormState {
   return {
     nazwa: s.nazwa,
     nazwa_wyswietlana: s.nazwa_wyswietlana ?? "",
+    ikona_url: s.ikona_url ?? "",
     email: s.email,
     imap_host: s.imap_host,
     imap_port: String(s.imap_port ?? 993),
@@ -48,6 +50,7 @@ function rowToForm(s: SkrzynkaRow): MailboxFormState {
     smtp_use_ssl: !!s.smtp_use_ssl,
   };
 }
+
 
 export function OrgMailboxesSection({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
