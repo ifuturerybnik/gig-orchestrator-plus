@@ -5,8 +5,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createCipheriv, randomBytes } from "crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callMailProxy } from "./mail-proxy.server";
+import { readRuntimeSecret } from "./runtime-secrets.server";
 
 const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
 const BASE_COLUMNS = [
@@ -108,9 +108,9 @@ const unsupportedOptionalColumns = new Set<string>();
 const MAIL_CIPHER_ALGO = "aes-256-gcm";
 const MAIL_CIPHER_IV_LEN = 12;
 
-function readMailboxEncryptionSecret(): string | undefined {
+async function readMailboxEncryptionSecret(): Promise<string | undefined> {
   const env = process.env as Record<string, string | undefined>;
-  const secret = env.EXT_MAIL_ENCRYPTION_KEY?.trim() || env["EXT_MAIL_ENCRYPTION_KEY"]?.trim() || env.MAIL_ENCRYPTION_KEY?.trim() || env["MAIL_ENCRYPTION_KEY"]?.trim();
+  const secret = await readRuntimeSecret(["EXT_MAIL_ENCRYPTION_KEY", "MAIL_ENCRYPTION_KEY"]);
   if (!secret) {
     console.error("mailbox encryption secret unavailable", {
       hasExtMailKey: !!env.EXT_MAIL_ENCRYPTION_KEY,
@@ -182,6 +182,7 @@ async function runWithOptionalColumnFallback<T>(
 
 
 async function userIsMember(userId: string, organizationId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("organization_members")
     .select("id")
@@ -192,6 +193,7 @@ async function userIsMember(userId: string, organizationId: string): Promise<boo
 }
 
 async function userIsOwner(userId: string, organizationId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("organization_members")
     .select("id")
@@ -217,6 +219,7 @@ export const listSkrzynki = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.scope === "organization") {
       if (!data.organizationId) throw new Error("organizationId is required");
@@ -255,7 +258,8 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = readMailboxEncryptionSecret();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const mailEncryptionKey = await readMailboxEncryptionSecret();
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -306,7 +310,8 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = readMailboxEncryptionSecret();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const mailEncryptionKey = await readMailboxEncryptionSecret();
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
@@ -369,6 +374,7 @@ export const deleteSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ skrzynkaId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
@@ -411,6 +417,7 @@ export const syncSkrzynka = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
