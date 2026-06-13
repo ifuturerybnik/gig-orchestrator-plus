@@ -622,7 +622,9 @@ export default
       "web": "Web",
       "ai_studio": "AI Studio",
       "assistant": "Asystent AI",
-      "dysk": "Dysk"
+      "dysk": "Dysk",
+      "settings": "Ustawienia",
+      "edit_organization": "Edytuj organizację"
     },
     "events": {
       "title": "Występy",

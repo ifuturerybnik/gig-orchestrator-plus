@@ -602,7 +602,9 @@ export default
       "web": "Web",
       "ai_studio": "AI Studio",
       "assistant": "AI Assistant",
-      "dysk": "Drive"
+      "dysk": "Drive",
+      "settings": "Settings",
+      "edit_organization": "Edit organization"
     },
     "events": {
       "title": "Performances",
