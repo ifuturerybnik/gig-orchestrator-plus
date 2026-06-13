@@ -13,6 +13,7 @@ import {
 } from "@/lib/email-skrzynki.functions";
 import { Trash2, RefreshCw, Plus, Pencil } from "lucide-react";
 import { MailboxForm, type MailboxFormState } from "@/components/mail/MailboxForm";
+import { MailboxAvatar } from "@/components/mail/MailboxAvatar";
 
 type SkrzynkaRow = {
   id: string;
