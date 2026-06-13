@@ -12,6 +12,8 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 function hydrateProcessEnv(runtimeEnv: unknown): void {
   if (!runtimeEnv || typeof runtimeEnv !== "object") return;
 
+  (globalThis as typeof globalThis & { __CONCERTIVO_RUNTIME_ENV__?: Record<string, unknown> }).__CONCERTIVO_RUNTIME_ENV__ = runtimeEnv as Record<string, unknown>;
+
   const target = process.env as Record<string, string | undefined>;
   for (const [key, value] of Object.entries(runtimeEnv as Record<string, unknown>)) {
     if (typeof value === "string" && value.length > 0) {
