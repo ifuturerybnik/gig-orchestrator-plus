@@ -284,7 +284,18 @@ export function MailLayout({ scope }: Props) {
       toast.success(t("correspondence.mail.marked_spam"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
+  }
+
+  async function handleNotSpam(w: Wiadomosc) {
+    try {
+      await markNotSpamFn({ data: { wiadomoscId: w.id } });
+      if (selectedId === w.id) setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.marked_not_spam"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
     }
+  }
   }
 
   function toggleSelected(id: string) {
