@@ -20,6 +20,7 @@ import { Route as InvitationsTokenRouteImport } from './routes/invitations.$toke
 import { Route as DataDeletionCodeRouteImport } from './routes/data-deletion.$code'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedCorrespondenceRouteImport } from './routes/_authenticated.correspondence'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
@@ -131,6 +132,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCorrespondenceRoute =
+  AuthenticatedCorrespondenceRouteImport.update({
+    id: '/correspondence',
+    path: '/correspondence',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
   id: '/contacts',
   path: '/contacts',
@@ -468,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/contacts': typeof AuthenticatedContactsRouteWithChildren
+  '/correspondence': typeof AuthenticatedCorrespondenceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/data-deletion/$code': typeof DataDeletionCodeRoute
@@ -534,6 +542,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/correspondence': typeof AuthenticatedCorrespondenceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/data-deletion/$code': typeof DataDeletionCodeRoute
@@ -603,6 +612,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/contacts': typeof AuthenticatedContactsRouteWithChildren
+  '/_authenticated/correspondence': typeof AuthenticatedCorrespondenceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/data-deletion/$code': typeof DataDeletionCodeRoute
@@ -673,6 +683,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/contacts'
+    | '/correspondence'
     | '/dashboard'
     | '/profile'
     | '/data-deletion/$code'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/terms'
+    | '/correspondence'
     | '/dashboard'
     | '/profile'
     | '/data-deletion/$code'
@@ -807,6 +819,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/contacts'
+    | '/_authenticated/correspondence'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/data-deletion/$code'
@@ -980,6 +993,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/correspondence': {
+      id: '/_authenticated/correspondence'
+      path: '/correspondence'
+      fullPath: '/correspondence'
+      preLoaderRoute: typeof AuthenticatedCorrespondenceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/contacts': {
@@ -1474,6 +1494,7 @@ const AuthenticatedOrganizationsOrgIdRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRouteWithChildren
+  AuthenticatedCorrespondenceRoute: typeof AuthenticatedCorrespondenceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedOrganizationsOrgIdRoute: typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
@@ -1484,6 +1505,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedContactsRoute: AuthenticatedContactsRouteWithChildren,
+  AuthenticatedCorrespondenceRoute: AuthenticatedCorrespondenceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedOrganizationsOrgIdRoute:
