@@ -105,7 +105,7 @@ export function MailboxForm({ mode, initial, submitting, onSubmit, onCancel }: P
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
               "skrzynki.form.nazwa_wyswietlana_hint",
-              "Pojawia się u odbiorcy w polu „Od:" obok adresu e-mail.",
+              'Pojawia się u odbiorcy w polu „Od:" obok adresu e-mail.',
             )}
           </p>
         </Field>
