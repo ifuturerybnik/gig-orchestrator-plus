@@ -133,7 +133,7 @@ const nodeServer = createServer(async (req, res) => {
     });
 
     // 3. Call the Worker handler
-    const env = {};
+    const env = process.env;
     const ctx = { waitUntil: () => {}, passThroughOnException: () => {} };
     const response = await worker.fetch(request, env, ctx);
 
