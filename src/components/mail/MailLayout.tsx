@@ -453,6 +453,66 @@ export function MailLayout({ scope }: Props) {
               {t("correspondence.mail.folders.label")}
             </Button>
           </div>
+          {/* Pasek akcji zbiorowych — zawsze widoczny */}
+          <div className="flex items-center gap-2 border-b border-border p-2 flex-wrap">
+            <Checkbox
+              checked={
+                wiadomosci.length > 0 && selectedIds.size === wiadomosci.length
+                  ? true
+                  : selectedIds.size > 0
+                    ? "indeterminate"
+                    : false
+              }
+              onCheckedChange={() => toggleSelectAll()}
+              aria-label={t("correspondence.mail.select_all")}
+              disabled={wiadomosci.length === 0}
+            />
+            {selectedIds.size > 0 ? (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  {t("correspondence.mail.bulk_selected_count", { count: selectedIds.size })}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("read")}
+                  title={t("correspondence.mail.bulk_mark_read")}
+                >
+                  <MailOpen className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("unread")}
+                  title={t("correspondence.mail.bulk_mark_unread")}
+                >
+                  <MailIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("spam")}
+                  title={t("correspondence.mail.bulk_spam")}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("delete")}
+                  title={t("correspondence.mail.bulk_delete")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">{t("correspondence.mail.select_all")}</span>
+            )}
+          </div>
           <ScrollArea className="flex-1">
             {wiadQ.isLoading && (
               <div className="p-3 text-sm text-muted-foreground">{t("common.loading")}</div>
@@ -462,29 +522,47 @@ export function MailLayout({ scope }: Props) {
                 {t("correspondence.mail.empty_folder")}
               </div>
             )}
-            {wiadomosci.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => {
-                  setSelectedId(w.id);
-                  setMobilePane("message");
-                }}
-                className={cn(
-                  "w-full text-left px-3 py-2 border-b border-border hover:bg-accent/40 transition",
-                  selectedId === w.id && "bg-accent",
-                  !w.przeczytana && "font-semibold",
-                )}
-              >
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="truncate flex-1">
-                    {w.od_nazwa || w.od_email || "—"}
-                  </span>
-                  {w.oznaczona_gwiazdka && <Star className="h-3 w-3 fill-current text-amber-500" />}
+            {wiadomosci.map((w) => {
+              const checked = selectedIds.has(w.id);
+              return (
+                <div
+                  key={w.id}
+                  className={cn(
+                    "flex items-start gap-2 px-2 py-2 border-b border-border hover:bg-accent/40 transition",
+                    selectedId === w.id && "bg-accent",
+                    checked && "bg-accent/60",
+                  )}
+                >
+                  <Checkbox
+                    className="mt-1"
+                    checked={checked}
+                    onCheckedChange={() => toggleSelected(w.id)}
+                    aria-label="select"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(w.id);
+                      setMobilePane("message");
+                    }}
+                    className={cn(
+                      "flex-1 text-left min-w-0",
+                      !w.przeczytana && "font-semibold",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="truncate flex-1">
+                        {w.od_nazwa || w.od_email || "—"}
+                      </span>
+                      {w.oznaczona_gwiazdka && <Star className="h-3 w-3 fill-current text-amber-500" />}
+                    </div>
+                    <div className="text-sm truncate">{w.temat || "(brak tematu)"}</div>
+                    <div className="text-xs text-muted-foreground">{fmt(w.data_otrzymania)}</div>
+                  </button>
                 </div>
-                <div className="text-sm truncate">{w.temat || "(brak tematu)"}</div>
-                <div className="text-xs text-muted-foreground">{fmt(w.data_otrzymania)}</div>
-              </button>
-            ))}
+              );
+            })}
           </ScrollArea>
         </Card>
 
