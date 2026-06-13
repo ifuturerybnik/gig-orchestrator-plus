@@ -14,6 +14,11 @@ import {
   syncSkrzynka,
 } from "@/lib/email-skrzynki.functions";
 import { getOrganizationDetails } from "@/lib/organizations.functions";
+import {
+  MailConfigAiAssistant,
+  applyMailSuggestion,
+  type MailFormSuggestion,
+} from "@/components/mail/MailConfigAiAssistant";
 import { Trash2, RefreshCw, Plus } from "lucide-react";
 
 type FormState = {
@@ -147,6 +152,12 @@ export function OrgMailboxesSection({ orgId }: { orgId: string }) {
           onSubmit={handleSubmit}
           className="space-y-4 rounded-lg border border-border bg-background p-4"
         >
+          <MailConfigAiAssistant
+            currentEmail={form.email}
+            onApply={(s: MailFormSuggestion) =>
+              setForm((prev) => applyMailSuggestion(prev, s))
+            }
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("skrzynki.form.nazwa")}>
               <Input
