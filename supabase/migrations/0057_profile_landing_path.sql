@@ -10,4 +10,7 @@ alter table public.profiles
 
 alter table public.profiles
   add constraint profiles_landing_path_format
-  check (landing_path is null or landing_path ~ '^/[A-Za-z0-9/_-]{0,300}$');
+  check (
+    landing_path is null
+    or (length(landing_path) <= 300 and landing_path ~ '^/[A-Za-z0-9/_-]*$')
+  );
