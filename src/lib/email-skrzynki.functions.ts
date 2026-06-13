@@ -8,11 +8,28 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
-const SAFE_COLUMNS: string =
-  "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
-const SAFE_COLUMNS_BASE: string =
-  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
-let supportsIkonaUrlColumn: boolean | null = null;
+const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
+const BASE_COLUMNS = [
+  "id",
+  "nazwa",
+  "typ",
+  "owner_user_id",
+  "organization_id",
+  "email",
+  "imap_host",
+  "imap_port",
+  "imap_login",
+  "imap_use_ssl",
+  "smtp_host",
+  "smtp_port",
+  "smtp_login",
+  "smtp_use_ssl",
+  "aktywna",
+  "last_sync_at",
+  "last_sync_error",
+  "created_at",
+  "updated_at",
+] as const;
 
 type SkrzynkaSafeRow = {
   id: string;
