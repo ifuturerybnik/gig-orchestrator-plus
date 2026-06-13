@@ -292,6 +292,9 @@ export default
       "passwords_mismatch": "Hasła nie są takie same",
       "weak_password": "Hasło musi mieć minimum 8 znaków",
       "invalid_credentials": "Nieprawidłowy email lub hasło",
+      "email_not_confirmed": "Twój adres e-mail nie został jeszcze potwierdzony. Kliknij link aktywacyjny w mailu wysłanym po rejestracji.",
+      "resend_confirmation": "Wyślij ponownie link aktywacyjny",
+      "confirmation_resent": "Wysłaliśmy nowy link aktywacyjny. Sprawdź skrzynkę (także folder Spam).",
       "select_at_least_one_kind": "Wybierz przynajmniej jedną rolę",
       "legal_required": "Aby kontynuować, musisz zaakceptować regulamin i politykę prywatności.",
       "email_already_registered": "Ten adres e-mail jest już zarejestrowany. Spróbuj się zalogować lub odzyskać hasło."
