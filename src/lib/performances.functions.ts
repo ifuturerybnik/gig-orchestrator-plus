@@ -51,6 +51,12 @@ const createInput = z
   .object({
     organizationId: z.string().uuid(),
     performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    performanceTime: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/)
+      .nullable()
+      .optional()
+      .or(z.literal("").transform(() => null)),
     status: z.enum(PERFORMANCE_STATUSES),
     visibility: z.enum(PERFORMANCE_VISIBILITIES),
     eventKind: z.string().trim().min(1).max(120),
@@ -82,6 +88,7 @@ const createInput = z
         ["postalCode", d.postalCode],
         ["street", d.street],
         ["streetNumber", d.streetNumber],
+        ["performanceTime", d.performanceTime],
       ] as const;
       for (const [k, v] of fields) {
         if (!required(v))
@@ -128,6 +135,7 @@ export const createPerformance = createServerFn({ method: "POST" })
         organization_id: data.organizationId,
         created_by: userId,
         performance_date: data.performanceDate,
+        performance_time: data.performanceTime ? data.performanceTime : null,
         status: data.status,
         visibility: data.visibility,
         event_kind: kind,
@@ -178,7 +186,7 @@ export const listPerformances = createServerFn({ method: "GET" })
     let q = supabase
       .from("performances")
       .select(
-        "id, performance_date, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
+        "id, performance_date, performance_time, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("performance_date", { ascending: false })
@@ -268,6 +276,12 @@ const updateInput = z
     performanceId: z.string().uuid(),
     organizationId: z.string().uuid(),
     performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    performanceTime: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/)
+      .nullable()
+      .optional()
+      .or(z.literal("").transform(() => null)),
     status: z.enum(PERFORMANCE_STATUSES),
     visibility: z.enum(PERFORMANCE_VISIBILITIES),
     eventKind: z.string().trim().min(1).max(120),
@@ -299,6 +313,7 @@ const updateInput = z
         ["postalCode", d.postalCode],
         ["street", d.street],
         ["streetNumber", d.streetNumber],
+        ["performanceTime", d.performanceTime],
       ] as const;
       for (const [k, v] of fields) {
         if (!required(v))
@@ -339,6 +354,7 @@ export const updatePerformance = createServerFn({ method: "POST" })
       .from("performances")
       .update({
         performance_date: data.performanceDate,
+        performance_time: data.performanceTime ? data.performanceTime : null,
         status: data.status,
         visibility: data.visibility,
         event_kind: kind,

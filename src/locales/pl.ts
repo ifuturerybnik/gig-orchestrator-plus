@@ -673,6 +673,8 @@ export default
       "fields": {
         "date": "Data wydarzenia",
         "date_placeholder": "Wybierz datę",
+        "time": "Godzina rozpoczęcia",
+        "time_optional_hint": "(opcjonalnie dla zapytania / wstępnej rezerwacji)",
         "event_kind": "Rodzaj wydarzenia",
         "event_kind_placeholder": "Wybierz rodzaj wydarzenia",
         "event_kind_custom_placeholder": "Wpisz własny rodzaj wydarzenia",
@@ -737,6 +739,7 @@ export default
         "date_required": "Data wydarzenia jest wymagana",
         "status_required": "Status jest wymagany",
         "event_kind_required": "Rodzaj wydarzenia jest wymagany",
+        "time_required": "Godzina rozpoczęcia jest wymagana dla potwierdzonego wydarzenia",
         "required": "Pole wymagane",
         "cp_link_missing": "Nie można otworzyć szczegółów kontrahenta — brak powiązania w tej organizacji."
       }
