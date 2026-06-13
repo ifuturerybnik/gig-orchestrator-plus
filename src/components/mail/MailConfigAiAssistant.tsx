@@ -25,6 +25,38 @@ export type MailFormSuggestion = {
 
 type Msg = { role: "user" | "assistant"; text: string; suggestion?: MailFormSuggestion };
 
+// Helper do nakładania sugestii AI na FormState skrzynki — zwraca nowy obiekt.
+// Zostawia puste pola formularza nienaruszone, gdy AI nic nie podpowiedziało.
+export function applyMailSuggestion<
+  T extends {
+    nazwa: string;
+    email: string;
+    imap_host: string;
+    imap_port: string;
+    imap_login: string;
+    imap_use_ssl: boolean;
+    smtp_host: string;
+    smtp_port: string;
+    smtp_login: string;
+    smtp_use_ssl: boolean;
+  },
+>(prev: T, s: MailFormSuggestion): T {
+  const next: T = { ...prev };
+  if (s.nazwa) next.nazwa = s.nazwa;
+  if (s.email) next.email = s.email;
+  if (s.imap_host) next.imap_host = s.imap_host;
+  if (s.imap_port !== undefined && s.imap_port !== null && s.imap_port !== "")
+    next.imap_port = String(s.imap_port);
+  if (s.imap_login) next.imap_login = s.imap_login;
+  if (typeof s.imap_use_ssl === "boolean") next.imap_use_ssl = s.imap_use_ssl;
+  if (s.smtp_host) next.smtp_host = s.smtp_host;
+  if (s.smtp_port !== undefined && s.smtp_port !== null && s.smtp_port !== "")
+    next.smtp_port = String(s.smtp_port);
+  if (s.smtp_login) next.smtp_login = s.smtp_login;
+  if (typeof s.smtp_use_ssl === "boolean") next.smtp_use_ssl = s.smtp_use_ssl;
+  return next;
+}
+
 type Props = {
   currentEmail?: string;
   onApply: (s: MailFormSuggestion) => void;
