@@ -28,7 +28,7 @@ export const sendEmail = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: s } = await supabaseAdmin
       .from("email_skrzynki")
-      .select("id, typ, owner_user_id, organization_id")
+      .select("id, typ, owner_user_id, organization_id, email, nazwa_wyswietlana")
       .eq("id", data.skrzynkaId)
       .maybeSingle();
     if (!s) throw new Error("Skrzynka not found");
@@ -47,10 +47,20 @@ export const sendEmail = createServerFn({ method: "POST" })
     const ccEmails = (data.cc ?? []).map((r) => r.email);
     const bccEmails = (data.bcc ?? []).map((r) => r.email);
 
+    // From: "Nazwa wyświetlana" <adres@…> — jeśli proxy obsługuje from_name/from,
+    // skorzysta. Wysyłamy oba warianty (string + obiekt) dla kompatybilności.
+    const displayName = (s.nazwa_wyswietlana ?? "").trim();
+    const fromHeader = displayName
+      ? `${displayName.replace(/"/g, "")} <${s.email}>`
+      : s.email;
+
     const result = await callMailProxy<{ ok?: boolean; messageId?: string; error?: string }>(
       "send",
       {
         skrzynka_id: data.skrzynkaId,
+        from: fromHeader,
+        from_name: displayName || null,
+        from_email: s.email,
         to: toEmails,
         cc: ccEmails,
         bcc: bccEmails,
