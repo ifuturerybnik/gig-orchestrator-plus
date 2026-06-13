@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { encryptMailPasswordWithKey, readMailEncryptionKey } from "./mail-crypto.server";
+import { encryptMailPasswordWithKey } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
 const OPTIONAL_COLUMNS = ["nazwa_wyswietlana", "ikona_url"] as const;
@@ -216,7 +216,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = readMailEncryptionKey();
+    const mailEncryptionKey = process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY;
 
     if (data.typ === "wspolna") {
       if (!data.organizationId) throw new Error("organizationId is required for wspolna");
@@ -267,7 +267,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
   .inputValidator((input) => skrzynkaUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const mailEncryptionKey = readMailEncryptionKey();
+    const mailEncryptionKey = process.env.MAIL_ENCRYPTION_KEY ?? process.env.EXT_MAIL_ENCRYPTION_KEY;
 
     const { data: existing, error: readErr } = await supabaseAdmin
       .from("email_skrzynki")
