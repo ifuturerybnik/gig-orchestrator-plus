@@ -28,6 +28,7 @@ import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { MyMailboxesSection } from "@/components/my-mailboxes-section";
+import { ProfileAvatarField } from "@/components/profile-avatar-field";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -165,6 +166,9 @@ function ProfilePage() {
           <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+            <ProfileAvatarField
+              value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
+            />
             <section className="space-y-4 rounded-md border border-border bg-card p-4">
               <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
