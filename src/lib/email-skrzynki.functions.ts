@@ -143,6 +143,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
     const row = {
       nazwa: data.nazwa,
       nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
+      ikona_url: data.ikona_url?.trim() || null,
       typ: data.typ,
       owner_user_id: data.typ === "osobista" ? userId : null,
       organization_id: data.typ === "wspolna" ? data.organizationId : null,
@@ -158,6 +159,7 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       smtp_haslo_encrypted: encryptMailPassword(data.smtp_haslo),
       smtp_use_ssl: data.smtp_use_ssl,
     };
+
 
     const { data: created, error } = await supabaseAdmin
       .from("email_skrzynki")
