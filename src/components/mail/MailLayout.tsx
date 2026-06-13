@@ -296,6 +296,7 @@ export function MailLayout({ scope }: Props) {
       toast.success(t("correspondence.mail.marked_spam"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
+    }
   }
 
   async function handleNotSpam(w: Wiadomosc) {
@@ -307,7 +308,6 @@ export function MailLayout({ scope }: Props) {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
     }
-  }
   }
 
   function toggleSelected(id: string) {
