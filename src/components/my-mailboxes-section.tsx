@@ -13,6 +13,10 @@ import {
   listSkrzynki,
   syncSkrzynka,
 } from "@/lib/email-skrzynki.functions";
+import {
+  MailConfigAiAssistant,
+  type MailFormSuggestion,
+} from "@/components/mail/MailConfigAiAssistant";
 import { Trash2, RefreshCw, Plus } from "lucide-react";
 
 type FormState = {
