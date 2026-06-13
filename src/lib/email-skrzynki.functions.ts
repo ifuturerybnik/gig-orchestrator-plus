@@ -103,22 +103,32 @@ const skrzynkaUpdateSchema = z.object({
   smtp_use_ssl: z.boolean(),
 });
 
-function isMissingIkonaColumnError(error: { message?: string; code?: string } | null): boolean {
-  return !!error && /ikona_url/i.test(error.message ?? "");
+const unsupportedOptionalColumns = new Set<string>();
+
+function markMissingOptionalColumn(error: { message?: string; code?: string } | null): boolean {
+  const message = error?.message ?? "";
+  const missing = OPTIONAL_COLUMNS.find((column) => message.includes(column));
+  if (!missing) return false;
+  unsupportedOptionalColumns.add(missing);
+  return true;
 }
 
-function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
-  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as unknown as SkrzynkaSafeRow[];
+function withOptionalFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
+  return (rows ?? []).map((row) => ({
+    nazwa_wyswietlana: null,
+    ikona_url: null,
+    ...row,
+  })) as unknown as SkrzynkaSafeRow[];
 }
 
 function columnsForSelect(): string {
-  return supportsIkonaUrlColumn === false ? SAFE_COLUMNS_BASE : SAFE_COLUMNS;
+  return [...BASE_COLUMNS, ...OPTIONAL_COLUMNS.filter((column) => !unsupportedOptionalColumns.has(column))].join(", ");
 }
 
-function omitIkonaIfUnsupported<T extends Record<string, unknown>>(row: T): T {
-  if (supportsIkonaUrlColumn !== false) return row;
-  const { ikona_url: _ikonaUrl, ...withoutIkona } = row;
-  return withoutIkona as T;
+function omitUnsupportedOptionalColumns<T extends Record<string, unknown>>(row: T): T {
+  const next = { ...row };
+  for (const column of unsupportedOptionalColumns) delete next[column];
+  return next as T;
 }
 
 
