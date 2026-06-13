@@ -23,9 +23,10 @@ import {
   deleteSzablon,
 } from "@/lib/email-szablony.functions";
 import { TEMPLATE_VARIABLES } from "@/lib/email-template-vars";
+import type { MailScope } from "./MailLayout";
 
 interface Props {
-  orgId: string;
+  scope: MailScope;
   onBack: () => void;
 }
 
@@ -37,16 +38,22 @@ interface Szablon {
   body_html: string;
 }
 
-export function SzablonyManager({ orgId, onBack }: Props) {
+export function SzablonyManager({ scope, onBack }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const listFn = useServerFn(listSzablony);
   const upsertFn = useServerFn(upsertSzablon);
   const deleteFn = useServerFn(deleteSzablon);
+  const isOrg = scope.kind === "org";
+  const orgId = isOrg ? scope.orgId : null;
+  const qKey = isOrg ? ["szablony-org", orgId] : ["szablony-user"];
 
   const q = useQuery({
-    queryKey: ["szablony-org", orgId],
-    queryFn: () => listFn({ data: { scope: "organization", organizationId: orgId } }),
+    queryKey: qKey,
+    queryFn: () =>
+      isOrg
+        ? listFn({ data: { scope: "organization", organizationId: orgId! } })
+        : listFn({ data: { scope: "user" } }),
   });
   const szablony = (q.data?.szablony ?? []) as unknown as Szablon[];
 
@@ -84,8 +91,8 @@ export function SzablonyManager({ orgId, onBack }: Props) {
       await upsertFn({
         data: {
           id: editing?.id,
-          scope: "organization",
-          organizationId: orgId,
+          scope: isOrg ? "organization" : "user",
+          organizationId: isOrg ? orgId! : null,
           nazwa: nazwa.trim(),
           kategoria: kategoria.trim() || null,
           temat,
@@ -94,7 +101,7 @@ export function SzablonyManager({ orgId, onBack }: Props) {
       });
       toast.success(t("common.saved"));
       setOpen(false);
-      qc.invalidateQueries({ queryKey: ["szablony-org", orgId] });
+      qc.invalidateQueries({ queryKey: qKey });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
     }
@@ -104,7 +111,7 @@ export function SzablonyManager({ orgId, onBack }: Props) {
     if (!confirm(t("correspondence.templates.delete_confirm"))) return;
     try {
       await deleteFn({ data: { id: s.id } });
-      qc.invalidateQueries({ queryKey: ["szablony-org", orgId] });
+      qc.invalidateQueries({ queryKey: qKey });
       toast.success(t("common.deleted"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.error"));
