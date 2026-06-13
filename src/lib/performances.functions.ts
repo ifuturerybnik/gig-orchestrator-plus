@@ -186,7 +186,7 @@ export const listPerformances = createServerFn({ method: "GET" })
     let q = supabase
       .from("performances")
       .select(
-        "id, performance_date, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
+        "id, performance_date, performance_time, status, visibility, event_kind, name, city, postal_code, street, street_number, google_maps_url, notes, created_at",
       )
       .eq("organization_id", data.organizationId)
       .order("performance_date", { ascending: false })
