@@ -221,14 +221,6 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
     return { skrzynka: updated };
   });
 
-    const { data: created, error } = await supabaseAdmin
-      .from("email_skrzynki")
-      .insert(row)
-      .select(SAFE_COLUMNS)
-      .single();
-    if (error) throw new Error(error.message);
-    return { skrzynka: created };
-  });
 
 // ---------------------------------------------------------------------------
 // DELETE
