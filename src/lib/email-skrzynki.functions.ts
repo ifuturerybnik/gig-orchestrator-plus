@@ -9,7 +9,7 @@ import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
 const SAFE_COLUMNS =
-  "id, nazwa, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
+  "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at";
 
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
@@ -20,6 +20,7 @@ const emailSchema = z.string().trim().toLowerCase().email().max(255);
 
 const skrzynkaInputSchema = z.object({
   nazwa: z.string().trim().min(1).max(120),
+  nazwa_wyswietlana: z.string().trim().max(160).nullable().optional(),
   typ: TypEnum,
   organizationId: z.string().uuid().nullable().optional(),
   email: emailSchema,
@@ -32,6 +33,25 @@ const skrzynkaInputSchema = z.object({
   smtp_port: portSchema,
   smtp_login: loginSchema,
   smtp_haslo: z.string().min(1).max(500),
+  smtp_use_ssl: z.boolean(),
+});
+
+// Update — bez typ/organizationId (nie pozwalamy migrować skrzynki między ownerami).
+// Hasła opcjonalne: jeśli puste/undefined ⇒ zachowaj bieżące.
+const skrzynkaUpdateSchema = z.object({
+  skrzynkaId: z.string().uuid(),
+  nazwa: z.string().trim().min(1).max(120),
+  nazwa_wyswietlana: z.string().trim().max(160).nullable().optional(),
+  email: emailSchema,
+  imap_host: hostSchema,
+  imap_port: portSchema,
+  imap_login: loginSchema,
+  imap_haslo: z.string().max(500).optional().nullable(),
+  imap_use_ssl: z.boolean(),
+  smtp_host: hostSchema,
+  smtp_port: portSchema,
+  smtp_login: loginSchema,
+  smtp_haslo: z.string().max(500).optional().nullable(),
   smtp_use_ssl: z.boolean(),
 });
 
