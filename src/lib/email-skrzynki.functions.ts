@@ -14,6 +14,30 @@ const SAFE_COLUMNS_BASE: string =
   "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
 let supportsIkonaUrlColumn: boolean | null = null;
 
+type SkrzynkaSafeRow = {
+  id: string;
+  nazwa: string;
+  nazwa_wyswietlana: string | null;
+  ikona_url: string | null;
+  typ: "osobista" | "wspolna";
+  owner_user_id: string | null;
+  organization_id: string | null;
+  email: string;
+  imap_host: string;
+  imap_port: number;
+  imap_login: string;
+  imap_use_ssl: boolean;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_login: string;
+  smtp_use_ssl: boolean;
+  aktywna: boolean;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
 const portSchema = z.number().int().min(1).max(65535);
@@ -67,7 +91,7 @@ function isMissingIkonaColumnError(error: { message?: string; code?: string } | 
 }
 
 function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
-  return (rows ?? []).map((row) => ({ ikona_url: null, ...row }));
+  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as SkrzynkaSafeRow[];
 }
 
 function columnsForSelect(): string {
