@@ -33,7 +33,6 @@ import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/ap
 import { Route as ApiPublicSocialImportPostsRouteImport } from './routes/api/public/social-import-posts'
 import { Route as ApiPublicOrgDeletionTickRouteImport } from './routes/api/public/org-deletion-tick'
 import { Route as ApiPublicMetaDataDeletionRouteImport } from './routes/api/public/meta-data-deletion'
-import { Route as ApiPublicMailEnvDiagnosticRouteImport } from './routes/api/public/mail-env-diagnostic'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
 import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
@@ -206,12 +205,6 @@ const ApiPublicMetaDataDeletionRoute =
   ApiPublicMetaDataDeletionRouteImport.update({
     id: '/api/public/meta-data-deletion',
     path: '/api/public/meta-data-deletion',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicMailEnvDiagnosticRoute =
-  ApiPublicMailEnvDiagnosticRouteImport.update({
-    id: '/api/public/mail-env-diagnostic',
-    path: '/api/public/mail-env-diagnostic',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicEmailUnsubscribeRoute =
@@ -500,7 +493,6 @@ export interface FileRoutesByFullPath {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
-  '/api/public/mail-env-diagnostic': typeof ApiPublicMailEnvDiagnosticRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -567,7 +559,6 @@ export interface FileRoutesByTo {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
-  '/api/public/mail-env-diagnostic': typeof ApiPublicMailEnvDiagnosticRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -639,7 +630,6 @@ export interface FileRoutesById {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
-  '/api/public/mail-env-diagnostic': typeof ApiPublicMailEnvDiagnosticRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -711,7 +701,6 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
-    | '/api/public/mail-env-diagnostic'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -778,7 +767,6 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
-    | '/api/public/mail-env-diagnostic'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -849,7 +837,6 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
-    | '/api/public/mail-env-diagnostic'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -907,7 +894,6 @@ export interface RootRouteChildren {
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
-  ApiPublicMailEnvDiagnosticRoute: typeof ApiPublicMailEnvDiagnosticRoute
   ApiPublicMetaDataDeletionRoute: typeof ApiPublicMetaDataDeletionRoute
   ApiPublicOrgDeletionTickRoute: typeof ApiPublicOrgDeletionTickRoute
   ApiPublicSocialImportPostsRoute: typeof ApiPublicSocialImportPostsRoute
@@ -1098,13 +1084,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/meta-data-deletion'
       fullPath: '/api/public/meta-data-deletion'
       preLoaderRoute: typeof ApiPublicMetaDataDeletionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/mail-env-diagnostic': {
-      id: '/api/public/mail-env-diagnostic'
-      path: '/api/public/mail-env-diagnostic'
-      fullPath: '/api/public/mail-env-diagnostic'
-      preLoaderRoute: typeof ApiPublicMailEnvDiagnosticRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/email-unsubscribe': {
@@ -1585,7 +1564,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
-  ApiPublicMailEnvDiagnosticRoute: ApiPublicMailEnvDiagnosticRoute,
   ApiPublicMetaDataDeletionRoute: ApiPublicMetaDataDeletionRoute,
   ApiPublicOrgDeletionTickRoute: ApiPublicOrgDeletionTickRoute,
   ApiPublicSocialImportPostsRoute: ApiPublicSocialImportPostsRoute,
