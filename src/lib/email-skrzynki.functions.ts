@@ -273,12 +273,12 @@ export const createSkrzynka = createServerFn({ method: "POST" })
       imap_host: data.imap_host,
       imap_port: data.imap_port,
       imap_login: data.imap_login,
-      imap_haslo_encrypted: encryptMailPasswordWithKey(data.imap_haslo, mailEncryptionKey),
+      imap_haslo_encrypted: encryptMailboxPassword(data.imap_haslo),
       imap_use_ssl: data.imap_use_ssl,
       smtp_host: data.smtp_host,
       smtp_port: data.smtp_port,
       smtp_login: data.smtp_login,
-      smtp_haslo_encrypted: encryptMailPasswordWithKey(data.smtp_haslo, mailEncryptionKey),
+      smtp_haslo_encrypted: encryptMailboxPassword(data.smtp_haslo),
       smtp_use_ssl: data.smtp_use_ssl,
     };
 
@@ -345,10 +345,10 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     };
     if (data.imap_haslo && data.imap_haslo.length > 0) {
-      patch.imap_haslo_encrypted = encryptMailPasswordWithKey(data.imap_haslo, mailEncryptionKey);
+      patch.imap_haslo_encrypted = encryptMailboxPassword(data.imap_haslo);
     }
     if (data.smtp_haslo && data.smtp_haslo.length > 0) {
-      patch.smtp_haslo_encrypted = encryptMailPasswordWithKey(data.smtp_haslo, mailEncryptionKey);
+      patch.smtp_haslo_encrypted = encryptMailboxPassword(data.smtp_haslo);
     }
 
     const { data: updated, error } = await runWithOptionalColumnFallback(() =>
