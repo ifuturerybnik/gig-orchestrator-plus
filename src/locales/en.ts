@@ -267,6 +267,9 @@ export default
       "passwords_mismatch": "Passwords don't match",
       "weak_password": "Password must be at least 8 characters",
       "invalid_credentials": "Invalid email or password",
+      "email_not_confirmed": "Your email address hasn't been confirmed yet. Click the activation link sent to you after registration.",
+      "resend_confirmation": "Resend activation link",
+      "confirmation_resent": "We've sent a new activation link. Check your inbox (and the Spam folder).",
       "select_at_least_one_kind": "Select at least one role",
       "legal_required": "You must accept the Terms and Privacy Policy to continue.",
       "email_already_registered": "This email is already registered. Try to log in or reset your password."
