@@ -135,6 +135,7 @@ export const createPerformance = createServerFn({ method: "POST" })
         organization_id: data.organizationId,
         created_by: userId,
         performance_date: data.performanceDate,
+        performance_time: data.performanceTime ? data.performanceTime : null,
         status: data.status,
         visibility: data.visibility,
         event_kind: kind,
