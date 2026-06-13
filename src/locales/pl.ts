@@ -66,6 +66,27 @@ export default
       "optional": "Opcjonalnie — możesz uzupełnić w dowolnym momencie.",
       "benefit_user": "💡 Uzupełnienie adresu pozwoli systemowi automatycznie optymalizować trasy koncertowe, planować dojazdy oraz inne kwestie logistyczne (noclegi, koszty przejazdów)."
     },
+    "landing": {
+      "title": "Wejdź po zalogowaniu",
+      "help": "Wybierz stronę, na którą aplikacja przekieruje Cię od razu po zalogowaniu. Możesz wskazać dowolną zakładkę swojego profilu albo konkretne menu jednej z Twoich organizacji. Ustawienie zmienisz w każdej chwili.",
+      "kind": {
+        "profile": "Mój profil",
+        "profile_desc": "Trafisz prosto do wybranej zakładki swojego profilu.",
+        "organization": "Moja organizacja",
+        "organization_desc": "Trafisz prosto do wybranego menu jednej z Twoich organizacji."
+      },
+      "profile_page": "Strona profilu",
+      "profile_pages": {
+        "main": "Mój profil — strona główna"
+      },
+      "choose_org": "Organizacja",
+      "choose_org_ph": "Wybierz organizację",
+      "choose_page": "Menu organizacji",
+      "choose_page_ph": "Wybierz stronę",
+      "saved": "Preferencja zapisana",
+      "reset": "Przywróć domyślne",
+      "current": "Aktualnie"
+    },
     "my_orgs": {
       "title": "Moje organizacje",
       "empty": "Nie jesteś jeszcze przypisany do żadnej organizacji."
