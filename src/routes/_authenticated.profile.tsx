@@ -175,9 +175,15 @@ function ProfilePage() {
           <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
+                {t("nav.logout")}
+              </Button>
+            </div>
             <ProfileAvatarField
               value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
             />
+
             <section className="space-y-4 rounded-md border border-border bg-card p-4">
               <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
