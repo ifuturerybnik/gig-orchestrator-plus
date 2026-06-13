@@ -73,10 +73,6 @@ export function Header() {
     (joinReqsQuery.data?.requests?.length ?? 0) +
     (pendingChangesQuery.data?.requests?.length ?? 0);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.navigate({ to: "/login" });
-  };
 
   return (
     <header className="border-b border-border bg-background">
