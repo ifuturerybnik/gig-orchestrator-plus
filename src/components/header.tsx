@@ -1,8 +1,9 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
