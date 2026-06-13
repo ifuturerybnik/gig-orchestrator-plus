@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,8 @@ import {
   fetchWiadomoscBody,
   markWiadomosc,
   deleteWiadomoscRemote,
+  markSpamWiadomosc,
+  bulkActionWiadomosci,
 } from "@/lib/email-wiadomosci.functions";
 import { ComposeDialog } from "./ComposeDialog";
 import { SzablonyManager } from "./SzablonyManager";
@@ -91,23 +94,38 @@ export function MailLayout({ scope }: Props) {
   const fetchBodyFn = useServerFn(fetchWiadomoscBody);
   const markFn = useServerFn(markWiadomosc);
   const deleteRemoteFn = useServerFn(deleteWiadomoscRemote);
+  const markSpamFn = useServerFn(markSpamWiadomosc);
+  const bulkFn = useServerFn(bulkActionWiadomosci);
 
-  const skrzynkiQ = useQuery({
-    queryKey:
-      scope.kind === "org"
-        ? ["org-skrzynki", scope.orgId]
-        : ["user-skrzynki"],
+  // Skrzynki organizacji (tylko gdy scope=org)
+  const orgSkrzynkiQ = useQuery({
+    queryKey: scope.kind === "org" ? ["org-skrzynki", scope.orgId] : ["org-skrzynki", "none"],
+    enabled: scope.kind === "org",
     queryFn: () =>
-      scope.kind === "org"
-        ? listSkrzynkiFn({ data: { scope: "organization", organizationId: scope.orgId } })
-        : listSkrzynkiFn({ data: { scope: "mine" } }),
+      listSkrzynkiFn({
+        data: { scope: "organization", organizationId: scope.kind === "org" ? scope.orgId : "" },
+      }),
   });
-  const skrzynki = (skrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+
+  // Skrzynki osobiste — zawsze (w org module też pokazujemy "Moje skrzynki")
+  const mySkrzynkiQ = useQuery({
+    queryKey: ["user-skrzynki"],
+    queryFn: () => listSkrzynkiFn({ data: { scope: "mine" } }),
+  });
+
+  const orgSkrzynki = (orgSkrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+  const mySkrzynki = (mySkrzynkiQ.data?.skrzynki ?? []) as SkrzynkaSummary[];
+  const skrzynki: SkrzynkaSummary[] =
+    scope.kind === "org" ? [...orgSkrzynki, ...mySkrzynki] : mySkrzynki;
+  const skrzynkiLoading =
+    scope.kind === "org" ? orgSkrzynkiQ.isLoading || mySkrzynkiQ.isLoading : mySkrzynkiQ.isLoading;
 
   const [skrzynkaId, setSkrzynkaId] = useState<string | null>(null);
   const [folder, setFolder] = useState("INBOX");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeReply, setComposeReply] = useState<Wiadomosc | null>(null);
   const [view, setView] = useState<"mail" | "szablony">("mail");
@@ -124,6 +142,11 @@ export function MailLayout({ scope }: Props) {
       setSkrzynkaId(skrzynki[0].id);
     }
   }, [skrzynki, skrzynkaId]);
+
+  // Reset zaznaczenia przy zmianie skrzynki / folderu
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [skrzynkaId, folder]);
 
   const wiadQ = useQuery({
     queryKey: ["email_wiadomosci", skrzynkaId, folder],
@@ -250,7 +273,54 @@ export function MailLayout({ scope }: Props) {
     }
   }
 
-  if (skrzynkiQ.isLoading) {
+  async function handleSpam(w: Wiadomosc) {
+    try {
+      await markSpamFn({ data: { wiadomoscId: w.id } });
+      if (selectedId === w.id) setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.marked_spam"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      if (prev.size === wiadomosci.length && wiadomosci.length > 0) return new Set();
+      return new Set(wiadomosci.map((w) => w.id));
+    });
+  }
+
+  async function handleBulk(action: "delete" | "spam" | "read" | "unread") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (action === "delete" && !confirm(t("correspondence.mail.bulk_delete_confirm", { count: ids.length }))) {
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      await bulkFn({ data: { ids, action } });
+      setSelectedIds(new Set());
+      if (action === "delete" || action === "spam") setSelectedId(null);
+      await qc.invalidateQueries({ queryKey: ["email_wiadomosci", skrzynkaId] });
+      toast.success(t("correspondence.mail.bulk_done", { count: ids.length }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  if (skrzynkiLoading) {
     return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
   }
 
@@ -293,28 +363,55 @@ export function MailLayout({ scope }: Props) {
         {/* Sidebar: skrzynki + foldery */}
         <Card
           className={cn(
-            "w-full md:w-48 shrink-0 p-2 overflow-y-auto",
+            "w-full md:w-56 shrink-0 p-2 overflow-y-auto",
             mobilePane === "nav" ? "block" : "hidden md:block",
           )}
         >
-          <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
-            {t("correspondence.mail.mailboxes")}
-          </div>
-          {skrzynki.map((s) => (
+          {scope.kind === "org" && orgSkrzynki.length > 0 && (
+            <>
+              <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
+                {t("correspondence.mail.mailbox_section_org")}
+              </div>
+              {orgSkrzynki.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSkrzynkaId(s.id); setMobilePane("list"); }}
+                  className={cn(
+                    "w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent truncate",
+                    skrzynkaId === s.id && "bg-accent font-medium",
+                  )}
+                  title={s.email}
+                >
+                  {s.nazwa}
+                </button>
+              ))}
+            </>
+          )}
+
+          {scope.kind === "org" && mySkrzynki.length > 0 && (
+            <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mt-4 mb-1">
+              {t("correspondence.mail.mailbox_section_mine")}
+            </div>
+          )}
+          {scope.kind !== "org" && skrzynki.length > 0 && (
+            <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-1">
+              {t("correspondence.mail.mailboxes")}
+            </div>
+          )}
+          {(scope.kind === "org" ? mySkrzynki : skrzynki).map((s) => (
             <button
               key={s.id}
-              onClick={() => {
-                setSkrzynkaId(s.id);
-                setMobilePane("list");
-              }}
+              onClick={() => { setSkrzynkaId(s.id); setMobilePane("list"); }}
               className={cn(
                 "w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent truncate",
                 skrzynkaId === s.id && "bg-accent font-medium",
               )}
+              title={s.email}
             >
               {s.nazwa}
             </button>
           ))}
+
           <div className="text-xs font-semibold text-muted-foreground uppercase px-2 mt-4 mb-1">
             {t("correspondence.mail.folders.label")}
           </div>
@@ -356,6 +453,66 @@ export function MailLayout({ scope }: Props) {
               {t("correspondence.mail.folders.label")}
             </Button>
           </div>
+          {/* Pasek akcji zbiorowych — zawsze widoczny */}
+          <div className="flex items-center gap-2 border-b border-border p-2 flex-wrap">
+            <Checkbox
+              checked={
+                wiadomosci.length > 0 && selectedIds.size === wiadomosci.length
+                  ? true
+                  : selectedIds.size > 0
+                    ? "indeterminate"
+                    : false
+              }
+              onCheckedChange={() => toggleSelectAll()}
+              aria-label={t("correspondence.mail.select_all")}
+              disabled={wiadomosci.length === 0}
+            />
+            {selectedIds.size > 0 ? (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  {t("correspondence.mail.bulk_selected_count", { count: selectedIds.size })}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("read")}
+                  title={t("correspondence.mail.bulk_mark_read")}
+                >
+                  <MailOpen className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("unread")}
+                  title={t("correspondence.mail.bulk_mark_unread")}
+                >
+                  <MailIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("spam")}
+                  title={t("correspondence.mail.bulk_spam")}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={bulkBusy}
+                  onClick={() => handleBulk("delete")}
+                  title={t("correspondence.mail.bulk_delete")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">{t("correspondence.mail.select_all")}</span>
+            )}
+          </div>
           <ScrollArea className="flex-1">
             {wiadQ.isLoading && (
               <div className="p-3 text-sm text-muted-foreground">{t("common.loading")}</div>
@@ -365,29 +522,47 @@ export function MailLayout({ scope }: Props) {
                 {t("correspondence.mail.empty_folder")}
               </div>
             )}
-            {wiadomosci.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => {
-                  setSelectedId(w.id);
-                  setMobilePane("message");
-                }}
-                className={cn(
-                  "w-full text-left px-3 py-2 border-b border-border hover:bg-accent/40 transition",
-                  selectedId === w.id && "bg-accent",
-                  !w.przeczytana && "font-semibold",
-                )}
-              >
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="truncate flex-1">
-                    {w.od_nazwa || w.od_email || "—"}
-                  </span>
-                  {w.oznaczona_gwiazdka && <Star className="h-3 w-3 fill-current text-amber-500" />}
+            {wiadomosci.map((w) => {
+              const checked = selectedIds.has(w.id);
+              return (
+                <div
+                  key={w.id}
+                  className={cn(
+                    "flex items-start gap-2 px-2 py-2 border-b border-border hover:bg-accent/40 transition",
+                    selectedId === w.id && "bg-accent",
+                    checked && "bg-accent/60",
+                  )}
+                >
+                  <Checkbox
+                    className="mt-1"
+                    checked={checked}
+                    onCheckedChange={() => toggleSelected(w.id)}
+                    aria-label="select"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(w.id);
+                      setMobilePane("message");
+                    }}
+                    className={cn(
+                      "flex-1 text-left min-w-0",
+                      !w.przeczytana && "font-semibold",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="truncate flex-1">
+                        {w.od_nazwa || w.od_email || "—"}
+                      </span>
+                      {w.oznaczona_gwiazdka && <Star className="h-3 w-3 fill-current text-amber-500" />}
+                    </div>
+                    <div className="text-sm truncate">{w.temat || "(brak tematu)"}</div>
+                    <div className="text-xs text-muted-foreground">{fmt(w.data_otrzymania)}</div>
+                  </button>
                 </div>
-                <div className="text-sm truncate">{w.temat || "(brak tematu)"}</div>
-                <div className="text-xs text-muted-foreground">{fmt(w.data_otrzymania)}</div>
-              </button>
-            ))}
+              );
+            })}
           </ScrollArea>
         </Card>
 
@@ -448,6 +623,14 @@ export function MailLayout({ scope }: Props) {
                     onClick={() => { setComposeReply(selected); setComposeOpen(true); }}
                   >
                     {t("correspondence.mail.reply")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSpam(selected)}
+                    title={t("correspondence.mail.mark_spam")}
+                  >
+                    <ShieldAlert className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(selected)}>
                     <Trash2 className="h-4 w-4" />

@@ -139,3 +139,70 @@ export const deleteWiadomoscRemote = createServerFn({ method: "POST" })
     await callMailProxy("mark", { wiadomosc_id: data.wiadomoscId, action: "delete" });
     return { ok: true };
   });
+
+// Oznacz wiadomość jako SPAM (przenieś do folderu Spam/Junk na IMAP).
+// Lokalnie też aktualizujemy folder na 'Spam' żeby UI natychmiast odpowiedział.
+export const markSpamWiadomosc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ wiadomoscId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const w = await loadWiadomoscWithAccess(data.wiadomoscId, context.userId);
+    let proxyOk = true;
+    try {
+      await callMailProxy("mark", { wiadomosc_id: data.wiadomoscId, action: "spam" });
+    } catch (e) {
+      proxyOk = false;
+      console.warn("mail proxy spam failed, falling back to local move", e);
+    }
+    if (!proxyOk || w.folder !== "Spam") {
+      await supabaseAdmin
+        .from("email_wiadomosci")
+        .update({ folder: "Spam" })
+        .eq("id", data.wiadomoscId);
+    }
+    return { ok: true, proxyOk };
+  });
+
+// Działania zbiorowe — delete / spam / read / unread na liście wiadomości.
+export const bulkActionWiadomosci = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        action: z.enum(["delete", "spam", "read", "unread"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+    for (const id of data.ids) {
+      try {
+        const w = await loadWiadomoscWithAccess(id, context.userId);
+        if (data.action === "delete") {
+          await callMailProxy("mark", { wiadomosc_id: id, action: "delete" });
+        } else if (data.action === "spam") {
+          try {
+            await callMailProxy("mark", { wiadomosc_id: id, action: "spam" });
+          } catch (e) {
+            console.warn("bulk spam proxy fail, local-only", e);
+          }
+          if (w.folder !== "Spam") {
+            await supabaseAdmin
+              .from("email_wiadomosci")
+              .update({ folder: "Spam" })
+              .eq("id", id);
+          }
+        } else if (data.action === "read" || data.action === "unread") {
+          await supabaseAdmin
+            .from("email_wiadomosci")
+            .update({ przeczytana: data.action === "read" })
+            .eq("id", id);
+        }
+        results.push({ id, ok: true });
+      } catch (e) {
+        results.push({ id, ok: false, error: e instanceof Error ? e.message : "error" });
+      }
+    }
+    return { results, ok: results.every((r) => r.ok) };
+  });
