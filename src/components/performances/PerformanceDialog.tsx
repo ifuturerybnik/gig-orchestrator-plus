@@ -152,6 +152,7 @@ export function PerformanceDialog({ open, onOpenChange, organizationId, initial,
   }, []);
 
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState<string>(""); // "HH:MM" or ""
   const [status, setStatus] = useState<PerformanceStatus | "">("");
   const [visibility, setVisibility] = useState<PerformanceVisibility>("private");
   // eventKindSelection holds either a preset slug, a custom-kind label, or "__custom__"
