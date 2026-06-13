@@ -220,7 +220,8 @@ export function OrgMailboxesSection({ orgId }: { orgId: string }) {
                   </p>
                   {s.last_sync_error && (
                     <p className="mt-1 text-xs text-destructive">{s.last_sync_error}</p>
-                )}
+                  )}
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {isOwner && (
