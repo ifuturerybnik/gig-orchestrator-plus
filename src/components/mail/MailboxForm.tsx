@@ -1,8 +1,10 @@
 // Wspólny formularz skrzynki e-mail (create + edit) używany przez
 // MyMailboxesSection (osobista) i OrgMailboxesSection (wspolna).
 // JEDEN mechanizm — zob. mem://features/unified-mail-mechanism.
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { Image as ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,7 @@ import {
 export type MailboxFormState = {
   nazwa: string;
   nazwa_wyswietlana: string;
+  ikona_url: string;
   email: string;
   imap_host: string;
   imap_port: string;
@@ -32,6 +35,7 @@ export type MailboxFormState = {
 export const emptyMailboxForm: MailboxFormState = {
   nazwa: "",
   nazwa_wyswietlana: "",
+  ikona_url: "",
   email: "",
   imap_host: "",
   imap_port: "993",
@@ -44,6 +48,34 @@ export const emptyMailboxForm: MailboxFormState = {
   smtp_haslo: "",
   smtp_use_ssl: true,
 };
+
+// Wczytuje plik graficzny, skaluje do max 128px i zwraca data URL (PNG).
+// Awatar jest mały więc data URL w bazie jest OK.
+async function fileToAvatarDataUrl(file: File, maxSize = 128): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result));
+    fr.onerror = () => reject(fr.error ?? new Error("read error"));
+    fr.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/png");
+}
+
 
 type Props = {
   mode: "create" | "edit";
