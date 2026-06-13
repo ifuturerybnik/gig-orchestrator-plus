@@ -8,10 +8,11 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { encryptMailPassword } from "./mail-crypto.server";
 import { callMailProxy } from "./mail-proxy.server";
 
-const SAFE_COLUMNS =
+const SAFE_COLUMNS: string =
   "id, nazwa, nazwa_wyswietlana, ikona_url, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
-const SAFE_COLUMNS_BASE =
+const SAFE_COLUMNS_BASE: string =
   "id, nazwa, nazwa_wyswietlana, typ, owner_user_id, organization_id, email, imap_host, imap_port, imap_login, imap_use_ssl, smtp_host, smtp_port, smtp_login, smtp_use_ssl, aktywna, last_sync_at, last_sync_error, created_at, updated_at" as const;
+let supportsIkonaUrlColumn: boolean | null = null;
 
 const TypEnum = z.enum(["osobista", "wspolna"]);
 
@@ -67,6 +68,16 @@ function isMissingIkonaColumnError(error: { message?: string; code?: string } | 
 
 function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
   return (rows ?? []).map((row) => ({ ikona_url: null, ...row }));
+}
+
+function columnsForSelect(): string {
+  return supportsIkonaUrlColumn === false ? SAFE_COLUMNS_BASE : SAFE_COLUMNS;
+}
+
+function omitIkonaIfUnsupported<T extends Record<string, unknown>>(row: T): T {
+  if (supportsIkonaUrlColumn !== false) return row;
+  const { ikona_url: _ikonaUrl, ...withoutIkona } = row;
+  return withoutIkona as T;
 }
 
 
