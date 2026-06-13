@@ -200,7 +200,7 @@ export const updateSkrzynka = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = {
       nazwa: data.nazwa,
       nazwa_wyswietlana: data.nazwa_wyswietlana?.trim() || null,
-      ikona_url: data.ikona_url === undefined ? undefined : (data.ikona_url?.trim() || null),
+      ikona_url: data.ikona_url?.trim() || null,
       email: data.email,
       imap_host: data.imap_host,
       imap_port: data.imap_port,
