@@ -91,7 +91,7 @@ function isMissingIkonaColumnError(error: { message?: string; code?: string } | 
 }
 
 function withMissingIkonaFallback<T extends Record<string, unknown>>(rows: T[] | null | undefined) {
-  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as SkrzynkaSafeRow[];
+  return (rows ?? []).map((row) => ({ ikona_url: null, ...row })) as unknown as SkrzynkaSafeRow[];
 }
 
 function columnsForSelect(): string {
