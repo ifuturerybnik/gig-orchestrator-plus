@@ -163,6 +163,30 @@ export const markSpamWiadomosc = createServerFn({ method: "POST" })
     return { ok: true, proxyOk };
   });
 
+// "To nie jest spam" — przenosimy wiadomość z folderu Spam z powrotem do INBOX.
+// Próbujemy przez mail-proxy (akcja 'not-spam' / move to INBOX); lokalnie
+// natychmiast zmieniamy folder żeby UI odpowiedział od razu.
+export const markNotSpamWiadomosc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ wiadomoscId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const w = await loadWiadomoscWithAccess(data.wiadomoscId, context.userId);
+    let proxyOk = true;
+    try {
+      await callMailProxy("mark", { wiadomosc_id: data.wiadomoscId, action: "not-spam" });
+    } catch (e) {
+      proxyOk = false;
+      console.warn("mail proxy not-spam failed, falling back to local move", e);
+    }
+    if (!proxyOk || w.folder !== "INBOX") {
+      await supabaseAdmin
+        .from("email_wiadomosci")
+        .update({ folder: "INBOX" })
+        .eq("id", data.wiadomoscId);
+    }
+    return { ok: true, proxyOk };
+  });
+
 // Działania zbiorowe — delete / spam / read / unread na liście wiadomości.
 export const bulkActionWiadomosci = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
