@@ -143,6 +143,12 @@ export function MailboxForm({ mode, initial, submitting, onSubmit, onCancel }: P
         </Field>
       </div>
 
+      <IkonaField
+        value={form.ikona_url}
+        onChange={(v) => setForm((prev) => ({ ...prev, ikona_url: v }))}
+      />
+
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label={t("skrzynki.form.email")}>
           <Input
