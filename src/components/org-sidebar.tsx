@@ -20,6 +20,7 @@ import {
   HardDrive,
   MessageCircle,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import {
   Collapsible,
