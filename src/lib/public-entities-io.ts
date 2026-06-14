@@ -143,14 +143,25 @@ export async function parseImportFile(
     raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
   }
 
-  const mapper =
-    source === "jst" ? mapJstRow : source === "osrodki_kultury" ? mapOsrodekRow : mapGenericRow;
-  const rows: ParsedRow[] = [];
+  const mappers: Array<(r: Record<string, unknown>) => ParsedRow | null> =
+    source === "jst"
+      ? [mapJstRow, mapOsrodekRow, mapGenericRow]
+      : source === "osrodki_kultury"
+        ? [mapOsrodekRow, mapJstRow, mapGenericRow]
+        : [mapGenericRow, mapJstRow, mapOsrodekRow];
+
+  // Auto-fallback: jeśli wybrany mapper pomija WSZYSTKIE wiersze, spróbuj kolejnym.
+  let rows: ParsedRow[] = [];
   let skipped = 0;
-  for (const r of raw) {
-    const mapped = mapper(r);
-    if (mapped) rows.push(mapped);
-    else skipped++;
+  for (const mapper of mappers) {
+    rows = [];
+    skipped = 0;
+    for (const r of raw) {
+      const mapped = mapper(r);
+      if (mapped) rows.push(mapped);
+      else skipped++;
+    }
+    if (rows.length > 0) break;
   }
   return { rows, skipped, rawCount: raw.length };
 }
