@@ -930,6 +930,7 @@ function BazaPpPage() {
                         <TableHead>Telefon</TableHead>
                         <TableHead>Wewn.</TableHead>
                         <TableHead>NIP</TableHead>
+                        <TableHead>REGON</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>WWW</TableHead>
                         <TableHead>ePUAP</TableHead>
@@ -953,6 +954,7 @@ function BazaPpPage() {
                           <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
                           <TableCell>{r.phone_ext ?? ""}</TableCell>
                           <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
+                          <TableCell className="whitespace-nowrap">{r.regon ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
                           <TableCell>{r.www ?? ""}</TableCell>
                           <TableCell>{r.epuap_address ?? ""}</TableCell>
