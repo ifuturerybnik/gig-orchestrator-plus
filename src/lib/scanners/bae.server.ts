@@ -2,7 +2,14 @@
 // Endpoint XHR strony "Sprawdź, czy Twój urząd korzysta z e-Doręczeń".
 // Zwraca ~47k rekordów w jednym JSON-ie (~8.5 MB). Cache modułowy TTL 10 min.
 
-import { makeNameCityKey, normalizeName, tokenize, jaccard } from "./normalize";
+import {
+  makeNameCityKey,
+  normalizeName,
+  tokenize,
+  jaccard,
+  citiesMatchLoose,
+  extractTypePhrase,
+} from "./normalize";
 
 const BAE_URL = "https://www.gov.pl/api/data/registers/search?pageId=21113705";
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -103,7 +110,13 @@ export interface BaeMatch {
 
 const FUZZY_MIN = 0.55;
 
-export async function matchInBae(queries: BaeQuery[]): Promise<BaeMatch[]> {
+export type MatchMode = "standard" | "partial_type";
+
+export async function matchInBae(
+  queries: BaeQuery[],
+  mode: MatchMode = "standard",
+): Promise<BaeMatch[]> {
+  if (mode === "partial_type") return matchInBaePartial(queries);
   const idx = await getBaeIndex();
   const out: BaeMatch[] = [];
   for (const q of queries) {
@@ -186,6 +199,76 @@ export async function matchInBae(queries: BaeQuery[]): Promise<BaeMatch[]> {
       });
     } else {
       out.push({ entityId: q.id, confidence: "none" });
+    }
+  }
+  return out;
+}
+
+/**
+ * Partial-type matching: szukaj kandydatów, których nazwa zawiera „typ jednostki"
+ * (np. „centrum kultury", „dom kultury", „biblioteka publiczna") wyciągnięty
+ * z nazwy naszego rekordu, a miejscowość pasuje luźno (po stemie, ignorując
+ * końcówki przypadków typu „Cieszków" vs „Cieszkowie").
+ *
+ * Wynik: jeśli dokładnie 1 kandydat → "exact_name_city" (wysoka pewność dla
+ * UI; użytkownik i tak akceptuje ręcznie). Jeśli >1 → "fuzzy" z listą
+ * kandydatów. Jeśli 0 lub brak typu/miasta → "none".
+ */
+async function matchInBaePartial(queries: BaeQuery[]): Promise<BaeMatch[]> {
+  const idx = await getBaeIndex();
+  const out: BaeMatch[] = [];
+  for (const q of queries) {
+    // 1. najpierw spróbuj po REGON (tani pewniak).
+    if (q.regon) {
+      const hit = idx.byRegon.get(q.regon.trim());
+      if (hit) {
+        out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
+        continue;
+      }
+    }
+    const typePhrase = extractTypePhrase(q.name);
+    if (!typePhrase || !q.miejscowosc) {
+      out.push({ entityId: q.id, confidence: "none" });
+      continue;
+    }
+    const matches: BaeRecord[] = [];
+    for (const rec of idx.all) {
+      const recName = normalizeName(rec.NAZWA_PODMIOTU);
+      if (!recName.includes(typePhrase)) continue;
+      if (!citiesMatchLoose(q.miejscowosc, rec.MIEJSCOWOSC)) continue;
+      // doprecyzowanie po województwie, jeśli mamy
+      if (
+        q.wojewodztwo &&
+        rec.WOJEWODZTWO &&
+        rec.WOJEWODZTWO.toUpperCase() !== q.wojewodztwo.toUpperCase()
+      ) {
+        continue;
+      }
+      matches.push(rec);
+      if (matches.length > 25) break; // ochrona przed eksplozją
+    }
+    if (matches.length === 0) {
+      out.push({ entityId: q.id, confidence: "none" });
+    } else if (matches.length === 1) {
+      out.push({
+        entityId: q.id,
+        confidence: "exact_name_city",
+        score: 0.85,
+        match: matches[0],
+      });
+    } else {
+      // wybierz najlepszego po jaccard nazw, resztę pokaż jako kandydatów
+      const qTokens = tokenize(q.name);
+      const scored = matches
+        .map((rec) => ({ rec, s: jaccard(qTokens, tokenize(rec.NAZWA_PODMIOTU)) }))
+        .sort((a, b) => b.s - a.s);
+      out.push({
+        entityId: q.id,
+        confidence: "fuzzy",
+        score: Math.max(0.6, scored[0].s),
+        match: scored[0].rec,
+        candidates: scored.slice(1, 5).map((x) => x.rec),
+      });
     }
   }
   return out;

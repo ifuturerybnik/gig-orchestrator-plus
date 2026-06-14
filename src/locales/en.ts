@@ -1088,6 +1088,11 @@ export default
           "patch": "Change"
         },
         "exportCsv": "Export report (CSV)",
+        "rescan": "Rescan",
+        "partialMode": {
+          "label": "Partial mode: institution type + city",
+          "hint": "Instead of full name, searches by extracted institution type (e.g. \"centrum kultury\", \"dom kultury\", \"biblioteka publiczna\") + city name with loose case-ending matching (e.g. \"Cieszków\" = \"Cieszkowie\"). Helps recover records whose full name differs in grammatical form."
+        },
         "live": {
           "start": "Starting scan: {{source}}",
           "selected": "Scope: {{count}} selected records",

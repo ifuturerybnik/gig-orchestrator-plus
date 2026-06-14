@@ -53,3 +53,98 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
   const uni = a.size + b.size - inter;
   return uni === 0 ? 0 : inter / uni;
 }
+
+/**
+ * Stem miejscowości — usuwa typowe polskie końcówki przypadków, żeby
+ * "Cieszków" (M.) i "Cieszkowie" (Msc.) lub "Cieszkowa" (D.) dawały ten sam stem.
+ * Działa na wartości już znormalizowanej (`normalizeName`).
+ */
+export function cityStem(raw?: string | null): string {
+  let s = normalizeName(raw).replace(/\s+/g, "");
+  if (!s) return "";
+  const suffixes = [
+    "owie", "owej", "owym", "owych", "ami", "ach", "ego", "emu",
+    "ow", "ie", "iu", "em", "om", "ej", "ym", "ych",
+    "u", "e", "a", "y", "i", "o",
+  ];
+  for (const suf of suffixes) {
+    if (s.length - suf.length >= 4 && s.endsWith(suf)) {
+      s = s.slice(0, -suf.length);
+      break;
+    }
+  }
+  return s;
+}
+
+/** Czy dwa miasta są „luźno" tym samym (po stemie / prefiksie). */
+export function citiesMatchLoose(a?: string | null, b?: string | null): boolean {
+  const sa = cityStem(a);
+  const sb = cityStem(b);
+  if (!sa || !sb) return false;
+  if (sa === sb) return true;
+  const min = Math.min(sa.length, sb.length);
+  if (min < 5) return false;
+  return sa.startsWith(sb) || sb.startsWith(sa);
+}
+
+/**
+ * Lista znormalizowanych fraz oznaczających „typ jednostki". Kolejność od
+ * najdłuższych do najkrótszych — pierwsze trafienie wygrywa.
+ */
+export const INSTITUTION_TYPE_PHRASES: readonly string[] = [
+  "miejsko gminny osrodek kultury",
+  "miejsko gminne centrum kultury",
+  "gminny osrodek kultury i sportu",
+  "centrum kultury i sportu",
+  "centrum kultury sportu i rekreacji",
+  "gminny osrodek kultury",
+  "miejski osrodek kultury",
+  "powiatowy osrodek kultury",
+  "wojewodzki osrodek kultury",
+  "samorzadowy osrodek kultury",
+  "gminne centrum kultury",
+  "miejskie centrum kultury",
+  "centrum kultury",
+  "osrodek kultury",
+  "dom kultury",
+  "miejska biblioteka publiczna",
+  "gminna biblioteka publiczna",
+  "biblioteka publiczna",
+  "biblioteka",
+  "szkola podstawowa",
+  "zespol szkolno przedszkolny",
+  "zespol szkol",
+  "liceum ogolnoksztalcace",
+  "liceum",
+  "technikum",
+  "przedszkole publiczne",
+  "przedszkole samorzadowe",
+  "przedszkole",
+  "urzad miasta i gminy",
+  "urzad gminy",
+  "urzad miasta",
+  "urzad miejski",
+  "starostwo powiatowe",
+  "urzad marszalkowski",
+  "muzeum",
+  "teatr",
+  "filharmonia",
+  "galeria sztuki",
+  "galeria",
+  "ochotnicza straz pozarna",
+  "centrum uslug wspolnych",
+  "centrum uslug spolecznych",
+  "osrodek pomocy spolecznej",
+  "gminny osrodek pomocy spolecznej",
+  "miejski osrodek pomocy spolecznej",
+];
+
+/** Wyciągnij typ jednostki z nazwy (zwraca znormalizowaną frazę lub ""). */
+export function extractTypePhrase(raw?: string | null): string {
+  const norm = normalizeName(raw);
+  if (!norm) return "";
+  for (const phrase of INSTITUTION_TYPE_PHRASES) {
+    if (norm.includes(phrase)) return phrase;
+  }
+  return "";
+}

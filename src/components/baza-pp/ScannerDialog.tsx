@@ -93,6 +93,7 @@ export function ScannerDialog({
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [running, setRunning] = useState(false);
+  const [partialMode, setPartialMode] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef(false);
 
@@ -155,7 +156,13 @@ export function ScannerDialog({
         const batch = ids.slice(i, i + BATCH_SIZE);
         const res =
           source === "bae"
-            ? ((await baeFn({ data: { scope: "selected", ids: batch } })) as ScanResult)
+            ? ((await baeFn({
+                data: {
+                  scope: "selected",
+                  ids: batch,
+                  mode: partialMode ? "partial_type" : "standard",
+                },
+              })) as ScanResult)
             : ((await rspoFn({ data: { scope: "selected", ids: batch } })) as ScanResult);
 
         for (const it of res.items) {
@@ -349,6 +356,35 @@ export function ScannerDialog({
               : t("admin.bazaPp.scanner.scopeMissing")}
           </DialogDescription>
         </DialogHeader>
+
+        {source === "bae" && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={partialMode}
+                onCheckedChange={(v) => setPartialMode(v === true)}
+                disabled={running}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">
+                  {t("admin.bazaPp.scanner.partialMode.label")}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {t("admin.bazaPp.scanner.partialMode.hint")}
+                </span>
+              </span>
+            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void runScan()}
+              disabled={running}
+            >
+              {t("admin.bazaPp.scanner.rescan")}
+            </Button>
+          </div>
+        )}
 
         {/* Progress + live log */}
         {(running || logs.length > 0) && (
