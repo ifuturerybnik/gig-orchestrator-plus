@@ -1073,6 +1073,22 @@ export default
           "confidence": "Match",
           "found": "Found",
           "patch": "Change"
+        },
+        "exportCsv": "Export report (CSV)",
+        "live": {
+          "start": "Starting scan: {{source}}",
+          "selected": "Scope: {{count}} selected records",
+          "listing": "Loading list of records with the missing target field…",
+          "foundMissing": "Found {{count}} records to check",
+          "empty": "No records to scan.",
+          "fetching": "Fetching {{source}} registry and matching in batches of 50…",
+          "progress": "Progress: {{done}}/{{total}} ({{pct}}%)",
+          "matched": "match",
+          "fuzzy": "fuzzy candidate",
+          "none": "no match",
+          "cancelled": "Scan cancelled by user.",
+          "stop": "Stop",
+          "done": "Done. Total: {{total}}, auto-selected: {{auto}}."
         }
       }
 
