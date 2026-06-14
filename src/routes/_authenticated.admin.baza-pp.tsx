@@ -681,6 +681,101 @@ function BazaPpPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) { setImportRows([]); setImportFileName(""); } }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t("admin.bazaPp.import.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("admin.bazaPp.import.help")}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>{t("admin.bazaPp.import.source")}</Label>
+                <Select value={importSource} onValueChange={(v) => { setImportSource(v as ImportSource); setImportRows([]); setImportFileName(""); }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="jst">{t("admin.bazaPp.import.sources.jst")}</SelectItem>
+                    <SelectItem value="osrodki_kultury">{t("admin.bazaPp.import.sources.osrodki_kultury")}</SelectItem>
+                    <SelectItem value="generic">{t("admin.bazaPp.import.sources.generic")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t("admin.bazaPp.import.file")}</Label>
+                <Input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  disabled={importBusy}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void onPickImportFile(f);
+                  }}
+                />
+                {importFileName && (
+                  <p className="mt-1 text-xs text-muted-foreground">{importFileName}</p>
+                )}
+              </div>
+            </div>
+
+            {importRows.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  {t("admin.bazaPp.import.summary", {
+                    count: importRows.length,
+                    skipped: importSkipped,
+                  })}
+                </p>
+                <div className="max-h-80 overflow-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Typ</TableHead>
+                        <TableHead>Nazwa</TableHead>
+                        <TableHead>TERYT</TableHead>
+                        <TableHead>Woj.</TableHead>
+                        <TableHead>Miejscowość</TableHead>
+                        <TableHead>Telefon</TableHead>
+                        <TableHead>Email</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importRows.slice(0, 20).map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs">{r.entity_type}</TableCell>
+                          <TableCell className="font-medium">{r.name}</TableCell>
+                          <TableCell>{r.teryt_code ?? ""}</TableCell>
+                          <TableCell>{r.wojewodztwo ?? ""}</TableCell>
+                          <TableCell>{r.miejscowosc ?? ""}</TableCell>
+                          <TableCell>{r.phone ?? ""}</TableCell>
+                          <TableCell>{r.email ?? ""}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {importRows.length > 20 && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.bazaPp.import.preview20", { total: importRows.length })}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importBusy}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={runImport} disabled={importBusy || importRows.length === 0}>
+              {importBusy ? t("common.saving") : t("admin.bazaPp.import.confirm", { count: importRows.length })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
