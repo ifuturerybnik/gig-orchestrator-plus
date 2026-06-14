@@ -330,6 +330,18 @@ export function ScannerDialog({
               gov.pl/e-doreczenia
             </a>
           )}
+          {source === "rspo" && (
+            <a
+              href="https://rspo.gov.pl/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" />
+              rspo.gov.pl
+            </a>
+          )}
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
