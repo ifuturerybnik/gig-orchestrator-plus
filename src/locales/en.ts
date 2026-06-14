@@ -1108,6 +1108,29 @@ export default
           "stop": "Stop",
           "done": "Done. Total: {{total}}, auto-selected: {{auto}}."
         }
+      },
+      "discover": {
+        "menu": "Discover by keyword (BAE)",
+        "menuHint": "Search BAE by a word (e.g. \"kultury\") and find records not yet in our base",
+        "title": "Discover new records in BAE",
+        "subtitle": "Type a word (e.g. \"kultury\"). The app will scan the entire BAE registry and show which records we already have and which can be added.",
+        "keyword": "Keyword (name fragment)",
+        "entityType": "Entity type for newly added records",
+        "run": "Search BAE",
+        "scanned": "Found {{total}} matching BAE entries (to add: {{missing}}).",
+        "statTotal": "Total in BAE: {{count}}",
+        "statExisting": "Already in base: {{count}}",
+        "statMissing": "To add: {{count}}",
+        "onlyMissing": "Show only missing",
+        "addSelected": "Add selected ({{count}})",
+        "added": "Added {{inserted}} records ({{errors}} errors).",
+        "cols": {
+          "status": "Status"
+        },
+        "status": {
+          "inBase": "In base",
+          "toAdd": "To add"
+        }
       }
 
     },
