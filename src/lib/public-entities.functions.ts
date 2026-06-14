@@ -63,6 +63,17 @@ function normalize(input: z.infer<typeof entitySchema>) {
 const SELECT_COLS =
   "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, nip, regon, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
 
+export const MISSING_COLS = [
+  "teryt_code",
+  "nip",
+  "regon",
+  "edoreczenia_ade",
+  "www",
+  "epuap_address",
+  "powiat",
+] as const;
+export type MissingCol = (typeof MISSING_COLS)[number];
+
 export const listPublicEntities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -71,6 +82,7 @@ export const listPublicEntities = createServerFn({ method: "GET" })
         entityType: z.enum(PUBLIC_ENTITY_TYPES).nullable().optional(),
         wojewodztwo: z.string().trim().max(100).nullable().optional(),
         search: z.string().trim().max(200).nullable().optional(),
+        missing: z.array(z.enum(MISSING_COLS)).max(20).nullable().optional(),
         page: z.number().int().min(1).max(10_000).optional(),
         pageSize: z.number().int().min(1).max(50_000).optional(),
       })
@@ -93,6 +105,11 @@ export const listPublicEntities = createServerFn({ method: "GET" })
 
     if (data.entityType) q = q.eq("entity_type", data.entityType);
     if (data.wojewodztwo) q = q.eq("wojewodztwo", data.wojewodztwo);
+    if (data.missing && data.missing.length > 0) {
+      for (const col of data.missing) {
+        q = q.is(col, null);
+      }
+    }
     if (data.search) {
       const s = data.search.replace(/[%,()]/g, " ").trim();
       if (s) {

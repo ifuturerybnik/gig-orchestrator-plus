@@ -46,6 +46,7 @@ import { getMyProfile } from "@/lib/profile.functions";
 import {
   PUBLIC_ENTITY_TYPES,
   type PublicEntityType,
+  type MissingCol,
   listPublicEntities,
   createPublicEntity,
   updatePublicEntity,
@@ -64,6 +65,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScannerDialog, type ScannerSource, type ScannerScope } from "@/components/baza-pp/ScannerDialog";
@@ -163,6 +167,7 @@ function BazaPpPage() {
   const [entityType, setEntityType] = useState<PublicEntityType | "all">("all");
   const [wojewodztwo, setWojewodztwo] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [missing, setMissing] = useState<Set<MissingCol>>(new Set());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(50);
   const [extendedView, setExtendedView] = useState(false);
@@ -173,15 +178,26 @@ function BazaPpPage() {
     scope: ScannerScope;
   } | null>(null);
 
+  const missingArr = useMemo(() => Array.from(missing).sort(), [missing]);
+  const toggleMissing = (col: MissingCol) => {
+    setMissing((prev) => {
+      const next = new Set(prev);
+      if (next.has(col)) next.delete(col);
+      else next.add(col);
+      return next;
+    });
+    setPage(1);
+  };
 
   const listQuery = useQuery({
-    queryKey: ["public-entities", entityType, wojewodztwo, search, page],
+    queryKey: ["public-entities", entityType, wojewodztwo, search, missingArr.join(","), page, pageSize],
     queryFn: () =>
       fetchList({
         data: {
           entityType: entityType === "all" ? null : entityType,
           wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
           search: search || null,
+          missing: missingArr.length > 0 ? missingArr : null,
           page,
           pageSize,
         },
@@ -255,6 +271,7 @@ function BazaPpPage() {
           entityType: entityType === "all" ? null : entityType,
           wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
           search: search || null,
+          missing: missingArr.length > 0 ? missingArr : null,
           page: 1,
           pageSize: 50000,
         },
@@ -491,7 +508,7 @@ function BazaPpPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-5">
         <div>
           <Label>{t("admin.bazaPp.filters.type")}</Label>
           <Select
@@ -535,6 +552,60 @@ function BazaPpPage() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div>
+          <Label>{t("admin.bazaPp.filters.missing")}</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between font-normal">
+                <span className="truncate">
+                  {missing.size === 0
+                    ? t("admin.bazaPp.filters.missingNone")
+                    : missingArr
+                        .map((c) => t(`admin.bazaPp.filters.missingOpts.${c}`))
+                        .join(", ")}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel>{t("admin.bazaPp.filters.missingLabel")}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(
+                [
+                  "teryt_code",
+                  "nip",
+                  "regon",
+                  "edoreczenia_ade",
+                  "www",
+                  "epuap_address",
+                  "powiat",
+                ] as const
+              ).map((col) => (
+                <DropdownMenuCheckboxItem
+                  key={col}
+                  checked={missing.has(col)}
+                  onCheckedChange={() => toggleMissing(col)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {t(`admin.bazaPp.filters.missingOpts.${col}`)}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {missing.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setMissing(new Set());
+                      setPage(1);
+                    }}
+                  >
+                    {t("admin.bazaPp.filters.missingClear")}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="md:col-span-2">
           <Label>{t("admin.bazaPp.filters.search")}</Label>
