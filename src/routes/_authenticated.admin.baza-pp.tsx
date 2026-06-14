@@ -103,6 +103,7 @@ type Entity = {
   ulica: string | null;
   nr_domu: string | null;
   phone: string | null;
+  phone_ext: string | null;
   email: string | null;
   www: string | null;
   epuap_address: string | null;
