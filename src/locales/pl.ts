@@ -1128,6 +1128,29 @@ export default
           "stop": "Przerwij",
           "done": "Zakończono. Łącznie: {{total}}, automatycznie zaznaczone: {{auto}}."
         }
+      },
+      "discover": {
+        "menu": "Odkryj po słowie kluczowym (BAE)",
+        "menuHint": "Przeszukaj BAE po słowie (np. „kultury\") i znajdź rekordy, których jeszcze nie mamy",
+        "title": "Odkrywanie nowych rekordów w BAE",
+        "subtitle": "Wpisz słowo (np. „kultury\"). Aplikacja przeszuka cały rejestr BAE i pokaże, które rekordy już mamy w bazie, a które można dopisać.",
+        "keyword": "Słowo kluczowe (fragment nazwy)",
+        "entityType": "Typ dla nowo dodawanych rekordów",
+        "run": "Przeszukaj BAE",
+        "scanned": "Znaleziono {{total}} pasujących wpisów w BAE (do dodania: {{missing}}).",
+        "statTotal": "Łącznie w BAE: {{count}}",
+        "statExisting": "Już w bazie: {{count}}",
+        "statMissing": "Do dodania: {{count}}",
+        "onlyMissing": "Pokaż tylko brakujące",
+        "addSelected": "Dodaj zaznaczone ({{count}})",
+        "added": "Dopisano {{inserted}} rekordów ({{errors}} błędów).",
+        "cols": {
+          "status": "Status"
+        },
+        "status": {
+          "inBase": "Już w bazie",
+          "toAdd": "Do dodania"
+        }
       }
 
     },
