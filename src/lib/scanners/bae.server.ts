@@ -26,6 +26,7 @@ interface BaeIndex {
   fetchedAt: number;
   total: number;
   byRegon: Map<string, BaeRecord>;
+  byAde: Map<string, BaeRecord>;
   byNameCity: Map<string, BaeRecord[]>;
   /** lista użyta do fuzzy matchu (bez duplikatów po REGON) */
   all: BaeRecord[];
