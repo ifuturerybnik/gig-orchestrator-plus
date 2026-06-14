@@ -93,6 +93,7 @@ export function ScannerDialog({
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [running, setRunning] = useState(false);
+  const [partialMode, setPartialMode] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef(false);
 
