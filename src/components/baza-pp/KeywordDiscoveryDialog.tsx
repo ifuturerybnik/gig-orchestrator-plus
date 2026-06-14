@@ -77,7 +77,7 @@ interface Props {
 export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props) {
   const { t } = useTranslation();
   const discoverFn = useServerFn(discoverBaeByKeyword);
-  const importFn = useServerFn(commitPublicEntitiesImport);
+  const callAiFn = useServerFn(callAi);
 
   const [keyword, setKeyword] = useState("kultury");
   const [wojewodztwo, setWojewodztwo] = useState<string>("all");
