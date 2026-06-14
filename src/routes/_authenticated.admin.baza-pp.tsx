@@ -46,6 +46,7 @@ import { getMyProfile } from "@/lib/profile.functions";
 import {
   PUBLIC_ENTITY_TYPES,
   type PublicEntityType,
+  type MissingCol,
   listPublicEntities,
   createPublicEntity,
   updatePublicEntity,
