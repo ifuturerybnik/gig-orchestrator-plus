@@ -998,6 +998,7 @@ export default
         "phone": "Telefon",
         "email": "Email",
         "nip": "NIP",
+        "regon": "REGON",
         "shortName": "Nazwa skr.",
         "teryt": "TERYT",
         "jstTypeRaw": "Typ JST",
