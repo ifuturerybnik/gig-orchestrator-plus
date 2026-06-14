@@ -1009,6 +1009,28 @@ export default
         "www": "Strona WWW",
         "epuap": "Adres ePUAP",
         "edoreczenia": "Adres e-Doręczeń (ADE)"
+      },
+      "export": {
+        "button": "Eksportuj",
+        "xlsx": "Pobierz XLSX (Excel)",
+        "csv": "Pobierz CSV"
+      },
+      "import": {
+        "button": "Importuj plik",
+        "title": "Import bazy podmiotów publicznych",
+        "help": "Wybierz typ źródła i wskaż plik XLSX lub CSV. Zobaczysz podgląd pierwszych 20 wierszy zanim zapiszesz dane. Duplikaty po kodzie TERYT zostaną zaktualizowane.",
+        "source": "Typ źródła",
+        "sources": {
+          "jst": "Baza JST (Kod_TERYT, typ_JST itd.)",
+          "osrodki_kultury": "Ośrodki kultury (CSV)",
+          "generic": "Inne — autodetekcja po nagłówkach"
+        },
+        "file": "Plik (XLSX / XLS / CSV)",
+        "summary": "Rozpoznano {{count}} rekordów (pominięto {{skipped}} pustych/nieczytelnych).",
+        "preview20": "Wyświetlono 20 z {{total}} wierszy.",
+        "confirm": "Importuj {{count}} rekordów",
+        "done": "Zaimportowano: nowych {{inserted}}, zaktualizowanych {{updated}}, błędów {{errors}}.",
+        "emptyFile": "Plik nie zawiera wierszy."
       }
     },
     "storage": {
