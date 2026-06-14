@@ -44,9 +44,10 @@ interface ScanItem {
   };
   confidence: "exact_regon" | "exact_name_city" | "fuzzy" | "none";
   score?: number;
-  match: null | Record<string, string | null>;
+  match: null | Record<string, string | null | undefined>;
   patch: Record<string, string>;
 }
+
 
 interface ScanResult {
   source: ScannerSource;
