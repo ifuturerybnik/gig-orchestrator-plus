@@ -281,6 +281,8 @@ export const scanGusMatches = createServerFn({ method: "POST" })
 // ============================================================================
 
 const ALLOWED_PATCH_FIELDS = new Set([
+  "name",
+  "short_name",
   "edoreczenia_ade",
   "epuap_address",
   "regon",
