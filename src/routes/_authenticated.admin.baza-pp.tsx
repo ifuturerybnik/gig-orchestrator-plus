@@ -781,6 +781,7 @@ function BazaPpPage() {
                           <TableCell>{r.ulica ?? ""}</TableCell>
                           <TableCell>{r.nr_domu ?? ""}</TableCell>
                           <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
+                          <TableCell>{r.phone_ext ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
                           <TableCell>{r.www ?? ""}</TableCell>
                           <TableCell>{r.epuap_address ?? ""}</TableCell>
