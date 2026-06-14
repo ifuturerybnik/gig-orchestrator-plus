@@ -167,3 +167,81 @@ export const deletePublicEntity = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// === IMPORT (commit pre-parsed rows from client) ===
+const importRowSchema = entitySchema.extend({
+  source_row_hash: z.string().max(120).nullable().optional(),
+});
+
+export const commitPublicEntitiesImport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        rows: z.array(importRowSchema).min(1).max(10_000),
+        source: z.string().trim().max(200).default("import:manual"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, true);
+
+    let inserted = 0;
+    let updated = 0;
+    const errors: Array<{ index: number; message: string }> = [];
+
+    // Podziel: rekordy z teryt_code → upsert po teryt, bez teryt → insert
+    const withTeryt: Array<Record<string, unknown>> = [];
+    const withoutTeryt: Array<Record<string, unknown>> = [];
+
+    data.rows.forEach((r, i) => {
+      const cleaned: Record<string, unknown> = { ...normalize(r) };
+      for (const k of Object.keys(cleaned)) {
+        if (cleaned[k] === undefined) cleaned[k] = null;
+      }
+      cleaned.source = data.source;
+      cleaned.updated_by = userId;
+      if (!cleaned.teryt_code) {
+        cleaned.created_by = userId;
+        withoutTeryt.push({ __i: i, ...cleaned });
+      } else {
+        withTeryt.push({ __i: i, ...cleaned });
+      }
+    });
+
+    // Upsert po teryt_code (chunki po 500)
+    const CHUNK = 500;
+    for (let i = 0; i < withTeryt.length; i += CHUNK) {
+      const slice = withTeryt.slice(i, i + CHUNK);
+      const payload = slice.map(({ __i, ...rest }) => rest);
+      const { data: result, error } = await supabase
+        .from("public_entities")
+        .upsert(payload, { onConflict: "teryt_code", ignoreDuplicates: false })
+        .select("id");
+      if (error) {
+        slice.forEach((s) =>
+          errors.push({ index: s.__i as number, message: error.message }),
+        );
+      } else {
+        // Nie wiemy ile to insert vs update — Supabase nie podaje. Liczymy łącznie.
+        updated += result?.length ?? slice.length;
+      }
+    }
+    for (let i = 0; i < withoutTeryt.length; i += CHUNK) {
+      const slice = withoutTeryt.slice(i, i + CHUNK);
+      const payload = slice.map(({ __i, ...rest }) => rest);
+      const { data: result, error } = await supabase
+        .from("public_entities")
+        .insert(payload)
+        .select("id");
+      if (error) {
+        slice.forEach((s) =>
+          errors.push({ index: s.__i as number, message: error.message }),
+        );
+      } else {
+        inserted += result?.length ?? slice.length;
+      }
+    }
+    return { inserted, updated, errors, total: data.rows.length };
+  });
