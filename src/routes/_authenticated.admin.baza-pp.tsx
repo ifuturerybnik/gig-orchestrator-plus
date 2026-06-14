@@ -107,6 +107,7 @@ type Entity = {
   phone: string | null;
   phone_ext: string | null;
   nip: string | null;
+  regon: string | null;
   email: string | null;
   www: string | null;
   epuap_address: string | null;
@@ -131,6 +132,7 @@ const EMPTY_FORM: FormState = {
   phone: "",
   phone_ext: "",
   nip: "",
+  regon: "",
   email: "",
   www: "",
   epuap_address: "",
@@ -297,6 +299,7 @@ function BazaPpPage() {
         phone: form.phone || null,
         phone_ext: form.phone_ext || null,
         nip: form.nip || null,
+        regon: form.regon || null,
         email: form.email || null,
         www: form.www || null,
         epuap_address: form.epuap_address || null,
@@ -554,6 +557,7 @@ function BazaPpPage() {
                 <TableHead>{t("admin.bazaPp.cols.phone")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.phoneExt")}</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.nip")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.regon")}</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.email")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.www")}</TableHead>}
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.epuap")}</TableHead>}
@@ -564,7 +568,7 @@ function BazaPpPage() {
             <TableBody>
               {(() => {
                 const baseCols = isSuper ? 7 : 6;
-                const extraCols = extendedView ? 12 : 0;
+                const extraCols = extendedView ? 13 : 0;
                 const colSpan = baseCols + extraCols;
                 if (listQuery.isLoading) {
                   return (
@@ -615,6 +619,7 @@ function BazaPpPage() {
                     </TableCell>
                     {extendedView && <TableCell>{r.phone_ext ?? ""}</TableCell>}
                     <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
+                    {extendedView && <TableCell className="whitespace-nowrap">{r.regon ?? ""}</TableCell>}
                     <TableCell>{r.email ?? ""}</TableCell>
                     {extendedView && <TableCell className="max-w-[200px] truncate">{r.www ?? ""}</TableCell>}
                     {extendedView && <TableCell className="max-w-[200px] truncate">{r.epuap_address ?? ""}</TableCell>}
@@ -808,6 +813,14 @@ function BazaPpPage() {
               />
             </div>
             <div>
+              <Label>{t("admin.bazaPp.cols.regon")}</Label>
+              <Input
+                value={form.regon ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, regon: e.target.value }))}
+                placeholder="000000000"
+              />
+            </div>
+            <div>
               <Label>{t("admin.bazaPp.cols.email")}</Label>
               <Input
                 type="email"
@@ -917,6 +930,7 @@ function BazaPpPage() {
                         <TableHead>Telefon</TableHead>
                         <TableHead>Wewn.</TableHead>
                         <TableHead>NIP</TableHead>
+                        <TableHead>REGON</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>WWW</TableHead>
                         <TableHead>ePUAP</TableHead>
@@ -940,6 +954,7 @@ function BazaPpPage() {
                           <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
                           <TableCell>{r.phone_ext ?? ""}</TableCell>
                           <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
+                          <TableCell className="whitespace-nowrap">{r.regon ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
                           <TableCell>{r.www ?? ""}</TableCell>
                           <TableCell>{r.epuap_address ?? ""}</TableCell>
