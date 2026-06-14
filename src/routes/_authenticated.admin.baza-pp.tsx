@@ -168,6 +168,11 @@ function BazaPpPage() {
   const [extendedView, setExtendedView] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [scanner, setScanner] = useState<{
+    source: ScannerSource;
+    scope: ScannerScope;
+  } | null>(null);
+
 
   const listQuery = useQuery({
     queryKey: ["public-entities", entityType, wojewodztwo, search, page],
