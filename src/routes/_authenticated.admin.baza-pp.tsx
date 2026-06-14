@@ -271,6 +271,7 @@ function BazaPpPage() {
           entityType: entityType === "all" ? null : entityType,
           wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
           search: search || null,
+          missing: missingArr.length > 0 ? missingArr : null,
           page: 1,
           pageSize: 50000,
         },
