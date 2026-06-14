@@ -759,6 +759,7 @@ function BazaPpPage() {
                         <TableHead>Ulica</TableHead>
                         <TableHead>Nr</TableHead>
                         <TableHead>Telefon</TableHead>
+                        <TableHead>Wewn.</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>WWW</TableHead>
                         <TableHead>ePUAP</TableHead>
