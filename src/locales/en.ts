@@ -1041,7 +1041,41 @@ export default
         "confirm": "Import {{count}} rows",
         "done": "Imported: {{inserted}} new, {{updated}} updated, {{errors}} errors.",
         "emptyFile": "The file has no rows."
+      },
+      "scanner": {
+        "button": "Scan external sources",
+        "title": "Scanner: {{source}}",
+        "scanning": "Fetching registry and matching records…",
+        "scopeSelected": "Scope: selected records ({{count}})",
+        "scopeMissing": "Scope: all records missing the target field",
+        "scopeMissingShort": "All without {{field}}",
+        "totalScanned": "Scanned: {{count}}",
+        "statExact": "Exact matches: {{count}}",
+        "statFuzzy": "Fuzzy candidates: {{count}}",
+        "statNone": "No match: {{count}}",
+        "noChange": "no change",
+        "applySelected": "Apply selected ({{count}})",
+        "applied": "Applied: {{updated}} ({{errors}} errors)",
+        "comingSoon": "Coming soon",
+        "sources": {
+          "bae": "BAE — e-Delivery (gov.pl)",
+          "rspo": "RSPO — School Registry (MEN)",
+          "gus": "GUS REGON — BIR1.1"
+        },
+        "conf": {
+          "exactRegon": "Exact (REGON)",
+          "exactNameCity": "Exact (name+city)",
+          "fuzzy": "Candidate",
+          "none": "None"
+        },
+        "cols": {
+          "entity": "Our record",
+          "confidence": "Match",
+          "found": "Found",
+          "patch": "Change"
+        }
       }
+
     },
     "storage": {
       "title": "Cloudflare R2 — Storage",

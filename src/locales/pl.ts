@@ -1061,7 +1061,41 @@ export default
         "confirm": "Importuj {{count}} rekordów",
         "done": "Zaimportowano: nowych {{inserted}}, zaktualizowanych {{updated}}, błędów {{errors}}.",
         "emptyFile": "Plik nie zawiera wierszy."
+      },
+      "scanner": {
+        "button": "Skanuj zewn. źródła",
+        "title": "Skaner: {{source}}",
+        "scanning": "Skanuję rejestr i dopasowuję rekordy…",
+        "scopeSelected": "Zakres: zaznaczone rekordy ({{count}})",
+        "scopeMissing": "Zakres: wszystkie rekordy z brakującym polem docelowym",
+        "scopeMissingShort": "Wszystkie bez {{field}}",
+        "totalScanned": "Zeskanowano: {{count}}",
+        "statExact": "Trafienia pewne: {{count}}",
+        "statFuzzy": "Propozycje (fuzzy): {{count}}",
+        "statNone": "Brak dopasowania: {{count}}",
+        "noChange": "bez zmian",
+        "applySelected": "Zastosuj zaznaczone ({{count}})",
+        "applied": "Zastosowano: {{updated}} ({{errors}} błędów)",
+        "comingSoon": "Wkrótce — w przygotowaniu",
+        "sources": {
+          "bae": "BAE — e-Doręczenia (gov.pl)",
+          "rspo": "RSPO — Rejestr Szkół (MEN)",
+          "gus": "GUS REGON — BIR1.1"
+        },
+        "conf": {
+          "exactRegon": "Pewne (REGON)",
+          "exactNameCity": "Pewne (nazwa+miasto)",
+          "fuzzy": "Propozycja",
+          "none": "Brak"
+        },
+        "cols": {
+          "entity": "Nasz rekord",
+          "confidence": "Dopasowanie",
+          "found": "Znaleziono",
+          "patch": "Zmiana"
+        }
       }
+
     },
     "storage": {
       "title": "Cloudflare R2 — Storage",
