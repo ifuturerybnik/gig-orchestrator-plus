@@ -221,14 +221,14 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-6xl flex-col gap-3 overflow-hidden">
+      <DialogContent className="!flex h-[90dvh] max-h-[90dvh] max-w-6xl flex-col gap-3 overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>{t("admin.bazaPp.discover.title")}</DialogTitle>
           <DialogDescription>{t("admin.bazaPp.discover.subtitle")}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          <div className="grid gap-3 rounded-md border bg-muted/30 p-3 md:grid-cols-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden pr-1">
+          <div className="shrink-0 grid gap-3 rounded-md border bg-muted/30 p-3 md:grid-cols-4">
             <div className="md:col-span-2">
               <Label>{t("admin.bazaPp.discover.keyword")}</Label>
               <Input
@@ -285,7 +285,7 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
           </div>
 
           {result && (
-            <>
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <span>{t("admin.bazaPp.discover.statTotal", { count: result.total })}</span>
                 <span className="text-muted-foreground">
@@ -307,7 +307,7 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
                 </Button>
               </div>
 
-              <div className="overflow-auto rounded-md border">
+              <div className="min-h-0 flex-1 overflow-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -371,11 +371,11 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
                   </TableBody>
                 </Table>
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        <DialogFooter className="shrink-0 border-t pt-3 sm:justify-between">
+        <DialogFooter className="shrink-0 border-t bg-background pt-3 sm:justify-between">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
