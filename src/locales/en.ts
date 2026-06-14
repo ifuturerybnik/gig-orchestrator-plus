@@ -968,7 +968,20 @@ export default
         "wojewodztwo": "Voivodeship",
         "search": "Search",
         "searchPlaceholder": "Name, city, county…",
-        "all": "All"
+        "all": "All",
+        "missing": "Missing",
+        "missingNone": "— any —",
+        "missingLabel": "Show only records missing:",
+        "missingClear": "Clear",
+        "missingOpts": {
+          "teryt_code": "TERYT",
+          "nip": "NIP",
+          "regon": "REGON",
+          "edoreczenia_ade": "ADE (e-Delivery)",
+          "www": "Website",
+          "epuap_address": "ePUAP",
+          "powiat": "County"
+        }
       },
       "cols": {
         "type": "Type",
