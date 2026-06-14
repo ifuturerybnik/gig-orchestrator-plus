@@ -166,49 +166,59 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
       const instruction = aiInstruction.trim();
       if (!instruction) throw new Error("");
       // Kompaktowa lista pozycji (tylko brakujące — tylko one można zaznaczać).
-      const rows = result.items.map((it, i) => ({
-        i,
-        name: it.bae.name,
-        city: it.bae.miejscowosc,
-        woj: it.bae.wojewodztwo,
-        status: it.existingEntityId ? "in_base" : "to_add",
-        selected: accepted.has(i),
-      }));
-      const onlyToAdd = rows.filter((r) => r.status === "to_add");
+      const onlyToAdd = result.items
+        .map((it, i) => ({
+          i,
+          n: it.bae.name,
+          c: it.bae.miejscowosc,
+          w: it.bae.wojewodztwo,
+        }))
+        .filter((_, i) => !result.items[i].existingEntityId);
+
       const sys =
         "Jesteś asystentem do zaznaczania pozycji w tabeli wyników BAE. " +
-        "Otrzymujesz listę pozycji z indeksami (pole `i`) i polecenie użytkownika. " +
-        "Zwróć WYŁĄCZNIE JSON w formacie {\"select\":[indeksy], \"deselect\":[indeksy]}. " +
-        "Możesz zaznaczać/odznaczać tylko pozycje o statusie `to_add`. " +
-        "Indeksy muszą pochodzić z listy. Bez komentarzy, bez Markdown.";
-      const user =
-        `Polecenie: ${instruction}\n\nPozycje (status=to_add, można zaznaczać):\n` +
-        JSON.stringify(onlyToAdd);
-      const res = (await callAiFn({
-        data: {
-          scenariusz: "baza_pp_discover_select",
-          messages: [
-            { role: "system", content: sys },
-            { role: "user", content: user },
-          ],
-          response_format: { type: "json_object" },
-        },
-      })) as { content: string };
-      let parsed: { select?: number[]; deselect?: number[] };
-      try {
-        parsed = JSON.parse(res.content || "{}");
-      } catch {
-        throw new Error(t("admin.bazaPp.discover.ai.error"));
+        "Otrzymujesz partię pozycji (pola: i=indeks, n=nazwa, c=miejscowość, w=województwo) i polecenie użytkownika. " +
+        'Zwróć WYŁĄCZNIE JSON: {"select":[indeksy], "deselect":[indeksy]}. ' +
+        "Indeksy muszą pochodzić z przekazanej partii. Bez komentarzy, bez Markdown.";
+
+      // Chunkujemy — backend limituje content do 50 000 znaków na wiadomość.
+      const CHUNK = 250;
+      const allSel = new Set<number>();
+      const allDes = new Set<number>();
+      for (let off = 0; off < onlyToAdd.length; off += CHUNK) {
+        const batch = onlyToAdd.slice(off, off + CHUNK);
+        const userMsg =
+          `Polecenie użytkownika: ${instruction}\n\n` +
+          `Partia ${Math.floor(off / CHUNK) + 1}/${Math.ceil(onlyToAdd.length / CHUNK)} ` +
+          `(pozycje ${off + 1}–${off + batch.length} z ${onlyToAdd.length}):\n` +
+          JSON.stringify(batch);
+        const res = (await callAiFn({
+          data: {
+            scenariusz: "baza_pp_discover_select",
+            messages: [
+              { role: "system", content: sys },
+              { role: "user", content: userMsg },
+            ],
+            response_format: { type: "json_object" },
+          },
+        })) as { content: string };
+        let parsed: { select?: number[]; deselect?: number[] };
+        try {
+          parsed = JSON.parse(res.content || "{}");
+        } catch {
+          throw new Error(t("admin.bazaPp.discover.ai.error"));
+        }
+        const valid = new Set(batch.map((b) => b.i));
+        for (const i of parsed.select ?? []) if (valid.has(i)) allSel.add(i);
+        for (const i of parsed.deselect ?? []) if (valid.has(i)) allDes.add(i);
       }
-      const validIdx = new Set(onlyToAdd.map((r) => r.i));
-      const sel = (parsed.select ?? []).filter((i) => validIdx.has(i));
-      const des = (parsed.deselect ?? []).filter((i) => validIdx.has(i));
+
       let added = 0;
       let removed = 0;
       setAccepted((prev) => {
         const next = new Set(prev);
-        for (const i of sel) if (!next.has(i)) { next.add(i); added++; }
-        for (const i of des) if (next.has(i)) { next.delete(i); removed++; }
+        for (const i of allSel) if (!next.has(i)) { next.add(i); added++; }
+        for (const i of allDes) if (next.has(i)) { next.delete(i); removed++; }
         return next;
       });
       return { added, removed };
