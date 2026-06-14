@@ -540,7 +540,9 @@ export function ScannerDialog({
           </div>
         )}
 
-        <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
+        </div>
+
+        <DialogFooter className="shrink-0 flex items-center justify-between gap-2 border-t pt-3 sm:justify-between">
           {source === "bae" && (
             <a
               href="https://www.gov.pl/web/e-doreczenia/sprawdz-czy-twoj-urzad-korzysta-z-e-doreczen"
