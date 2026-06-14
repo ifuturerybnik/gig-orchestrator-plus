@@ -66,6 +66,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScannerDialog, type ScannerSource, type ScannerScope } from "@/components/baza-pp/ScannerDialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
   component: BazaPpPage,
