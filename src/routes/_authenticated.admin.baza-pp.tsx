@@ -140,6 +140,7 @@ function BazaPpPage() {
   const createFn = useServerFn(createPublicEntity);
   const updateFn = useServerFn(updatePublicEntity);
   const deleteFn = useServerFn(deletePublicEntity);
+  const commitImport = useServerFn(commitPublicEntitiesImport);
 
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
@@ -173,6 +174,84 @@ function BazaPpPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Import state
+  const [importOpen, setImportOpen] = useState(false);
+  const [importSource, setImportSource] = useState<ImportSource>("jst");
+  const [importRows, setImportRows] = useState<ParsedRow[]>([]);
+  const [importSkipped, setImportSkipped] = useState(0);
+  const [importFileName, setImportFileName] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+
+  const onPickImportFile = async (file: File) => {
+    try {
+      setImportBusy(true);
+      const { rows, skipped, rawCount } = await parseImportFile(file, importSource);
+      setImportRows(rows);
+      setImportSkipped(skipped);
+      setImportFileName(file.name);
+      if (rawCount === 0) toast.error(t("admin.bazaPp.import.emptyFile"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const runImport = async () => {
+    if (importRows.length === 0) return;
+    try {
+      setImportBusy(true);
+      const res = await commitImport({
+        data: {
+          rows: importRows,
+          source: `import:${importSource}:${new Date().toISOString().slice(0, 10)}`,
+        },
+      });
+      toast.success(
+        t("admin.bazaPp.import.done", {
+          inserted: res.inserted,
+          updated: res.updated,
+          errors: res.errors.length,
+        }),
+      );
+      if (res.errors.length > 0) {
+        console.warn("Import errors", res.errors);
+      }
+      setImportOpen(false);
+      setImportRows([]);
+      setImportFileName("");
+      qc.invalidateQueries({ queryKey: ["public-entities"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const runExport = async (format: "xlsx" | "csv") => {
+    try {
+      const res = await fetchList({
+        data: {
+          entityType: entityType === "all" ? null : entityType,
+          wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
+          search: search || null,
+          page: 1,
+          pageSize: 50000,
+        },
+      });
+      const rows = (res.rows ?? []) as Array<Record<string, unknown>>;
+      if (rows.length === 0) {
+        toast.error(t("admin.bazaPp.empty"));
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (format === "xlsx") exportToXlsx(rows, `baza-pp-${stamp}.xlsx`);
+      else exportToCsv(rows, `baza-pp-${stamp}.csv`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const openCreate = () => {
     setEditingId(null);
