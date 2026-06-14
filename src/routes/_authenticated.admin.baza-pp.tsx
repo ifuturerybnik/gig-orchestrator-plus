@@ -126,6 +126,7 @@ const EMPTY_FORM: FormState = {
   ulica: "",
   nr_domu: "",
   phone: "",
+  phone_ext: "",
   email: "",
   www: "",
   epuap_address: "",
