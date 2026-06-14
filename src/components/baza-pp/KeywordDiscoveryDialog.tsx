@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { discoverBaeByKeyword } from "@/lib/scanners.functions";
+import { callAi } from "@/lib/ai.functions";
 import {
   PUBLIC_ENTITY_TYPES,
   type PublicEntityType,
