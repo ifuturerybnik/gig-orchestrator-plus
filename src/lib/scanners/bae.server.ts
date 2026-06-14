@@ -132,6 +132,14 @@ export async function matchInBae(
         continue;
       }
     }
+    // 1b. ADE (gdy mamy ADE ale brak REGON / nazwa się zmieniła)
+    if (q.currentAde) {
+      const hit = idx.byAde.get(q.currentAde.trim());
+      if (hit) {
+        out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
+        continue;
+      }
+    }
     // 2. nazwa+miejscowość — dokładnie
     const key = makeNameCityKey(q.name, q.miejscowosc);
     if (key !== "|") {
