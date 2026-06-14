@@ -103,6 +103,7 @@ type Entity = {
   ulica: string | null;
   nr_domu: string | null;
   phone: string | null;
+  phone_ext: string | null;
   email: string | null;
   www: string | null;
   epuap_address: string | null;
@@ -125,6 +126,7 @@ const EMPTY_FORM: FormState = {
   ulica: "",
   nr_domu: "",
   phone: "",
+  phone_ext: "",
   email: "",
   www: "",
   epuap_address: "",
@@ -285,6 +287,7 @@ function BazaPpPage() {
         ulica: form.ulica || null,
         nr_domu: form.nr_domu || null,
         phone: form.phone || null,
+        phone_ext: form.phone_ext || null,
         email: form.email || null,
         www: form.www || null,
         epuap_address: form.epuap_address || null,
@@ -465,7 +468,10 @@ function BazaPpPage() {
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell>{r.wojewodztwo ?? ""}</TableCell>
                   <TableCell>{r.miejscowosc ?? ""}</TableCell>
-                  <TableCell>{r.phone ?? ""}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {r.phone ?? ""}
+                    {r.phone_ext ? ` wew. ${r.phone_ext}` : ""}
+                  </TableCell>
                   <TableCell>{r.email ?? ""}</TableCell>
                   <TableCell>
                     {isSuper && (
@@ -629,12 +635,20 @@ function BazaPpPage() {
                 onChange={(e) => setForm((f) => ({ ...f, nr_domu: e.target.value }))}
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <Label>{t("admin.bazaPp.cols.phone")}</Label>
               <PhoneInput
                 value={form.phone ?? ""}
                 onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
                 defaultCountry="PL"
+              />
+            </div>
+            <div>
+              <Label>{t("admin.bazaPp.form.phoneExt")}</Label>
+              <Input
+                value={form.phone_ext ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, phone_ext: e.target.value }))}
+                placeholder="451"
               />
             </div>
             <div>
@@ -745,6 +759,7 @@ function BazaPpPage() {
                         <TableHead>Ulica</TableHead>
                         <TableHead>Nr</TableHead>
                         <TableHead>Telefon</TableHead>
+                        <TableHead>Wewn.</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>WWW</TableHead>
                         <TableHead>ePUAP</TableHead>
@@ -766,6 +781,7 @@ function BazaPpPage() {
                           <TableCell>{r.ulica ?? ""}</TableCell>
                           <TableCell>{r.nr_domu ?? ""}</TableCell>
                           <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
+                          <TableCell>{r.phone_ext ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
                           <TableCell>{r.www ?? ""}</TableCell>
                           <TableCell>{r.epuap_address ?? ""}</TableCell>

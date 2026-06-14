@@ -986,6 +986,7 @@ export default
         "poczta": "Post office",
         "ulica": "Street",
         "nrDomu": "Building no.",
+        "phoneExt": "Extension",
         "www": "Website",
         "epuap": "ePUAP address",
         "edoreczenia": "e-Delivery address (ADE)"

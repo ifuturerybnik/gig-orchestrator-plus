@@ -23,6 +23,7 @@ export interface ParsedRow {
   ulica?: string | null;
   nr_domu?: string | null;
   phone?: string | null;
+  phone_ext?: string | null;
   email?: string | null;
   www?: string | null;
   epuap_address?: string | null;
@@ -40,16 +41,19 @@ function lowerWoj(v: unknown): string | null {
   return x ? x.toLowerCase() : null;
 }
 
-function joinPhone(kier: unknown, num: unknown, wew: unknown): string | null {
+function joinPhone(kier: unknown, num: unknown): string | null {
   const k = s(kier)?.replace(/\D/g, "");
   const n = s(num)?.replace(/\D/g, "");
-  const w = s(wew)?.replace(/\D/g, "");
   if (!n) return null;
   let out = "+48 ";
   if (k) out += k + " ";
   out += n;
-  if (w) out += ` wew. ${w}`;
   return out;
+}
+
+function phoneExt(wew: unknown): string | null {
+  const w = s(wew)?.replace(/\D/g, "");
+  return w || null;
 }
 
 function jstTypeMap(raw: unknown): PublicEntityType {
@@ -75,7 +79,8 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     poczta: s(r["poczta"]),
     ulica: s(r["Ulica"]),
     nr_domu: s(r["Nr domu"]),
-    phone: joinPhone(r["telefon kierunkowy"], r["telefon"], r["wewnętrzny"]),
+    phone: joinPhone(r["telefon kierunkowy"], r["telefon"]),
+    phone_ext: phoneExt(r["wewnętrzny"]),
     email: s(r["ogólny adres poczty elektronicznej gminy/powiatu/województwa"]),
     www: s(r["adres www jednostki"]),
     epuap_address: s(r["ESP"]),
@@ -167,6 +172,7 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "ulica", label: "Ulica" },
   { key: "nr_domu", label: "Nr domu" },
   { key: "phone", label: "Telefon" },
+  { key: "phone_ext", label: "Nr wewnętrzny" },
   { key: "email", label: "Email" },
   { key: "www", label: "WWW" },
   { key: "epuap_address", label: "ePUAP" },
