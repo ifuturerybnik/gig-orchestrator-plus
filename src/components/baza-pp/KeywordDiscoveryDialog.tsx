@@ -380,6 +380,38 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
                 </Button>
               </div>
 
+              <div className="shrink-0 rounded-md border bg-muted/30 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  {t("admin.bazaPp.discover.ai.title")}
+                </div>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {t("admin.bazaPp.discover.ai.hint")}
+                </p>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={aiInstruction}
+                    onChange={(e) => setAiInstruction(e.target.value)}
+                    placeholder={t("admin.bazaPp.discover.ai.placeholder")}
+                    rows={2}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => aiMut.mutate()}
+                    disabled={aiMut.isPending || !aiInstruction.trim()}
+                    className="self-end"
+                  >
+                    {aiMut.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    {t("admin.bazaPp.discover.ai.run")}
+                  </Button>
+                </div>
+              </div>
+
+
               <div className="min-h-0 flex-1 overflow-auto rounded-md border">
                 <Table>
                   <TableHeader>
