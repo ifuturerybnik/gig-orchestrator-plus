@@ -475,67 +475,172 @@ function BazaPpPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={extendedView ? "default" : "outline"}
+            onClick={() => setExtendedView((v) => !v)}
+          >
+            {extendedView ? t("admin.bazaPp.view.compact") : t("admin.bazaPp.view.extended")}
+          </Button>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">{t("admin.bazaPp.pageSize")}</Label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[90px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+                <SelectItem value="1000">1000</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {isSuper && selectedIds.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {t("admin.bazaPp.selection.selected", { count: selectedIds.size })}
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              {t("admin.bazaPp.selection.clear")}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setBulkDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("admin.bazaPp.selection.bulkDelete")}
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("admin.bazaPp.cols.type")}</TableHead>
-              <TableHead>{t("admin.bazaPp.cols.name")}</TableHead>
-              <TableHead>{t("admin.bazaPp.cols.wojewodztwo")}</TableHead>
-              <TableHead>{t("admin.bazaPp.cols.miejscowosc")}</TableHead>
-              <TableHead>{t("admin.bazaPp.cols.phone")}</TableHead>
-              <TableHead>{t("admin.bazaPp.cols.email")}</TableHead>
-              <TableHead className="w-24"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {listQuery.isLoading ? (
+        <div className="w-full overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  {t("common.loading")}
-                </TableCell>
+                {isSuper && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelectedOnPage}
+                      onCheckedChange={toggleAllOnPage}
+                      aria-label={t("admin.bazaPp.selection.selectAll")}
+                    />
+                  </TableHead>
+                )}
+                <TableHead>{t("admin.bazaPp.cols.type")}</TableHead>
+                <TableHead>{t("admin.bazaPp.cols.name")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.shortName")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.teryt")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.jstTypeRaw")}</TableHead>}
+                <TableHead>{t("admin.bazaPp.cols.wojewodztwo")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.powiat")}</TableHead>}
+                <TableHead>{t("admin.bazaPp.cols.miejscowosc")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.kodPocztowy")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.poczta")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.ulica")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.nrDomu")}</TableHead>}
+                <TableHead>{t("admin.bazaPp.cols.phone")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.phoneExt")}</TableHead>}
+                <TableHead>{t("admin.bazaPp.cols.nip")}</TableHead>
+                <TableHead>{t("admin.bazaPp.cols.email")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.www")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.epuap")}</TableHead>}
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.edoreczenia")}</TableHead>}
+                <TableHead className="w-24 text-right">{t("admin.bazaPp.cols.actions")}</TableHead>
               </TableRow>
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  {t("admin.bazaPp.empty")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {typeLabel(r.entity_type)}
-                  </TableCell>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell>{r.wojewodztwo ?? ""}</TableCell>
-                  <TableCell>{r.miejscowosc ?? ""}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {r.phone ?? ""}
-                    {r.phone_ext ? ` wew. ${r.phone_ext}` : ""}
-                  </TableCell>
-                  <TableCell>{r.email ?? ""}</TableCell>
-                  <TableCell>
+            </TableHeader>
+            <TableBody>
+              {(() => {
+                const baseCols = isSuper ? 7 : 6;
+                const extraCols = extendedView ? 12 : 0;
+                const colSpan = baseCols + extraCols;
+                if (listQuery.isLoading) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={colSpan} className="text-center text-muted-foreground">
+                        {t("common.loading")}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                if (rows.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={colSpan} className="text-center text-muted-foreground">
+                        {t("admin.bazaPp.empty")}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                return rows.map((r) => (
+                  <TableRow key={r.id} data-state={selectedIds.has(r.id) ? "selected" : undefined}>
                     {isSuper && (
-                      <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(r)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setDeleteId(r.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(r.id)}
+                          onCheckedChange={() => toggleOne(r.id)}
+                          aria-label="Select row"
+                        />
+                      </TableCell>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {typeLabel(r.entity_type)}
+                    </TableCell>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    {extendedView && <TableCell>{r.short_name ?? ""}</TableCell>}
+                    {extendedView && <TableCell className="whitespace-nowrap">{r.teryt_code ?? ""}</TableCell>}
+                    {extendedView && <TableCell>{r.jst_type_raw ?? ""}</TableCell>}
+                    <TableCell>{r.wojewodztwo ?? ""}</TableCell>
+                    {extendedView && <TableCell>{r.powiat ?? ""}</TableCell>}
+                    <TableCell>{r.miejscowosc ?? ""}</TableCell>
+                    {extendedView && <TableCell className="whitespace-nowrap">{r.kod_pocztowy ?? ""}</TableCell>}
+                    {extendedView && <TableCell>{r.poczta ?? ""}</TableCell>}
+                    {extendedView && <TableCell>{r.ulica ?? ""}</TableCell>}
+                    {extendedView && <TableCell>{r.nr_domu ?? ""}</TableCell>}
+                    <TableCell className="whitespace-nowrap">
+                      {r.phone ?? ""}
+                      {!extendedView && r.phone_ext ? ` wew. ${r.phone_ext}` : ""}
+                    </TableCell>
+                    {extendedView && <TableCell>{r.phone_ext ?? ""}</TableCell>}
+                    <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
+                    <TableCell>{r.email ?? ""}</TableCell>
+                    {extendedView && <TableCell className="max-w-[200px] truncate">{r.www ?? ""}</TableCell>}
+                    {extendedView && <TableCell className="max-w-[200px] truncate">{r.epuap_address ?? ""}</TableCell>}
+                    {extendedView && <TableCell className="max-w-[200px] truncate">{r.edoreczenia_ade ?? ""}</TableCell>}
+                    <TableCell>
+                      {isSuper && (
+                        <div className="flex justify-end gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(r)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setDeleteId(r.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ));
+              })()}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -564,6 +669,7 @@ function BazaPpPage() {
           </Button>
         </div>
       </div>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
