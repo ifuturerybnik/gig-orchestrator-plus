@@ -447,7 +447,7 @@ export function ScannerDialog({
               </Button>
             </div>
 
-            <div className="max-h-[40vh] overflow-auto rounded-md border">
+            <div className="overflow-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
