@@ -735,23 +735,41 @@ function BazaPpPage() {
                       <TableRow>
                         <TableHead>Typ</TableHead>
                         <TableHead>Nazwa</TableHead>
+                        <TableHead>Nazwa skr.</TableHead>
                         <TableHead>TERYT</TableHead>
                         <TableHead>Woj.</TableHead>
+                        <TableHead>Powiat</TableHead>
                         <TableHead>Miejscowość</TableHead>
+                        <TableHead>Kod</TableHead>
+                        <TableHead>Poczta</TableHead>
+                        <TableHead>Ulica</TableHead>
+                        <TableHead>Nr</TableHead>
                         <TableHead>Telefon</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>WWW</TableHead>
+                        <TableHead>ePUAP</TableHead>
+                        <TableHead>ADE</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {importRows.slice(0, 20).map((r, i) => (
                         <TableRow key={i}>
-                          <TableCell className="text-xs">{r.entity_type}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">{r.entity_type}</TableCell>
                           <TableCell className="font-medium">{r.name}</TableCell>
+                          <TableCell>{r.short_name ?? ""}</TableCell>
                           <TableCell>{r.teryt_code ?? ""}</TableCell>
                           <TableCell>{r.wojewodztwo ?? ""}</TableCell>
+                          <TableCell>{r.powiat ?? ""}</TableCell>
                           <TableCell>{r.miejscowosc ?? ""}</TableCell>
-                          <TableCell>{r.phone ?? ""}</TableCell>
+                          <TableCell>{r.kod_pocztowy ?? ""}</TableCell>
+                          <TableCell>{r.poczta ?? ""}</TableCell>
+                          <TableCell>{r.ulica ?? ""}</TableCell>
+                          <TableCell>{r.nr_domu ?? ""}</TableCell>
+                          <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
+                          <TableCell>{r.www ?? ""}</TableCell>
+                          <TableCell>{r.epuap_address ?? ""}</TableCell>
+                          <TableCell>{r.edoreczenia_ade ?? ""}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
