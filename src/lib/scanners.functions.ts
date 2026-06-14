@@ -26,6 +26,7 @@ async function assertAppAdmin(
 const scopeSchema = z.object({
   scope: z.enum(["selected", "missing_target"]),
   ids: z.array(z.string().uuid()).max(10_000).optional(),
+  mode: z.enum(["standard", "partial_type"]).optional(),
 });
 
 const listTargetsSchema = z.object({
@@ -122,6 +123,7 @@ export const scanBaeMatches = createServerFn({ method: "POST" })
         regon: e.regon,
         currentAde: e.edoreczenia_ade,
       })),
+      data.mode ?? "standard",
     );
 
     // Mapuj propozycje na patch (ADE + REGON, jeśli różne od aktualnych).
