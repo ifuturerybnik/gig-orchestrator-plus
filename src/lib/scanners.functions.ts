@@ -26,6 +26,7 @@ async function assertAppAdmin(
 const scopeSchema = z.object({
   scope: z.enum(["selected", "missing_target"]),
   ids: z.array(z.string().uuid()).max(10_000).optional(),
+  mode: z.enum(["standard", "partial_type"]).optional(),
 });
 
 const listTargetsSchema = z.object({
