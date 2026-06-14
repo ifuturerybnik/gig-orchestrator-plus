@@ -347,8 +347,8 @@ export function ScannerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-6xl flex-col gap-3 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{t("admin.bazaPp.scanner.title", { source: sourceLabel })}</DialogTitle>
           <DialogDescription>
             {scope === "selected"
@@ -356,6 +356,8 @@ export function ScannerDialog({
               : t("admin.bazaPp.scanner.scopeMissing")}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
 
         {source === "bae" && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
@@ -445,7 +447,7 @@ export function ScannerDialog({
               </Button>
             </div>
 
-            <div className="max-h-[40vh] overflow-auto rounded-md border">
+            <div className="overflow-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -538,7 +540,9 @@ export function ScannerDialog({
           </div>
         )}
 
-        <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
+        </div>
+
+        <DialogFooter className="shrink-0 flex items-center justify-between gap-2 border-t pt-3 sm:justify-between">
           {source === "bae" && (
             <a
               href="https://www.gov.pl/web/e-doreczenia/sprawdz-czy-twoj-urzad-korzysta-z-e-doreczen"
