@@ -1006,6 +1006,7 @@ export default
         "poczta": "Poczta",
         "ulica": "Ulica",
         "nrDomu": "Nr domu",
+        "phoneExt": "Nr wewnętrzny",
         "www": "Strona WWW",
         "epuap": "Adres ePUAP",
         "edoreczenia": "Adres e-Doręczeń (ADE)"
