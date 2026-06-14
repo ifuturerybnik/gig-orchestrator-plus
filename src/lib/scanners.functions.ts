@@ -123,6 +123,7 @@ export const scanBaeMatches = createServerFn({ method: "POST" })
         regon: e.regon,
         currentAde: e.edoreczenia_ade,
       })),
+      data.mode ?? "standard",
     );
 
     // Mapuj propozycje na patch (ADE + REGON, jeśli różne od aktualnych).
