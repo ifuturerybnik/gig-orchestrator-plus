@@ -26,6 +26,7 @@ interface BaeIndex {
   fetchedAt: number;
   total: number;
   byRegon: Map<string, BaeRecord>;
+  byAde: Map<string, BaeRecord>;
   byNameCity: Map<string, BaeRecord[]>;
   /** lista użyta do fuzzy matchu (bez duplikatów po REGON) */
   all: BaeRecord[];
@@ -53,10 +54,12 @@ async function fetchAndBuild(): Promise<BaeIndex> {
     throw new Error("BAE: nieoczekiwany format odpowiedzi");
   }
   const byRegon = new Map<string, BaeRecord>();
+  const byAde = new Map<string, BaeRecord>();
   const byNameCity = new Map<string, BaeRecord[]>();
   for (const r of raw) {
     if (!r || typeof r !== "object") continue;
     if (r.REGON) byRegon.set(r.REGON.trim(), r);
+    if (r.ADE) byAde.set(r.ADE.trim(), r);
     const key = makeNameCityKey(r.NAZWA_PODMIOTU, r.MIEJSCOWOSC);
     if (key !== "|") {
       const list = byNameCity.get(key);
@@ -68,6 +71,7 @@ async function fetchAndBuild(): Promise<BaeIndex> {
     fetchedAt: Date.now(),
     total: raw.length,
     byRegon,
+    byAde,
     byNameCity,
     all: raw,
   };
@@ -123,6 +127,14 @@ export async function matchInBae(
     // 1. REGON
     if (q.regon) {
       const hit = idx.byRegon.get(q.regon.trim());
+      if (hit) {
+        out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
+        continue;
+      }
+    }
+    // 1b. ADE (gdy mamy ADE ale brak REGON / nazwa się zmieniła)
+    if (q.currentAde) {
+      const hit = idx.byAde.get(q.currentAde.trim());
       if (hit) {
         out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
         continue;
@@ -221,6 +233,14 @@ async function matchInBaePartial(queries: BaeQuery[]): Promise<BaeMatch[]> {
     // 1. najpierw spróbuj po REGON (tani pewniak).
     if (q.regon) {
       const hit = idx.byRegon.get(q.regon.trim());
+      if (hit) {
+        out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
+        continue;
+      }
+    }
+    // 1b. po ADE — gdy nasz rekord ma ADE ale brak REGON
+    if (q.currentAde) {
+      const hit = idx.byAde.get(q.currentAde.trim());
       if (hit) {
         out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
         continue;
