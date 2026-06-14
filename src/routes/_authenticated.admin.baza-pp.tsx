@@ -296,6 +296,7 @@ function BazaPpPage() {
         nr_domu: form.nr_domu || null,
         phone: form.phone || null,
         phone_ext: form.phone_ext || null,
+        nip: form.nip || null,
         email: form.email || null,
         www: form.www || null,
         epuap_address: form.epuap_address || null,
