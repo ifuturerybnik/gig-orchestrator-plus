@@ -107,6 +107,7 @@ type Entity = {
   phone: string | null;
   phone_ext: string | null;
   nip: string | null;
+  regon: string | null;
   email: string | null;
   www: string | null;
   epuap_address: string | null;
@@ -131,6 +132,7 @@ const EMPTY_FORM: FormState = {
   phone: "",
   phone_ext: "",
   nip: "",
+  regon: "",
   email: "",
   www: "",
   epuap_address: "",
@@ -297,6 +299,7 @@ function BazaPpPage() {
         phone: form.phone || null,
         phone_ext: form.phone_ext || null,
         nip: form.nip || null,
+        regon: form.regon || null,
         email: form.email || null,
         www: form.www || null,
         epuap_address: form.epuap_address || null,

@@ -978,6 +978,7 @@ export default
         "phone": "Phone",
         "email": "Email",
         "nip": "Tax ID (NIP)",
+        "regon": "REGON",
         "shortName": "Short name",
         "teryt": "TERYT",
         "jstTypeRaw": "JST type",
