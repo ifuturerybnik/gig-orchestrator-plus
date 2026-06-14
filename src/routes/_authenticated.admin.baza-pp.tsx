@@ -8,6 +8,7 @@ import { Pencil, Trash2, Plus, Download, Upload, ChevronDown } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -49,6 +50,7 @@ import {
   createPublicEntity,
   updatePublicEntity,
   deletePublicEntity,
+  bulkDeletePublicEntities,
   commitPublicEntitiesImport,
 } from "@/lib/public-entities.functions";
 import {
@@ -104,6 +106,7 @@ type Entity = {
   nr_domu: string | null;
   phone: string | null;
   phone_ext: string | null;
+  nip: string | null;
   email: string | null;
   www: string | null;
   epuap_address: string | null;
@@ -127,6 +130,7 @@ const EMPTY_FORM: FormState = {
   nr_domu: "",
   phone: "",
   phone_ext: "",
+  nip: "",
   email: "",
   www: "",
   epuap_address: "",
@@ -142,6 +146,7 @@ function BazaPpPage() {
   const createFn = useServerFn(createPublicEntity);
   const updateFn = useServerFn(updatePublicEntity);
   const deleteFn = useServerFn(deletePublicEntity);
+  const bulkDeleteFn = useServerFn(bulkDeletePublicEntities);
   const commitImport = useServerFn(commitPublicEntitiesImport);
 
   const profileQuery = useQuery({
@@ -155,7 +160,10 @@ function BazaPpPage() {
   const [wojewodztwo, setWojewodztwo] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [extendedView, setExtendedView] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const listQuery = useQuery({
     queryKey: ["public-entities", entityType, wojewodztwo, search, page],
