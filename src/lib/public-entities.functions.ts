@@ -43,6 +43,7 @@ const entitySchema = z.object({
   nr_domu: z.string().trim().max(50).nullable().optional(),
   phone: z.string().trim().max(50).nullable().optional(),
   phone_ext: z.string().trim().max(30).nullable().optional(),
+  nip: z.string().trim().max(30).nullable().optional(),
   email: z.string().trim().max(254).nullable().optional(),
   www: z.string().trim().max(500).nullable().optional(),
   epuap_address: z.string().trim().max(200).nullable().optional(),
@@ -59,7 +60,7 @@ function normalize(input: z.infer<typeof entitySchema>) {
 }
 
 const SELECT_COLS =
-  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
+  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, nip, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
 
 export const listPublicEntities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -168,6 +169,23 @@ export const deletePublicEntity = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const bulkDeletePublicEntities = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(5000) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, true);
+    const { error, count } = await supabase
+      .from("public_entities")
+      .delete({ count: "exact" })
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    return { deleted: count ?? data.ids.length };
+  });
+
 
 // === IMPORT (commit pre-parsed rows from client) ===
 const importRowSchema = entitySchema.extend({

@@ -976,7 +976,35 @@ export default
         "wojewodztwo": "Voivodeship",
         "miejscowosc": "City",
         "phone": "Phone",
-        "email": "Email"
+        "email": "Email",
+        "nip": "Tax ID (NIP)",
+        "shortName": "Short name",
+        "teryt": "TERYT",
+        "jstTypeRaw": "JST type",
+        "powiat": "County",
+        "kodPocztowy": "Postal code",
+        "poczta": "Post office",
+        "ulica": "Street",
+        "nrDomu": "No.",
+        "phoneExt": "Ext.",
+        "www": "Website",
+        "epuap": "ePUAP",
+        "edoreczenia": "ADE",
+        "actions": "Actions"
+      },
+      "view": {
+        "compact": "Basic view",
+        "extended": "Extended view"
+      },
+      "pageSize": "Rows per page",
+      "selection": {
+        "selected": "Selected: {{count}}",
+        "selectAll": "Select all",
+        "clear": "Clear",
+        "bulkDelete": "Delete selected",
+        "bulkDeleteConfirmTitle": "Delete {{count}} records?",
+        "bulkDeleteConfirmDesc": "This action cannot be undone.",
+        "bulkDeleted": "Deleted {{count}} records."
       },
       "form": {
         "shortName": "Short name",
