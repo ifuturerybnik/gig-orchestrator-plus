@@ -41,11 +41,14 @@ export const listScanTargetIds = createServerFn({ method: "POST" })
     await assertAppAdmin(supabase, userId, false);
     const col =
       data.source === "bae" ? "edoreczenia_ade" : data.source === "rspo" ? "phone" : "regon";
-    const { data: rows, error } = await supabase
-      .from("public_entities")
-      .select("id")
-      .is(col, null)
-      .limit(10_000);
+    let q = supabase.from("public_entities").select("id").limit(10_000);
+    if (data.source === "bae") {
+      // BAE uzupełnia ADE *i* REGON — bierzemy rekordy bez któregokolwiek z nich.
+      q = q.or("edoreczenia_ade.is.null,regon.is.null");
+    } else {
+      q = q.is(col, null);
+    }
+    const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return { ids: (rows ?? []).map((r) => (r as { id: string }).id) };
   });
