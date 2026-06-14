@@ -221,7 +221,7 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!flex h-[90dvh] max-h-[90dvh] max-w-6xl flex-col gap-3 overflow-hidden">
+      <DialogContent className="!top-4 !bottom-4 !grid !h-auto !max-h-none !translate-y-0 max-w-6xl grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden sm:!top-8 sm:!bottom-8">
         <DialogHeader className="shrink-0">
           <DialogTitle>{t("admin.bazaPp.discover.title")}</DialogTitle>
           <DialogDescription>{t("admin.bazaPp.discover.subtitle")}</DialogDescription>
