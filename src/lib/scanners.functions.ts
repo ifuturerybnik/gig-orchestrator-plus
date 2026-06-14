@@ -31,36 +31,45 @@ const scopeSchema = z.object({
 const ENTITY_COLS =
   "id, name, miejscowosc, wojewodztwo, regon, edoreczenia_ade, phone, email, www, nip, kod_pocztowy, ulica, nr_domu";
 
+type EntityRow = {
+  id: string;
+  name: string | null;
+  miejscowosc: string | null;
+  wojewodztwo: string | null;
+  regon: string | null;
+  edoreczenia_ade: string | null;
+  phone: string | null;
+  email: string | null;
+  www: string | null;
+  nip: string | null;
+  kod_pocztowy: string | null;
+  ulica: string | null;
+  nr_domu: string | null;
+};
+
 async function loadEntitiesForScan(
   supabase: SupabaseClient,
   scope: "selected" | "missing_target",
   ids: string[] | undefined,
-  missingFilter: (q: ReturnType<SupabaseClient["from"]>) => unknown,
-) {
-  let q = supabase.from("public_entities").select(ENTITY_COLS).limit(5000);
+  missingColumn: string,
+): Promise<EntityRow[]> {
   if (scope === "selected") {
     if (!ids || ids.length === 0) return [];
-    q = q.in("id", ids);
-  } else {
-    q = missingFilter(q) as typeof q;
+    const { data, error } = await supabase
+      .from("public_entities")
+      .select(ENTITY_COLS)
+      .in("id", ids)
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as EntityRow[];
   }
-  const { data, error } = await q;
+  const { data, error } = await supabase
+    .from("public_entities")
+    .select(ENTITY_COLS)
+    .is(missingColumn, null)
+    .limit(5000);
   if (error) throw new Error(error.message);
-  return (data ?? []) as Array<{
-    id: string;
-    name: string | null;
-    miejscowosc: string | null;
-    wojewodztwo: string | null;
-    regon: string | null;
-    edoreczenia_ade: string | null;
-    phone: string | null;
-    email: string | null;
-    www: string | null;
-    nip: string | null;
-    kod_pocztowy: string | null;
-    ulica: string | null;
-    nr_domu: string | null;
-  }>;
+  return (data ?? []) as EntityRow[];
 }
 
 // ============================================================================
@@ -78,9 +87,9 @@ export const scanBaeMatches = createServerFn({ method: "POST" })
       supabase,
       data.scope,
       data.ids,
-      // tryb "missing_target" = brak ADE
-      (q) => (q as ReturnType<SupabaseClient["from"]>).is("edoreczenia_ade", null),
+      "edoreczenia_ade",
     );
+
 
     const { matchInBae } = await import("./scanners/bae.server");
     const matches = await matchInBae(
