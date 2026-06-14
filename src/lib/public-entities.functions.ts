@@ -59,7 +59,7 @@ function normalize(input: z.infer<typeof entitySchema>) {
 }
 
 const SELECT_COLS =
-  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
+  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
 
 export const listPublicEntities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
