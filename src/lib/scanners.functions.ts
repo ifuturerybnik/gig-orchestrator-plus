@@ -219,11 +219,14 @@ async function loadEntitiesForScan(
     if (error) throw new Error(error.message);
     return (data ?? []) as EntityRow[];
   }
-  const { data, error } = await supabase
-    .from("public_entities")
-    .select(ENTITY_COLS)
-    .is(missingColumn, null)
-    .limit(5000);
+  let q = supabase.from("public_entities").select(ENTITY_COLS).limit(5000);
+  if (missingColumn === "edoreczenia_ade") {
+    // BAE → brak ADE LUB brak REGON
+    q = q.or("edoreczenia_ade.is.null,regon.is.null");
+  } else {
+    q = q.is(missingColumn, null);
+  }
+  const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []) as EntityRow[];
 }
