@@ -28,6 +28,27 @@ const scopeSchema = z.object({
   ids: z.array(z.string().uuid()).max(10_000).optional(),
 });
 
+const listTargetsSchema = z.object({
+  source: z.enum(["bae", "rspo", "gus"]),
+});
+
+export const listScanTargetIds = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => listTargetsSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, false);
+    const col =
+      data.source === "bae" ? "edoreczenia_ade" : data.source === "rspo" ? "phone" : "regon";
+    const { data: rows, error } = await supabase
+      .from("public_entities")
+      .select("id")
+      .is(col, null)
+      .limit(10_000);
+    if (error) throw new Error(error.message);
+    return { ids: (rows ?? []).map((r) => (r as { id: string }).id) };
+  });
+
 const ENTITY_COLS =
   "id, name, miejscowosc, wojewodztwo, regon, edoreczenia_ade, phone, email, www, nip, kod_pocztowy, ulica, nr_domu";
 
