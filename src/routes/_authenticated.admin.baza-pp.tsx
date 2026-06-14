@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,21 @@ import {
   createPublicEntity,
   updatePublicEntity,
   deletePublicEntity,
+  commitPublicEntitiesImport,
 } from "@/lib/public-entities.functions";
+import {
+  parseImportFile,
+  exportToXlsx,
+  exportToCsv,
+  type ImportSource,
+  type ParsedRow,
+} from "@/lib/public-entities-io";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
   component: BazaPpPage,
@@ -126,6 +140,7 @@ function BazaPpPage() {
   const createFn = useServerFn(createPublicEntity);
   const updateFn = useServerFn(updatePublicEntity);
   const deleteFn = useServerFn(deletePublicEntity);
+  const commitImport = useServerFn(commitPublicEntitiesImport);
 
   const profileQuery = useQuery({
     queryKey: ["my-profile"],
@@ -159,6 +174,84 @@ function BazaPpPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Import state
+  const [importOpen, setImportOpen] = useState(false);
+  const [importSource, setImportSource] = useState<ImportSource>("jst");
+  const [importRows, setImportRows] = useState<ParsedRow[]>([]);
+  const [importSkipped, setImportSkipped] = useState(0);
+  const [importFileName, setImportFileName] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+
+  const onPickImportFile = async (file: File) => {
+    try {
+      setImportBusy(true);
+      const { rows, skipped, rawCount } = await parseImportFile(file, importSource);
+      setImportRows(rows);
+      setImportSkipped(skipped);
+      setImportFileName(file.name);
+      if (rawCount === 0) toast.error(t("admin.bazaPp.import.emptyFile"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const runImport = async () => {
+    if (importRows.length === 0) return;
+    try {
+      setImportBusy(true);
+      const res = await commitImport({
+        data: {
+          rows: importRows,
+          source: `import:${importSource}:${new Date().toISOString().slice(0, 10)}`,
+        },
+      });
+      toast.success(
+        t("admin.bazaPp.import.done", {
+          inserted: res.inserted,
+          updated: res.updated,
+          errors: res.errors.length,
+        }),
+      );
+      if (res.errors.length > 0) {
+        console.warn("Import errors", res.errors);
+      }
+      setImportOpen(false);
+      setImportRows([]);
+      setImportFileName("");
+      qc.invalidateQueries({ queryKey: ["public-entities"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const runExport = async (format: "xlsx" | "csv") => {
+    try {
+      const res = await fetchList({
+        data: {
+          entityType: entityType === "all" ? null : entityType,
+          wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
+          search: search || null,
+          page: 1,
+          pageSize: 50000,
+        },
+      });
+      const rows = (res.rows ?? []) as Array<Record<string, unknown>>;
+      if (rows.length === 0) {
+        toast.error(t("admin.bazaPp.empty"));
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (format === "xlsx") exportToXlsx(rows, `baza-pp-${stamp}.xlsx`);
+      else exportToCsv(rows, `baza-pp-${stamp}.csv`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const openCreate = () => {
     setEditingId(null);
@@ -246,12 +339,37 @@ function BazaPpPage() {
             {t("admin.bazaPp.subtitle")}
           </p>
         </div>
-        {isSuper && (
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("admin.bazaPp.addNew")}
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.export.button")}
+                <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => runExport("xlsx")}>
+                {t("admin.bazaPp.export.xlsx")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runExport("csv")}>
+                {t("admin.bazaPp.export.csv")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {isSuper && (
+            <>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.import.button")}
+              </Button>
+              <Button onClick={openCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.addNew")}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
@@ -558,6 +676,101 @@ function BazaPpPage() {
               disabled={saveMut.isPending || !form.name.trim()}
             >
               {saveMut.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) { setImportRows([]); setImportFileName(""); } }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t("admin.bazaPp.import.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("admin.bazaPp.import.help")}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>{t("admin.bazaPp.import.source")}</Label>
+                <Select value={importSource} onValueChange={(v) => { setImportSource(v as ImportSource); setImportRows([]); setImportFileName(""); }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="jst">{t("admin.bazaPp.import.sources.jst")}</SelectItem>
+                    <SelectItem value="osrodki_kultury">{t("admin.bazaPp.import.sources.osrodki_kultury")}</SelectItem>
+                    <SelectItem value="generic">{t("admin.bazaPp.import.sources.generic")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t("admin.bazaPp.import.file")}</Label>
+                <Input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  disabled={importBusy}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void onPickImportFile(f);
+                  }}
+                />
+                {importFileName && (
+                  <p className="mt-1 text-xs text-muted-foreground">{importFileName}</p>
+                )}
+              </div>
+            </div>
+
+            {importRows.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  {t("admin.bazaPp.import.summary", {
+                    count: importRows.length,
+                    skipped: importSkipped,
+                  })}
+                </p>
+                <div className="max-h-80 overflow-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Typ</TableHead>
+                        <TableHead>Nazwa</TableHead>
+                        <TableHead>TERYT</TableHead>
+                        <TableHead>Woj.</TableHead>
+                        <TableHead>Miejscowość</TableHead>
+                        <TableHead>Telefon</TableHead>
+                        <TableHead>Email</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importRows.slice(0, 20).map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs">{r.entity_type}</TableCell>
+                          <TableCell className="font-medium">{r.name}</TableCell>
+                          <TableCell>{r.teryt_code ?? ""}</TableCell>
+                          <TableCell>{r.wojewodztwo ?? ""}</TableCell>
+                          <TableCell>{r.miejscowosc ?? ""}</TableCell>
+                          <TableCell>{r.phone ?? ""}</TableCell>
+                          <TableCell>{r.email ?? ""}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {importRows.length > 20 && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.bazaPp.import.preview20", { total: importRows.length })}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importBusy}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={runImport} disabled={importBusy || importRows.length === 0}>
+              {importBusy ? t("common.saving") : t("admin.bazaPp.import.confirm", { count: importRows.length })}
             </Button>
           </DialogFooter>
         </DialogContent>

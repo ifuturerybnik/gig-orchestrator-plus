@@ -989,6 +989,28 @@ export default
         "www": "Website",
         "epuap": "ePUAP address",
         "edoreczenia": "e-Delivery address (ADE)"
+      },
+      "export": {
+        "button": "Export",
+        "xlsx": "Download XLSX (Excel)",
+        "csv": "Download CSV"
+      },
+      "import": {
+        "button": "Import file",
+        "title": "Import public entities",
+        "help": "Pick the source type and an XLSX or CSV file. You'll see a preview of the first 20 rows before saving. Duplicates by TERYT code will be updated.",
+        "source": "Source type",
+        "sources": {
+          "jst": "JST database (Kod_TERYT, typ_JST, ...)",
+          "osrodki_kultury": "Cultural centers (CSV)",
+          "generic": "Other — autodetect by headers"
+        },
+        "file": "File (XLSX / XLS / CSV)",
+        "summary": "Detected {{count}} rows ({{skipped}} empty/unreadable skipped).",
+        "preview20": "Showing 20 of {{total}} rows.",
+        "confirm": "Import {{count}} rows",
+        "done": "Imported: {{inserted}} new, {{updated}} updated, {{errors}} errors.",
+        "emptyFile": "The file has no rows."
       }
     },
     "storage": {
