@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Download, Search } from "lucide-react";
+import { Loader2, Download, Search, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
