@@ -1093,6 +1093,22 @@ export default
           "confidence": "Dopasowanie",
           "found": "Znaleziono",
           "patch": "Zmiana"
+        },
+        "exportCsv": "Eksportuj raport (CSV)",
+        "live": {
+          "start": "Start skanowania źródła: {{source}}",
+          "selected": "Zakres: {{count}} zaznaczonych rekordów",
+          "listing": "Pobieram listę rekordów z brakującym polem docelowym…",
+          "foundMissing": "Znaleziono {{count}} rekordów do sprawdzenia",
+          "empty": "Brak rekordów do skanowania.",
+          "fetching": "Pobieram rejestr {{source}} i dopasowuję partiami po 50…",
+          "progress": "Postęp: {{done}}/{{total}} ({{pct}}%)",
+          "matched": "trafienie",
+          "fuzzy": "propozycja (fuzzy)",
+          "none": "brak dopasowania",
+          "cancelled": "Skanowanie przerwane przez użytkownika.",
+          "stop": "Przerwij",
+          "done": "Zakończono. Łącznie: {{total}}, automatycznie zaznaczone: {{auto}}."
         }
       }
 
