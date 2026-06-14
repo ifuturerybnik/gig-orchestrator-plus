@@ -54,10 +54,12 @@ async function fetchAndBuild(): Promise<BaeIndex> {
     throw new Error("BAE: nieoczekiwany format odpowiedzi");
   }
   const byRegon = new Map<string, BaeRecord>();
+  const byAde = new Map<string, BaeRecord>();
   const byNameCity = new Map<string, BaeRecord[]>();
   for (const r of raw) {
     if (!r || typeof r !== "object") continue;
     if (r.REGON) byRegon.set(r.REGON.trim(), r);
+    if (r.ADE) byAde.set(r.ADE.trim(), r);
     const key = makeNameCityKey(r.NAZWA_PODMIOTU, r.MIEJSCOWOSC);
     if (key !== "|") {
       const list = byNameCity.get(key);
@@ -69,6 +71,7 @@ async function fetchAndBuild(): Promise<BaeIndex> {
     fetchedAt: Date.now(),
     total: raw.length,
     byRegon,
+    byAde,
     byNameCity,
     all: raw,
   };
