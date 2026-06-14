@@ -328,9 +328,42 @@ function BazaPpPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const bulkDeleteMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await bulkDeleteFn({ data: { ids } });
+      return res;
+    },
+    onSuccess: (res) => {
+      toast.success(t("admin.bazaPp.selection.bulkDeleted", { count: res.deleted }));
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      qc.invalidateQueries({ queryKey: ["public-entities"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const rows = (listQuery.data?.rows ?? []) as Entity[];
   const total = listQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const allSelectedOnPage =
+    rows.length > 0 && rows.every((r) => selectedIds.has(r.id));
+  const toggleAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelectedOnPage) rows.forEach((r) => next.delete(r.id));
+      else rows.forEach((r) => next.add(r.id));
+      return next;
+    });
+  };
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const typeLabel = useMemo(
     () => (typ: PublicEntityType) => t(`admin.bazaPp.types.${typ}`),
