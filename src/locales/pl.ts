@@ -988,7 +988,20 @@ export default
         "wojewodztwo": "Województwo",
         "search": "Szukaj",
         "searchPlaceholder": "Nazwa, miejscowość, powiat…",
-        "all": "Wszystkie"
+        "all": "Wszystkie",
+        "missing": "Brak",
+        "missingNone": "— dowolne —",
+        "missingLabel": "Pokaż tylko rekordy bez:",
+        "missingClear": "Wyczyść",
+        "missingOpts": {
+          "teryt_code": "TERYT",
+          "nip": "NIP",
+          "regon": "REGON",
+          "edoreczenia_ade": "ADE (e-Doręczenia)",
+          "www": "WWW",
+          "epuap_address": "ePUAP",
+          "powiat": "Powiat"
+        }
       },
       "cols": {
         "type": "Typ",
