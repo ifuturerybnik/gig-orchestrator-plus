@@ -283,11 +283,16 @@ export function ScannerDialog({
                               <div className="text-muted-foreground">{it.match.miejscowosc}</div>
                               {it.match.ade && <div>ADE: {it.match.ade}</div>}
                               {it.match.regon && <div>REGON: {it.match.regon}</div>}
+                              {it.match.nip && <div>NIP: {it.match.nip}</div>}
+                              {it.match.phone && <div>tel: {it.match.phone}</div>}
+                              {it.match.email && <div>email: {it.match.email}</div>}
+                              {it.match.www && <div>www: {it.match.www}</div>}
                             </>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
+
                         <TableCell className="max-w-[260px] text-xs">
                           {hasPatch ? (
                             <ul className="space-y-0.5">
