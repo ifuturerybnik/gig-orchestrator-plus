@@ -41,16 +41,19 @@ function lowerWoj(v: unknown): string | null {
   return x ? x.toLowerCase() : null;
 }
 
-function joinPhone(kier: unknown, num: unknown, wew: unknown): string | null {
+function joinPhone(kier: unknown, num: unknown): string | null {
   const k = s(kier)?.replace(/\D/g, "");
   const n = s(num)?.replace(/\D/g, "");
-  const w = s(wew)?.replace(/\D/g, "");
   if (!n) return null;
   let out = "+48 ";
   if (k) out += k + " ";
   out += n;
-  if (w) out += ` wew. ${w}`;
   return out;
+}
+
+function phoneExt(wew: unknown): string | null {
+  const w = s(wew)?.replace(/\D/g, "");
+  return w || null;
 }
 
 function jstTypeMap(raw: unknown): PublicEntityType {
