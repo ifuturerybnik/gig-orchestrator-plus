@@ -1108,6 +1108,11 @@ export default
           "patch": "Zmiana"
         },
         "exportCsv": "Eksportuj raport (CSV)",
+        "rescan": "Skanuj ponownie",
+        "partialMode": {
+          "label": "Tryb skrócony: typ jednostki + miejscowość",
+          "hint": "Zamiast pełnej nazwy szuka po wyciągniętym typie jednostki (np. „centrum kultury\", „dom kultury\", „biblioteka publiczna\") + nazwa miejscowości z luźnym dopasowaniem końcówek przypadków (np. „Cieszków\" = „Cieszkowie\"). Pomaga dociągnąć rekordy, których pełna nazwa różni się formą gramatyczną."
+        },
         "live": {
           "start": "Start skanowania źródła: {{source}}",
           "selected": "Zakres: {{count}} zaznaczonych rekordów",
