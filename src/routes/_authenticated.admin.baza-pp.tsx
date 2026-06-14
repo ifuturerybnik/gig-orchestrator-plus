@@ -433,9 +433,12 @@ function BazaPpPage() {
                   <div>
                     <div className="font-medium">{t("admin.bazaPp.scanner.sources.rspo")}</div>
                     <div className="text-xs text-muted-foreground">
-                      {t("admin.bazaPp.scanner.comingSoon")}
+                      {selectedIds.size > 0
+                        ? t("admin.bazaPp.scanner.scopeSelected", { count: selectedIds.size })
+                        : t("admin.bazaPp.scanner.scopeMissingShort", { field: "tel." })}
                     </div>
                   </div>
+
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
