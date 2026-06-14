@@ -87,11 +87,13 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
   const [showOnlyMissing, setShowOnlyMissing] = useState(true);
   const [result, setResult] = useState<DiscoverResult | null>(null);
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
+  const [aiInstruction, setAiInstruction] = useState("");
 
   useEffect(() => {
     if (!open) {
       setResult(null);
       setAccepted(new Set());
+      setAiInstruction("");
     }
   }, [open]);
 
