@@ -170,6 +170,23 @@ export const deletePublicEntity = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const bulkDeletePublicEntities = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(5000) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, true);
+    const { error, count } = await supabase
+      .from("public_entities")
+      .delete({ count: "exact" })
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    return { deleted: count ?? data.ids.length };
+  });
+
+
 // === IMPORT (commit pre-parsed rows from client) ===
 const importRowSchema = entitySchema.extend({
   source_row_hash: z.string().max(120).nullable().optional(),
