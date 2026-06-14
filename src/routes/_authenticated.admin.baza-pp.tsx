@@ -568,7 +568,7 @@ function BazaPpPage() {
             <TableBody>
               {(() => {
                 const baseCols = isSuper ? 7 : 6;
-                const extraCols = extendedView ? 12 : 0;
+                const extraCols = extendedView ? 13 : 0;
                 const colSpan = baseCols + extraCols;
                 if (listQuery.isLoading) {
                   return (
