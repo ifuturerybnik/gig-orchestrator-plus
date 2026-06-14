@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -28,6 +29,7 @@ import {
   scanRspoMatches,
   scanGusMatches,
   applyScannerUpdates,
+  listScanTargetIds,
 } from "@/lib/scanners.functions";
 
 export type ScannerSource = "bae" | "rspo" | "gus";
@@ -48,11 +50,16 @@ interface ScanItem {
   patch: Record<string, string>;
 }
 
-
 interface ScanResult {
   source: ScannerSource;
   total: number;
   items: ScanItem[];
+}
+
+interface LogLine {
+  ts: number;
+  level: "info" | "ok" | "warn" | "err";
+  text: string;
 }
 
 interface Props {
@@ -63,6 +70,8 @@ interface Props {
   selectedIds: string[];
   onApplied?: () => void;
 }
+
+const BATCH_SIZE = 50;
 
 export function ScannerDialog({
   open,
@@ -77,38 +86,120 @@ export function ScannerDialog({
   const rspoFn = useServerFn(scanRspoMatches);
   const gusFn = useServerFn(scanGusMatches);
   const applyFn = useServerFn(applyScannerUpdates);
+  const listIdsFn = useServerFn(listScanTargetIds);
 
   const [result, setResult] = useState<ScanResult | null>(null);
   const [accepted, setAccepted] = useState<Set<string>>(new Set());
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [logs, setLogs] = useState<LogLine[]>([]);
+  const [running, setRunning] = useState(false);
+  const logRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef(false);
 
-  const scanMut = useMutation({
-    mutationFn: async () => {
-      const payload = { data: { scope, ids: scope === "selected" ? selectedIds : [] } };
-      const res =
-        source === "bae"
-          ? await baeFn(payload)
-          : source === "rspo"
-            ? await rspoFn(payload)
-            : await gusFn(payload);
-      return res as ScanResult;
-    },
-    onSuccess: (res) => {
-      setResult(res);
-      const auto = new Set<string>();
-      for (const it of res.items) {
-        if (
-          Object.keys(it.patch).length > 0 &&
-          (it.confidence === "exact_regon" || it.confidence === "exact_name_city")
-        ) {
-          auto.add(it.entityId);
-        }
+  const pushLog = (level: LogLine["level"], text: string) => {
+    setLogs((prev) => [...prev, { ts: Date.now(), level, text }]);
+  };
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [logs.length]);
+
+  const runScan = async () => {
+    setRunning(true);
+    cancelRef.current = false;
+    setResult(null);
+    setLogs([]);
+    setAccepted(new Set());
+    setProgress({ done: 0, total: 0 });
+
+    try {
+      pushLog("info", t("admin.bazaPp.scanner.live.start", { source: t(`admin.bazaPp.scanner.sources.${source}`) }));
+
+      // Determine ids
+      let ids: string[];
+      if (scope === "selected") {
+        ids = selectedIds;
+        pushLog("info", t("admin.bazaPp.scanner.live.selected", { count: ids.length }));
+      } else {
+        pushLog("info", t("admin.bazaPp.scanner.live.listing"));
+        const r = await listIdsFn({ data: { source } });
+        ids = r.ids;
+        pushLog("info", t("admin.bazaPp.scanner.live.foundMissing", { count: ids.length }));
       }
-      setAccepted(auto);
-    },
-    onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : String(e));
-    },
-  });
+
+      if (ids.length === 0) {
+        pushLog("warn", t("admin.bazaPp.scanner.live.empty"));
+        setResult({ source, total: 0, items: [] });
+        setRunning(false);
+        return;
+      }
+
+      // GUS is not implemented yet — fail fast with server message.
+      if (source === "gus") {
+        pushLog("info", t("admin.bazaPp.scanner.live.fetching", { source: "GUS" }));
+        await gusFn({ data: { scope: "selected", ids: ids.slice(0, 1) } });
+        return;
+      }
+
+      setProgress({ done: 0, total: ids.length });
+      pushLog("info", t("admin.bazaPp.scanner.live.fetching", { source: source.toUpperCase() }));
+
+      const allItems: ScanItem[] = [];
+      const auto = new Set<string>();
+
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        if (cancelRef.current) {
+          pushLog("warn", t("admin.bazaPp.scanner.live.cancelled"));
+          break;
+        }
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        const res =
+          source === "bae"
+            ? ((await baeFn({ data: { scope: "selected", ids: batch } })) as ScanResult)
+            : ((await rspoFn({ data: { scope: "selected", ids: batch } })) as ScanResult);
+
+        for (const it of res.items) {
+          allItems.push(it);
+          const hasPatch = Object.keys(it.patch).length > 0;
+          const name = it.entity.name ?? "?";
+          if (it.confidence === "exact_regon" || it.confidence === "exact_name_city") {
+            if (hasPatch) auto.add(it.entityId);
+            const fields = Object.keys(it.patch).join(", ") || "—";
+            pushLog(
+              "ok",
+              `✓ ${name} → ${t("admin.bazaPp.scanner.live.matched")} (${fields})`,
+            );
+          } else if (it.confidence === "fuzzy") {
+            pushLog(
+              "warn",
+              `? ${name} → ${t("admin.bazaPp.scanner.live.fuzzy")}${
+                it.score ? ` (${Math.round(it.score * 100)}%)` : ""
+              }`,
+            );
+          } else {
+            pushLog("info", `· ${name} → ${t("admin.bazaPp.scanner.live.none")}`);
+          }
+        }
+        setProgress({ done: Math.min(i + BATCH_SIZE, ids.length), total: ids.length });
+        setResult({ source, total: allItems.length, items: [...allItems] });
+        setAccepted(new Set(auto));
+      }
+
+      pushLog(
+        "ok",
+        t("admin.bazaPp.scanner.live.done", {
+          total: allItems.length,
+          auto: auto.size,
+        }),
+      );
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      pushLog("err", msg);
+      toast.error(msg);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const applyMut = useMutation({
     mutationFn: async () => {
@@ -134,13 +225,11 @@ export function ScannerDialog({
     },
   });
 
-  // Reset stanu przy otwarciu / zmianie źródła.
   useEffect(() => {
     if (open) {
-      setResult(null);
-      setAccepted(new Set());
-      // Auto-start skanowania.
-      scanMut.mutate();
+      void runScan();
+    } else {
+      cancelRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, source, scope]);
@@ -187,15 +276,73 @@ export function ScannerDialog({
     return <Badge variant="outline">{t("admin.bazaPp.scanner.conf.none")}</Badge>;
   };
 
+  const exportCsv = () => {
+    if (!result) return;
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = [
+      "entity_id",
+      "name",
+      "miejscowosc",
+      "wojewodztwo",
+      "current_regon",
+      "current_ade",
+      "confidence",
+      "score",
+      "match_name",
+      "match_miejscowosc",
+      "match_regon",
+      "match_ade",
+      "match_nip",
+      "match_phone",
+      "match_email",
+      "match_www",
+      "patch_fields",
+      "patch_values",
+    ];
+    const rows = result.items.map((it) => [
+      it.entityId,
+      it.entity.name,
+      it.entity.miejscowosc,
+      it.entity.wojewodztwo,
+      it.entity.regon,
+      it.entity.edoreczenia_ade,
+      it.confidence,
+      it.score ?? "",
+      it.match?.name ?? "",
+      it.match?.miejscowosc ?? "",
+      it.match?.regon ?? "",
+      it.match?.ade ?? "",
+      it.match?.nip ?? "",
+      it.match?.phone ?? "",
+      it.match?.email ?? "",
+      it.match?.www ?? "",
+      Object.keys(it.patch).join("|"),
+      Object.values(it.patch).join("|"),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    a.href = url;
+    a.download = `scanner-${source}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const sourceLabel = t(`admin.bazaPp.scanner.sources.${source}`);
+  const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl">
         <DialogHeader>
-          <DialogTitle>
-            {t("admin.bazaPp.scanner.title", { source: sourceLabel })}
-          </DialogTitle>
+          <DialogTitle>{t("admin.bazaPp.scanner.title", { source: sourceLabel })}</DialogTitle>
           <DialogDescription>
             {scope === "selected"
               ? t("admin.bazaPp.scanner.scopeSelected", { count: selectedIds.length })
@@ -203,14 +350,47 @@ export function ScannerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {scanMut.isPending && (
-          <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t("admin.bazaPp.scanner.scanning")}
+        {/* Progress + live log */}
+        {(running || logs.length > 0) && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 text-sm">
+              {running && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span className="text-muted-foreground">
+                {progress.total > 0
+                  ? t("admin.bazaPp.scanner.live.progress", {
+                      done: progress.done,
+                      total: progress.total,
+                      pct,
+                    })
+                  : t("admin.bazaPp.scanner.scanning")}
+              </span>
+            </div>
+            {progress.total > 0 && <Progress value={pct} />}
+            <div
+              ref={logRef}
+              className="max-h-48 overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-xs"
+            >
+              {logs.map((l, i) => (
+                <div
+                  key={i}
+                  className={
+                    l.level === "ok"
+                      ? "text-emerald-600"
+                      : l.level === "warn"
+                        ? "text-amber-600"
+                        : l.level === "err"
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                  }
+                >
+                  {l.text}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {result && stats && (
+        {result && stats && result.items.length > 0 && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <span>{t("admin.bazaPp.scanner.totalScanned", { count: result.total })}</span>
@@ -223,9 +403,13 @@ export function ScannerDialog({
               <span className="text-muted-foreground">
                 {t("admin.bazaPp.scanner.statNone", { count: stats.none })}
               </span>
+              <Button variant="outline" size="sm" onClick={exportCsv} className="ml-auto">
+                <Download className="mr-2 h-3.5 w-3.5" />
+                {t("admin.bazaPp.scanner.exportCsv")}
+              </Button>
             </div>
 
-            <div className="max-h-[55vh] overflow-auto rounded-md border">
+            <div className="max-h-[40vh] overflow-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -343,11 +527,22 @@ export function ScannerDialog({
           )}
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t("common.cancel")}
-            </Button>
+            {running ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  cancelRef.current = true;
+                }}
+              >
+                {t("admin.bazaPp.scanner.live.stop")}
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                {t("common.cancel")}
+              </Button>
+            )}
             <Button
-              disabled={!result || accepted.size === 0 || applyMut.isPending}
+              disabled={!result || accepted.size === 0 || applyMut.isPending || running}
               onClick={() => applyMut.mutate()}
             >
               {applyMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
