@@ -110,7 +110,13 @@ export interface BaeMatch {
 
 const FUZZY_MIN = 0.55;
 
-export async function matchInBae(queries: BaeQuery[]): Promise<BaeMatch[]> {
+export type MatchMode = "standard" | "partial_type";
+
+export async function matchInBae(
+  queries: BaeQuery[],
+  mode: MatchMode = "standard",
+): Promise<BaeMatch[]> {
+  if (mode === "partial_type") return matchInBaePartial(queries);
   const idx = await getBaeIndex();
   const out: BaeMatch[] = [];
   for (const q of queries) {
