@@ -159,12 +159,86 @@ export const scanBaeMatches = createServerFn({ method: "POST" })
 export const scanRspoMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => scopeSchema.parse(input))
-  .handler(async ({ context }) => {
-    await assertAppAdmin(context.supabase, context.userId, false);
-    throw new Error(
-      "Skaner RSPO jeszcze nie jest wdrożony. Zostanie dodany w kolejnym kroku.",
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, false);
+
+    // Dla RSPO "missing_target" = brak telefonu (najczęściej brakujące pole dla szkół).
+    const entities = await loadEntitiesForScan(
+      supabase,
+      data.scope,
+      data.ids,
+      "phone",
     );
+
+    // Sanity cap — RSPO jest odpytywane per miejscowość, ograniczamy ruch.
+    const capped = entities.slice(0, 500);
+
+    const { matchInRspo, buildRspoPatch } = await import("./scanners/rspo.server");
+    const matches = await matchInRspo(
+      capped.map((e) => ({
+        id: e.id,
+        name: e.name,
+        miejscowosc: e.miejscowosc,
+        regon: e.regon,
+      })),
+    );
+
+    return {
+      source: "rspo" as const,
+      total: capped.length,
+      items: capped.map((e) => {
+        const m = matches.find((x) => x.entityId === e.id) ?? {
+          entityId: e.id,
+          confidence: "none" as const,
+        };
+        const target = m.match;
+        const patch = target
+          ? buildRspoPatch(target, {
+              phone: e.phone,
+              email: e.email,
+              www: e.www,
+              nip: e.nip,
+              regon: e.regon,
+              kod_pocztowy: e.kod_pocztowy,
+              ulica: e.ulica,
+              nr_domu: e.nr_domu,
+            })
+          : {};
+        return {
+          entityId: e.id,
+          entity: {
+            name: e.name,
+            miejscowosc: e.miejscowosc,
+            wojewodztwo: e.wojewodztwo,
+            regon: e.regon,
+            edoreczenia_ade: e.edoreczenia_ade,
+          },
+          confidence: m.confidence,
+          score: m.score,
+          match: target
+            ? {
+                name: target.nazwa ?? null,
+                miejscowosc: target.miejscowosc ?? null,
+                regon: target.regon ?? null,
+                phone: target.telefon ?? null,
+                email: target.email ?? null,
+                www: target.stronaInternetowa ?? null,
+                nip: target.nip ?? null,
+              }
+            : null,
+          candidates:
+            m.candidates?.slice(0, 5).map((c) => ({
+              name: c.nazwa ?? null,
+              miejscowosc: c.miejscowosc ?? null,
+              regon: c.regon ?? null,
+            })) ?? [],
+          patch,
+        };
+      }),
+    };
   });
+
 
 export const scanGusMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
