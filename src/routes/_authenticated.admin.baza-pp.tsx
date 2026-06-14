@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Download, Upload, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, ChevronDown, Radar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +66,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScannerDialog, type ScannerSource, type ScannerScope } from "@/components/baza-pp/ScannerDialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
   component: BazaPpPage,
@@ -166,6 +168,11 @@ function BazaPpPage() {
   const [extendedView, setExtendedView] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [scanner, setScanner] = useState<{
+    source: ScannerSource;
+    scope: ScannerScope;
+  } | null>(null);
+
 
   const listQuery = useQuery({
     queryKey: ["public-entities", entityType, wojewodztwo, search, page],
@@ -388,6 +395,66 @@ function BazaPpPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isSuper && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Radar className="mr-2 h-4 w-4" />
+                  {t("admin.bazaPp.scanner.button")}
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "bae",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.bae")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedIds.size > 0
+                        ? t("admin.bazaPp.scanner.scopeSelected", { count: selectedIds.size })
+                        : t("admin.bazaPp.scanner.scopeMissingShort", { field: "ADE" })}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "rspo",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.rspo")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.bazaPp.scanner.comingSoon")}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "gus",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.gus")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.bazaPp.scanner.comingSoon")}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -405,6 +472,7 @@ function BazaPpPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
           {isSuper && (
             <>
               <Button variant="outline" onClick={() => setImportOpen(true)}>
@@ -1025,6 +1093,21 @@ function BazaPpPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {scanner && (
+        <ScannerDialog
+          open={!!scanner}
+          onOpenChange={(o) => !o && setScanner(null)}
+          source={scanner.source}
+          scope={scanner.scope}
+          selectedIds={Array.from(selectedIds)}
+          onApplied={() => {
+            qc.invalidateQueries({ queryKey: ["public-entities"] });
+            setSelectedIds(new Set());
+          }}
+        />
+      )}
     </div>
   );
 }
+
