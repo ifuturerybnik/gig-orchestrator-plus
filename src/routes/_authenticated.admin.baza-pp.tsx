@@ -619,6 +619,7 @@ function BazaPpPage() {
                     </TableCell>
                     {extendedView && <TableCell>{r.phone_ext ?? ""}</TableCell>}
                     <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
+                    {extendedView && <TableCell className="whitespace-nowrap">{r.regon ?? ""}</TableCell>}
                     <TableCell>{r.email ?? ""}</TableCell>
                     {extendedView && <TableCell className="max-w-[200px] truncate">{r.www ?? ""}</TableCell>}
                     {extendedView && <TableCell className="max-w-[200px] truncate">{r.epuap_address ?? ""}</TableCell>}
