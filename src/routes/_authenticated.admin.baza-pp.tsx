@@ -916,6 +916,7 @@ function BazaPpPage() {
                         <TableHead>Nr</TableHead>
                         <TableHead>Telefon</TableHead>
                         <TableHead>Wewn.</TableHead>
+                        <TableHead>NIP</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>WWW</TableHead>
                         <TableHead>ePUAP</TableHead>
@@ -938,6 +939,7 @@ function BazaPpPage() {
                           <TableCell>{r.nr_domu ?? ""}</TableCell>
                           <TableCell className="whitespace-nowrap">{r.phone ?? ""}</TableCell>
                           <TableCell>{r.phone_ext ?? ""}</TableCell>
+                          <TableCell className="whitespace-nowrap">{r.nip ?? ""}</TableCell>
                           <TableCell>{r.email ?? ""}</TableCell>
                           <TableCell>{r.www ?? ""}</TableCell>
                           <TableCell>{r.epuap_address ?? ""}</TableCell>
@@ -980,6 +982,30 @@ function BazaPpPage() {
               onClick={() => deleteId && deleteMut.mutate(deleteId)}
             >
               {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("admin.bazaPp.selection.bulkDeleteConfirmTitle", { count: selectedIds.size })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.bazaPp.selection.bulkDeleteConfirmDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteMut.isPending}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkDeleteMut.mutate(Array.from(selectedIds))}
+              disabled={bulkDeleteMut.isPending}
+            >
+              {bulkDeleteMut.isPending ? t("common.saving") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
