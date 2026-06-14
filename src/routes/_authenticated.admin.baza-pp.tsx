@@ -557,6 +557,7 @@ function BazaPpPage() {
                 <TableHead>{t("admin.bazaPp.cols.phone")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.phoneExt")}</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.nip")}</TableHead>
+                {extendedView && <TableHead>{t("admin.bazaPp.cols.regon")}</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.email")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.www")}</TableHead>}
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.epuap")}</TableHead>}
