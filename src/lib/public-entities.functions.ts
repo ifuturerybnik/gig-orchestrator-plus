@@ -69,7 +69,7 @@ export const listPublicEntities = createServerFn({ method: "GET" })
         wojewodztwo: z.string().trim().max(100).nullable().optional(),
         search: z.string().trim().max(200).nullable().optional(),
         page: z.number().int().min(1).max(10_000).optional(),
-        pageSize: z.number().int().min(1).max(200).optional(),
+        pageSize: z.number().int().min(1).max(50_000).optional(),
       })
       .parse(input ?? {}),
   )
