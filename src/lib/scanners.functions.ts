@@ -141,6 +141,27 @@ export const scanBaeMatches = createServerFn({ method: "POST" })
           if (target.REGON && target.REGON !== e.regon) {
             patch.regon = target.REGON;
           }
+          if (
+            target.NAZWA_PODMIOTU &&
+            e.name &&
+            target.NAZWA_PODMIOTU.trim().toLowerCase() !== e.name.trim().toLowerCase()
+          ) {
+            patch.name = target.NAZWA_PODMIOTU;
+          }
+          if (
+            target.MIEJSCOWOSC &&
+            (!e.miejscowosc ||
+              target.MIEJSCOWOSC.trim().toLowerCase() !== e.miejscowosc.trim().toLowerCase())
+          ) {
+            patch.miejscowosc = target.MIEJSCOWOSC;
+          }
+          if (
+            target.WOJEWODZTWO &&
+            (!e.wojewodztwo ||
+              target.WOJEWODZTWO.trim().toLowerCase() !== e.wojewodztwo.trim().toLowerCase())
+          ) {
+            patch.wojewodztwo = target.WOJEWODZTWO;
+          }
         }
         return {
           entityId: e.id,
@@ -281,6 +302,8 @@ export const scanGusMatches = createServerFn({ method: "POST" })
 // ============================================================================
 
 const ALLOWED_PATCH_FIELDS = new Set([
+  "name",
+  "short_name",
   "edoreczenia_ade",
   "epuap_address",
   "regon",
