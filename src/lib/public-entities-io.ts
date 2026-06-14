@@ -172,6 +172,7 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "ulica", label: "Ulica" },
   { key: "nr_domu", label: "Nr domu" },
   { key: "phone", label: "Telefon" },
+  { key: "phone_ext", label: "Nr wewnętrzny" },
   { key: "email", label: "Email" },
   { key: "www", label: "WWW" },
   { key: "epuap_address", label: "ePUAP" },
