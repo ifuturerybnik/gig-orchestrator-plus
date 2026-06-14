@@ -508,7 +508,7 @@ function BazaPpPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-5">
         <div>
           <Label>{t("admin.bazaPp.filters.type")}</Label>
           <Select
@@ -552,6 +552,60 @@ function BazaPpPage() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div>
+          <Label>{t("admin.bazaPp.filters.missing")}</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between font-normal">
+                <span className="truncate">
+                  {missing.size === 0
+                    ? t("admin.bazaPp.filters.missingNone")
+                    : missingArr
+                        .map((c) => t(`admin.bazaPp.filters.missingOpts.${c}`))
+                        .join(", ")}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel>{t("admin.bazaPp.filters.missingLabel")}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(
+                [
+                  "teryt_code",
+                  "nip",
+                  "regon",
+                  "edoreczenia_ade",
+                  "www",
+                  "epuap_address",
+                  "powiat",
+                ] as const
+              ).map((col) => (
+                <DropdownMenuCheckboxItem
+                  key={col}
+                  checked={missing.has(col)}
+                  onCheckedChange={() => toggleMissing(col)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {t(`admin.bazaPp.filters.missingOpts.${col}`)}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {missing.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setMissing(new Set());
+                      setPage(1);
+                    }}
+                  >
+                    {t("admin.bazaPp.filters.missingClear")}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="md:col-span-2">
           <Label>{t("admin.bazaPp.filters.search")}</Label>
