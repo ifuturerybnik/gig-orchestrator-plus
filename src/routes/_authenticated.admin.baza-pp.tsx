@@ -1032,6 +1032,21 @@ function BazaPpPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {scanner && (
+        <ScannerDialog
+          open={!!scanner}
+          onOpenChange={(o) => !o && setScanner(null)}
+          source={scanner.source}
+          scope={scanner.scope}
+          selectedIds={Array.from(selectedIds)}
+          onApplied={() => {
+            qc.invalidateQueries({ queryKey: ["public-entities"] });
+            setSelectedIds(new Set());
+          }}
+        />
+      )}
     </div>
   );
 }
+
