@@ -339,12 +339,37 @@ function BazaPpPage() {
             {t("admin.bazaPp.subtitle")}
           </p>
         </div>
-        {isSuper && (
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("admin.bazaPp.addNew")}
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.export.button")}
+                <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => runExport("xlsx")}>
+                {t("admin.bazaPp.export.xlsx")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runExport("csv")}>
+                {t("admin.bazaPp.export.csv")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {isSuper && (
+            <>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.import.button")}
+              </Button>
+              <Button onClick={openCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("admin.bazaPp.addNew")}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
