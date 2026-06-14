@@ -2,7 +2,14 @@
 // Endpoint XHR strony "Sprawdź, czy Twój urząd korzysta z e-Doręczeń".
 // Zwraca ~47k rekordów w jednym JSON-ie (~8.5 MB). Cache modułowy TTL 10 min.
 
-import { makeNameCityKey, normalizeName, tokenize, jaccard } from "./normalize";
+import {
+  makeNameCityKey,
+  normalizeName,
+  tokenize,
+  jaccard,
+  citiesMatchLoose,
+  extractTypePhrase,
+} from "./normalize";
 
 const BAE_URL = "https://www.gov.pl/api/data/registers/search?pageId=21113705";
 const CACHE_TTL_MS = 10 * 60 * 1000;
