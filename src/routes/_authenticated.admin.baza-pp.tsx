@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,21 @@ import {
   createPublicEntity,
   updatePublicEntity,
   deletePublicEntity,
+  commitPublicEntitiesImport,
 } from "@/lib/public-entities.functions";
+import {
+  parseImportFile,
+  exportToXlsx,
+  exportToCsv,
+  type ImportSource,
+  type ParsedRow,
+} from "@/lib/public-entities-io";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
   component: BazaPpPage,
