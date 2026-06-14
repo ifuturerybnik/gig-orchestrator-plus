@@ -167,6 +167,7 @@ function BazaPpPage() {
   const [entityType, setEntityType] = useState<PublicEntityType | "all">("all");
   const [wojewodztwo, setWojewodztwo] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [missing, setMissing] = useState<Set<MissingCol>>(new Set());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(50);
   const [extendedView, setExtendedView] = useState(false);
@@ -177,15 +178,26 @@ function BazaPpPage() {
     scope: ScannerScope;
   } | null>(null);
 
+  const missingArr = useMemo(() => Array.from(missing).sort(), [missing]);
+  const toggleMissing = (col: MissingCol) => {
+    setMissing((prev) => {
+      const next = new Set(prev);
+      if (next.has(col)) next.delete(col);
+      else next.add(col);
+      return next;
+    });
+    setPage(1);
+  };
 
   const listQuery = useQuery({
-    queryKey: ["public-entities", entityType, wojewodztwo, search, page],
+    queryKey: ["public-entities", entityType, wojewodztwo, search, missingArr.join(","), page, pageSize],
     queryFn: () =>
       fetchList({
         data: {
           entityType: entityType === "all" ? null : entityType,
           wojewodztwo: wojewodztwo === "all" ? null : wojewodztwo,
           search: search || null,
+          missing: missingArr.length > 0 ? missingArr : null,
           page,
           pageSize,
         },
