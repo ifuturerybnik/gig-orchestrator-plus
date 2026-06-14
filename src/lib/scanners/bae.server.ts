@@ -238,6 +238,14 @@ async function matchInBaePartial(queries: BaeQuery[]): Promise<BaeMatch[]> {
         continue;
       }
     }
+    // 1b. po ADE — gdy nasz rekord ma ADE ale brak REGON
+    if (q.currentAde) {
+      const hit = idx.byAde.get(q.currentAde.trim());
+      if (hit) {
+        out.push({ entityId: q.id, confidence: "exact_regon", match: hit });
+        continue;
+      }
+    }
     const typePhrase = extractTypePhrase(q.name);
     if (!typePhrase || !q.miejscowosc) {
       out.push({ entityId: q.id, confidence: "none" });
