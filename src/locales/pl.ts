@@ -962,7 +962,54 @@ export default
       "approvals": "Zatwierdzenia",
       "ai": "Integracja AI",
       "assistant": "Asystent — baza wiedzy",
-      "storage": "Storage (R2)"
+      "storage": "Storage (R2)",
+      "bazaPp": "Baza PP"
+    },
+    "bazaPp": {
+      "title": "Baza podmiotów publicznych",
+      "subtitle": "Urzędy gmin, miast, starostw oraz ośrodki kultury. Dostęp tylko dla administratorów Concertivo.",
+      "addNew": "Dodaj podmiot",
+      "addTitle": "Dodaj podmiot publiczny",
+      "editTitle": "Edytuj podmiot publiczny",
+      "saved": "Zapisano",
+      "deleted": "Usunięto",
+      "empty": "Brak rekordów. Dodaj pierwszy lub zaczekaj na import.",
+      "totalCount": "Łącznie rekordów: {{count}}",
+      "deleteConfirmTitle": "Usunąć ten podmiot?",
+      "deleteConfirmDesc": "Operacja jest nieodwracalna.",
+      "types": {
+        "jst_gmina": "Urząd gminy/miasta",
+        "jst_powiat": "Starostwo powiatowe",
+        "jst_wojewodztwo": "Urząd marszałkowski / wojewódzki",
+        "osrodek_kultury": "Ośrodek kultury"
+      },
+      "filters": {
+        "type": "Typ podmiotu",
+        "wojewodztwo": "Województwo",
+        "search": "Szukaj",
+        "searchPlaceholder": "Nazwa, miejscowość, powiat…",
+        "all": "Wszystkie"
+      },
+      "cols": {
+        "type": "Typ",
+        "name": "Nazwa",
+        "wojewodztwo": "Województwo",
+        "miejscowosc": "Miejscowość",
+        "phone": "Telefon",
+        "email": "Email"
+      },
+      "form": {
+        "shortName": "Nazwa skrócona",
+        "teryt": "Kod TERYT",
+        "powiat": "Powiat",
+        "kodPocztowy": "Kod pocztowy",
+        "poczta": "Poczta",
+        "ulica": "Ulica",
+        "nrDomu": "Nr domu",
+        "www": "Strona WWW",
+        "epuap": "Adres ePUAP",
+        "edoreczenia": "Adres e-Doręczeń (ADE)"
+      }
     },
     "storage": {
       "title": "Cloudflare R2 — Storage",
