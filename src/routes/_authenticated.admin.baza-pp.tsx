@@ -71,6 +71,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScannerDialog, type ScannerSource, type ScannerScope } from "@/components/baza-pp/ScannerDialog";
+import { KeywordDiscoveryDialog } from "@/components/baza-pp/KeywordDiscoveryDialog";
 
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
@@ -177,6 +178,7 @@ function BazaPpPage() {
     source: ScannerSource;
     scope: ScannerScope;
   } | null>(null);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const missingArr = useMemo(() => Array.from(missing).sort(), [missing]);
   const toggleMissing = (col: MissingCol) => {
@@ -469,6 +471,15 @@ function BazaPpPage() {
                     <div className="font-medium">{t("admin.bazaPp.scanner.sources.gus")}</div>
                     <div className="text-xs text-muted-foreground">
                       {t("admin.bazaPp.scanner.comingSoon")}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setDiscoverOpen(true)}>
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.discover.menu")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.bazaPp.discover.menuHint")}
                     </div>
                   </div>
                 </DropdownMenuItem>
@@ -1181,6 +1192,12 @@ function BazaPpPage() {
           }}
         />
       )}
+
+      <KeywordDiscoveryDialog
+        open={discoverOpen}
+        onOpenChange={setDiscoverOpen}
+        onApplied={() => qc.invalidateQueries({ queryKey: ["public-entities"] })}
+      />
     </div>
   );
 }
