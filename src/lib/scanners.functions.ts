@@ -50,6 +50,137 @@ export const listScanTargetIds = createServerFn({ method: "POST" })
     return { ids: (rows ?? []).map((r) => (r as { id: string }).id) };
   });
 
+// ============================================================================
+// Discover by keyword — przeszukuje BAE po słowie (np. "kultury") i pokazuje
+// kandydatów, których jeszcze nie mamy w public_entities. Wynik służy do
+// ręcznego zatwierdzenia + masowego dopisania przez commitPublicEntitiesImport.
+// ============================================================================
+
+const discoverSchema = z.object({
+  keyword: z.string().trim().min(2).max(100),
+  wojewodztwo: z.string().trim().max(100).nullable().optional(),
+});
+
+export const discoverBaeByKeyword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => discoverSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAppAdmin(supabase, userId, false);
+
+    const { getBaeIndex } = await import("./scanners/bae.server");
+    const { normalizeName } = await import("./scanners/normalize");
+
+    const idx = await getBaeIndex();
+    const kw = normalizeName(data.keyword);
+    if (!kw) throw new Error("Keyword empty after normalization");
+    const woj = data.wojewodztwo?.toUpperCase().trim() || null;
+
+    // 1) Filtruj BAE.
+    const baeMatches = idx.all.filter((r) => {
+      if (!r.NAZWA_PODMIOTU) return false;
+      if (!normalizeName(r.NAZWA_PODMIOTU).includes(kw)) return false;
+      if (woj && r.WOJEWODZTWO?.toUpperCase() !== woj) return false;
+      return true;
+    });
+
+    // Dedupe (REGON lub nazwa+miasto).
+    const seen = new Set<string>();
+    const unique = baeMatches.filter((r) => {
+      const key =
+        (r.REGON && r.REGON.trim()) ||
+        `${normalizeName(r.NAZWA_PODMIOTU)}|${normalizeName(r.MIEJSCOWOSC)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // 2) Sprawdź istnienie w public_entities — po REGON, ADE i nazwa+miasto.
+    const regons = unique.map((r) => r.REGON?.trim()).filter(Boolean) as string[];
+    const ades = unique.map((r) => r.ADE?.trim()).filter(Boolean) as string[];
+    const existingByRegon = new Map<string, string>();
+    const existingByAde = new Map<string, string>();
+
+    const chunk = <T,>(arr: T[], n: number): T[][] => {
+      const out: T[][] = [];
+      for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+      return out;
+    };
+
+    for (const slice of chunk(regons, 500)) {
+      const { data: rows } = await supabase
+        .from("public_entities")
+        .select("id, regon")
+        .in("regon", slice);
+      for (const r of (rows ?? []) as Array<{ id: string; regon: string | null }>) {
+        if (r.regon) existingByRegon.set(r.regon.trim(), r.id);
+      }
+    }
+    for (const slice of chunk(ades, 500)) {
+      const { data: rows } = await supabase
+        .from("public_entities")
+        .select("id, edoreczenia_ade")
+        .in("edoreczenia_ade", slice);
+      for (const r of (rows ?? []) as Array<{ id: string; edoreczenia_ade: string | null }>) {
+        if (r.edoreczenia_ade) existingByAde.set(r.edoreczenia_ade.trim(), r.id);
+      }
+    }
+
+    // Dopasowanie nazwa+miasto (fallback dla rekordów bez REGON/ADE).
+    const cleanKw = data.keyword.replace(/[%_]/g, "").trim();
+    const { data: nameRows } = await supabase
+      .from("public_entities")
+      .select("id, name, miejscowosc")
+      .ilike("name", `%${cleanKw}%`)
+      .limit(10_000);
+    const byNameCity = new Map<string, string>();
+    for (const r of (nameRows ?? []) as Array<{
+      id: string;
+      name: string | null;
+      miejscowosc: string | null;
+    }>) {
+      byNameCity.set(
+        `${normalizeName(r.name)}|${normalizeName(r.miejscowosc)}`,
+        r.id,
+      );
+    }
+
+    const items = unique.map((r) => {
+      const regonHit = r.REGON ? existingByRegon.get(r.REGON.trim()) ?? null : null;
+      const adeHit = r.ADE ? existingByAde.get(r.ADE.trim()) ?? null : null;
+      const nameHit = byNameCity.get(
+        `${normalizeName(r.NAZWA_PODMIOTU)}|${normalizeName(r.MIEJSCOWOSC)}`,
+      ) ?? null;
+      const existingEntityId = regonHit || adeHit || nameHit;
+      return {
+        bae: {
+          name: r.NAZWA_PODMIOTU,
+          miejscowosc: r.MIEJSCOWOSC,
+          wojewodztwo: r.WOJEWODZTWO,
+          regon: r.REGON,
+          ade: r.ADE,
+        },
+        existingEntityId,
+        matchedBy: regonHit
+          ? ("regon" as const)
+          : adeHit
+            ? ("ade" as const)
+            : nameHit
+              ? ("name_city" as const)
+              : null,
+      };
+    });
+
+    return {
+      keyword: data.keyword,
+      wojewodztwo: data.wojewodztwo ?? null,
+      total: items.length,
+      existing: items.filter((i) => i.existingEntityId).length,
+      missing: items.filter((i) => !i.existingEntityId).length,
+      items,
+    };
+  });
+
 const ENTITY_COLS =
   "id, name, miejscowosc, wojewodztwo, regon, edoreczenia_ade, phone, email, www, nip, kod_pocztowy, ulica, nr_domu";
 
