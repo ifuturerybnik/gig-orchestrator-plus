@@ -942,7 +942,54 @@ export default
       "approvals": "Approvals",
       "ai": "AI Integration",
       "assistant": "Assistant — knowledge base",
-      "storage": "Storage (R2)"
+      "storage": "Storage (R2)",
+      "bazaPp": "Public DB"
+    },
+    "bazaPp": {
+      "title": "Public entities database",
+      "subtitle": "Municipal/town/county offices and cultural centers. Visible to Concertivo administrators only.",
+      "addNew": "Add entity",
+      "addTitle": "Add public entity",
+      "editTitle": "Edit public entity",
+      "saved": "Saved",
+      "deleted": "Deleted",
+      "empty": "No records. Add one or wait for the import.",
+      "totalCount": "Total records: {{count}}",
+      "deleteConfirmTitle": "Delete this entity?",
+      "deleteConfirmDesc": "This action cannot be undone.",
+      "types": {
+        "jst_gmina": "Municipality / town hall",
+        "jst_powiat": "County office",
+        "jst_wojewodztwo": "Voivodeship / marshal office",
+        "osrodek_kultury": "Cultural center"
+      },
+      "filters": {
+        "type": "Entity type",
+        "wojewodztwo": "Voivodeship",
+        "search": "Search",
+        "searchPlaceholder": "Name, city, county…",
+        "all": "All"
+      },
+      "cols": {
+        "type": "Type",
+        "name": "Name",
+        "wojewodztwo": "Voivodeship",
+        "miejscowosc": "City",
+        "phone": "Phone",
+        "email": "Email"
+      },
+      "form": {
+        "shortName": "Short name",
+        "teryt": "TERYT code",
+        "powiat": "County",
+        "kodPocztowy": "Postal code",
+        "poczta": "Post office",
+        "ulica": "Street",
+        "nrDomu": "Building no.",
+        "www": "Website",
+        "epuap": "ePUAP address",
+        "edoreczenia": "e-Delivery address (ADE)"
+      }
     },
     "storage": {
       "title": "Cloudflare R2 — Storage",
