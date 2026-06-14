@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Download, Search } from "lucide-react";
+import { Loader2, Download, Search, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -33,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { discoverBaeByKeyword } from "@/lib/scanners.functions";
+import { callAi } from "@/lib/ai.functions";
 import {
   PUBLIC_ENTITY_TYPES,
   type PublicEntityType,
@@ -76,6 +78,8 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
   const { t } = useTranslation();
   const discoverFn = useServerFn(discoverBaeByKeyword);
   const importFn = useServerFn(commitPublicEntitiesImport);
+  const callAiFn = useServerFn(callAi);
+
 
   const [keyword, setKeyword] = useState("kultury");
   const [wojewodztwo, setWojewodztwo] = useState<string>("all");
@@ -83,11 +87,13 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
   const [showOnlyMissing, setShowOnlyMissing] = useState(true);
   const [result, setResult] = useState<DiscoverResult | null>(null);
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
+  const [aiInstruction, setAiInstruction] = useState("");
 
   useEffect(() => {
     if (!open) {
       setResult(null);
       setAccepted(new Set());
+      setAiInstruction("");
     }
   }, [open]);
 
@@ -152,6 +158,73 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
       onOpenChange(false);
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const aiMut = useMutation({
+    mutationFn: async () => {
+      if (!result) throw new Error(t("admin.bazaPp.discover.ai.needResult"));
+      const instruction = aiInstruction.trim();
+      if (!instruction) throw new Error("");
+      // Kompaktowa lista pozycji (tylko brakujące — tylko one można zaznaczać).
+      const rows = result.items.map((it, i) => ({
+        i,
+        name: it.bae.name,
+        city: it.bae.miejscowosc,
+        woj: it.bae.wojewodztwo,
+        status: it.existingEntityId ? "in_base" : "to_add",
+        selected: accepted.has(i),
+      }));
+      const onlyToAdd = rows.filter((r) => r.status === "to_add");
+      const sys =
+        "Jesteś asystentem do zaznaczania pozycji w tabeli wyników BAE. " +
+        "Otrzymujesz listę pozycji z indeksami (pole `i`) i polecenie użytkownika. " +
+        "Zwróć WYŁĄCZNIE JSON w formacie {\"select\":[indeksy], \"deselect\":[indeksy]}. " +
+        "Możesz zaznaczać/odznaczać tylko pozycje o statusie `to_add`. " +
+        "Indeksy muszą pochodzić z listy. Bez komentarzy, bez Markdown.";
+      const user =
+        `Polecenie: ${instruction}\n\nPozycje (status=to_add, można zaznaczać):\n` +
+        JSON.stringify(onlyToAdd);
+      const res = (await callAiFn({
+        data: {
+          scenariusz: "baza_pp_discover_select",
+          messages: [
+            { role: "system", content: sys },
+            { role: "user", content: user },
+          ],
+          response_format: { type: "json_object" },
+        },
+      })) as { content: string };
+      let parsed: { select?: number[]; deselect?: number[] };
+      try {
+        parsed = JSON.parse(res.content || "{}");
+      } catch {
+        throw new Error(t("admin.bazaPp.discover.ai.error"));
+      }
+      const validIdx = new Set(onlyToAdd.map((r) => r.i));
+      const sel = (parsed.select ?? []).filter((i) => validIdx.has(i));
+      const des = (parsed.deselect ?? []).filter((i) => validIdx.has(i));
+      let added = 0;
+      let removed = 0;
+      setAccepted((prev) => {
+        const next = new Set(prev);
+        for (const i of sel) if (!next.has(i)) { next.add(i); added++; }
+        for (const i of des) if (next.has(i)) { next.delete(i); removed++; }
+        return next;
+      });
+      return { added, removed };
+    },
+    onSuccess: ({ added, removed }) => {
+      if (added === 0 && removed === 0) {
+        toast.info(t("admin.bazaPp.discover.ai.noChanges"));
+      } else {
+        toast.success(
+          t("admin.bazaPp.discover.ai.applied", { selected: added, deselected: removed }),
+        );
+      }
+    },
+    onError: (e: Error) => {
+      if (e.message) toast.error(e.message);
+    },
   });
 
   const visibleItems = useMemo(() => {
@@ -306,6 +379,38 @@ export function KeywordDiscoveryDialog({ open, onOpenChange, onApplied }: Props)
                   {t("admin.bazaPp.scanner.exportCsv")}
                 </Button>
               </div>
+
+              <div className="shrink-0 rounded-md border bg-muted/30 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  {t("admin.bazaPp.discover.ai.title")}
+                </div>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {t("admin.bazaPp.discover.ai.hint")}
+                </p>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={aiInstruction}
+                    onChange={(e) => setAiInstruction(e.target.value)}
+                    placeholder={t("admin.bazaPp.discover.ai.placeholder")}
+                    rows={2}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => aiMut.mutate()}
+                    disabled={aiMut.isPending || !aiInstruction.trim()}
+                    className="self-end"
+                  >
+                    {aiMut.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    {t("admin.bazaPp.discover.ai.run")}
+                  </Button>
+                </div>
+              </div>
+
 
               <div className="min-h-0 flex-1 overflow-auto rounded-md border">
                 <Table>

@@ -1150,6 +1150,16 @@ export default
         "status": {
           "inBase": "Już w bazie",
           "toAdd": "Do dodania"
+        },
+        "ai": {
+          "title": "Asystent AI — zaznaczanie wyników",
+          "hint": "Opisz, co AI ma zaznaczyć lub odznaczyć (np. „odznacz wszystkie z województwa mazowieckiego”, „zaznacz tylko te w miejscowościach na literę K”).",
+          "placeholder": "np. zaznacz tylko ośrodki kultury w woj. dolnośląskim; odznacz resztę",
+          "run": "Wykonaj polecenie",
+          "applied": "AI zaznaczyło {{selected}}, odznaczyło {{deselected}} pozycji.",
+          "noChanges": "AI nie zaproponowało żadnych zmian.",
+          "needResult": "Najpierw przeszukaj BAE.",
+          "error": "AI nie zwróciło poprawnej odpowiedzi."
         }
       }
 

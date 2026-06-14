@@ -1130,6 +1130,16 @@ export default
         "status": {
           "inBase": "In base",
           "toAdd": "To add"
+        },
+        "ai": {
+          "title": "AI assistant — select results",
+          "hint": "Describe what AI should select or deselect (e.g. \"deselect everything from mazowieckie\", \"select only cities starting with K\").",
+          "placeholder": "e.g. select only cultural centers in dolnośląskie; deselect the rest",
+          "run": "Run instruction",
+          "applied": "AI selected {{selected}}, deselected {{deselected}} items.",
+          "noChanges": "AI proposed no changes.",
+          "needResult": "Run a BAE search first.",
+          "error": "AI did not return a valid response."
         }
       }
 
