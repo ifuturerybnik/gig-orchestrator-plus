@@ -151,9 +151,9 @@ export async function parseImportFile(
 }
 
 // === EXPORT ===
-type ExportRow = Record<string, string | number | null | undefined>;
+export type ExportRow = Record<string, unknown>;
 
-const EXPORT_COLUMNS: Array<{ key: keyof ExportRow; label: string }> = [
+const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "entity_type", label: "Typ" },
   { key: "name", label: "Nazwa" },
   { key: "short_name", label: "Nazwa skrócona" },
