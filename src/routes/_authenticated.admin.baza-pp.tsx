@@ -800,6 +800,14 @@ function BazaPpPage() {
               />
             </div>
             <div>
+              <Label>{t("admin.bazaPp.cols.nip")}</Label>
+              <Input
+                value={form.nip ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, nip: e.target.value }))}
+                placeholder="1234563218"
+              />
+            </div>
+            <div>
               <Label>{t("admin.bazaPp.cols.email")}</Label>
               <Input
                 type="email"
