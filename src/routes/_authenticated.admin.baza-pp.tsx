@@ -632,12 +632,20 @@ function BazaPpPage() {
                 onChange={(e) => setForm((f) => ({ ...f, nr_domu: e.target.value }))}
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <Label>{t("admin.bazaPp.cols.phone")}</Label>
               <PhoneInput
                 value={form.phone ?? ""}
                 onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
                 defaultCountry="PL"
+              />
+            </div>
+            <div>
+              <Label>{t("admin.bazaPp.form.phoneExt")}</Label>
+              <Input
+                value={form.phone_ext ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, phone_ext: e.target.value }))}
+                placeholder="451"
               />
             </div>
             <div>
