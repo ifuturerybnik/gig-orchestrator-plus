@@ -24,6 +24,7 @@ export interface ParsedRow {
   nr_domu?: string | null;
   phone?: string | null;
   phone_ext?: string | null;
+  nip?: string | null;
   email?: string | null;
   www?: string | null;
   epuap_address?: string | null;
@@ -81,6 +82,7 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     nr_domu: s(r["Nr domu"]),
     phone: joinPhone(r["telefon kierunkowy"], r["telefon"]),
     phone_ext: phoneExt(r["wewnętrzny"]),
+    nip: s(r["NIP"] ?? r["nip"]),
     email: s(r["ogólny adres poczty elektronicznej gminy/powiatu/województwa"]),
     www: s(r["adres www jednostki"]),
     epuap_address: s(r["ESP"]),
@@ -102,6 +104,7 @@ function mapOsrodekRow(r: Record<string, unknown>): ParsedRow | null {
     ulica: ulicaRaw,
     nr_domu: nrRaw,
     www: s(r["strona www"] ?? r["www"] ?? r["WWW"]),
+    nip: s(r["NIP"] ?? r["nip"]),
   };
 }
 
@@ -184,6 +187,7 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "nr_domu", label: "Nr domu" },
   { key: "phone", label: "Telefon" },
   { key: "phone_ext", label: "Nr wewnętrzny" },
+  { key: "nip", label: "NIP" },
   { key: "email", label: "Email" },
   { key: "www", label: "WWW" },
   { key: "epuap_address", label: "ePUAP" },
