@@ -395,6 +395,66 @@ function BazaPpPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isSuper && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Radar className="mr-2 h-4 w-4" />
+                  {t("admin.bazaPp.scanner.button")}
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "bae",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.bae")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedIds.size > 0
+                        ? t("admin.bazaPp.scanner.scopeSelected", { count: selectedIds.size })
+                        : t("admin.bazaPp.scanner.scopeMissingShort", { field: "ADE" })}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "rspo",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.rspo")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.bazaPp.scanner.comingSoon")}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    setScanner({
+                      source: "gus",
+                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
+                    })
+                  }
+                >
+                  <div>
+                    <div className="font-medium">{t("admin.bazaPp.scanner.sources.gus")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.bazaPp.scanner.comingSoon")}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -412,6 +472,7 @@ function BazaPpPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
           {isSuper && (
             <>
               <Button variant="outline" onClick={() => setImportOpen(true)}>
