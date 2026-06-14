@@ -996,7 +996,35 @@ export default
         "wojewodztwo": "Województwo",
         "miejscowosc": "Miejscowość",
         "phone": "Telefon",
-        "email": "Email"
+        "email": "Email",
+        "nip": "NIP",
+        "shortName": "Nazwa skr.",
+        "teryt": "TERYT",
+        "jstTypeRaw": "Typ JST",
+        "powiat": "Powiat",
+        "kodPocztowy": "Kod poczt.",
+        "poczta": "Poczta",
+        "ulica": "Ulica",
+        "nrDomu": "Nr",
+        "phoneExt": "Wewn.",
+        "www": "WWW",
+        "epuap": "ePUAP",
+        "edoreczenia": "ADE",
+        "actions": "Akcje"
+      },
+      "view": {
+        "compact": "Widok podstawowy",
+        "extended": "Widok rozszerzony"
+      },
+      "pageSize": "Wierszy na stronę",
+      "selection": {
+        "selected": "Zaznaczono: {{count}}",
+        "selectAll": "Zaznacz wszystkie",
+        "clear": "Wyczyść",
+        "bulkDelete": "Usuń zaznaczone",
+        "bulkDeleteConfirmTitle": "Usunąć {{count}} rekordów?",
+        "bulkDeleteConfirmDesc": "Operacja jest nieodwracalna.",
+        "bulkDeleted": "Usunięto {{count}} rekordów."
       },
       "form": {
         "shortName": "Nazwa skrócona",
