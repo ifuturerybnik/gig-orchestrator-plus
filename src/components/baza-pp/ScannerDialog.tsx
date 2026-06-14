@@ -156,7 +156,13 @@ export function ScannerDialog({
         const batch = ids.slice(i, i + BATCH_SIZE);
         const res =
           source === "bae"
-            ? ((await baeFn({ data: { scope: "selected", ids: batch } })) as ScanResult)
+            ? ((await baeFn({
+                data: {
+                  scope: "selected",
+                  ids: batch,
+                  mode: partialMode ? "partial_type" : "standard",
+                },
+              })) as ScanResult)
             : ((await rspoFn({ data: { scope: "selected", ids: batch } })) as ScanResult);
 
         for (const it of res.items) {
