@@ -468,7 +468,10 @@ function BazaPpPage() {
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell>{r.wojewodztwo ?? ""}</TableCell>
                   <TableCell>{r.miejscowosc ?? ""}</TableCell>
-                  <TableCell>{r.phone ?? ""}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {r.phone ?? ""}
+                    {r.phone_ext ? ` wew. ${r.phone_ext}` : ""}
+                  </TableCell>
                   <TableCell>{r.email ?? ""}</TableCell>
                   <TableCell>
                     {isSuper && (
