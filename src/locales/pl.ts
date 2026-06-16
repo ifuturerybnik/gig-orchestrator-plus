@@ -963,7 +963,8 @@ export default
       "ai": "Integracja AI",
       "assistant": "Asystent — baza wiedzy",
       "storage": "Storage (R2)",
-      "bazaPp": "Baza PP"
+      "bazaPp": "Baza PP",
+      "gus": "Integracja GUS"
     },
     "bazaPp": {
       "title": "Baza podmiotów publicznych",

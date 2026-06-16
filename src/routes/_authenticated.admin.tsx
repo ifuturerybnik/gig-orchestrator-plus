@@ -79,6 +79,12 @@ function AdminLayout() {
       icon: Building2,
       show: true,
     },
+    {
+      to: "/admin/gus",
+      label: t("admin.nav.gus"),
+      icon: Landmark,
+      show: true,
+    },
   ];
 
   return (
