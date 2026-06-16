@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, FileText } from "lucide-react";
 import {
@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   startGusScanJob,
   getGusScanJob,
+  listMyGusScanJobs,
   cancelGusScanJob,
   GUS_SCAN_FIELDS,
   type GusScanField,
@@ -66,8 +67,10 @@ type Step = "config" | "running";
 
 export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Props) {
   const { t: _t } = useTranslation();
+  const qc = useQueryClient();
   const startFn = useServerFn(startGusScanJob);
   const getFn = useServerFn(getGusScanJob);
+  const listFn = useServerFn(listMyGusScanJobs);
   const cancelFn = useServerFn(cancelGusScanJob);
 
   const [identifier, setIdentifier] = useState<"nip" | "regon" | "krs">("nip");
@@ -111,8 +114,16 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
     onSuccess: (r) => {
       setJobId(r.jobId);
       setStep("running");
+      qc.invalidateQueries({ queryKey: ["gus-scan-jobs"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const jobsQuery = useQuery({
+    queryKey: ["gus-scan-jobs"],
+    queryFn: () => listFn(),
+    enabled: open,
+    refetchInterval: open && step === "config" ? 10_000 : false,
   });
 
   const jobQuery = useQuery({
