@@ -21,7 +21,7 @@ function readFromGlobalRuntimeEnv(names: string[]): string | undefined {
 
 async function readFromCloudflareEnv(names: string[]): Promise<string | undefined> {
   try {
-    const mod = await import("cloudflare:workers");
+    const mod = await import(/* @vite-ignore */ "cloudflare:workers");
     return readFromRecord((mod as { env?: Record<string, unknown> }).env, names);
   } catch {
     return undefined;
