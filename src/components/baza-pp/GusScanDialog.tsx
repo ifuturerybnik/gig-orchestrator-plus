@@ -154,9 +154,16 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [job?.log?.length]);
 
+  const appliedFiredRef = useRef(false);
   useEffect(() => {
-    if (job?.status === "done" && onApplied) onApplied();
-  }, [job?.status, onApplied]);
+    if (job?.status === "done" && !appliedFiredRef.current) {
+      appliedFiredRef.current = true;
+      onApplied?.();
+    }
+    if (job?.status && job.status !== "done") appliedFiredRef.current = false;
+    // celowo bez `onApplied` w depach — inline callback w rodzicu zmienia ref przy każdym renderze
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.status]);
 
   const pct = useMemo(() => {
     if (!job || job.total === 0) return 0;
