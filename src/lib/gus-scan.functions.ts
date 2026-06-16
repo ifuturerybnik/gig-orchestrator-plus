@@ -138,7 +138,7 @@ export const listMyGusScanJobs = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("gus_scan_jobs")
-      .select("id, identifier, total, processed, updated_count, status, created_at, finished_at")
+      .select("id, identifier, total, processed, updated_count, skipped_count, error_count, status, created_at, finished_at")
       .eq("created_by", userId)
       .order("created_at", { ascending: false })
       .limit(50);
