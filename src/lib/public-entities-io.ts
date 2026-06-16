@@ -17,6 +17,7 @@ export interface ParsedRow {
   jst_type_raw?: string | null;
   wojewodztwo?: string | null;
   powiat?: string | null;
+  gmina?: string | null;
   miejscowosc?: string | null;
   kod_pocztowy?: string | null;
   poczta?: string | null;
@@ -26,11 +27,13 @@ export interface ParsedRow {
   phone_ext?: string | null;
   nip?: string | null;
   regon?: string | null;
+  krs?: string | null;
   email?: string | null;
   www?: string | null;
   epuap_address?: string | null;
   edoreczenia_ade?: string | null;
 }
+
 
 function s(v: unknown): string | null {
   if (v === null || v === undefined) return null;
@@ -76,7 +79,9 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     jst_type_raw: s(r["typ_JST"]),
     wojewodztwo: lowerWoj(r["Województwo"]),
     powiat: s(r["Powiat"])?.toLowerCase() ?? null,
+    gmina: s(r["Gmina"] ?? r["gmina"])?.toLowerCase() ?? null,
     miejscowosc: s(r["miejscowość"]),
+
     kod_pocztowy: s(r["Kod pocztowy"]),
     poczta: s(r["poczta"]),
     ulica: s(r["Ulica"]),
@@ -85,7 +90,9 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     phone_ext: phoneExt(r["wewnętrzny"]),
     nip: s(r["NIP"] ?? r["nip"]),
     regon: s(r["REGON"] ?? r["regon"]),
+    krs: s(r["KRS"] ?? r["krs"]),
     email: s(r["ogólny adres poczty elektronicznej gminy/powiatu/województwa"]),
+
     www: s(r["adres www jednostki"]),
     epuap_address: s(r["ESP"]),
     edoreczenia_ade: s(r["adres doręczeń elektronicznych ADE"]),
@@ -183,6 +190,7 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "jst_type_raw", label: "Typ JST (oryg.)" },
   { key: "wojewodztwo", label: "Województwo" },
   { key: "powiat", label: "Powiat" },
+  { key: "gmina", label: "Gmina" },
   { key: "miejscowosc", label: "Miejscowość" },
   { key: "kod_pocztowy", label: "Kod pocztowy" },
   { key: "poczta", label: "Poczta" },
@@ -192,7 +200,9 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "phone_ext", label: "Nr wewnętrzny" },
   { key: "nip", label: "NIP" },
   { key: "regon", label: "REGON" },
+  { key: "krs", label: "KRS" },
   { key: "email", label: "Email" },
+
   { key: "www", label: "WWW" },
   { key: "epuap_address", label: "ePUAP" },
   { key: "edoreczenia_ade", label: "e-Doręczenia (ADE)" },
