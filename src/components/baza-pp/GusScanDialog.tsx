@@ -115,11 +115,13 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
   const [step, setStep] = useState<Step>("config");
   const [jobId, setJobId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const startedInThisDialogRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       setStep("config");
       setJobId(null);
+      startedInThisDialogRef.current = false;
       setScope(selectedIds.length > 0 ? "selected" : "all");
     }
     // Celowo bez `selectedIds.length` — reset tylko przy otwarciu dialogu,
@@ -148,6 +150,7 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
       });
     },
     onSuccess: (r) => {
+      startedInThisDialogRef.current = true;
       setJobId(r.jobId);
       setStep("running");
       qc.invalidateQueries({ queryKey: ["gus-scan-jobs"] });
@@ -182,9 +185,10 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
 
   const appliedFiredRef = useRef(false);
   useEffect(() => {
-    if (job?.status === "done" && !appliedFiredRef.current) {
+    if (job?.status === "done" && startedInThisDialogRef.current && !appliedFiredRef.current) {
       appliedFiredRef.current = true;
       onApplied?.();
+      qc.invalidateQueries({ queryKey: ["gus-scan-jobs"] });
     }
     if (job?.status && job.status !== "done") appliedFiredRef.current = false;
     // celowo bez `onApplied` w depach — inline callback w rodzicu zmienia ref przy każdym renderze
