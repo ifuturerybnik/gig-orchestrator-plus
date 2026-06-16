@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, FileText } from "lucide-react";
 import {
@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   startGusScanJob,
   getGusScanJob,
+  listMyGusScanJobs,
   cancelGusScanJob,
   GUS_SCAN_FIELDS,
   type GusScanField,
@@ -64,10 +65,58 @@ const DEFAULT_FIELDS: GusScanField[] = [
 
 type Step = "config" | "running";
 
+type GusScanJob = {
+  id: string;
+  identifier: "nip" | "regon" | "krs";
+  fields: string[];
+  status: string;
+  total: number;
+  processed: number;
+  updated_count: number;
+  skipped_count: number;
+  error_count: number;
+  log: Array<{ ts: number; level: string; text: string }>;
+  changes: Array<{
+    entity_id: string;
+    name: string | null;
+    result: "updated" | "skipped" | "error";
+    fields?: Record<string, { from: string | null; to: string | null }>;
+    reason?: string;
+  }>;
+  created_at: string;
+  finished_at: string | null;
+};
+
+type GusScanJobSummary = Pick<
+  GusScanJob,
+  | "id"
+  | "identifier"
+  | "total"
+  | "processed"
+  | "updated_count"
+  | "skipped_count"
+  | "error_count"
+  | "status"
+  | "created_at"
+  | "finished_at"
+>;
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleString("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Props) {
   const { t: _t } = useTranslation();
+  const qc = useQueryClient();
   const startFn = useServerFn(startGusScanJob);
   const getFn = useServerFn(getGusScanJob);
+  const listFn = useServerFn(listMyGusScanJobs);
   const cancelFn = useServerFn(cancelGusScanJob);
 
   const [identifier, setIdentifier] = useState<"nip" | "regon" | "krs">("nip");
@@ -76,11 +125,13 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
   const [step, setStep] = useState<Step>("config");
   const [jobId, setJobId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const startedInThisDialogRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       setStep("config");
       setJobId(null);
+      startedInThisDialogRef.current = false;
       setScope(selectedIds.length > 0 ? "selected" : "all");
     }
     // Celowo bez `selectedIds.length` — reset tylko przy otwarciu dialogu,
@@ -109,10 +160,19 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
       });
     },
     onSuccess: (r) => {
+      startedInThisDialogRef.current = true;
       setJobId(r.jobId);
       setStep("running");
+      qc.invalidateQueries({ queryKey: ["gus-scan-jobs"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const jobsQuery = useQuery({
+    queryKey: ["gus-scan-jobs"],
+    queryFn: () => listFn(),
+    enabled: open,
+    refetchInterval: open && step === "config" ? 10_000 : false,
   });
 
   const jobQuery = useQuery({
@@ -126,29 +186,8 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
     },
   });
 
-  const job = jobQuery.data?.job as
-    | {
-        id: string;
-        identifier: "nip" | "regon" | "krs";
-        fields: string[];
-        status: string;
-        total: number;
-        processed: number;
-        updated_count: number;
-        skipped_count: number;
-        error_count: number;
-        log: Array<{ ts: number; level: string; text: string }>;
-        changes: Array<{
-          entity_id: string;
-          name: string | null;
-          result: "updated" | "skipped" | "error";
-          fields?: Record<string, { from: string | null; to: string | null }>;
-          reason?: string;
-        }>;
-        created_at: string;
-        finished_at: string | null;
-      }
-    | undefined;
+  const job = jobQuery.data?.job as GusScanJob | undefined;
+  const jobs = (jobsQuery.data?.jobs ?? []) as GusScanJobSummary[];
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -156,9 +195,10 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
 
   const appliedFiredRef = useRef(false);
   useEffect(() => {
-    if (job?.status === "done" && !appliedFiredRef.current) {
+    if (job?.status === "done" && startedInThisDialogRef.current && !appliedFiredRef.current) {
       appliedFiredRef.current = true;
       onApplied?.();
+      qc.invalidateQueries({ queryKey: ["gus-scan-jobs"] });
     }
     if (job?.status && job.status !== "done") appliedFiredRef.current = false;
     // celowo bez `onApplied` w depach — inline callback w rodzicu zmienia ref przy każdym renderze
@@ -171,6 +211,11 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
   }, [job]);
 
   const isTerminal = job && ["done", "cancelled", "error"].includes(job.status);
+
+  const openJob = (id: string) => {
+    setJobId(id);
+    setStep("running");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -244,6 +289,48 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
               <div className="rounded-md border border-amber-300/50 bg-amber-50/40 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
                 Limit GUS: 1 zapytanie / sekundę (globalny throttle). Dla 1000 rekordów scan trwa ~17
                 min. Worker przetwarza paczki co minutę — możesz bezpiecznie zamknąć przeglądarkę.
+              </div>
+
+              <div className="rounded-md border p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold">Wcześniejsze raporty</Label>
+                  {jobsQuery.isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                <div className="max-h-60 overflow-auto rounded border">
+                  {jobs.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground">Brak zapisanych raportów.</div>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/40">
+                        <tr>
+                          <th className="p-2 text-left">Data</th>
+                          <th className="p-2 text-left">Skanuj po</th>
+                          <th className="p-2 text-left">Status</th>
+                          <th className="p-2 text-left">Wynik</th>
+                          <th className="p-2 text-right">Raport</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobs.map((j) => (
+                          <tr key={j.id} className="border-t">
+                            <td className="p-2 whitespace-nowrap">{formatShortDate(j.created_at)}</td>
+                            <td className="p-2">{j.identifier.toUpperCase()}</td>
+                            <td className="p-2">{j.status}</td>
+                            <td className="p-2 whitespace-nowrap">
+                              {j.updated_count} zm. · {j.skipped_count} pom. · {j.error_count} bł.
+                            </td>
+                            <td className="p-2 text-right">
+                              <Button variant="ghost" size="sm" onClick={() => openJob(j.id)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Otwórz
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </>
           )}
