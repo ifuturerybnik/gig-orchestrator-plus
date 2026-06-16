@@ -51,16 +51,24 @@ export const startGusScanJob = createServerFn({ method: "POST" })
     const entityIds: string[] = [];
     if (data.scope === "selected") {
       if (!data.ids || data.ids.length === 0) throw new Error("Brak zaznaczonych rekordów");
-      // Chunkujemy .in() na wypadek bardzo długich list (URL/parser limit).
-      const chunkSize = 500;
+      // Supabase/PostgREST buduje `.in()` w query stringu; 500 UUID-ów potrafi
+      // przekroczyć limit URL i kończy się ogólnym `TypeError: fetch failed`.
+      const chunkSize = 100;
       for (let i = 0; i < data.ids.length; i += chunkSize) {
         const chunk = data.ids.slice(i, i + chunkSize);
-        const { data: rows, error } = await supabase
-          .from("public_entities")
-          .select("id")
-          .not(data.identifier, "is", null)
-          .in("id", chunk);
-        if (error) throw new Error(error.message);
+        let rows: unknown[] | null = null;
+        try {
+          const res = await supabase
+            .from("public_entities")
+            .select("id")
+            .not(data.identifier, "is", null)
+            .in("id", chunk);
+          if (res.error) throw new Error(res.error.message);
+          rows = res.data ?? [];
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          throw new Error(`Nie udało się przygotować zaznaczonych rekordów do skanowania: ${msg}`);
+        }
         for (const r of rows ?? []) entityIds.push((r as { id: string }).id);
       }
     } else {
