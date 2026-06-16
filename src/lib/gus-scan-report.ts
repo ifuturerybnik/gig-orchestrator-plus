@@ -1,4 +1,4 @@
-import pdfMake from "pdfmake/build/pdfmake";
+import * as pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import type { Content, TableCell, TDocumentDefinitions } from "pdfmake/interfaces";
 
