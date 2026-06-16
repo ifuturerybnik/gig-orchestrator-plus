@@ -24,37 +24,37 @@ function ContactsLayout() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <header className="mb-6">
-          <h1 className="text-3xl font-semibold text-foreground">{t('contacts.title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('contacts.subtitle')}</p>
-        </header>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
-          <aside className="space-y-1">
-            <ScopeLink to="/contacts/me" active={location.pathname.startsWith('/contacts/me')}>
-              <UserIcon className="h-4 w-4" />
-              {t('contacts.scope.user')}
-            </ScopeLink>
-            {orgs.length > 0 && (
-              <div className="mt-4">
-                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t('contacts.scope.org')}
-                </p>
-                {orgs.map(o => {
-                  const href = `/contacts/org/${o.id}`;
-                  return (
-                    <ScopeLink key={o.id} to={href} active={location.pathname === href}>
-                      <Building2 className="h-4 w-4" />
-                      <span className="truncate">{o.name}</span>
-                    </ScopeLink>
-                  );
-                })}
-              </div>
-            )}
-          </aside>
-          <section><Outlet /></section>
-        </div>
-      </main>
+      <div className="flex w-full">
+        <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-56 shrink-0 space-y-1 overflow-y-auto border-r border-border bg-sidebar px-3 py-6">
+          <ScopeLink to="/contacts/me" active={location.pathname.startsWith('/contacts/me')}>
+            <UserIcon className="h-4 w-4" />
+            {t('contacts.scope.user')}
+          </ScopeLink>
+          {orgs.length > 0 && (
+            <div className="mt-4">
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('contacts.scope.org')}
+              </p>
+              {orgs.map(o => {
+                const href = `/contacts/org/${o.id}`;
+                return (
+                  <ScopeLink key={o.id} to={href} active={location.pathname === href}>
+                    <Building2 className="h-4 w-4" />
+                    <span className="truncate">{o.name}</span>
+                  </ScopeLink>
+                );
+              })}
+            </div>
+          )}
+        </aside>
+        <main className="min-w-0 flex-1 px-4 py-6">
+          <header className="mb-6">
+            <h1 className="text-3xl font-semibold text-foreground">{t('contacts.title')}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t('contacts.subtitle')}</p>
+          </header>
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
