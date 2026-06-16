@@ -17,6 +17,7 @@ export interface ParsedRow {
   jst_type_raw?: string | null;
   wojewodztwo?: string | null;
   powiat?: string | null;
+  gmina?: string | null;
   miejscowosc?: string | null;
   kod_pocztowy?: string | null;
   poczta?: string | null;
@@ -26,11 +27,13 @@ export interface ParsedRow {
   phone_ext?: string | null;
   nip?: string | null;
   regon?: string | null;
+  krs?: string | null;
   email?: string | null;
   www?: string | null;
   epuap_address?: string | null;
   edoreczenia_ade?: string | null;
 }
+
 
 function s(v: unknown): string | null {
   if (v === null || v === undefined) return null;
