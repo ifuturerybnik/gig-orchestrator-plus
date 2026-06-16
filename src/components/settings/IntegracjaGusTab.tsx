@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, Search, Building2, AlertCircle, CheckCircle2, RefreshCw, Info, CalendarDays, Briefcase, Phone, Globe, Mail, MapPin } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useServerFn } from '@tanstack/react-start';
+import { gusLookup } from '@/lib/gus.functions';
 import { formatDateTimePL } from '@/lib/datetime';
 import { toast } from 'sonner';
 
@@ -71,6 +72,7 @@ export default function IntegracjaGusTab() {
   const [scope, setScope] = useState<'basic' | 'full'>('full');
   const [loading, setLoading] = useState(false);
   const [wynik, setWynik] = useState<Wynik | null>(null);
+  const lookup = useServerFn(gusLookup);
 
   async function handleSearch(forceFresh = false) {
     if (!value.trim()) {
@@ -80,10 +82,12 @@ export default function IntegracjaGusTab() {
     setLoading(true);
     setWynik(null);
     try {
-      const payload: Record<string, unknown> = { skipCache: forceFresh || skipCache, scope };
+      const payload: { nip?: string; regon?: string; krs?: string; skipCache: boolean; scope: 'basic' | 'full' } = {
+        skipCache: forceFresh || skipCache,
+        scope,
+      };
       payload[tryb] = value.trim();
-      const { data, error } = await supabase.functions.invoke('gus-lookup', { body: payload });
-      if (error) throw new Error(error.message);
+      const data = await lookup({ data: payload });
       setWynik(data as Wynik);
     } catch (e) {
       const msg = (e as Error).message;
