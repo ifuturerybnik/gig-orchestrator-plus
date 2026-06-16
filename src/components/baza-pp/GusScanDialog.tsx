@@ -83,7 +83,10 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
       setJobId(null);
       setScope(selectedIds.length > 0 ? "selected" : "all");
     }
-  }, [open, selectedIds.length]);
+    // Celowo bez `selectedIds.length` — reset tylko przy otwarciu dialogu,
+    // żeby wyczyszczenie zaznaczenia przez onApplied nie zamknęło raportu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const toggleField = (f: GusScanField) =>
     setFields((prev) => {
