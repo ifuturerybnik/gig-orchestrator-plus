@@ -83,22 +83,22 @@ export const startGusScanJob = createServerFn({ method: "POST" })
       .single();
     if (insErr) throw new Error(insErr.message);
 
-    // Best-effort: spróbuj kopnąć worker od razu (jeśli CRON_SECRET dostępny).
-    try {
-      const cronSecret = process.env.CRON_SECRET;
-      if (cronSecret) {
-        const origin = process.env.PUBLIC_APP_URL || process.env.APP_URL || "https://concertivo.eu";
-        await fetch(`${origin}/api/public/gus-scan-tick`, {
-          method: "POST",
-          headers: { "x-cron-secret": cronSecret, "content-type": "application/json" },
-          body: "{}",
-        }).catch(() => {});
+    // Odpal worker w tym samym procesie (fire-and-forget). pg_cron zostaje jako fallback.
+    const jobId = (job as { id: string }).id;
+    void (async () => {
+      try {
+        const { processGusScanTick } = await import("./gus-scan-worker.server");
+        // Pętla aż do końca tego konkretnego joba — worker zwraca processed=0 gdy nic więcej do roboty.
+        for (let i = 0; i < 2000; i++) {
+          const r = await processGusScanTick();
+          if (r.jobsTouched === 0 || r.processed === 0) break;
+        }
+      } catch (e) {
+        console.error("[gus-scan] inline worker failed", e);
       }
-    } catch {
-      // ignore — cron i tak zabierze job
-    }
+    })();
 
-    return { jobId: (job as { id: string }).id };
+    return { jobId };
   });
 
 const idSchema = z.object({ jobId: z.string().uuid() });
