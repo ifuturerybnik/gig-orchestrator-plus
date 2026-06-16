@@ -105,19 +105,7 @@ export const startGusScanJob = createServerFn({ method: "POST" })
       .single();
     if (insErr) throw new Error(insErr.message);
 
-    // Odpal tylko krótką paczkę rozruchową. Dalsze paczki przejmuje cron/tick,
-    // dzięki temu server function szybko zwraca jobId i nie kończy się timeoutem/fetch failed.
-    const jobId = (job as { id: string }).id;
-    void (async () => {
-      try {
-        const { processGusScanTick } = await import("./gus-scan-worker.server");
-        await processGusScanTick({ jobId, maxPerTick: 1 });
-      } catch (e) {
-        console.error("[gus-scan] inline worker failed", e);
-      }
-    })();
-
-    return { jobId };
+    return { jobId: (job as { id: string }).id };
   });
 
 const idSchema = z.object({ jobId: z.string().uuid() });
@@ -135,6 +123,16 @@ export const getGusScanJob = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!job) throw new Error("Zlecenie nie znalezione");
     return { job };
+  });
+
+export const runGusScanJobTick = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => idSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { processGusScanTick } = await import("./gus-scan-worker.server");
+    return await processGusScanTick({ jobId: data.jobId, maxPerTick: 1 });
   });
 
 export const cancelGusScanJob = createServerFn({ method: "POST" })
