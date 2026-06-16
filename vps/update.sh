@@ -47,6 +47,11 @@ Jeśli używasz AI na VPS, dopisz też:
 
   OPENAI_API_KEY=...
 
+Jeśli używasz integracji GUS na VPS, dopisz też:
+
+  GUS_API_KEY=...
+  GUS_ENV=prod   # albo test, jeśli używasz klucza testowego GUS
+
 Potem zabezpiecz plik i uruchom update:
 
   chmod 600 .env.production
