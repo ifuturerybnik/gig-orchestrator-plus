@@ -90,8 +90,8 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="mx-auto flex max-w-6xl gap-6 px-4 py-8">
-        <aside className="w-56 shrink-0">
+      <div className="flex w-full gap-6">
+        <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-56 shrink-0 overflow-y-auto border-r border-border bg-sidebar px-3 py-6">
           <h2 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("admin.title")}
           </h2>
@@ -118,7 +118,7 @@ function AdminLayout() {
               })}
           </nav>
         </aside>
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 px-4 py-6">
           <Outlet />
         </main>
       </div>
