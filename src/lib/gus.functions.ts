@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { readRuntimeSecret } from "@/lib/runtime-secrets.server";
 
-const GUS_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIRzewn/UslugaBIRzewnPubl.svc";
+const GUS_PROD_URL = "https://wyszukiwarkaregon.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc";
+const GUS_TEST_URL = "https://wyszukiwarkaregontest.stat.gov.pl/wsBIR/UslugaBIRzewnPubl.svc";
 const NS_ADDR = "http://www.w3.org/2005/08/addressing";
 const NS_BIR = "http://CIS/BIR/PUBL/2014/07";
 const NS_BIR_DATA = "http://CIS/BIR/PUBL/2014/07/DataContract";
@@ -20,27 +21,37 @@ function throttleSoap(): Promise<void> {
   return next;
 }
 
-function envelope(action: string, body: string): string {
+function envelope(gusUrl: string, action: string, body: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="${NS_ADDR}" xmlns:bir="${NS_BIR}">
   <soap:Header>
-    <wsa:To>${GUS_URL}</wsa:To>
+    <wsa:To>${gusUrl}</wsa:To>
     <wsa:Action>${action}</wsa:Action>
   </soap:Header>
   <soap:Body>${body}</soap:Body>
 </soap:Envelope>`;
 }
 
-async function soapCall(action: string, body: string, sid?: string): Promise<string> {
+async function soapCall(gusUrl: string, action: string, body: string, sid?: string): Promise<string> {
   await throttleSoap();
   const headers: Record<string, string> = {
     "Content-Type": "application/soap+xml; charset=utf-8",
   };
   if (sid) headers["sid"] = sid;
-  const r = await fetch(GUS_URL, { method: "POST", headers, body: envelope(action, body) });
+  const r = await fetch(gusUrl, { method: "POST", headers, body: envelope(gusUrl, action, body) });
   const text = await r.text();
   if (!r.ok) throw new Error(`GUS HTTP ${r.status}: ${text.slice(0, 500)}`);
   return text;
+}
+
+async function resolveGusEndpoint(): Promise<{ url: string; label: string }> {
+  const explicitUrl = await readRuntimeSecret(["GUS_API_URL", "GUS_ENDPOINT", "EXT_GUS_API_URL", "EXT_GUS_ENDPOINT"]);
+  if (explicitUrl) return { url: explicitUrl, label: "niestandardowe" };
+
+  const env = (await readRuntimeSecret(["GUS_ENV", "EXT_GUS_ENV", "GUS_MODE", "EXT_GUS_MODE"]))?.toLowerCase();
+  if (env === "test" || env === "testing" || env === "dev") return { url: GUS_TEST_URL, label: "testowe" };
+
+  return { url: GUS_PROD_URL, label: "produkcyjne" };
 }
 
 function extractResult(xml: string, tag: string): string {
@@ -74,11 +85,11 @@ function parseDaneRows(innerXml: string): Record<string, string>[] {
   return out;
 }
 
-async function zaloguj(apiKey: string): Promise<string> {
+async function zaloguj(apiKey: string, gusUrl: string, label: string): Promise<string> {
   const body = `<bir:Zaloguj><bir:pKluczUzytkownika>${apiKey}</bir:pKluczUzytkownika></bir:Zaloguj>`;
-  const xml = await soapCall(`${NS_BIR}/IUslugaBIRzewnPubl/Zaloguj`, body);
+  const xml = await soapCall(gusUrl, `${NS_BIR}/IUslugaBIRzewnPubl/Zaloguj`, body);
   const sid = extractResult(xml, "ZalogujResult").trim();
-  if (!sid) throw new Error("GUS: nie udało się zalogować (pusty sid — sprawdź GUS_API_KEY)");
+  if (!sid) throw new Error(`GUS: nie udało się zalogować (pusty sid — klucz nie pasuje do środowiska ${label}; sprawdź GUS_API_KEY albo ustaw GUS_ENV=test/prod)`);
   return sid;
 }
 
@@ -89,7 +100,7 @@ const RAPORTY: Record<string, { glowny: string; pkd: string; prefix: string }> =
   LF:  { glowny: "BIR11JednLokalnaOsFizycznej", pkd: "BIR11JednLokalnaOsFizycznejPkd", prefix: "lokfiz_" },
 };
 
-async function szukajPodmioty(identifier: { nip?: string; regon?: string; krs?: string }, sid: string) {
+async function szukajPodmioty(identifier: { nip?: string; regon?: string; krs?: string }, sid: string, gusUrl: string) {
   let param = "";
   if (identifier.nip) param = `<dat:Nip>${identifier.nip}</dat:Nip>`;
   else if (identifier.regon) param = `<dat:Regon>${identifier.regon}</dat:Regon>`;
@@ -98,16 +109,16 @@ async function szukajPodmioty(identifier: { nip?: string; regon?: string; krs?: 
   const body = `<bir:DaneSzukajPodmioty>
     <bir:pParametryWyszukiwania xmlns:dat="${NS_BIR_DATA}">${param}</bir:pParametryWyszukiwania>
   </bir:DaneSzukajPodmioty>`;
-  const xml = await soapCall(`${NS_BIR}/IUslugaBIRzewnPubl/DaneSzukajPodmioty`, body, sid);
+  const xml = await soapCall(gusUrl, `${NS_BIR}/IUslugaBIRzewnPubl/DaneSzukajPodmioty`, body, sid);
   return parseDaneRows(decodeXml(extractResult(xml, "DaneSzukajPodmiotyResult")));
 }
 
-async function pobierzPelnyRaport(regon: string, nazwaRaportu: string, sid: string) {
+async function pobierzPelnyRaport(regon: string, nazwaRaportu: string, sid: string, gusUrl: string) {
   const body = `<bir:DanePobierzPelnyRaport>
     <bir:pRegon>${regon}</bir:pRegon>
     <bir:pNazwaRaportu>${nazwaRaportu}</bir:pNazwaRaportu>
   </bir:DanePobierzPelnyRaport>`;
-  const xml = await soapCall(`${NS_BIR}/IUslugaBIRzewnPubl/DanePobierzPelnyRaport`, body, sid);
+  const xml = await soapCall(gusUrl, `${NS_BIR}/IUslugaBIRzewnPubl/DanePobierzPelnyRaport`, body, sid);
   return parseDaneRows(decodeXml(extractResult(xml, "DanePobierzPelnyRaportResult")));
 }
 
@@ -180,6 +191,7 @@ export const gusLookup = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = await readRuntimeSecret(["GUS_API_KEY", "EXT_GUS_API_KEY"]);
     if (!apiKey) throw new Error("Brak sekretu GUS_API_KEY na serwerze.");
+    const gusEndpoint = await resolveGusEndpoint();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -218,7 +230,7 @@ export const gusLookup = createServerFn({ method: "POST" })
           if (age < 55 * 60) return s.sid;
         }
       }
-      const sid = await zaloguj(apiKey!);
+      const sid = await zaloguj(apiKey!, gusEndpoint.url, gusEndpoint.label);
       await supabaseAdmin.from("gus_sesja").upsert({ id: 1, sid, utworzono: new Date().toISOString() });
       return sid;
     }
@@ -226,10 +238,10 @@ export const gusLookup = createServerFn({ method: "POST" })
     let sid = await getSid();
     let rows: Record<string, string>[];
     try {
-      rows = await szukajPodmioty(ident, sid);
+      rows = await szukajPodmioty(ident, sid, gusEndpoint.url);
     } catch {
       sid = await getSid(true);
-      rows = await szukajPodmioty(ident, sid);
+      rows = await szukajPodmioty(ident, sid, gusEndpoint.url);
     }
 
     if (!rows.length) {
@@ -243,9 +255,9 @@ export const gusLookup = createServerFn({ method: "POST" })
       try {
         const config = RAPORTY[baseRow.Typ];
         if (config) {
-          const pelnyRows = await pobierzPelnyRaport(baseRow.Regon, config.glowny, sid);
+          const pelnyRows = await pobierzPelnyRaport(baseRow.Regon, config.glowny, sid, gusEndpoint.url);
           pelny = extractFullData(pelnyRows, config.prefix);
-          const pkdRows = await pobierzPelnyRaport(baseRow.Regon, config.pkd, sid);
+          const pkdRows = await pobierzPelnyRaport(baseRow.Regon, config.pkd, sid, gusEndpoint.url);
           pkdList = extractPkd(pkdRows, config.prefix);
         }
       } catch {
