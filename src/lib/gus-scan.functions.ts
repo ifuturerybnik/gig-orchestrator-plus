@@ -46,18 +46,40 @@ export const startGusScanJob = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
 
     // Wczytaj listę encji do przetworzenia — wymagamy, żeby miały identyfikator.
-    let q = supabase
-      .from("public_entities")
-      .select("id")
-      .not(data.identifier, "is", null)
-      .limit(20_000);
+    // PostgREST ma domyślny max-rows (zwykle 1000), więc paginujemy przez .range()
+    // żeby objąć całą bazę przy scope === "all" (do 200k rekordów).
+    const entityIds: string[] = [];
     if (data.scope === "selected") {
       if (!data.ids || data.ids.length === 0) throw new Error("Brak zaznaczonych rekordów");
-      q = q.in("id", data.ids);
+      // Chunkujemy .in() na wypadek bardzo długich list (URL/parser limit).
+      const chunkSize = 500;
+      for (let i = 0; i < data.ids.length; i += chunkSize) {
+        const chunk = data.ids.slice(i, i + chunkSize);
+        const { data: rows, error } = await supabase
+          .from("public_entities")
+          .select("id")
+          .not(data.identifier, "is", null)
+          .in("id", chunk);
+        if (error) throw new Error(error.message);
+        for (const r of rows ?? []) entityIds.push((r as { id: string }).id);
+      }
+    } else {
+      const pageSize = 1000;
+      const maxRecords = 200_000;
+      for (let from = 0; from < maxRecords; from += pageSize) {
+        const to = from + pageSize - 1;
+        const { data: rows, error } = await supabase
+          .from("public_entities")
+          .select("id")
+          .not(data.identifier, "is", null)
+          .order("id", { ascending: true })
+          .range(from, to);
+        if (error) throw new Error(error.message);
+        const list = (rows ?? []) as Array<{ id: string }>;
+        for (const r of list) entityIds.push(r.id);
+        if (list.length < pageSize) break;
+      }
     }
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    const entityIds = (rows ?? []).map((r) => (r as { id: string }).id);
     if (entityIds.length === 0) {
       throw new Error("Brak rekordów z wybranym identyfikatorem do przeskanowania.");
     }
