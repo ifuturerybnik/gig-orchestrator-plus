@@ -943,7 +943,8 @@ export default
       "ai": "AI Integration",
       "assistant": "Assistant — knowledge base",
       "storage": "Storage (R2)",
-      "bazaPp": "Public DB"
+      "bazaPp": "Public DB",
+      "gus": "GUS integration"
     },
     "bazaPp": {
       "title": "Public entities database",

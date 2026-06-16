@@ -42,6 +42,7 @@ import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_a
 import { Route as AuthenticatedContactsMeRouteImport } from './routes/_authenticated.contacts.me'
 import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated.admin.storage'
 import { Route as AuthenticatedAdminSocialRouteImport } from './routes/_authenticated.admin.social'
+import { Route as AuthenticatedAdminGusRouteImport } from './routes/_authenticated.admin.gus'
 import { Route as AuthenticatedAdminBazaPpRouteImport } from './routes/_authenticated.admin.baza-pp'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated.admin.assistant'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
@@ -259,6 +260,11 @@ const AuthenticatedAdminSocialRoute =
     path: '/social',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminGusRoute = AuthenticatedAdminGusRouteImport.update({
+  id: '/gus',
+  path: '/gus',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminBazaPpRoute =
   AuthenticatedAdminBazaPpRouteImport.update({
     id: '/baza-pp',
@@ -492,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/admin/gus': typeof AuthenticatedAdminGusRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -560,6 +567,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/admin/gus': typeof AuthenticatedAdminGusRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -631,6 +639,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/_authenticated/admin/gus': typeof AuthenticatedAdminGusRoute
   '/_authenticated/admin/social': typeof AuthenticatedAdminSocialRoute
   '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/_authenticated/contacts/me': typeof AuthenticatedContactsMeRoute
@@ -703,6 +712,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/assistant'
     | '/admin/baza-pp'
+    | '/admin/gus'
     | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
@@ -771,6 +781,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/assistant'
     | '/admin/baza-pp'
+    | '/admin/gus'
     | '/admin/social'
     | '/admin/storage'
     | '/contacts/me'
@@ -841,6 +852,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/baza-pp'
+    | '/_authenticated/admin/gus'
     | '/_authenticated/admin/social'
     | '/_authenticated/admin/storage'
     | '/_authenticated/contacts/me'
@@ -1162,6 +1174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSocialRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/gus': {
+      id: '/_authenticated/admin/gus'
+      path: '/gus'
+      fullPath: '/admin/gus'
+      preLoaderRoute: typeof AuthenticatedAdminGusRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/baza-pp': {
       id: '/_authenticated/admin/baza-pp'
       path: '/baza-pp'
@@ -1423,6 +1442,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminBazaPpRoute: typeof AuthenticatedAdminBazaPpRoute
+  AuthenticatedAdminGusRoute: typeof AuthenticatedAdminGusRoute
   AuthenticatedAdminSocialRoute: typeof AuthenticatedAdminSocialRoute
   AuthenticatedAdminStorageRoute: typeof AuthenticatedAdminStorageRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -1434,6 +1454,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminBazaPpRoute: AuthenticatedAdminBazaPpRoute,
+  AuthenticatedAdminGusRoute: AuthenticatedAdminGusRoute,
   AuthenticatedAdminSocialRoute: AuthenticatedAdminSocialRoute,
   AuthenticatedAdminStorageRoute: AuthenticatedAdminStorageRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
