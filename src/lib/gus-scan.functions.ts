@@ -105,16 +105,13 @@ export const startGusScanJob = createServerFn({ method: "POST" })
       .single();
     if (insErr) throw new Error(insErr.message);
 
-    // Odpal worker w tym samym procesie (fire-and-forget). pg_cron zostaje jako fallback.
+    // Odpal tylko krótką paczkę rozruchową. Dalsze paczki przejmuje cron/tick,
+    // dzięki temu server function szybko zwraca jobId i nie kończy się timeoutem/fetch failed.
     const jobId = (job as { id: string }).id;
     void (async () => {
       try {
         const { processGusScanTick } = await import("./gus-scan-worker.server");
-        // Pętla aż do końca tego konkretnego joba — worker zwraca processed=0 gdy nic więcej do roboty.
-        for (let i = 0; i < 2000; i++) {
-          const r = await processGusScanTick();
-          if (r.jobsTouched === 0 || r.processed === 0) break;
-        }
+        await processGusScanTick({ jobId, maxPerTick: 1 });
       } catch (e) {
         console.error("[gus-scan] inline worker failed", e);
       }
