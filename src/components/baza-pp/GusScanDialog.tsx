@@ -65,6 +65,42 @@ const DEFAULT_FIELDS: GusScanField[] = [
 
 type Step = "config" | "running";
 
+type GusScanJob = {
+  id: string;
+  identifier: "nip" | "regon" | "krs";
+  fields: string[];
+  status: string;
+  total: number;
+  processed: number;
+  updated_count: number;
+  skipped_count: number;
+  error_count: number;
+  log: Array<{ ts: number; level: string; text: string }>;
+  changes: Array<{
+    entity_id: string;
+    name: string | null;
+    result: "updated" | "skipped" | "error";
+    fields?: Record<string, { from: string | null; to: string | null }>;
+    reason?: string;
+  }>;
+  created_at: string;
+  finished_at: string | null;
+};
+
+type GusScanJobSummary = Pick<
+  GusScanJob,
+  | "id"
+  | "identifier"
+  | "total"
+  | "processed"
+  | "updated_count"
+  | "skipped_count"
+  | "error_count"
+  | "status"
+  | "created_at"
+  | "finished_at"
+>;
+
 export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Props) {
   const { t: _t } = useTranslation();
   const qc = useQueryClient();
