@@ -173,29 +173,8 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
     },
   });
 
-  const job = jobQuery.data?.job as
-    | {
-        id: string;
-        identifier: "nip" | "regon" | "krs";
-        fields: string[];
-        status: string;
-        total: number;
-        processed: number;
-        updated_count: number;
-        skipped_count: number;
-        error_count: number;
-        log: Array<{ ts: number; level: string; text: string }>;
-        changes: Array<{
-          entity_id: string;
-          name: string | null;
-          result: "updated" | "skipped" | "error";
-          fields?: Record<string, { from: string | null; to: string | null }>;
-          reason?: string;
-        }>;
-        created_at: string;
-        finished_at: string | null;
-      }
-    | undefined;
+  const job = jobQuery.data?.job as GusScanJob | undefined;
+  const jobs = (jobsQuery.data?.jobs ?? []) as GusScanJobSummary[];
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -218,6 +197,11 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
   }, [job]);
 
   const isTerminal = job && ["done", "cancelled", "error"].includes(job.status);
+
+  const openJob = (id: string) => {
+    setJobId(id);
+    setStep("running");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
