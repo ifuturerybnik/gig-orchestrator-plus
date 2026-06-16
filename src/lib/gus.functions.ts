@@ -148,7 +148,7 @@ function extractPkd(rows: Record<string, string>[], prefix: string) {
     .filter((p) => p.kod);
 }
 
-function normalize(row: Record<string, string>, pelny: Record<string, unknown> | null, pkd: ReturnType<typeof extractPkd>) {
+function normalize(row: Record<string, string>, pelny: Record<string, string | null> | null, pkd: ReturnType<typeof extractPkd>) {
   const typ = row.Typ;
   const ulica = row.Ulica || "";
   const numer = [row.NrNieruchomosci, row.NrLokalu].filter(Boolean).join("/");
@@ -237,7 +237,7 @@ export const gusLookup = createServerFn({ method: "POST" })
     }
 
     const baseRow = rows[0];
-    let pelny: Record<string, unknown> | null = null;
+    let pelny: Record<string, string | null> | null = null;
     let pkdList: ReturnType<typeof extractPkd> = [];
     if (zakres === "full") {
       try {
