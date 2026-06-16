@@ -79,7 +79,9 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     jst_type_raw: s(r["typ_JST"]),
     wojewodztwo: lowerWoj(r["Województwo"]),
     powiat: s(r["Powiat"])?.toLowerCase() ?? null,
+    gmina: s(r["Gmina"] ?? r["gmina"])?.toLowerCase() ?? null,
     miejscowosc: s(r["miejscowość"]),
+
     kod_pocztowy: s(r["Kod pocztowy"]),
     poczta: s(r["poczta"]),
     ulica: s(r["Ulica"]),
