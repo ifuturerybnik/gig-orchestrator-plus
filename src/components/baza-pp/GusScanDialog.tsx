@@ -214,7 +214,7 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [open, step, jobId, job?.status, tickFn, jobQuery]);
+  }, [open, step, jobId, job?.status, tickFn, jobQuery.refetch]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
