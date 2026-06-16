@@ -101,6 +101,16 @@ type GusScanJobSummary = Pick<
   | "finished_at"
 >;
 
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleString("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Props) {
   const { t: _t } = useTranslation();
   const qc = useQueryClient();
