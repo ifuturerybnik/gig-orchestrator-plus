@@ -122,7 +122,7 @@ function changeRows(job: GusScanReportJob): TableCell[][] {
     : [[{ text: "—" }, { text: "Brak rekordów w raporcie", colSpan: 5, style: "muted" }, {}, {}, {}, {}]];
 }
 
-function buildDefinition(job: GusScanReportJob): TDocumentDefinitions {
+export function createGusScanReportDefinition(job: GusScanReportJob): TDocumentDefinitions {
   const content: Content[] = [
     { text: "Raport skanowania GUS REGON (BIR1.1)", style: "title" },
     { text: `Zlecenie ${job.id}`, style: "subtitle" },
@@ -223,5 +223,5 @@ function buildDefinition(job: GusScanReportJob): TDocumentDefinitions {
 export function downloadGusScanReportPdf(job: GusScanReportJob) {
   ensureFonts();
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  pdfMake.createPdf(buildDefinition(job)).download(`gus-scan-${stamp}.pdf`);
+  pdfMake.createPdf(createGusScanReportDefinition(job)).download(`gus-scan-${stamp}.pdf`);
 }
