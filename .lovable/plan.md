@@ -1,60 +1,101 @@
-## Cel
 
-W module Admin → Baza PP dodajemy trzy skanery uzupełniające braki w `public_entities` z publicznych źródeł:
+## Co dorobię
 
-- **BAE** (e-Doręczenia, gov.pl) → `edoreczenia_ade`, `regon`
-- **GUS REGON BIR1.1** → `nip`, `regon`, adres pocztowy (ulica/nr/kod/miejscowość/gmina/powiat/województwo)
-- **RSPO** (Rejestr Szkół, MEN) → `phone`, `email`, `www` dla osrodek_kultury który jest placówką oświatową
+### 1. Kolumna „Gmina" w Bazie PP
+- Migracja `0065_public_entities_gmina.sql`: `ALTER TABLE public.public_entities ADD COLUMN gmina text;`
+- `src/lib/public-entities.functions.ts`: dodaję `gmina` do `entitySchema` i `SELECT_COLS`.
+- `src/routes/_authenticated.admin.baza-pp.tsx`: kolumna w tabeli, w filtrach „brakujące", w formularzu edycji/dodawania, w eksporcie CSV/XLSX i imporcie.
+- i18n (pl/en): klucz `admin.bazaPp.cols.gmina` itd.
 
-Każdy skaner jest osobnym przyciskiem w toolbarze Bazy PP, otwiera ten sam komponent dialogu z propozycjami i checkboxami akceptacji. Trafienia pewne (po REGON / NIP / dokładna nazwa+miejscowość) zaznaczone domyślnie; trafienia fuzzy widoczne ale niezaznaczone.
+### 2. Skaner „GUS REGON – BIR1.1" – tryb interaktywny + tło
 
-## Etapy
+Dwa kroki UI w nowym dialogu `GusScanDialog`:
+1. **Skanuj po** – radio: `NIP | REGON | KRS` (jeden identyfikator na wpis – jeśli rekord nie ma wybranego identyfikatora, jest pomijany i raportowany jako „brak źródła").
+2. **Uzupełnij** – checkboxy pól, które mają być porównane/uzupełnione:
+   `NIP, REGON, KRS, Nazwa, Województwo, Powiat, Gmina, Miejscowość, Kod poczt., Poczta, Ulica, Nr domu`.
 
-### Etap 1 — Skaner BAE (e-Doręczenia) ✓ niezależny, można puścić od razu
+Po „Start":
+- Tworzy się rekord w tabeli `gus_scan_jobs` (zlecenie do tła).
+- Dialog pokazuje live progress (postęp + log + lista poprawek na żywo) – odświeżany co 2 s server fn `getGusScanJob`.
+- Można zamknąć przeglądarkę / wylogować się – job leci dalej w tle (worker `/api/public/gus-scan-tick`).
+- Po zakończeniu dialog (lub strona „Moje skany GUS") pokazuje raport: ile rekordów sprawdzono / poprawiono / pominięto + szczegółowa lista zmian (przed → po dla każdego pola).
+- Przycisk **Pobierz raport PDF** (jsPDF, już w deps).
 
-1. `src/lib/scanners/bae.server.ts` — pobiera `https://www.gov.pl/api/data/registers/search?pageId=21113705` (jeden GET, ~8.5 MB, 47k rekordów; pola: NAZWA_PODMIOTU, MIEJSCOWOSC, WOJEWODZTWO, REGON, ADE). Cache modułowy in-memory TTL 10 min.
-2. Helpery `normalizeName()` (lower, usunięcie diakrytyków, usunięcie prefixów typu "urząd gminy w ", whitespace squeeze) i `normalizeCity()`.
-3. Buduje 2 indeksy: `byRegon: Map<string, BaeRecord>`, `byNameCity: Map<string, BaeRecord[]>`.
-4. `src/lib/scanners.functions.ts` → server fn `scanBaeMatches({ scope: 'selected'|'missing_ade', ids?: uuid[] })`. Zwraca `{ items: Array<{ entityId, current: {ade,regon,name,miejscowosc}, match?: {ade,regon,confidence:'exact_regon'|'exact_name_city'|'fuzzy', source: BaeRecord}, candidates?: BaeRecord[] }> }`.
-5. Server fn `applyScannerUpdates({ updates: Array<{ id, patch: Partial<EntityFields> }>, source: 'bae' })` — bulk update, używa `updatePublicEntity` (pojedyncze) w pętli z chunkowaniem. Admin only.
+### 3. Rate-limit ≤ 1 zapytanie/sek do GUS
+Już istnieje (`throttleSoap()` w `src/lib/gus.functions.ts`, `MIN_GAP_MS = 1000`). Worker tick wywołuje wspólny helper, więc limit jest globalny dla procesu serwera. Dodatkowo w workerze: 1 rekord = 1 zapytanie SOAP (sesja cache'owana, scope=basic dla podstawowych pól, full tylko gdy zaznaczone Powiat/Gmina, których nie ma w `DaneSzukajPodmioty`).
 
-### Etap 2 — Wspólny UI dialogu skanera
+### 4. Schemat DB (migracja `0066_gus_scan_jobs.sql`)
 
-1. `src/components/baza-pp/ScannerDialog.tsx` — reusable, props: `{ open, source: 'bae'|'gus'|'rspo', scope, selectedIds, onClose }`.
-2. Stany: idle → scanning (progress) → results (tabela: nazwa | miejscowość | aktualne wartości | znalezione wartości | poziom dopasowania badge | checkbox „zastosuj") → applying → done (raport: X zaktualizowanych / Y pominiętych / Z błędów).
-3. Toolbar Bazy PP: dropdown "Skanuj zewnętrzne źródła" z trzema opcjami; wewnątrz każdy wybór scope (selected | missing target field).
-4. i18n keys `scannerBae*`, `scannerGus*`, `scannerRspo*` w pl.ts/en.ts.
+```sql
+create table public.gus_scan_jobs (
+  id uuid primary key default gen_random_uuid(),
+  created_by uuid not null references auth.users(id) on delete cascade,
+  identifier text not null check (identifier in ('nip','regon','krs')),
+  fields text[] not null,                 -- które pola uzupełniać
+  entity_ids uuid[] not null,             -- lista do przetworzenia
+  status text not null default 'queued',  -- queued|running|done|cancelled|error
+  total int not null default 0,
+  processed int not null default 0,
+  updated_count int not null default 0,
+  skipped_count int not null default 0,
+  error_count int not null default 0,
+  current_entity_id uuid,
+  last_error text,
+  changes jsonb not null default '[]'::jsonb, -- [{entity_id,name,changes:{field:{from,to}}}]
+  log jsonb not null default '[]'::jsonb,     -- [{ts,level,text}]
+  created_at timestamptz default now(),
+  started_at timestamptz,
+  finished_at timestamptz
+);
+grant select, insert, update on public.gus_scan_jobs to authenticated;
+grant all on public.gus_scan_jobs to service_role;
+alter table public.gus_scan_jobs enable row level security;
+create policy "own jobs read" on public.gus_scan_jobs for select to authenticated using (created_by = auth.uid() or public.has_role(auth.uid(),'super_admin'));
+create policy "own jobs insert" on public.gus_scan_jobs for insert to authenticated with check (created_by = auth.uid());
+create policy "own jobs update" on public.gus_scan_jobs for update to authenticated using (created_by = auth.uid());
+```
 
-### Etap 3 — Skaner RSPO
+### 5. Server functions (`src/lib/gus-scan.functions.ts`)
+- `startGusScanJob({ identifier, fields, scope:'selected'|'missing_target', ids })` – tworzy zlecenie, zwraca `jobId`.
+- `getGusScanJob({ jobId })` – status + log + changes (do live podglądu).
+- `cancelGusScanJob({ jobId })` – ustawia status `cancelled`.
 
-1. `src/lib/scanners/rspo.server.ts` — REST `https://api-rspo.mein.gov.pl/api/placowki/?...` (paginowany, bez klucza). Cache modułowy.
-2. Match po nazwie+miejscowości (RSPO ma `nazwa`, `miejscowosc`, `wojewodztwo`, `kodPocztowy`, `ulica`, `numerBudynku`, `telefon`, `email`, `stronaInternetowa`, `regon`, `nip`).
-3. Server fn `scanRspoMatches(...)` — analogicznie do BAE. Wyniki: telefon/email/www/nip/regon + adres (jeśli brakuje).
+### 6. Worker cron (`src/routes/api/public/gus-scan-tick.ts`)
+- Wymagany `X-Cron-Secret = CRON_SECRET`.
+- Pobiera `queued`/`running` joby, dla każdego przetwarza max N rekordów na tick (limit czasu workera). Każdy rekord:
+  1. odczytuje `public_entities`,
+  2. woła `gusLookup` (basic albo full wg `fields`),
+  3. liczy `patch` tylko dla pól zaznaczonych w `fields` i tylko gdy wartość się różni / jest pusta,
+  4. zapisuje update + appenduje wpisy do `changes` i `log`,
+  5. zwiększa liczniki, ustawia `processed`, `current_entity_id`.
+- Gdy `processed = total` → `status=done`, `finished_at`.
 
-### Etap 4 — Skaner GUS REGON BIR1.1 (wymaga klucza)
+Tick muszę uruchamiać co 30 s. Dodam wpis pg_cron w migracji `0066`:
+```sql
+select cron.schedule('gus-scan-tick','*/1 * * * *',
+  $$ select net.http_post(url:='https://concertivo.eu/api/public/gus-scan-tick',
+       headers:=jsonb_build_object('x-cron-secret', current_setting('app.cron_secret', true)),
+       body:='{}'::jsonb) $$);
+```
+(jeśli `app.cron_secret` nie jest ustawiony, użytkownik dostanie instrukcję ręcznego `ALTER DATABASE ... SET app.cron_secret = '...'`).
 
-1. User rejestruje się w `api.stat.gov.pl` (instrukcja w UI — link + krótki opis). Klucz przesyła nam wraz z prośbą o `add_secret EXT_GUS_BIR_KEY`.
-2. `src/lib/scanners/gus.server.ts` — SOAP/JSON klient BIR1.1: zaloguj (`Zaloguj` → sid), `DaneSzukajPodmioty` po REGON lub NIP lub krs. Sesja sid cache w pamięci TTL 50 min (GUS daje 60).
-3. Jeśli mamy regon/nip → strzelamy po nim (high confidence). Jeśli nie → po nazwie + miejscowości (low conf, fuzzy).
-4. Wyciągamy adres + nip + regon + datę rejestracji + formę prawną → patch.
+### 7. Raport PDF
+`src/lib/gus-scan-report.ts` (client) – jsPDF + autotable:
+- nagłówek (data, kto, identifier, liczba rekordów),
+- tabela: nazwa, ID, wynik (updated / skipped / error),
+- sekcja „zmiany": dla każdego rekordu pole | przed | po.
 
-### Etap 5 — Migracja DB (jedna, drobna)
+### 8. Punkty wpięcia w UI
+W `_authenticated.admin.baza-pp.tsx`: zamiast otwierać `ScannerDialog` dla `gus`, otwieram nowy `GusScanDialog`. Pozostałe źródła (BAE/RSPO) działają jak dotąd.
 
-`supabase/migrations/0064_public_entities_scan_audit.sql` — opcjonalna tabela `public_entities_scan_log(id, scanned_at, source, entity_id, action, before jsonb, after jsonb, by_user)` dla audytu. RLS: tylko admin. Można też pominąć i log trzymać tylko w UI.
+Dodam też w sidebarze sekcji admin podstronę `/_authenticated/admin/baza-pp/gus-jobs` (lista moich zleceń – status + raport PDF), żeby użytkownik mógł wrócić po wylogowaniu.
 
-## Szczegóły techniczne
+## Czego NIE zmieniam
+- BAE/RSPO – bez zmian.
+- Istniejący `scanGusMatches` w `scanners.functions.ts` usuwam tylko miejsce wywołania (placeholder), funkcja zostaje albo zwraca przekierowanie do nowego flow.
+- Limit 1 req/s jest globalny w procesie – jeśli będzie kilka równoległych jobów, dzielą się tą samą kolejką (akceptowalne).
 
-- Wszystkie server fn z `requireSupabaseAuth` + `assertAppAdmin(supabase, userId, true)` (super_admin lub admin_staff).
-- BAE i RSPO bez kluczy → fetch z `process.env`-less. GUS wymaga `EXT_GUS_BIR_KEY` (add_secret po Etapie 3).
-- Cache: prosty obiekt na module-level w `*.server.ts`, klucz = endpoint, value = `{ data, fetchedAt }`. Worker stateless ale per-instance trzyma kilka minut, w pełni wystarczy.
-- Normalizacja nazw: `nfd` → strip combining marks → lower → usuń prefixy regexem (`/^(urząd|urzad|gminny|miejski|powiatowy|...) +/`).
-- UI: do każdej propozycji badge `Pewne` (zielony) / `Propozycja` (żółty). Sortowanie wg confidence DESC.
-- Limity: skan w paczkach po 500 rekordów (pętla po stronie serwera), `applyScannerUpdates` chunki po 200.
-- Brak rate-limit od strony backendu — to skaner adminowski, używany ad-hoc.
-
-## Ryzyka / nie-cele
-
-- BAE endpoint to API niepubliczne (XHR strony gov.pl). Brak SLA, nazwa pola/URL mogą się zmienić — łatwy fix (jedna funkcja).
-- GUS BIR1.1 to SOAP — relatywnie ciężki klient, ale w Workerze działa (fetch + ręczny XML build).
-- Nie scrapujemy stron BIP. Nie ruszamy KRS (na razie).
-- Cron / automatyczne uruchamianie poza zakresem.
+## Pytania zanim ruszę
+1. **PDF**: użyjemy `jspdf` (już zainstalowany) + dorzucę `jspdf-autotable` (~50 kB). OK?
+2. **Cron**: czy mam w migracji od razu zaplanować `cron.schedule(...)` w pg_cron (tak jak autokorespondencja), czy zostawić instrukcję do ręcznego uruchomienia na VPS / Supabase?
+3. **Pole „Gmina"**: czy chcesz, żeby było widoczne we WSZYSTKICH typach (gmina/powiat/wojewodztwo/osrodek_kultury), czy tylko dla `jst_gmina`?
