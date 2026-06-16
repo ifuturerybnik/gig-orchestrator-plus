@@ -280,6 +280,48 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
                 Limit GUS: 1 zapytanie / sekundę (globalny throttle). Dla 1000 rekordów scan trwa ~17
                 min. Worker przetwarza paczki co minutę — możesz bezpiecznie zamknąć przeglądarkę.
               </div>
+
+              <div className="rounded-md border p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold">Wcześniejsze raporty</Label>
+                  {jobsQuery.isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                <div className="max-h-60 overflow-auto rounded border">
+                  {jobs.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground">Brak zapisanych raportów.</div>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/40">
+                        <tr>
+                          <th className="p-2 text-left">Data</th>
+                          <th className="p-2 text-left">Skanuj po</th>
+                          <th className="p-2 text-left">Status</th>
+                          <th className="p-2 text-left">Wynik</th>
+                          <th className="p-2 text-right">Raport</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobs.map((j) => (
+                          <tr key={j.id} className="border-t">
+                            <td className="p-2 whitespace-nowrap">{formatShortDate(j.created_at)}</td>
+                            <td className="p-2">{j.identifier.toUpperCase()}</td>
+                            <td className="p-2">{j.status}</td>
+                            <td className="p-2 whitespace-nowrap">
+                              {j.updated_count} zm. · {j.skipped_count} pom. · {j.error_count} bł.
+                            </td>
+                            <td className="p-2 text-right">
+                              <Button variant="ghost" size="sm" onClick={() => openJob(j.id)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Otwórz
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
             </>
           )}
 
