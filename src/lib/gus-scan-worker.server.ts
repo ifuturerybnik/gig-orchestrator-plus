@@ -28,7 +28,7 @@ type ChangeEntry = {
   reason?: string;
 };
 
-const MAX_PER_TICK = 20; // ~20s przy throttle 1/s
+const DEFAULT_MAX_PER_TICK = 5; // bezpieczne dla krótkich wywołań HTTP; cron odpala kolejne paczki
 const FULL_FIELDS = new Set(["powiat", "gmina"]);
 
 // Parser pola "ulica" z GUS: rozdziela prefix (ul./al./pl./os./pl/...), nazwę i numer.
@@ -185,14 +185,19 @@ async function processOne(job: Job, entityId: string, gusLookupFn: GusLookupFn):
 
 type GusLookupFn = (input: { nip?: string; regon?: string; krs?: string; scope?: "basic" | "full" }) => Promise<{ dane?: unknown } | null | undefined>;
 
-export async function processGusScanTick(): Promise<{ jobsTouched: number; processed: number }> {
+export async function processGusScanTick(options: { jobId?: string; maxPerTick?: number } = {}): Promise<{ jobsTouched: number; processed: number }> {
+  const maxPerTick = Math.max(1, Math.min(options.maxPerTick ?? DEFAULT_MAX_PER_TICK, 20));
   // Atomowo zabieraj kolejny job (running lub queued).
-  const { data: jobs } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("gus_scan_jobs")
     .select("*")
     .in("status", ["queued", "running"])
     .order("created_at", { ascending: true })
     .limit(1);
+
+  if (options.jobId) query = query.eq("id", options.jobId);
+
+  const { data: jobs } = await query;
 
   if (!jobs || jobs.length === 0) return { jobsTouched: 0, processed: 0 };
 
@@ -212,7 +217,7 @@ export async function processGusScanTick(): Promise<{ jobsTouched: number; proce
   const { gusLookupCore } = await import("./gus-core.server");
 
   let processedThisTick = 0;
-  const idsToProcess = job.entity_ids.slice(job.processed, job.processed + MAX_PER_TICK);
+  const idsToProcess = job.entity_ids.slice(job.processed, job.processed + maxPerTick);
 
   for (const entityId of idsToProcess) {
     // Sprawdź czy nie anulowano w trakcie.
