@@ -190,6 +190,7 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "jst_type_raw", label: "Typ JST (oryg.)" },
   { key: "wojewodztwo", label: "Województwo" },
   { key: "powiat", label: "Powiat" },
+  { key: "gmina", label: "Gmina" },
   { key: "miejscowosc", label: "Miejscowość" },
   { key: "kod_pocztowy", label: "Kod pocztowy" },
   { key: "poczta", label: "Poczta" },
@@ -199,7 +200,9 @@ const EXPORT_COLUMNS: Array<{ key: string; label: string }> = [
   { key: "phone_ext", label: "Nr wewnętrzny" },
   { key: "nip", label: "NIP" },
   { key: "regon", label: "REGON" },
+  { key: "krs", label: "KRS" },
   { key: "email", label: "Email" },
+
   { key: "www", label: "WWW" },
   { key: "epuap_address", label: "ePUAP" },
   { key: "edoreczenia_ade", label: "e-Doręczenia (ADE)" },
