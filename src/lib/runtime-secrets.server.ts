@@ -19,6 +19,19 @@ function readFromGlobalRuntimeEnv(names: string[]): string | undefined {
   return readFromRecord(runtimeEnv, names);
 }
 
+async function readFromCloudflareEnv(names: string[]): Promise<string | undefined> {
+  try {
+    const mod = await import("cloudflare:workers");
+    return readFromRecord((mod as { env?: Record<string, unknown> }).env, names);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function readRuntimeSecret(names: string[]): Promise<string | undefined> {
-  return readFromRecord(process.env as Record<string, unknown>, names) || readFromGlobalRuntimeEnv(names);
+  return (
+    readFromRecord(process.env as Record<string, unknown>, names) ||
+    readFromGlobalRuntimeEnv(names) ||
+    (await readFromCloudflareEnv(names))
+  );
 }
