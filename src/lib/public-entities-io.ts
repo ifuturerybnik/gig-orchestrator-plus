@@ -90,7 +90,9 @@ function mapJstRow(r: Record<string, unknown>): ParsedRow | null {
     phone_ext: phoneExt(r["wewnętrzny"]),
     nip: s(r["NIP"] ?? r["nip"]),
     regon: s(r["REGON"] ?? r["regon"]),
+    krs: s(r["KRS"] ?? r["krs"]),
     email: s(r["ogólny adres poczty elektronicznej gminy/powiatu/województwa"]),
+
     www: s(r["adres www jednostki"]),
     epuap_address: s(r["ESP"]),
     edoreczenia_ade: s(r["adres doręczeń elektronicznych ADE"]),
