@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   startGusScanJob,
   getGusScanJob,
+  runGusScanJobTick,
   listMyGusScanJobs,
   cancelGusScanJob,
   GUS_SCAN_FIELDS,
@@ -116,6 +117,7 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
   const qc = useQueryClient();
   const startFn = useServerFn(startGusScanJob);
   const getFn = useServerFn(getGusScanJob);
+  const tickFn = useServerFn(runGusScanJobTick);
   const listFn = useServerFn(listMyGusScanJobs);
   const cancelFn = useServerFn(cancelGusScanJob);
 
@@ -188,6 +190,31 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
 
   const job = jobQuery.data?.job as GusScanJob | undefined;
   const jobs = (jobsQuery.data?.jobs ?? []) as GusScanJobSummary[];
+
+  useEffect(() => {
+    if (!open || step !== "running" || !jobId || (job && ["done", "cancelled", "error"].includes(job.status))) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof window.setTimeout> | undefined;
+    const runNext = () => {
+      timer = window.setTimeout(async () => {
+        try {
+          await tickFn({ data: { jobId } });
+          await jobQuery.refetch();
+        } catch (e) {
+          console.error("[gus-scan] tick failed", e);
+        } finally {
+          if (!cancelled) runNext();
+        }
+      }, 1200);
+    };
+
+    runNext();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [open, step, jobId, job?.status, tickFn, jobQuery]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
