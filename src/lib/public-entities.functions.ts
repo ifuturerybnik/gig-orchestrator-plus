@@ -36,6 +36,7 @@ const entitySchema = z.object({
   jst_type_raw: z.string().trim().max(120).nullable().optional(),
   wojewodztwo: z.string().trim().max(100).nullable().optional(),
   powiat: z.string().trim().max(150).nullable().optional(),
+  gmina: z.string().trim().max(150).nullable().optional(),
   miejscowosc: z.string().trim().max(200).nullable().optional(),
   kod_pocztowy: z.string().trim().max(15).nullable().optional(),
   poczta: z.string().trim().max(200).nullable().optional(),
@@ -61,7 +62,7 @@ function normalize(input: z.infer<typeof entitySchema>) {
 }
 
 const SELECT_COLS =
-  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, nip, regon, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
+  "id, entity_type, name, short_name, teryt_code, jst_type_raw, wojewodztwo, powiat, gmina, miejscowosc, kod_pocztowy, poczta, ulica, nr_domu, phone, phone_ext, nip, regon, krs, email, www, epuap_address, edoreczenia_ade, source, created_at, updated_at";
 
 export const MISSING_COLS = [
   "teryt_code",
@@ -71,6 +72,7 @@ export const MISSING_COLS = [
   "www",
   "epuap_address",
   "powiat",
+  "gmina",
 ] as const;
 export type MissingCol = (typeof MISSING_COLS)[number];
 
