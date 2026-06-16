@@ -684,7 +684,7 @@ function BazaPpPage() {
       <div className="rounded-md border">
         <div className="w-full overflow-auto max-h-[calc(100vh-22rem)]">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-background shadow-[inset_0_-1px_0_var(--color-border)]">
+            <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-background [&_th]:shadow-[inset_0_-1px_0_var(--color-border)]">
               <TableRow>
                 {isSuper && (
                   <TableHead className="w-10">
