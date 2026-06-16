@@ -216,7 +216,10 @@ export const gusLookup = createServerFn({ method: "POST" })
         const ageDays = (Date.now() - new Date(cached.pobrano).getTime()) / 86400000;
         const cachedHasFull = !!(cached.dane && (cached.dane.pelny_raport || (cached.dane.pkd && cached.dane.pkd.length)));
         if (ageDays < 7 && (zakres === "basic" || cachedHasFull)) {
-          return { source: "cache" as const, scope: zakres, pobrano: cached.pobrano, dane: cached.dane };
+          const dane = zakres === "basic" && cached.dane
+            ? { ...cached.dane, pelny_raport: null, pkd: [] }
+            : cached.dane;
+          return { source: "cache" as const, scope: zakres, pobrano: cached.pobrano, dane };
         }
       }
     }
