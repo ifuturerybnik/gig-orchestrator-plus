@@ -21,12 +21,16 @@ function readFromGlobalRuntimeEnv(names: string[]): string | undefined {
 
 async function readFromCloudflareEnv(names: string[]): Promise<string | undefined> {
   try {
-    const mod = await import(/* @vite-ignore */ "cloudflare:workers");
+    // Obfuscate specifier so bundlers (Rollup on VPS build) don't try to statically resolve it.
+    const specifier = ["cloudflare", "workers"].join(":");
+    const dynamicImport = (0, eval)("(s) => import(s)") as (s: string) => Promise<unknown>;
+    const mod = await dynamicImport(specifier);
     return readFromRecord((mod as { env?: Record<string, unknown> }).env, names);
   } catch {
     return undefined;
   }
 }
+
 
 export async function readRuntimeSecret(names: string[]): Promise<string | undefined> {
   return (
