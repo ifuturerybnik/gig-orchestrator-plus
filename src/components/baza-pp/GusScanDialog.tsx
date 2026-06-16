@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Download, FileText } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -425,5 +425,4 @@ function Stat({
   );
 }
 
-// Suppress unused-import warning for Download icon (used elsewhere if exported).
-void Download;
+
