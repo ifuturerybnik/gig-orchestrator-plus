@@ -81,10 +81,10 @@ async function zaloguj(apiKey: string, gusUrl: string, label: string): Promise<s
 }
 
 const RAPORTY: Record<string, { glowny: string; pkd: string; prefix: string }> = {
-  P:  { glowny: "BIR11OsPrawna",                glowny2: "", pkd: "BIR11OsPrawnaPkd",                prefix: "praw_" } as never,
-  LP: { glowny: "BIR11JednLokalnaOsPrawnej",    pkd: "BIR11JednLokalnaOsPrawnejPkd",                prefix: "lokpraw_" },
-  F:  { glowny: "BIR11OsFizycznaDaneOgolne",    pkd: "BIR11OsFizycznaPkd",                          prefix: "fiz_" },
-  LF: { glowny: "BIR11JednLokalnaOsFizycznej",  pkd: "BIR11JednLokalnaOsFizycznejPkd",              prefix: "lokfiz_" },
+  P:  { glowny: "BIR11OsPrawna",                pkd: "BIR11OsPrawnaPkd",                prefix: "praw_" },
+  LP: { glowny: "BIR11JednLokalnaOsPrawnej",    pkd: "BIR11JednLokalnaOsPrawnejPkd",    prefix: "lokpraw_" },
+  F:  { glowny: "BIR11OsFizycznaDaneOgolne",    pkd: "BIR11OsFizycznaPkd",              prefix: "fiz_" },
+  LF: { glowny: "BIR11JednLokalnaOsFizycznej",  pkd: "BIR11JednLokalnaOsFizycznejPkd",  prefix: "lokfiz_" },
 };
 
 async function szukajPodmioty(identifier: { nip?: string; regon?: string; krs?: string }, sid: string, gusUrl: string) {
