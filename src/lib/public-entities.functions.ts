@@ -46,6 +46,7 @@ const entitySchema = z.object({
   phone_ext: z.string().trim().max(30).nullable().optional(),
   nip: z.string().trim().max(30).nullable().optional(),
   regon: z.string().trim().max(30).nullable().optional(),
+  krs: z.string().trim().max(30).nullable().optional(),
   email: z.string().trim().max(254).nullable().optional(),
   www: z.string().trim().max(500).nullable().optional(),
   epuap_address: z.string().trim().max(200).nullable().optional(),
