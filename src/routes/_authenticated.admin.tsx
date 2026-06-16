@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Navigate, Link, useRouterState } from "@tansta
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Shield, CheckSquare, Bot, HardDrive, Share2, MessageCircle, Building2 } from "lucide-react";
+import { Shield, CheckSquare, Bot, HardDrive, Share2, MessageCircle, Building2, Landmark } from "lucide-react";
 import { Header } from "@/components/header";
 import { getMyProfile } from "@/lib/profile.functions";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,12 @@ function AdminLayout() {
       to: "/admin/baza-pp",
       label: t("admin.nav.bazaPp"),
       icon: Building2,
+      show: true,
+    },
+    {
+      to: "/admin/gus",
+      label: t("admin.nav.gus"),
+      icon: Landmark,
       show: true,
     },
   ];
