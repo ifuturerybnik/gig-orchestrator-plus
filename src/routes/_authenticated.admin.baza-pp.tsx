@@ -72,6 +72,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScannerDialog, type ScannerSource, type ScannerScope } from "@/components/baza-pp/ScannerDialog";
 import { KeywordDiscoveryDialog } from "@/components/baza-pp/KeywordDiscoveryDialog";
+import { GusScanDialog } from "@/components/baza-pp/GusScanDialog";
 
 
 export const Route = createFileRoute("/_authenticated/admin/baza-pp")({
@@ -106,6 +107,7 @@ type Entity = {
   jst_type_raw: string | null;
   wojewodztwo: string | null;
   powiat: string | null;
+  gmina: string | null;
   miejscowosc: string | null;
   kod_pocztowy: string | null;
   poczta: string | null;
@@ -131,6 +133,7 @@ const EMPTY_FORM: FormState = {
   jst_type_raw: "",
   wojewodztwo: "",
   powiat: "",
+  gmina: "",
   miejscowosc: "",
   kod_pocztowy: "",
   poczta: "",
@@ -178,6 +181,7 @@ function BazaPpPage() {
     source: ScannerSource;
     scope: ScannerScope;
   } | null>(null);
+  const [gusScanOpen, setGusScanOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const missingArr = useMemo(() => Array.from(missing).sort(), [missing]);
@@ -317,6 +321,7 @@ function BazaPpPage() {
         jst_type_raw: form.jst_type_raw || null,
         wojewodztwo: form.wojewodztwo || null,
         powiat: form.powiat || null,
+        gmina: form.gmina || null,
         miejscowosc: form.miejscowosc || null,
         kod_pocztowy: form.kod_pocztowy || null,
         poczta: form.poczta || null,
@@ -460,17 +465,12 @@ function BazaPpPage() {
 
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() =>
-                    setScanner({
-                      source: "gus",
-                      scope: selectedIds.size > 0 ? "selected" : "missing_target",
-                    })
-                  }
+                  onClick={() => setGusScanOpen(true)}
                 >
                   <div>
                     <div className="font-medium">{t("admin.bazaPp.scanner.sources.gus")}</div>
                     <div className="text-xs text-muted-foreground">
-                      {t("admin.bazaPp.scanner.comingSoon")}
+                      NIP / REGON / KRS · uzupełnia adres, gminę, powiat, kod pocztowy…
                     </div>
                   </div>
                 </DropdownMenuItem>
@@ -702,6 +702,7 @@ function BazaPpPage() {
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.jstTypeRaw")}</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.wojewodztwo")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.powiat")}</TableHead>}
+                {extendedView && <TableHead>Gmina</TableHead>}
                 <TableHead>{t("admin.bazaPp.cols.miejscowosc")}</TableHead>
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.kodPocztowy")}</TableHead>}
                 {extendedView && <TableHead>{t("admin.bazaPp.cols.poczta")}</TableHead>}
@@ -761,6 +762,7 @@ function BazaPpPage() {
                     {extendedView && <TableCell>{r.jst_type_raw ?? ""}</TableCell>}
                     <TableCell>{r.wojewodztwo ?? ""}</TableCell>
                     {extendedView && <TableCell>{r.powiat ?? ""}</TableCell>}
+                    {extendedView && <TableCell>{r.gmina ?? ""}</TableCell>}
                     <TableCell>{r.miejscowosc ?? ""}</TableCell>
                     {extendedView && <TableCell className="whitespace-nowrap">{r.kod_pocztowy ?? ""}</TableCell>}
                     {extendedView && <TableCell>{r.poczta ?? ""}</TableCell>}
@@ -904,6 +906,13 @@ function BazaPpPage() {
               <Input
                 value={form.powiat ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, powiat: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Gmina</Label>
+              <Input
+                value={form.gmina ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, gmina: e.target.value }))}
               />
             </div>
             <div>
@@ -1197,6 +1206,16 @@ function BazaPpPage() {
         open={discoverOpen}
         onOpenChange={setDiscoverOpen}
         onApplied={() => qc.invalidateQueries({ queryKey: ["public-entities"] })}
+      />
+
+      <GusScanDialog
+        open={gusScanOpen}
+        onOpenChange={setGusScanOpen}
+        selectedIds={Array.from(selectedIds)}
+        onApplied={() => {
+          qc.invalidateQueries({ queryKey: ["public-entities"] });
+          setSelectedIds(new Set());
+        }}
       />
     </div>
   );
