@@ -195,7 +195,7 @@ export function GusScanDialog({ open, onOpenChange, selectedIds, onApplied }: Pr
     if (!open || step !== "running" || !jobId || (job && ["done", "cancelled", "error"].includes(job.status))) return;
 
     let cancelled = false;
-    let timer: ReturnType<typeof window.setTimeout> | undefined;
+    let timer: number | undefined;
     const runNext = () => {
       timer = window.setTimeout(async () => {
         try {
