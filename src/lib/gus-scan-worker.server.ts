@@ -31,6 +31,25 @@ type ChangeEntry = {
 const MAX_PER_TICK = 20; // ~20s przy throttle 1/s
 const FULL_FIELDS = new Set(["powiat", "gmina"]);
 
+// Parser pola "ulica" z GUS: rozdziela prefix (ul./al./pl./os./pl/...), nazwę i numer.
+// GUS zwraca np. "ul. Rozłogi" + nrNieruchomosci="18", albo "ul. Podwale 9" w jednym polu.
+function parseUlica(raw: string, nrFromGus: string): { street: string | null; number: string | null } {
+  let s = (raw || "").trim();
+  // Usuń typowe prefixy: ul., al., pl., os., Al., Pl. itp.
+  s = s.replace(/^(ul\.?|al\.?|aleja|aleje|pl\.?|plac|os\.?|osiedle|rondo|skwer|bulw\.?|bulwar)\s+/i, "").trim();
+  // Wyciągnij ewentualny numer z końca: "Podwale 9", "Mickiewicza 12A/3"
+  const m = s.match(/^(.*?)\s+(\d+[A-Za-z]?(?:[\/\-]\d+[A-Za-z]?)?)\s*$/);
+  let street = s || null;
+  let number: string | null = null;
+  if (m) {
+    street = m[1].trim() || null;
+    number = m[2].trim();
+  }
+  const nr = (nrFromGus || "").trim();
+  if (nr) number = nr;
+  return { street, number };
+}
+
 // Mapowanie pól z odpowiedzi GUS na kolumny public_entities + ekstrakcja wartości.
 function gusValue(dane: Record<string, unknown> | null, field: string): string | null {
   if (!dane) return null;
@@ -47,14 +66,12 @@ function gusValue(dane: Record<string, unknown> | null, field: string): string |
     case "kod_pocztowy": return (addr.kod_pocztowy as string) || null;
     case "poczta": return null; // GUS nie zwraca "poczty"
     case "ulica": {
-      const u = (addr.ulica as string) || "";
-      // ulica może zawierać "nazwa numer" — zostaw całość; nr_domu wyciągamy osobno
-      return u.split(" ")[0] || u || null;
+      const { street } = parseUlica((addr.ulica as string) || "", (addr.nr_domu as string) || "");
+      return street || null;
     }
     case "nr_domu": {
-      const u = (addr.ulica as string) || "";
-      const parts = u.split(" ");
-      return parts.length > 1 ? parts.slice(1).join(" ") : null;
+      const { number } = parseUlica((addr.ulica as string) || "", (addr.nr_domu as string) || "");
+      return number || null;
     }
     default:
       return null;
