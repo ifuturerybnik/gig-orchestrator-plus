@@ -33,6 +33,7 @@ import { Route as ApiPublicSocialPublishScheduledRouteImport } from './routes/ap
 import { Route as ApiPublicSocialImportPostsRouteImport } from './routes/api/public/social-import-posts'
 import { Route as ApiPublicOrgDeletionTickRouteImport } from './routes/api/public/org-deletion-tick'
 import { Route as ApiPublicMetaDataDeletionRouteImport } from './routes/api/public/meta-data-deletion'
+import { Route as ApiPublicGusScanTickRouteImport } from './routes/api/public/gus-scan-tick'
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
 import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
@@ -209,6 +210,11 @@ const ApiPublicMetaDataDeletionRoute =
     path: '/api/public/meta-data-deletion',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGusScanTickRoute = ApiPublicGusScanTickRouteImport.update({
+  id: '/api/public/gus-scan-tick',
+  path: '/api/public/gus-scan-tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicEmailUnsubscribeRoute =
   ApiPublicEmailUnsubscribeRouteImport.update({
     id: '/api/public/email-unsubscribe',
@@ -508,6 +514,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/gus-scan-tick': typeof ApiPublicGusScanTickRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -576,6 +583,7 @@ export interface FileRoutesByTo {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/gus-scan-tick': typeof ApiPublicGusScanTickRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -649,6 +657,7 @@ export interface FileRoutesById {
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
+  '/api/public/gus-scan-tick': typeof ApiPublicGusScanTickRoute
   '/api/public/meta-data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/org-deletion-tick': typeof ApiPublicOrgDeletionTickRoute
   '/api/public/social-import-posts': typeof ApiPublicSocialImportPostsRoute
@@ -722,6 +731,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/gus-scan-tick'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -790,6 +800,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/gus-scan-tick'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -862,6 +873,7 @@ export interface FileRouteTypes {
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
+    | '/api/public/gus-scan-tick'
     | '/api/public/meta-data-deletion'
     | '/api/public/org-deletion-tick'
     | '/api/public/social-import-posts'
@@ -919,6 +931,7 @@ export interface RootRouteChildren {
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
+  ApiPublicGusScanTickRoute: typeof ApiPublicGusScanTickRoute
   ApiPublicMetaDataDeletionRoute: typeof ApiPublicMetaDataDeletionRoute
   ApiPublicOrgDeletionTickRoute: typeof ApiPublicOrgDeletionTickRoute
   ApiPublicSocialImportPostsRoute: typeof ApiPublicSocialImportPostsRoute
@@ -1109,6 +1122,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/meta-data-deletion'
       fullPath: '/api/public/meta-data-deletion'
       preLoaderRoute: typeof ApiPublicMetaDataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/gus-scan-tick': {
+      id: '/api/public/gus-scan-tick'
+      path: '/api/public/gus-scan-tick'
+      fullPath: '/api/public/gus-scan-tick'
+      preLoaderRoute: typeof ApiPublicGusScanTickRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/email-unsubscribe': {
@@ -1607,6 +1627,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
+  ApiPublicGusScanTickRoute: ApiPublicGusScanTickRoute,
   ApiPublicMetaDataDeletionRoute: ApiPublicMetaDataDeletionRoute,
   ApiPublicOrgDeletionTickRoute: ApiPublicOrgDeletionTickRoute,
   ApiPublicSocialImportPostsRoute: ApiPublicSocialImportPostsRoute,
