@@ -14,7 +14,7 @@ const NS_BIR_DATA = "http://CIS/BIR/PUBL/2014/07/DataContract";
 const MIN_GAP_MS = 1000;
 let lastSoapAt = 0;
 let throttleChain: Promise<void> = Promise.resolve();
-function throttleSoap(): Promise<void> {
+export function throttleSoap(): Promise<void> {
   const next = throttleChain.then(async () => {
     const wait = Math.max(0, lastSoapAt + MIN_GAP_MS - Date.now());
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -23,6 +23,7 @@ function throttleSoap(): Promise<void> {
   throttleChain = next.catch(() => {});
   return next;
 }
+
 
 function envelope(gusUrl: string, action: string, body: string) {
   return `<?xml version="1.0" encoding="UTF-8"?>
