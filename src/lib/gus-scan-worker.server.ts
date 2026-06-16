@@ -47,14 +47,12 @@ function gusValue(dane: Record<string, unknown> | null, field: string): string |
     case "kod_pocztowy": return (addr.kod_pocztowy as string) || null;
     case "poczta": return null; // GUS nie zwraca "poczty"
     case "ulica": {
-      const u = (addr.ulica as string) || "";
-      // ulica może zawierać "nazwa numer" — zostaw całość; nr_domu wyciągamy osobno
-      return u.split(" ")[0] || u || null;
+      const { street } = parseUlica((addr.ulica as string) || "", (addr.nr_domu as string) || "");
+      return street || null;
     }
     case "nr_domu": {
-      const u = (addr.ulica as string) || "";
-      const parts = u.split(" ");
-      return parts.length > 1 ? parts.slice(1).join(" ") : null;
+      const { number } = parseUlica((addr.ulica as string) || "", (addr.nr_domu as string) || "");
+      return number || null;
     }
     default:
       return null;
