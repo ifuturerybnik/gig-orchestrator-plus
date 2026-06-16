@@ -37,8 +37,32 @@ function applyEnv(entries, options = {}) {
   }
 }
 
+function readPm2ModuleConfig(appNames) {
+  const paths = [
+    process.env.PM2_HOME ? resolve(process.env.PM2_HOME, "module_conf.json") : "",
+    process.env.HOME ? resolve(process.env.HOME, ".pm2/module_conf.json") : "",
+    "/root/.pm2/module_conf.json",
+  ].filter(Boolean);
+
+  for (const filePath of [...new Set(paths)]) {
+    if (!existsSync(filePath)) continue;
+    try {
+      const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+      for (const appName of appNames) {
+        const config = parsed?.[appName] || parsed?.module_conf?.[appName];
+        if (config && typeof config === "object") return config;
+      }
+    } catch {
+      // Ignore invalid PM2 config and keep using normal environment sources.
+    }
+  }
+  return {};
+}
+
+applyEnv(parseEnvFile("/etc/concertivo.env"));
 applyEnv(parseEnvFile(resolve(__dirname, "../.env.production")));
 applyEnv(parseEnvFile(resolve(__dirname, "../.env")));
+applyEnv(readPm2ModuleConfig(["concertivo", process.env.name, process.env.pm2_name].filter(Boolean)));
 
 const proxyEnv = {
   ...parseEnvFile("/opt/mail-proxy-concertivo/.env"),
