@@ -21,11 +21,15 @@ export type AdeTestResult = {
 export const testAdeConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AdeTestResult> => {
-    // Admin check
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const { data: roles, error: rolesError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+
+    if (rolesError) throw new Error(`Nie udało się sprawdzić uprawnień administratora: ${rolesError.message}`);
+
+    const roleList = (roles ?? []).map((row) => String(row.role));
+    const isAdmin = roleList.includes("super_admin") || roleList.includes("admin_staff");
     if (!isAdmin) throw new Error("Brak uprawnień administratora");
 
     const { loadAdeConfig, adeRawRequest, fetchAdeToken } = await import("@/lib/ade-client.server");
