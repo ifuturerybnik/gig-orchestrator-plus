@@ -116,9 +116,10 @@ export const testAdeConnection = createServerFn({ method: "POST" })
       steps,
       config: {
         apiBase: cfg.apiBase,
+        oauthBase: cfg.oauthBase,
+        tokenPath: cfg.tokenPath,
         clientId: cfg.clientId,
         mailboxAddress: cfg.mailboxAddress,
-        tokenPath: process.env.ADE_TOKEN_PATH || "/oauth2/token",
         certPath: cfg.certPath,
         keyPath: cfg.keyPath,
       },
