@@ -111,13 +111,15 @@ async function httpsRawRequest(opts: RawRequestOpts): Promise<AdeRawResponse> {
         const chunks: Buffer[] = [];
         res.on("data", (c) => chunks.push(c));
         res.on("end", () => {
-          const socket = res.socket as unknown as {
-            getPeerCertificate?: () => {
-              subject?: { CN?: string; O?: string };
-              issuer?: { CN?: string; O?: string };
-            };
-          };
-          const peer = socket.getPeerCertificate?.();
+          const socket = res.socket as
+            | ({
+                getPeerCertificate?: () => {
+                  subject?: { CN?: string; O?: string };
+                  issuer?: { CN?: string; O?: string };
+                };
+              } & object)
+            | null;
+          const peer = typeof socket?.getPeerCertificate === "function" ? socket.getPeerCertificate() : undefined;
           resolvePromise({
             status: res.statusCode ?? 0,
             headers: Object.fromEntries(
