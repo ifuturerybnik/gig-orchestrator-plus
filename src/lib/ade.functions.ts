@@ -10,9 +10,10 @@ export type AdeTestResult = {
   }>;
   config: {
     apiBase: string;
+    oauthBase: string;
+    tokenPath: string;
     clientId: string;
     mailboxAddress: string;
-    tokenPath: string;
     certPath: string;
     keyPath: string;
   };
