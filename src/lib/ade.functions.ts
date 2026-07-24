@@ -1,0 +1,120 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export type AdeTestResult = {
+  ok: boolean;
+  steps: Array<{
+    name: string;
+    ok: boolean;
+    detail: string;
+  }>;
+  config: {
+    apiBase: string;
+    clientId: string;
+    mailboxAddress: string;
+    tokenPath: string;
+    certPath: string;
+    keyPath: string;
+  };
+};
+
+export const testAdeConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdeTestResult> => {
+    // Admin check
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Brak uprawnień administratora");
+
+    const { loadAdeConfig, adeRawRequest, fetchAdeToken } = await import("@/lib/ade-client.server");
+
+    const steps: AdeTestResult["steps"] = [];
+    let cfg: ReturnType<typeof loadAdeConfig> | null = null;
+
+    try {
+      cfg = loadAdeConfig();
+      steps.push({ name: "Konfiguracja env", ok: true, detail: "Wszystkie zmienne ADE_* obecne" });
+    } catch (err) {
+      steps.push({ name: "Konfiguracja env", ok: false, detail: (err as Error).message });
+      return {
+        ok: false,
+        steps,
+        config: {
+          apiBase: process.env.ADE_API_BASE ?? "(brak)",
+          clientId: process.env.ADE_CLIENT_ID ?? "(brak)",
+          mailboxAddress: process.env.ADE_MAILBOX_ADDRESS ?? "(brak)",
+          tokenPath: process.env.ADE_TOKEN_PATH || "/oauth2/token",
+          certPath: process.env.ADE_QWAC_CERT_PATH ?? "(brak)",
+          keyPath: process.env.ADE_QWAC_KEY_PATH ?? "(brak)",
+        },
+      };
+    }
+
+    // Step 1: pliki certyfikatu
+    try {
+      const fs = await import("node:fs");
+      const certStat = fs.statSync(cfg.certPath);
+      const keyStat = fs.statSync(cfg.keyPath);
+      steps.push({
+        name: "Pliki QWAC",
+        ok: true,
+        detail: `cert: ${certStat.size} B, key: ${keyStat.size} B`,
+      });
+    } catch (err) {
+      steps.push({ name: "Pliki QWAC", ok: false, detail: (err as Error).message });
+    }
+
+    // Step 2: mTLS handshake — GET /
+    try {
+      const res = await adeRawRequest({ method: "GET", path: "/", timeoutMs: 10000 });
+      steps.push({
+        name: "mTLS handshake",
+        ok: true,
+        detail: `HTTP ${res.status}${res.tlsPeerIssuer ? " · Peer issuer: " + res.tlsPeerIssuer : ""}`,
+      });
+    } catch (err) {
+      const msg = (err as Error).message;
+      steps.push({
+        name: "mTLS handshake",
+        ok: false,
+        detail: msg,
+      });
+    }
+
+    // Step 3: token OAuth2
+    try {
+      const res = await fetchAdeToken();
+      const ok = res.status >= 200 && res.status < 300;
+      let detail = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
+        if (parsed.access_token) {
+          detail += ` · token otrzymany (${parsed.access_token.length} znaków)`;
+        } else if (parsed.error) {
+          detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
+        } else {
+          detail += ` · ${res.body.slice(0, 200)}`;
+        }
+      } catch {
+        detail += ` · ${res.body.slice(0, 200)}`;
+      }
+      steps.push({ name: "OAuth2 token", ok, detail });
+    } catch (err) {
+      steps.push({ name: "OAuth2 token", ok: false, detail: (err as Error).message });
+    }
+
+    return {
+      ok: steps.every((s) => s.ok),
+      steps,
+      config: {
+        apiBase: cfg.apiBase,
+        clientId: cfg.clientId,
+        mailboxAddress: cfg.mailboxAddress,
+        tokenPath: process.env.ADE_TOKEN_PATH || "/oauth2/token",
+        certPath: cfg.certPath,
+        keyPath: cfg.keyPath,
+      },
+    };
+  });
