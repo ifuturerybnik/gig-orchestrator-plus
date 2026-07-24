@@ -48,9 +48,10 @@ export const testAdeConnection = createServerFn({ method: "POST" })
         steps,
         config: {
           apiBase: process.env.ADE_API_BASE ?? "(brak)",
+          oauthBase: process.env.ADE_OAUTH_BASE ?? "(brak)",
+          tokenPath: process.env.ADE_TOKEN_PATH ?? "(domyślny)",
           clientId: process.env.ADE_CLIENT_ID ?? "(brak)",
           mailboxAddress: process.env.ADE_MAILBOX_ADDRESS ?? "(brak)",
-          tokenPath: process.env.ADE_TOKEN_PATH || "/oauth2/token",
           certPath: process.env.ADE_QWAC_CERT_PATH ?? "(brak)",
           keyPath: process.env.ADE_QWAC_KEY_PATH ?? "(brak)",
         },
