@@ -13,6 +13,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         navigateFallbackDenylist: [/^\/~/],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ],

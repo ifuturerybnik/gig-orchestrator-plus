@@ -19,6 +19,7 @@ export default defineConfig({
       manifest: false, // używamy własnego manifest.webmanifest w public/
       workbox: {
         navigateFallbackDenylist: [/^\/~/],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ],
