@@ -44,6 +44,7 @@ import { Route as AuthenticatedContactsMeRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated.admin.storage'
 import { Route as AuthenticatedAdminSocialRouteImport } from './routes/_authenticated.admin.social'
 import { Route as AuthenticatedAdminGusRouteImport } from './routes/_authenticated.admin.gus'
+import { Route as AuthenticatedAdminEdoreczeniaRouteImport } from './routes/_authenticated.admin.edoreczenia'
 import { Route as AuthenticatedAdminBazaPpRouteImport } from './routes/_authenticated.admin.baza-pp'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated.admin.assistant'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated.admin.approvals'
@@ -271,6 +272,12 @@ const AuthenticatedAdminGusRoute = AuthenticatedAdminGusRouteImport.update({
   path: '/gus',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminEdoreczeniaRoute =
+  AuthenticatedAdminEdoreczeniaRouteImport.update({
+    id: '/edoreczenia',
+    path: '/edoreczenia',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBazaPpRoute =
   AuthenticatedAdminBazaPpRouteImport.update({
     id: '/baza-pp',
@@ -504,6 +511,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/admin/edoreczenia': typeof AuthenticatedAdminEdoreczeniaRoute
   '/admin/gus': typeof AuthenticatedAdminGusRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
@@ -574,6 +582,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/admin/edoreczenia': typeof AuthenticatedAdminEdoreczeniaRoute
   '/admin/gus': typeof AuthenticatedAdminGusRoute
   '/admin/social': typeof AuthenticatedAdminSocialRoute
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
@@ -647,6 +656,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/baza-pp': typeof AuthenticatedAdminBazaPpRoute
+  '/_authenticated/admin/edoreczenia': typeof AuthenticatedAdminEdoreczeniaRoute
   '/_authenticated/admin/gus': typeof AuthenticatedAdminGusRoute
   '/_authenticated/admin/social': typeof AuthenticatedAdminSocialRoute
   '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
@@ -721,6 +731,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/assistant'
     | '/admin/baza-pp'
+    | '/admin/edoreczenia'
     | '/admin/gus'
     | '/admin/social'
     | '/admin/storage'
@@ -791,6 +802,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/assistant'
     | '/admin/baza-pp'
+    | '/admin/edoreczenia'
     | '/admin/gus'
     | '/admin/social'
     | '/admin/storage'
@@ -863,6 +875,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/baza-pp'
+    | '/_authenticated/admin/edoreczenia'
     | '/_authenticated/admin/gus'
     | '/_authenticated/admin/social'
     | '/_authenticated/admin/storage'
@@ -1201,6 +1214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminGusRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/edoreczenia': {
+      id: '/_authenticated/admin/edoreczenia'
+      path: '/edoreczenia'
+      fullPath: '/admin/edoreczenia'
+      preLoaderRoute: typeof AuthenticatedAdminEdoreczeniaRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/baza-pp': {
       id: '/_authenticated/admin/baza-pp'
       path: '/baza-pp'
@@ -1462,6 +1482,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminBazaPpRoute: typeof AuthenticatedAdminBazaPpRoute
+  AuthenticatedAdminEdoreczeniaRoute: typeof AuthenticatedAdminEdoreczeniaRoute
   AuthenticatedAdminGusRoute: typeof AuthenticatedAdminGusRoute
   AuthenticatedAdminSocialRoute: typeof AuthenticatedAdminSocialRoute
   AuthenticatedAdminStorageRoute: typeof AuthenticatedAdminStorageRoute
@@ -1474,6 +1495,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminBazaPpRoute: AuthenticatedAdminBazaPpRoute,
+  AuthenticatedAdminEdoreczeniaRoute: AuthenticatedAdminEdoreczeniaRoute,
   AuthenticatedAdminGusRoute: AuthenticatedAdminGusRoute,
   AuthenticatedAdminSocialRoute: AuthenticatedAdminSocialRoute,
   AuthenticatedAdminStorageRoute: AuthenticatedAdminStorageRoute,
@@ -1652,13 +1674,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
