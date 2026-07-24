@@ -44,8 +44,10 @@ export default function IntegracjaEdoreczeniaTab() {
           <div className="grid gap-2 text-sm">
             <ConfigRow label="ClientId" value={result?.config.clientId} />
             <ConfigRow label="Adres skrzynki" value={result?.config.mailboxAddress} />
-            <ConfigRow label="API base" value={result?.config.apiBase} />
+            <ConfigRow label="UA API base (mTLS)" value={result?.config.apiBase} />
+            <ConfigRow label="OAuth base (KSDE)" value={result?.config.oauthBase} />
             <ConfigRow label="Token endpoint" value={result?.config.tokenPath} />
+
           </div>
 
           <Button onClick={handleTest} disabled={loading}>
