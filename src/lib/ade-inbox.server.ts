@@ -203,7 +203,6 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
         mailbox_address: cfg.mailboxAddress,
         last_synced_at: new Date().toISOString(),
         last_error: null,
-        messages_seen: summary.fetched,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "mailbox_address" },
