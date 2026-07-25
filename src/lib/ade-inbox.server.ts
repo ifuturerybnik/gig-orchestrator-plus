@@ -25,7 +25,7 @@ export async function adeApiCall(opts: {
   query?: Record<string, string | number | undefined>;
   body?: unknown;
   timeoutMs?: number;
-}): Promise<{ status: number; body: string; json: unknown }> {
+}): Promise<{ status: number; body: string; json: unknown; headers: Record<string, string> }> {
   const token = await getAdeAccessToken();
   const qs = opts.query
     ? "?" +
@@ -50,7 +50,7 @@ export async function adeApiCall(opts: {
   } catch {
     /* niepoprawny JSON — zostaw null */
   }
-  return { status: res.status, body: res.body, json };
+  return { status: res.status, body: res.body, json, headers: res.headers };
 }
 
 export type AdeInboxItem = {
