@@ -107,13 +107,9 @@ if [ -n "$CLI_PORT" ]; then PORT="$CLI_PORT"; fi
 export PORT
 
 # Sprawdzamy tylko zmienne potrzebne do BUILDU (reszta — runtime z PM2 env)
-for REQUIRED_ENV in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
-  if [ -z "${!REQUIRED_ENV:-}" ]; then
-    err "Brak zmiennej $REQUIRED_ENV — wymagana do buildu. Dopisz ją do $(basename "$ENV_FILE")."
-    print_env_help
-    exit 1
-  fi
-done
+# URL/publishable key Supabase są zaszyte w kodzie (src/integrations/supabase/config.ts),
+# więc VITE_SUPABASE_* nie są już wymagane do buildu.
+
 
 # Runtime sekrety (EXT_*) — ostrzegamy, ale nie blokujemy: mogą siedzieć w env procesu PM2
 for RUNTIME_ENV in EXT_SUPABASE_SERVICE_ROLE_KEY EXT_PII_ENCRYPTION_KEY; do
