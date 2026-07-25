@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { PWARegister } from "@/components/pwa-register";
 import { AppEventsBadge } from "@/components/app-events-badge";
 
 function NotFoundComponent() {
@@ -69,9 +68,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Concertivo — system zarządzania koncertami, zespołami i wydarzeniami estradowymi.",
       },
       { name: "theme-color", content: "#1E293B" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Concertivo" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -79,7 +75,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -139,7 +134,6 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <AuthSync />
-          <PWARegister />
           <AppEventsBadge />
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
