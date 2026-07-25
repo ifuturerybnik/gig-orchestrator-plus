@@ -80,7 +80,7 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
     const limit = data.limit ?? 100;
     const { data: rows, error } = await supabaseAdmin
       .from("edoreczenia_deliveries")
-      .select("id, ade_message_id, from_address, to_address, subject, received_at, status, read_at, body_text")
+      .select("id, ade_message_id, from_address, to_address, subject, received_at, status, read_at, body_text, raw")
       .eq("mailbox_address", cfg.mailboxAddress)
       .order("received_at", { ascending: false, nullsFirst: false })
       .limit(limit);
@@ -103,24 +103,37 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
       .eq("mailbox_address", cfg.mailboxAddress)
       .maybeSingle();
 
+    const partyName = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const contrib = (one as { contributor?: Record<string, unknown> })?.contributor;
+      const name = contrib?.companyName ?? contrib?.name;
+      return typeof name === "string" ? name : undefined;
+    };
+
     return {
       ok: true,
       mailbox: cfg.mailboxAddress,
       fetchedAt: new Date().toISOString(),
       lastSyncedAt: sync?.last_synced_at ?? undefined,
       lastSyncError: sync?.last_error ?? undefined,
-      items: (rows ?? []).map((r) => ({
-        id: r.id,
-        adeMessageId: r.ade_message_id ?? "",
-        from: r.from_address ?? undefined,
-        to: r.to_address ?? undefined,
-        subject: r.subject ?? undefined,
-        receivedAt: r.received_at ?? undefined,
-        status: r.status ?? undefined,
-        readAt: r.read_at ?? undefined,
-        hasBody: !!r.body_text,
-        attachmentCount: counts[r.id] ?? 0,
-      })),
+      items: (rows ?? []).map((r) => {
+        const meta = ((r.raw as { messageMetadata?: Record<string, unknown> } | null)?.messageMetadata ?? {}) as Record<string, unknown>;
+        return {
+          id: r.id,
+          adeMessageId: r.ade_message_id ?? "",
+          from: r.from_address ?? undefined,
+          fromName: partyName(meta.from),
+          to: r.to_address ?? undefined,
+          toName: partyName(meta.to),
+          subject: r.subject ?? undefined,
+          receivedAt: r.received_at ?? undefined,
+          status: r.status ?? undefined,
+          readAt: r.read_at ?? undefined,
+          hasBody: !!r.body_text,
+          attachmentCount: counts[r.id] ?? 0,
+        };
+      }),
     };
   });
 
