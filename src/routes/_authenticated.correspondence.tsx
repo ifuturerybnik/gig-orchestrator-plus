@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Mail, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
 import { MailLayout } from "@/components/mail/MailLayout";
+import EdoreczeniaInboxTab from "@/components/settings/EdoreczeniaInboxTab";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/correspondence")({
   component: CorrespondencePage,
 });
 
-type Tab = "mail" | "messengers";
+type Tab = "mail" | "edoreczenia" | "messengers";
 
 function CorrespondencePage() {
   const { t } = useTranslation();
@@ -37,6 +38,10 @@ function CorrespondencePage() {
             <Mail className="h-4 w-4 mr-2" />
             {t("correspondence.tabs.mail", "Poczta e-mail")}
           </TabButton>
+          <TabButton active={tab === "edoreczenia"} onClick={() => setTab("edoreczenia")}>
+            <ShieldCheck className="h-4 w-4 mr-2" />
+            {t("correspondence.tabs.edoreczenia", "e-Doręczenia")}
+          </TabButton>
           <TabButton active={tab === "messengers"} onClick={() => setTab("messengers")}>
             <MessageCircle className="h-4 w-4 mr-2" />
             {t("correspondence.tabs.messengers", "Komunikatory")}
@@ -44,9 +49,9 @@ function CorrespondencePage() {
         </div>
 
         <div className="mt-6">
-          {tab === "mail" ? (
-            <MailLayout scope={{ kind: "user" }} />
-          ) : (
+          {tab === "mail" && <MailLayout scope={{ kind: "user" }} />}
+          {tab === "edoreczenia" && <EdoreczeniaInboxTab />}
+          {tab === "messengers" && (
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
               {t(
                 "correspondence.messengers_placeholder",
