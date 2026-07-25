@@ -137,7 +137,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!delivery) {
-      return { ok: false, id: data.id, adeMessageId: "", attachments: [], error: "Nie znaleziono wiadomości" };
+      return { ok: false, id: data.id, adeMessageId: "", attachments: [], evidences: [], error: "Nie znaleziono wiadomości" };
     }
 
     if (!delivery.body_text) {
@@ -152,6 +152,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
           to: delivery.to_address ?? undefined,
           receivedAt: delivery.received_at ?? undefined,
           attachments: [],
+          evidences: [],
           error: r.error,
         };
       }
@@ -180,16 +181,40 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       });
     }
 
+    // Wyciągnij nazwy nadawcy/odbiorcy i evidences z raw payloadu
+    const rawObj = (refreshed?.raw ?? {}) as Record<string, unknown>;
+    const meta = (rawObj.messageMetadata ?? {}) as Record<string, unknown>;
+    const partyName = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const contrib = (one as { contributor?: Record<string, unknown> })?.contributor;
+      const name = contrib?.companyName ?? contrib?.name;
+      return typeof name === "string" ? name : undefined;
+    };
+    const fromName = partyName(meta.from);
+    const toName = partyName(meta.to);
+    const evidencesRaw = Array.isArray(rawObj.evidences) ? (rawObj.evidences as Array<Record<string, unknown>>) : [];
+    const evidences: AdeEvidence[] = evidencesRaw.map((e) => ({
+      type: typeof e.type === "string" ? e.type : undefined,
+      eventDate: typeof e.eventDate === "string" ? e.eventDate : undefined,
+      reason: Array.isArray(e.reasonDetails) && typeof e.reasonDetails[0] === "string"
+        ? (e.reasonDetails[0] as string)
+        : undefined,
+    }));
+
     return {
       ok: true,
       id: refreshed?.id ?? delivery.id,
       adeMessageId: refreshed?.ade_message_id ?? "",
       subject: refreshed?.subject ?? undefined,
       from: refreshed?.from_address ?? undefined,
+      fromName,
       to: refreshed?.to_address ?? undefined,
+      toName,
       receivedAt: refreshed?.received_at ?? undefined,
       bodyText: refreshed?.body_text ?? undefined,
       rawJson: refreshed?.raw ? JSON.stringify(refreshed.raw) : undefined,
       attachments,
+      evidences,
     };
   });
