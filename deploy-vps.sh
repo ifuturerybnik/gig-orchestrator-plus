@@ -44,7 +44,7 @@ echo "==> Installing dependencies..."
 bun install
 
 echo "==> Building for VPS (Node.js mode)..."
-bun run build --config vite.vps.config.ts
+bun run build:vps
 
 # --------------- 3. Create .env.production ----------------
 echo "==> Creating .env.production..."

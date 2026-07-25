@@ -140,7 +140,9 @@ log "Czyszczę stary build..."
 rm -rf dist .output .vinxi node_modules/.vite || true
 
 log "Buduję aplikację (config: vite.vps.config.ts)..."
-if [ -f "vite.vps.config.ts" ]; then
+if bun run | grep -q "build:vps"; then
+  bun run build:vps
+elif [ -f "vite.vps.config.ts" ]; then
   bunx vite build --config vite.vps.config.ts
 else
   warn "Brak vite.vps.config.ts — używam domyślnego configa"
