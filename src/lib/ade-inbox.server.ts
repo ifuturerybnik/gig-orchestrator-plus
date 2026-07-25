@@ -25,7 +25,8 @@ export async function adeApiCall(opts: {
   query?: Record<string, string | number | undefined>;
   body?: unknown;
   timeoutMs?: number;
-}): Promise<{ status: number; body: string; json: unknown; headers: Record<string, string> }> {
+  binary?: boolean;
+}): Promise<{ status: number; body: string; bodyBuffer?: Buffer; json: unknown; headers: Record<string, string> }> {
   const token = await getAdeAccessToken();
   const qs = opts.query
     ? "?" +
@@ -43,6 +44,7 @@ export async function adeApiCall(opts: {
     },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
     timeoutMs: opts.timeoutMs ?? 20000,
+    binary: opts.binary,
   });
   let json: unknown = null;
   try {
@@ -50,7 +52,7 @@ export async function adeApiCall(opts: {
   } catch {
     /* niepoprawny JSON — zostaw null */
   }
-  return { status: res.status, body: res.body, json, headers: res.headers };
+  return { status: res.status, body: res.body, bodyBuffer: res.bodyBuffer, json, headers: res.headers };
 }
 
 export type AdeInboxItem = {
