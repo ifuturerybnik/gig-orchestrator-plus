@@ -150,6 +150,7 @@ export async function adeRawRequest(opts: {
   headers?: Record<string, string>;
   body?: string;
   timeoutMs?: number;
+  binary?: boolean;
 }): Promise<AdeRawResponse> {
   const cfg = loadAdeConfig();
   return httpsRawRequest({
@@ -159,6 +160,7 @@ export async function adeRawRequest(opts: {
     body: opts.body,
     timeoutMs: opts.timeoutMs,
     useMtls: true,
+    binary: opts.binary,
   });
 }
 
