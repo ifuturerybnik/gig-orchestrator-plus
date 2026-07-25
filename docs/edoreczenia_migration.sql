@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS public.edoreczenia_deliveries (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.edoreczenia_deliveries
+  ADD COLUMN IF NOT EXISTS mailbox_address text,
+  ADD COLUMN IF NOT EXISTS from_address text,
+  ADD COLUMN IF NOT EXISTS to_address text,
+  ADD COLUMN IF NOT EXISTS body_text text,
+  ADD COLUMN IF NOT EXISTS raw jsonb,
+  ADD COLUMN IF NOT EXISTS read_at timestamptz;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.edoreczenia_deliveries TO authenticated;
 GRANT ALL ON public.edoreczenia_deliveries TO service_role;
 ALTER TABLE public.edoreczenia_deliveries ENABLE ROW LEVEL SECURITY;
@@ -36,6 +43,8 @@ CREATE TABLE IF NOT EXISTS public.edoreczenia_attachments (
   ade_attachment_id text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.edoreczenia_attachments
+  ADD COLUMN IF NOT EXISTS mime_type text;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.edoreczenia_attachments TO authenticated;
 GRANT ALL ON public.edoreczenia_attachments TO service_role;
 ALTER TABLE public.edoreczenia_attachments ENABLE ROW LEVEL SECURITY;
@@ -51,6 +60,11 @@ CREATE TABLE IF NOT EXISTS public.edoreczenia_sync_state (
   last_error text,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.edoreczenia_sync_state
+  ADD COLUMN IF NOT EXISTS mailbox_address text,
+  ADD COLUMN IF NOT EXISTS last_synced_at timestamptz;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edoreczenia_sync_state_mailbox_address
+  ON public.edoreczenia_sync_state (mailbox_address);
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.edoreczenia_sync_state TO authenticated;
 GRANT ALL ON public.edoreczenia_sync_state TO service_role;
 ALTER TABLE public.edoreczenia_sync_state ENABLE ROW LEVEL SECURITY;

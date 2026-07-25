@@ -19,6 +19,13 @@ export async function getAdeAccessToken(): Promise<string> {
   return parsed.access_token;
 }
 
+export async function requireEdoreczeniaAdmin(ctx: { supabase: any; userId: string }) {
+  const { data, error } = await ctx.supabase.from("user_roles").select("role").eq("user_id", ctx.userId);
+  if (error) throw new Error(`Nie udało się sprawdzić uprawnień: ${(error as Error).message ?? "błąd"}`);
+  const roles = ((data as { role: string }[] | null) ?? []).map((r) => r.role);
+  if (!roles.includes("super_admin") && !roles.includes("admin_staff")) throw new Error("Brak uprawnień administratora");
+}
+
 export async function adeApiCall(opts: {
   method: string;
   path: string;

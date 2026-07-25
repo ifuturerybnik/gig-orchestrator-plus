@@ -46,20 +46,13 @@ export type AdeDeliveryDetail = {
   error?: string;
 };
 
-async function requireAdmin(ctx: { supabase: any; userId: string }) {
-  const { data, error } = await ctx.supabase.from("user_roles").select("role").eq("user_id", ctx.userId);
-  if (error) throw new Error(`Nie udało się sprawdzić uprawnień: ${(error as Error).message ?? "błąd"}`);
-  const roles = (data as { role: string }[] | null ?? []).map((r) => r.role);
-  if (!roles.includes("super_admin") && !roles.includes("admin_staff")) throw new Error("Brak uprawnień administratora");
-}
-
 /** Zsynchronizuj skrzynkę ADE do bazy (upsert). */
 export const syncAdeInbox = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { limit?: number } | undefined) => data ?? {})
   .handler(async ({ data, context }) => {
-    await requireAdmin(context);
-    const { syncInboxToDb } = await import("@/lib/ade-inbox.server");
+    const { requireEdoreczeniaAdmin, syncInboxToDb } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     return await syncInboxToDb({ limit: data.limit ?? 100 });
   });
 
@@ -68,7 +61,8 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { limit?: number } | undefined) => data ?? {})
   .handler(async ({ data, context }): Promise<AdeInboxResult> => {
-    await requireAdmin(context);
+    const { requireEdoreczeniaAdmin } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     const { loadAdeConfig } = await import("@/lib/ade-client.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const cfg = loadAdeConfig();
@@ -124,8 +118,8 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { id: string }) => data)
   .handler(async ({ data, context }): Promise<AdeDeliveryDetail> => {
-    await requireAdmin(context);
-    const { fetchAndStoreMessage, signedAttachmentUrl } = await import("@/lib/ade-inbox.server");
+    const { requireEdoreczeniaAdmin, fetchAndStoreMessage, signedAttachmentUrl } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: delivery } = await supabaseAdmin
