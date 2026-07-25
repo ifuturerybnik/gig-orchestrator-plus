@@ -122,12 +122,14 @@ async function httpsRawRequest(opts: RawRequestOpts): Promise<AdeRawResponse> {
               } & object)
             | null;
           const peer = typeof socket?.getPeerCertificate === "function" ? socket.getPeerCertificate() : undefined;
+          const buffer = Buffer.concat(chunks);
           resolvePromise({
             status: res.statusCode ?? 0,
             headers: Object.fromEntries(
               Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : String(v ?? "")]),
             ),
-            body: Buffer.concat(chunks).toString("utf8"),
+            body: buffer.toString("utf8"),
+            bodyBuffer: opts.binary ? buffer : undefined,
             tlsPeerSubject: peer?.subject ? `${peer.subject.CN ?? ""} (${peer.subject.O ?? ""})` : undefined,
             tlsPeerIssuer: peer?.issuer ? `${peer.issuer.CN ?? ""} (${peer.issuer.O ?? ""})` : undefined,
           });
