@@ -5,7 +5,9 @@ export type AdeInboxRow = {
   id: string;                  // DB id (uuid)
   adeMessageId: string;
   from?: string;
+  fromName?: string;
   to?: string;
+  toName?: string;
   subject?: string;
   receivedAt?: string;
   status?: string;
