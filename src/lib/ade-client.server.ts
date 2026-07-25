@@ -77,6 +77,7 @@ type RawRequestOpts = {
   body?: string;
   timeoutMs?: number;
   useMtls?: boolean;                  // czy dołączać cert klienta
+  binary?: boolean;                   // zwróć też bodyBuffer
 };
 
 async function httpsRawRequest(opts: RawRequestOpts): Promise<AdeRawResponse> {
