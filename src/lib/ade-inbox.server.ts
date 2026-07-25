@@ -211,6 +211,11 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
         .select("id")
         .eq("ade_message_id", n.id)
         .maybeSingle();
+      const bodyText = typeof (raw as { textBody?: unknown }).textBody === "string"
+        ? ((raw as { textBody: string }).textBody)
+        : typeof (raw as { bodyText?: unknown }).bodyText === "string"
+          ? ((raw as { bodyText: string }).bodyText)
+          : null;
       const row = {
         direction: "inbound" as const,
         ade_message_id: n.id,
@@ -221,6 +226,7 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
         received_at: n.receivedAt ?? null,
         status: n.status ?? "new",
         raw,
+        body_text: bodyText,
         updated_at: new Date().toISOString(),
       };
       if (existing?.id) {
