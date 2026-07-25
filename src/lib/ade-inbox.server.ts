@@ -321,8 +321,23 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     if (res.status < 200 || res.status >= 300) {
       return { ok: false, attachments: [], error: `HTTP ${res.status}: ${res.body.slice(0, 200)}` };
     }
-    const bodyText = res.body;
-    const payload = res.json;
+    // Detal UA API v3 również potrafi zwrócić tablicę — rozpakuj do pojedynczego obiektu.
+    const payloadRaw = res.json;
+    const payload = (Array.isArray(payloadRaw) ? (payloadRaw[0] ?? {}) : (payloadRaw ?? {})) as Record<string, unknown>;
+    const meta = ((payload.messageMetadata ?? {}) as Record<string, unknown>);
+    const bodyText =
+      typeof (payload as { textBody?: unknown }).textBody === "string"
+        ? ((payload as { textBody: string }).textBody)
+        : typeof (payload as { bodyText?: unknown }).bodyText === "string"
+          ? ((payload as { bodyText: string }).bodyText)
+          : res.body;
+    const fromParty = extractParty(meta.from);
+    const toParty = extractParty(meta.to);
+    const subject = (meta.subject as string | undefined) ?? (payload.subject as string | undefined);
+    const receivedAt =
+      (meta.receiptDate as string | undefined) ??
+      (meta.timestamp as string | undefined) ??
+      (meta.submissionDate as string | undefined);
     const refs = extractAttachmentRefs(payload);
     const stored: Array<{
       id: string;
@@ -373,15 +388,18 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
       }
     }
 
-    await admin
-      .from("edoreczenia_deliveries")
-      .update({
-        body_text: bodyText,
-        raw: (payload ?? null) as unknown,
-        read_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", delivery.id);
+    const update: Record<string, unknown> = {
+      body_text: bodyText,
+      raw: payload,
+      read_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (subject) update.subject = subject;
+    if (fromParty.address) update.from_address = fromParty.address;
+    if (toParty.address) update.to_address = toParty.address;
+    if (receivedAt) update.received_at = receivedAt;
+
+    await admin.from("edoreczenia_deliveries").update(update).eq("id", delivery.id);
 
     return { ok: true, bodyText, attachments: stored };
   } catch (err) {
