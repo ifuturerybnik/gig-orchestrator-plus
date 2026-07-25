@@ -65,6 +65,7 @@ export type AdeRawResponse = {
   status: number;
   headers: Record<string, string>;
   body: string;
+  bodyBuffer?: Buffer;
   tlsPeerSubject?: string;
   tlsPeerIssuer?: string;
 };
