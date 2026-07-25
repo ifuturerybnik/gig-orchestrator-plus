@@ -70,6 +70,7 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabaseAdmin
       .from("edoreczenia_deliveries")
       .select("id, ade_message_id, from_address, to_address, subject, received_at, status, read_at, body_text")
+      .eq("mailbox_address", cfg.mailboxAddress)
       .order("received_at", { ascending: false, nullsFirst: false })
       .limit(limit);
     if (error) return { ok: false, items: [], mailbox: cfg.mailboxAddress, fetchedAt: new Date().toISOString(), error: error.message };
@@ -87,15 +88,15 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
     }
     const { data: sync } = await supabaseAdmin
       .from("edoreczenia_sync_state")
-      .select("last_success_at, last_sync_at, last_error")
-      .eq("id", 1)
+      .select("last_synced_at, last_error")
+      .eq("mailbox_address", cfg.mailboxAddress)
       .maybeSingle();
 
     return {
       ok: true,
       mailbox: cfg.mailboxAddress,
       fetchedAt: new Date().toISOString(),
-      lastSyncedAt: sync?.last_success_at ?? sync?.last_sync_at ?? undefined,
+      lastSyncedAt: sync?.last_synced_at ?? undefined,
       lastSyncError: sync?.last_error ?? undefined,
       items: (rows ?? []).map((r) => ({
         id: r.id,
@@ -155,7 +156,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
 
     const { data: atts } = await supabaseAdmin
       .from("edoreczenia_attachments")
-      .select("id, filename, content_type, size_bytes, storage_path")
+      .select("id, filename, mime_type, size_bytes, storage_path")
       .eq("delivery_id", data.id);
 
     const attachments: AdeAttachmentRow[] = [];
@@ -164,7 +165,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       attachments.push({
         id: a.id,
         filename: a.filename,
-        mimeType: a.content_type ?? undefined,
+        mimeType: a.mime_type ?? undefined,
         sizeBytes: a.size_bytes ?? undefined,
         url,
       });
