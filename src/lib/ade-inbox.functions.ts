@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type AdeInboxRow = {
-  id: string;
+  id: string;                  // DB id (uuid)
+  adeMessageId: string;
   from?: string;
   to?: string;
   subject?: string;
   receivedAt?: string;
   status?: string;
+  readAt?: string;
+  hasBody: boolean;
+  attachmentCount: number;
 };
 
 export type AdeInboxResult = {
@@ -15,8 +19,31 @@ export type AdeInboxResult = {
   items: AdeInboxRow[];
   mailbox: string;
   fetchedAt: string;
+  lastSyncedAt?: string;
+  lastSyncError?: string;
   error?: string;
-  rawStatus?: number;
+};
+
+export type AdeAttachmentRow = {
+  id: string;
+  filename: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  url?: string;
+};
+
+export type AdeDeliveryDetail = {
+  ok: boolean;
+  id: string;
+  adeMessageId: string;
+  subject?: string;
+  from?: string;
+  to?: string;
+  receivedAt?: string;
+  bodyText?: string;
+  raw?: unknown;
+  attachments: AdeAttachmentRow[];
+  error?: string;
 };
 
 async function requireAdmin(ctx: { supabase: any; userId: string }) {
@@ -26,58 +53,140 @@ async function requireAdmin(ctx: { supabase: any; userId: string }) {
   if (!roles.includes("super_admin") && !roles.includes("admin_staff")) throw new Error("Brak uprawnień administratora");
 }
 
-export const listAdeInbox = createServerFn({ method: "POST" })
+/** Zsynchronizuj skrzynkę ADE do bazy (upsert). */
+export const syncAdeInbox = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { limit?: number; page?: number } | undefined) => data ?? {})
-  .handler(async ({ data, context }): Promise<AdeInboxResult> => {
+  .inputValidator((data: { limit?: number } | undefined) => data ?? {})
+  .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const { listAdeInboxRaw, normalizeInboxItems } = await import("@/lib/ade-inbox.server");
-    const { loadAdeConfig } = await import("@/lib/ade-client.server");
-    const cfg = loadAdeConfig();
-    try {
-      const res = await listAdeInboxRaw({ limit: data.limit ?? 50, page: data.page ?? 0 });
-      if (res.status < 200 || res.status >= 300) {
-        const wwwAuth = (res as { headers?: Record<string, string> }).headers?.["www-authenticate"] ?? "";
-        const bodySnippet = res.body?.slice(0, 400) ?? "";
-        return {
-          ok: false,
-          items: [],
-          mailbox: cfg.mailboxAddress,
-          fetchedAt: new Date().toISOString(),
-          error: `HTTP ${res.status}${wwwAuth ? ` — WWW-Authenticate: ${wwwAuth}` : ""}${bodySnippet ? ` — body: ${bodySnippet}` : " — body pusty"}`,
-          rawStatus: res.status,
-        };
-      }
-      const items = normalizeInboxItems(res.json);
-      return {
-        ok: true,
-        items,
-        mailbox: cfg.mailboxAddress,
-        fetchedAt: new Date().toISOString(),
-        rawStatus: res.status,
-      };
-    } catch (err) {
-      return {
-        ok: false,
-        items: [],
-        mailbox: cfg.mailboxAddress,
-        fetchedAt: new Date().toISOString(),
-        error: (err as Error).message,
-      };
-    }
+    const { syncInboxToDb } = await import("@/lib/ade-inbox.server");
+    return await syncInboxToDb({ limit: data.limit ?? 100 });
   });
 
-export const getAdeMessage = createServerFn({ method: "POST" })
+/** Zwróć listę wiadomości z bazy (posortowaną po dacie). */
+export const listStoredDeliveries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { limit?: number } | undefined) => data ?? {})
+  .handler(async ({ data, context }): Promise<AdeInboxResult> => {
+    await requireAdmin(context);
+    const { loadAdeConfig } = await import("@/lib/ade-client.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cfg = loadAdeConfig();
+    const limit = data.limit ?? 100;
+    const { data: rows, error } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .select("id, ade_message_id, from_address, to_address, subject, received_at, status, read_at, body_text")
+      .eq("mailbox_address", cfg.mailboxAddress)
+      .order("received_at", { ascending: false, nullsFirst: false })
+      .limit(limit);
+    if (error) return { ok: false, items: [], mailbox: cfg.mailboxAddress, fetchedAt: new Date().toISOString(), error: error.message };
+
+    const ids = (rows ?? []).map((r) => r.id);
+    let counts: Record<string, number> = {};
+    if (ids.length) {
+      const { data: atts } = await supabaseAdmin
+        .from("edoreczenia_attachments")
+        .select("delivery_id")
+        .in("delivery_id", ids);
+      for (const a of atts ?? []) {
+        counts[a.delivery_id] = (counts[a.delivery_id] ?? 0) + 1;
+      }
+    }
+    const { data: sync } = await supabaseAdmin
+      .from("edoreczenia_sync_state")
+      .select("last_synced_at, last_error")
+      .eq("mailbox_address", cfg.mailboxAddress)
+      .maybeSingle();
+
+    return {
+      ok: true,
+      mailbox: cfg.mailboxAddress,
+      fetchedAt: new Date().toISOString(),
+      lastSyncedAt: sync?.last_synced_at ?? undefined,
+      lastSyncError: sync?.last_error ?? undefined,
+      items: (rows ?? []).map((r) => ({
+        id: r.id,
+        adeMessageId: r.ade_message_id ?? "",
+        from: r.from_address ?? undefined,
+        to: r.to_address ?? undefined,
+        subject: r.subject ?? undefined,
+        receivedAt: r.received_at ?? undefined,
+        status: r.status ?? undefined,
+        readAt: r.read_at ?? undefined,
+        hasBody: !!r.body_text,
+        attachmentCount: counts[r.id] ?? 0,
+      })),
+    };
+  });
+
+/** Otwórz wiadomość — jeśli treść jeszcze nie zapisana, pobierz z ADE i zapisz do Storage/DB. */
+export const openStoredDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { id: string }) => data)
-  .handler(async ({ data, context }): Promise<{ ok: boolean; body: string; error?: string; status?: number }> => {
+  .handler(async ({ data, context }): Promise<AdeDeliveryDetail> => {
     await requireAdmin(context);
-    const { getAdeMessageRaw } = await import("@/lib/ade-inbox.server");
-    try {
-      const res = await getAdeMessageRaw(data.id);
-      const ok = res.status >= 200 && res.status < 300;
-      return { ok, body: res.body, status: res.status, error: ok ? undefined : `HTTP ${res.status}` };
-    } catch (err) {
-      return { ok: false, body: "", error: (err as Error).message };
+    const { fetchAndStoreMessage, signedAttachmentUrl } = await import("@/lib/ade-inbox.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: delivery } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .select("id, ade_message_id, subject, from_address, to_address, received_at, body_text, raw")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!delivery) {
+      return { ok: false, id: data.id, adeMessageId: "", attachments: [], error: "Nie znaleziono wiadomości" };
     }
+
+    if (!delivery.body_text) {
+      const r = await fetchAndStoreMessage(delivery.id);
+      if (!r.ok) {
+        return {
+          ok: false,
+          id: delivery.id,
+          adeMessageId: delivery.ade_message_id ?? "",
+          subject: delivery.subject ?? undefined,
+          from: delivery.from_address ?? undefined,
+          to: delivery.to_address ?? undefined,
+          receivedAt: delivery.received_at ?? undefined,
+          attachments: [],
+          error: r.error,
+        };
+      }
+    }
+
+    const { data: refreshed } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .select("id, ade_message_id, subject, from_address, to_address, received_at, body_text, raw")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    const { data: atts } = await supabaseAdmin
+      .from("edoreczenia_attachments")
+      .select("id, filename, mime_type, size_bytes, storage_path")
+      .eq("delivery_id", data.id);
+
+    const attachments: AdeAttachmentRow[] = [];
+    for (const a of atts ?? []) {
+      const url = a.storage_path ? (await signedAttachmentUrl(a.storage_path)) ?? undefined : undefined;
+      attachments.push({
+        id: a.id,
+        filename: a.filename,
+        mimeType: a.mime_type ?? undefined,
+        sizeBytes: a.size_bytes ?? undefined,
+        url,
+      });
+    }
+
+    return {
+      ok: true,
+      id: refreshed?.id ?? delivery.id,
+      adeMessageId: refreshed?.ade_message_id ?? "",
+      subject: refreshed?.subject ?? undefined,
+      from: refreshed?.from_address ?? undefined,
+      to: refreshed?.to_address ?? undefined,
+      receivedAt: refreshed?.received_at ?? undefined,
+      bodyText: refreshed?.body_text ?? undefined,
+      raw: refreshed?.raw ?? undefined,
+      attachments,
+    };
   });
