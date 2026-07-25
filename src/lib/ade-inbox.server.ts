@@ -65,8 +65,8 @@ export type AdeInboxItem = {
 /** Zwraca listę wiadomości ze skrzynki (limit ustawia klient). */
 export async function listAdeInboxRaw(params: { limit?: number; page?: number } = {}) {
   const cfg = loadAdeConfig();
-  // UA API v3: /v3/mailboxes/{address}/messages
-  const path = `/v3/mailboxes/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
+  // UA API v3: GET /api/v3/{eDeliveryAddress}/messages
+  const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
   const res = await adeApiCall({
     method: "GET",
     path,
@@ -77,7 +77,7 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number } 
 
 export async function getAdeMessageRaw(messageId: string) {
   const cfg = loadAdeConfig();
-  const path = `/v3/mailboxes/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(messageId)}`;
+  const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(messageId)}`;
   return await adeApiCall({ method: "GET", path });
 }
 
