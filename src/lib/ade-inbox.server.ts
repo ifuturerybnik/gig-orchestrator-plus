@@ -94,14 +94,23 @@ export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
           : [];
   return arr.map((it) => {
     const o = (it ?? {}) as Record<string, unknown>;
-    const id = String(o.id ?? o.messageId ?? o.uuid ?? o.identifier ?? "");
+    // UA API v3 zwraca { messageMetadata: { messageId, timestamp, shippingService, ... } }
+    const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
+    const pick = <T = unknown>(...keys: string[]): T | undefined => {
+      for (const k of keys) {
+        if (o[k] !== undefined) return o[k] as T;
+        if (meta[k] !== undefined) return meta[k] as T;
+      }
+      return undefined;
+    };
+    const id = String(pick("messageId", "id", "uuid", "identifier") ?? "");
     return {
       id,
-      from: (o.from ?? o.sender ?? o.fromAddress) as string | undefined,
-      to: (o.to ?? o.recipient ?? o.toAddress) as string | undefined,
-      subject: (o.subject ?? o.title) as string | undefined,
-      receivedAt: (o.receivedAt ?? o.receivedDate ?? o.createdAt ?? o.date) as string | undefined,
-      status: (o.status ?? o.state) as string | undefined,
+      from: pick<string>("from", "sender", "fromAddress", "senderAddress", "senderEDeliveryAddress"),
+      to: pick<string>("to", "recipient", "toAddress", "recipientAddress", "recipientEDeliveryAddress"),
+      subject: pick<string>("subject", "title"),
+      receivedAt: pick<string>("timestamp", "receivedAt", "receivedDate", "createdAt", "date"),
+      status: pick<string>("shippingService", "status", "state"),
     };
   });
 }
