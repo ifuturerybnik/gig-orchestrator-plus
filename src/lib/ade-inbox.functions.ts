@@ -41,7 +41,7 @@ export type AdeDeliveryDetail = {
   to?: string;
   receivedAt?: string;
   bodyText?: string;
-  raw?: unknown;
+  rawJson?: string;
   attachments: AdeAttachmentRow[];
   error?: string;
 };
