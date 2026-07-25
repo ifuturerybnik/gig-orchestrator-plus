@@ -83,8 +83,8 @@ export async function getAdeMessageRaw(messageId: string) {
   return await adeApiCall({ method: "GET", path });
 }
 
-/** Best-effort mapowanie odpowiedzi UA API na strukturę używaną w UI. */
-export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
+/** Zwraca surową listę elementów (zachowuje pełny obiekt) niezależnie od kształtu odpowiedzi. */
+export function extractRawItems(raw: unknown): Record<string, unknown>[] {
   const arr: unknown[] = Array.isArray(raw)
     ? raw
     : Array.isArray((raw as { messages?: unknown[] })?.messages)
@@ -94,9 +94,12 @@ export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
         : Array.isArray((raw as { content?: unknown[] })?.content)
           ? ((raw as { content: unknown[] }).content)
           : [];
-  return arr.map((it) => {
-    const o = (it ?? {}) as Record<string, unknown>;
-    // UA API v3 zwraca { messageMetadata: { messageId, timestamp, shippingService, ... } }
+  return arr.map((it) => (it ?? {}) as Record<string, unknown>);
+}
+
+/** Best-effort mapowanie odpowiedzi UA API na strukturę używaną w UI. */
+export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
+  return extractRawItems(raw).map((o) => {
     const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
     const pick = <T = unknown>(...keys: string[]): T | undefined => {
       for (const k of keys) {
@@ -115,4 +118,233 @@ export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
       status: pick<string>("shippingService", "status", "state"),
     };
   });
+}
+
+// ─────────────────────────────── Persystencja ────────────────────────────────
+
+const BUCKET = "edoreczenia";
+
+async function getAdmin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
+/** Idempotentne utworzenie bucketu (private). */
+export async function ensureEdoreczeniaBucket(): Promise<void> {
+  const admin = await getAdmin();
+  const { data: buckets } = await admin.storage.listBuckets();
+  if (buckets?.some((b) => b.name === BUCKET)) return;
+  await admin.storage.createBucket(BUCKET, { public: false });
+}
+
+export type SyncSummary = {
+  ok: boolean;
+  mailbox: string;
+  fetched: number;
+  inserted: number;
+  updated: number;
+  error?: string;
+};
+
+/** Pobierz listę wiadomości z ADE i upsertuj do public.edoreczenia_deliveries. */
+export async function syncInboxToDb(params: { limit?: number } = {}): Promise<SyncSummary> {
+  const cfg = loadAdeConfig();
+  const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
+  try {
+    const res = await listAdeInboxRaw({ limit: params.limit ?? 100 });
+    if (res.status < 200 || res.status >= 300) {
+      summary.error = `HTTP ${res.status}`;
+      return summary;
+    }
+    const rawItems = extractRawItems(res.json);
+    const normalized = normalizeInboxItems(res.json);
+    summary.fetched = rawItems.length;
+
+    const admin = await getAdmin();
+    for (let i = 0; i < rawItems.length; i++) {
+      const raw = rawItems[i];
+      const n = normalized[i];
+      if (!n.id) continue;
+      const { data: existing } = await admin
+        .from("edoreczenia_deliveries")
+        .select("id")
+        .eq("ade_message_id", n.id)
+        .maybeSingle();
+      const row = {
+        direction: "inbound" as const,
+        ade_message_id: n.id,
+        mailbox_address: cfg.mailboxAddress,
+        from_address: n.from ?? null,
+        to_address: n.to ?? cfg.mailboxAddress,
+        subject: n.subject ?? null,
+        received_at: n.receivedAt ?? null,
+        status: n.status ?? "new",
+        raw,
+        updated_at: new Date().toISOString(),
+      };
+      if (existing?.id) {
+        await admin.from("edoreczenia_deliveries").update(row).eq("id", existing.id);
+        summary.updated++;
+      } else {
+        await admin.from("edoreczenia_deliveries").insert(row);
+        summary.inserted++;
+      }
+    }
+
+    await admin.from("edoreczenia_sync_state").upsert(
+      {
+        mailbox_address: cfg.mailboxAddress,
+        last_synced_at: new Date().toISOString(),
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "mailbox_address" },
+    );
+    summary.ok = true;
+    return summary;
+  } catch (err) {
+    summary.error = (err as Error).message;
+    try {
+      const admin = await getAdmin();
+      await admin.from("edoreczenia_sync_state").upsert(
+        {
+          mailbox_address: cfg.mailboxAddress,
+          last_error: summary.error,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "mailbox_address" },
+      );
+    } catch {
+      /* ignore */
+    }
+    return summary;
+  }
+}
+
+/** Wyciągnij listę załączników z payloadu wiadomości (best-effort). */
+function extractAttachmentRefs(
+  payload: unknown,
+): Array<{ id: string; filename: string; mime?: string; size?: number }> {
+  const o = (payload ?? {}) as Record<string, unknown>;
+  const list =
+    (o.attachments as unknown[]) ??
+    ((o.messageContent as Record<string, unknown> | undefined)?.attachments as unknown[]) ??
+    ((o.content as Record<string, unknown> | undefined)?.attachments as unknown[]) ??
+    [];
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((it) => {
+      const a = (it ?? {}) as Record<string, unknown>;
+      const id = String(a.attachmentId ?? a.id ?? a.uuid ?? "");
+      const filename = String(a.filename ?? a.name ?? a.fileName ?? id ?? "attachment");
+      const mime = (a.mimeType ?? a.contentType ?? a.mime) as string | undefined;
+      const size = (a.size ?? a.sizeBytes ?? a.fileSize) as number | undefined;
+      return { id, filename, mime, size };
+    })
+    .filter((a) => a.id);
+}
+
+/** Pobierz treść wiadomości z ADE, zapisz body_text i załączniki do Storage/DB. */
+export async function fetchAndStoreMessage(deliveryId: string): Promise<{
+  ok: boolean;
+  bodyText?: string;
+  attachments: Array<{
+    id: string;
+    filename: string;
+    mime_type?: string;
+    size_bytes?: number;
+    storage_path: string;
+  }>;
+  error?: string;
+}> {
+  const admin = await getAdmin();
+  const { data: delivery, error: dErr } = await admin
+    .from("edoreczenia_deliveries")
+    .select("id, ade_message_id, mailbox_address")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  if (dErr || !delivery) return { ok: false, attachments: [], error: "Nie znaleziono wiadomości w bazie" };
+  if (!delivery.ade_message_id) return { ok: false, attachments: [], error: "Brak ade_message_id" };
+
+  try {
+    await ensureEdoreczeniaBucket();
+    const cfg = loadAdeConfig();
+    const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(delivery.ade_message_id)}`;
+    const res = await adeApiCall({ method: "GET", path });
+    if (res.status < 200 || res.status >= 300) {
+      return { ok: false, attachments: [], error: `HTTP ${res.status}: ${res.body.slice(0, 200)}` };
+    }
+    const bodyText = res.body;
+    const payload = res.json;
+    const refs = extractAttachmentRefs(payload);
+    const stored: Array<{
+      id: string;
+      filename: string;
+      mime_type?: string;
+      size_bytes?: number;
+      storage_path: string;
+    }> = [];
+
+    for (const ref of refs) {
+      try {
+        const attPath = `${path}/attachments/${encodeURIComponent(ref.id)}`;
+        const attRes = await adeApiCall({ method: "GET", path: attPath, binary: true, timeoutMs: 60000 });
+        if (attRes.status < 200 || attRes.status >= 300 || !attRes.bodyBuffer) continue;
+        const storagePath = `${delivery.id}/${ref.id}-${ref.filename}`;
+        const { error: upErr } = await admin.storage.from(BUCKET).upload(storagePath, attRes.bodyBuffer, {
+          contentType: ref.mime ?? attRes.headers["content-type"] ?? "application/octet-stream",
+          upsert: true,
+        });
+        if (upErr) continue;
+
+        const { data: existingAtt } = await admin
+          .from("edoreczenia_attachments")
+          .select("id")
+          .eq("delivery_id", delivery.id)
+          .eq("ade_attachment_id", ref.id)
+          .maybeSingle();
+        const row = {
+          delivery_id: delivery.id,
+          ade_attachment_id: ref.id,
+          filename: ref.filename,
+          mime_type: ref.mime ?? null,
+          size_bytes: ref.size ?? attRes.bodyBuffer.length,
+          storage_path: storagePath,
+        };
+        if (existingAtt?.id) await admin.from("edoreczenia_attachments").update(row).eq("id", existingAtt.id);
+        else await admin.from("edoreczenia_attachments").insert(row);
+
+        stored.push({
+          id: ref.id,
+          filename: ref.filename,
+          mime_type: row.mime_type ?? undefined,
+          size_bytes: row.size_bytes,
+          storage_path: storagePath,
+        });
+      } catch {
+        /* pomiń pojedynczy załącznik */
+      }
+    }
+
+    await admin
+      .from("edoreczenia_deliveries")
+      .update({
+        body_text: bodyText,
+        raw: (payload ?? null) as unknown,
+        read_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", delivery.id);
+
+    return { ok: true, bodyText, attachments: stored };
+  } catch (err) {
+    return { ok: false, attachments: [], error: (err as Error).message };
+  }
+}
+
+/** Wygeneruj signed URL dla załącznika (godzina). */
+export async function signedAttachmentUrl(storagePath: string): Promise<string | null> {
+  const admin = await getAdmin();
+  const { data } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 60 * 60);
+  return data?.signedUrl ?? null;
 }
