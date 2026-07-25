@@ -178,7 +178,8 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
     .replace(/-----END CERTIFICATE-----/g, "")
     .replace(/\s+/g, "");
 
-  const audience = `${cfg.oauthBase}${cfg.tokenPath}`;
+  // UA API / KSDE oczekuje audience = realmu (bez ścieżki /protocol/openid-connect/token)
+  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
@@ -210,13 +211,14 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     client_assertion: jwt,
   });
+  // Keycloak KSDE wymaga login_hint=ADE.<adres_skrzynki>, aby powiązać token z konkretną skrzynką ADE.
+  const tokenUrl =
+    cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
   const res = await httpsRawRequest({
     method: "POST",
-    url: cfg.oauthBase + cfg.tokenPath,
+    url: tokenUrl,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
-    // Endpoint tokenowy zwykle nie wymaga mTLS (kanał publiczny z JWT podpisanym QWAC),
-    // ale niektóre wdrożenia go akceptują — nie wysyłamy cert klienta na Keycloak.
     useMtls: false,
   });
   return { ...res, audience };
