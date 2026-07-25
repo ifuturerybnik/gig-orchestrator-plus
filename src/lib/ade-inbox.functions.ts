@@ -186,7 +186,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       to: refreshed?.to_address ?? undefined,
       receivedAt: refreshed?.received_at ?? undefined,
       bodyText: refreshed?.body_text ?? undefined,
-      raw: refreshed?.raw ?? undefined,
+      rawJson: refreshed?.raw ? JSON.stringify(refreshed.raw) : undefined,
       attachments,
     };
   });
