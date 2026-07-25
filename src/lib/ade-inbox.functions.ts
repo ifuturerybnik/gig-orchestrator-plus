@@ -216,8 +216,12 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       });
     }
 
-    // Wyciągnij nazwy nadawcy/odbiorcy i evidences z raw payloadu
-    const rawObj = (refreshed?.raw ?? {}) as Record<string, unknown>;
+    // Wyciągnij nazwy/adresy nadawcy/odbiorcy, evidences i treść z raw payloadu.
+    // Uwaga: UA API v3 potrafi zwrócić payload jako tablicę [{...}] — rozpakuj.
+    const rawUnwrapped = Array.isArray(refreshed?.raw)
+      ? ((refreshed!.raw as unknown[])[0] ?? {})
+      : ((refreshed?.raw ?? {}));
+    const rawObj = rawUnwrapped as Record<string, unknown>;
     const meta = (rawObj.messageMetadata ?? {}) as Record<string, unknown>;
     const partyName = (node: unknown): string | undefined => {
       if (!node) return undefined;
@@ -226,8 +230,23 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       const name = contrib?.companyName ?? contrib?.name;
       return typeof name === "string" ? name : undefined;
     };
+    const partyAddress = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const o = one as Record<string, unknown>;
+      const a = o.eDeliveryAddress ?? o.edeliveryAddress ?? o.address;
+      return typeof a === "string" ? a : undefined;
+    };
     const fromName = partyName(meta.from);
     const toName = partyName(meta.to);
+    const subject =
+      (refreshed?.subject as string | undefined) ??
+      (meta.subject as string | undefined) ??
+      (rawObj.subject as string | undefined);
+    const bodyTextFallback =
+      (refreshed?.body_text as string | undefined) ??
+      (typeof rawObj.textBody === "string" ? (rawObj.textBody as string) : undefined) ??
+      (typeof rawObj.bodyText === "string" ? (rawObj.bodyText as string) : undefined);
     const evidencesRaw = Array.isArray(rawObj.evidences) ? (rawObj.evidences as Array<Record<string, unknown>>) : [];
     const evidences: AdeEvidence[] = evidencesRaw.map((e) => ({
       type: typeof e.type === "string" ? e.type : undefined,
@@ -241,13 +260,13 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       ok: true,
       id: refreshed?.id ?? delivery.id,
       adeMessageId: refreshed?.ade_message_id ?? "",
-      subject: refreshed?.subject ?? undefined,
-      from: refreshed?.from_address ?? undefined,
+      subject,
+      from: refreshed?.from_address ?? partyAddress(meta.from),
       fromName,
-      to: refreshed?.to_address ?? undefined,
+      to: refreshed?.to_address ?? partyAddress(meta.to),
       toName,
       receivedAt: refreshed?.received_at ?? undefined,
-      bodyText: refreshed?.body_text ?? undefined,
+      bodyText: bodyTextFallback,
       rawJson: refreshed?.raw ? JSON.stringify(refreshed.raw) : undefined,
       attachments,
       evidences,
