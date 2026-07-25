@@ -103,12 +103,22 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
       .eq("mailbox_address", cfg.mailboxAddress)
       .maybeSingle();
 
+    const unwrapRaw = (raw: unknown): Record<string, unknown> =>
+      (Array.isArray(raw) ? (raw[0] ?? {}) : (raw ?? {})) as Record<string, unknown>;
+
     const partyName = (node: unknown): string | undefined => {
       if (!node) return undefined;
       const one = Array.isArray(node) ? node[0] : node;
       const contrib = (one as { contributor?: Record<string, unknown> })?.contributor;
       const name = contrib?.companyName ?? contrib?.name;
       return typeof name === "string" ? name : undefined;
+    };
+    const partyAddress = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const o = one as Record<string, unknown>;
+      const a = o.eDeliveryAddress ?? o.edeliveryAddress ?? o.address;
+      return typeof a === "string" ? a : undefined;
     };
 
     return {
@@ -118,16 +128,26 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
       lastSyncedAt: sync?.last_synced_at ?? undefined,
       lastSyncError: sync?.last_error ?? undefined,
       items: (rows ?? []).map((r) => {
-        const meta = ((r.raw as { messageMetadata?: Record<string, unknown> } | null)?.messageMetadata ?? {}) as Record<string, unknown>;
+        const rawObj = unwrapRaw(r.raw);
+        const meta = (rawObj.messageMetadata ?? {}) as Record<string, unknown>;
+        const subject =
+          (r.subject as string | undefined) ??
+          (meta.subject as string | undefined) ??
+          (rawObj.subject as string | undefined);
+        const receivedAt =
+          (r.received_at as string | undefined) ??
+          (meta.receiptDate as string | undefined) ??
+          (meta.timestamp as string | undefined) ??
+          (meta.submissionDate as string | undefined);
         return {
           id: r.id,
           adeMessageId: r.ade_message_id ?? "",
-          from: r.from_address ?? undefined,
+          from: r.from_address ?? partyAddress(meta.from),
           fromName: partyName(meta.from),
-          to: r.to_address ?? undefined,
+          to: r.to_address ?? partyAddress(meta.to),
           toName: partyName(meta.to),
-          subject: r.subject ?? undefined,
-          receivedAt: r.received_at ?? undefined,
+          subject,
+          receivedAt,
           status: r.status ?? undefined,
           readAt: r.read_at ?? undefined,
           hasBody: !!r.body_text,
