@@ -104,25 +104,59 @@ export function extractRawItems(raw: unknown): Record<string, unknown>[] {
   return arr.map((it) => (it ?? {}) as Record<string, unknown>);
 }
 
+/** Wyciąga adres e-Delivery i nazwę firmy z węzła "from"/"to" (obiekt lub tablica). */
+function extractParty(node: unknown): { address?: string; name?: string } {
+  if (!node) return {};
+  const one = Array.isArray(node) ? (node[0] ?? {}) : node;
+  if (typeof one === "string") return { address: one };
+  const o = one as Record<string, unknown>;
+  const address =
+    (o.eDeliveryAddress as string | undefined) ??
+    (o.address as string | undefined) ??
+    (o.edeliveryAddress as string | undefined);
+  const contributor = (o.contributor ?? {}) as Record<string, unknown>;
+  const name =
+    (contributor.companyName as string | undefined) ??
+    (contributor.name as string | undefined) ??
+    ([contributor.firstName, contributor.lastName].filter(Boolean).join(" ") || undefined);
+  return { address, name };
+}
+
 /** Best-effort mapowanie odpowiedzi UA API na strukturę używaną w UI. */
-export function normalizeInboxItems(raw: unknown): AdeInboxItem[] {
+export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: string; toName?: string })[] {
   return extractRawItems(raw).map((o) => {
     const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
-    const pick = <T = unknown>(...keys: string[]): T | undefined => {
-      for (const k of keys) {
-        if (o[k] !== undefined) return o[k] as T;
-        if (meta[k] !== undefined) return meta[k] as T;
-      }
-      return undefined;
-    };
-    const id = String(pick("messageId", "id", "uuid", "identifier") ?? "");
+    const idRaw =
+      (meta.messageId as string | undefined) ??
+      (o.messageId as string | undefined) ??
+      (o.id as string | undefined) ??
+      (o.uuid as string | undefined) ??
+      "";
+    const fromParty = extractParty(meta.from ?? o.from);
+    const toParty = extractParty(meta.to ?? o.to);
+    const subject =
+      (meta.subject as string | undefined) ??
+      (o.subject as string | undefined) ??
+      (meta.title as string | undefined);
+    const receivedAt =
+      (meta.receiptDate as string | undefined) ??
+      (meta.timestamp as string | undefined) ??
+      (meta.submissionDate as string | undefined) ??
+      (o.receivedAt as string | undefined) ??
+      (o.createdAt as string | undefined);
+    const status =
+      (meta.shippingService as string | undefined) ??
+      (o.status as string | undefined) ??
+      (o.state as string | undefined);
     return {
-      id,
-      from: pick<string>("from", "sender", "fromAddress", "senderAddress", "senderEDeliveryAddress"),
-      to: pick<string>("to", "recipient", "toAddress", "recipientAddress", "recipientEDeliveryAddress"),
-      subject: pick<string>("subject", "title"),
-      receivedAt: pick<string>("timestamp", "receivedAt", "receivedDate", "createdAt", "date"),
-      status: pick<string>("shippingService", "status", "state"),
+      id: String(idRaw),
+      from: fromParty.address,
+      fromName: fromParty.name,
+      to: toParty.address,
+      toName: toParty.name,
+      subject,
+      receivedAt,
+      status,
     };
   });
 }
