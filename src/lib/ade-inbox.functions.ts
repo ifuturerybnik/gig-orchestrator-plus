@@ -32,17 +32,26 @@ export type AdeAttachmentRow = {
   url?: string;
 };
 
+export type AdeEvidence = {
+  type?: string;
+  eventDate?: string;
+  reason?: string;
+};
+
 export type AdeDeliveryDetail = {
   ok: boolean;
   id: string;
   adeMessageId: string;
   subject?: string;
   from?: string;
+  fromName?: string;
   to?: string;
+  toName?: string;
   receivedAt?: string;
   bodyText?: string;
   rawJson?: string;
   attachments: AdeAttachmentRow[];
+  evidences: AdeEvidence[];
   error?: string;
 };
 
