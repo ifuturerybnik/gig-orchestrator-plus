@@ -132,9 +132,11 @@ export default function EdoreczeniaInboxTab() {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate font-mono">
-                      {row.from || "?"} → {row.to || "?"}
+                    <div className="text-xs text-muted-foreground truncate">
+                      <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
+                      <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
                     </div>
+
                   </div>
                   <div className="text-xs text-muted-foreground shrink-0">
                     {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
@@ -153,11 +155,31 @@ export default function EdoreczeniaInboxTab() {
       {selected && (
         <Card>
           <CardHeader className="flex flex-row items-start justify-between space-y-0">
-            <div>
-              <CardTitle className="text-base">{selected.subject || "(bez tematu)"}</CardTitle>
-              <CardDescription className="font-mono text-xs">
-                {selected.from} → {selected.to}
-                {selected.receivedAt ? ` · ${new Date(selected.receivedAt).toLocaleString("pl-PL")}` : ""}
+            <div className="min-w-0">
+              <CardTitle className="text-lg">
+                {detail?.data?.subject || selected.subject || "(bez tematu)"}
+              </CardTitle>
+              <CardDescription className="text-xs mt-1 space-y-0.5">
+                <div>
+                  <span className="text-muted-foreground">Nadawca: </span>
+                  <span className="font-medium">{detail?.data?.fromName ?? "—"}</span>{" "}
+                  <span className="font-mono text-muted-foreground">
+                    {detail?.data?.from ?? selected.from ?? ""}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Odbiorca: </span>
+                  <span className="font-medium">{detail?.data?.toName ?? "—"}</span>{" "}
+                  <span className="font-mono text-muted-foreground">
+                    {detail?.data?.to ?? selected.to ?? ""}
+                  </span>
+                </div>
+                {(detail?.data?.receivedAt ?? selected.receivedAt) && (
+                  <div>
+                    <span className="text-muted-foreground">Data doręczenia: </span>
+                    {new Date(detail?.data?.receivedAt ?? selected.receivedAt!).toLocaleString("pl-PL")}
+                  </div>
+                )}
               </CardDescription>
             </div>
             <Button
@@ -171,7 +193,7 @@ export default function EdoreczeniaInboxTab() {
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {detail?.loading ? (
               <div className="flex items-center text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> Pobieranie treści z ADE…
@@ -182,6 +204,12 @@ export default function EdoreczeniaInboxTab() {
               </Alert>
             ) : detail?.data ? (
               <>
+                {detail.data.bodyText && (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed rounded border bg-card p-4">
+                    {detail.data.bodyText}
+                  </div>
+                )}
+
                 {detail.data.attachments.length > 0 && (
                   <div>
                     <div className="text-xs font-medium mb-1 text-muted-foreground">Załączniki</div>
@@ -206,9 +234,42 @@ export default function EdoreczeniaInboxTab() {
                     </div>
                   </div>
                 )}
-                <pre className="text-xs font-mono whitespace-pre-wrap break-words bg-muted p-3 rounded max-h-[500px] overflow-auto">
-                  {formatJson(detail.data.rawJson ?? detail.data.bodyText ?? "")}
-                </pre>
+
+                {detail.data.evidences.length > 0 && (
+                  <div>
+                    <div className="text-xs font-medium mb-2 text-muted-foreground">Dowody techniczne</div>
+                    <ul className="space-y-1.5">
+                      {detail.data.evidences.map((e, idx) => (
+                        <li key={idx} className="text-xs flex items-start gap-2">
+                          {e.type && (
+                            <Badge variant="outline" className="text-[10px] font-mono shrink-0">
+                              {e.type}
+                            </Badge>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            {e.reason && <div>{e.reason}</div>}
+                            {e.eventDate && (
+                              <div className="text-muted-foreground">
+                                {new Date(e.eventDate).toLocaleString("pl-PL")}
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {detail.data.rawJson && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                      Pokaż surowe dane (JSON)
+                    </summary>
+                    <pre className="mt-2 font-mono whitespace-pre-wrap break-words bg-muted p-3 rounded max-h-[400px] overflow-auto">
+                      {formatJson(detail.data.rawJson)}
+                    </pre>
+                  </details>
+                )}
               </>
             ) : null}
           </CardContent>
