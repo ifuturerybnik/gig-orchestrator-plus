@@ -132,9 +132,11 @@ export default function EdoreczeniaInboxTab() {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate font-mono">
-                      {row.from || "?"} → {row.to || "?"}
+                    <div className="text-xs text-muted-foreground truncate">
+                      <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
+                      <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
                     </div>
+
                   </div>
                   <div className="text-xs text-muted-foreground shrink-0">
                     {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
