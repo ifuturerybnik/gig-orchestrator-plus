@@ -243,10 +243,13 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       (refreshed?.subject as string | undefined) ??
       (meta.subject as string | undefined) ??
       (rawObj.subject as string | undefined);
-    const bodyTextFallback =
-      (refreshed?.body_text as string | undefined) ??
+    const rawTextBody =
       (typeof rawObj.textBody === "string" ? (rawObj.textBody as string) : undefined) ??
       (typeof rawObj.bodyText === "string" ? (rawObj.bodyText as string) : undefined);
+    const storedBody = refreshed?.body_text as string | undefined;
+    // Jeżeli w bazie mamy zapisane surowe JSON-y (starsze wiersze) — wolimy textBody z raw.
+    const looksLikeJson = !!storedBody && /^\s*[\[{]/.test(storedBody);
+    const bodyTextFallback = rawTextBody ?? (looksLikeJson ? undefined : storedBody);
     const evidencesRaw = Array.isArray(rawObj.evidences) ? (rawObj.evidences as Array<Record<string, unknown>>) : [];
     const evidences: AdeEvidence[] = evidencesRaw.map((e) => ({
       type: typeof e.type === "string" ? e.type : undefined,
