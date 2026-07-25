@@ -178,7 +178,8 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
     .replace(/-----END CERTIFICATE-----/g, "")
     .replace(/\s+/g, "");
 
-  const audience = `${cfg.oauthBase}${cfg.tokenPath}`;
+  // UA API / KSDE oczekuje audience = realmu (bez ścieżki /protocol/openid-connect/token)
+  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
