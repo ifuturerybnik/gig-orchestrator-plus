@@ -103,12 +103,22 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
       .eq("mailbox_address", cfg.mailboxAddress)
       .maybeSingle();
 
+    const unwrapRaw = (raw: unknown): Record<string, unknown> =>
+      (Array.isArray(raw) ? (raw[0] ?? {}) : (raw ?? {})) as Record<string, unknown>;
+
     const partyName = (node: unknown): string | undefined => {
       if (!node) return undefined;
       const one = Array.isArray(node) ? node[0] : node;
       const contrib = (one as { contributor?: Record<string, unknown> })?.contributor;
       const name = contrib?.companyName ?? contrib?.name;
       return typeof name === "string" ? name : undefined;
+    };
+    const partyAddress = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const o = one as Record<string, unknown>;
+      const a = o.eDeliveryAddress ?? o.edeliveryAddress ?? o.address;
+      return typeof a === "string" ? a : undefined;
     };
 
     return {
@@ -118,16 +128,26 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
       lastSyncedAt: sync?.last_synced_at ?? undefined,
       lastSyncError: sync?.last_error ?? undefined,
       items: (rows ?? []).map((r) => {
-        const meta = ((r.raw as { messageMetadata?: Record<string, unknown> } | null)?.messageMetadata ?? {}) as Record<string, unknown>;
+        const rawObj = unwrapRaw(r.raw);
+        const meta = (rawObj.messageMetadata ?? {}) as Record<string, unknown>;
+        const subject =
+          (r.subject as string | undefined) ??
+          (meta.subject as string | undefined) ??
+          (rawObj.subject as string | undefined);
+        const receivedAt =
+          (r.received_at as string | undefined) ??
+          (meta.receiptDate as string | undefined) ??
+          (meta.timestamp as string | undefined) ??
+          (meta.submissionDate as string | undefined);
         return {
           id: r.id,
           adeMessageId: r.ade_message_id ?? "",
-          from: r.from_address ?? undefined,
+          from: r.from_address ?? partyAddress(meta.from),
           fromName: partyName(meta.from),
-          to: r.to_address ?? undefined,
+          to: r.to_address ?? partyAddress(meta.to),
           toName: partyName(meta.to),
-          subject: r.subject ?? undefined,
-          receivedAt: r.received_at ?? undefined,
+          subject,
+          receivedAt,
           status: r.status ?? undefined,
           readAt: r.read_at ?? undefined,
           hasBody: !!r.body_text,
@@ -196,8 +216,12 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       });
     }
 
-    // Wyciągnij nazwy nadawcy/odbiorcy i evidences z raw payloadu
-    const rawObj = (refreshed?.raw ?? {}) as Record<string, unknown>;
+    // Wyciągnij nazwy/adresy nadawcy/odbiorcy, evidences i treść z raw payloadu.
+    // Uwaga: UA API v3 potrafi zwrócić payload jako tablicę [{...}] — rozpakuj.
+    const rawUnwrapped = Array.isArray(refreshed?.raw)
+      ? ((refreshed!.raw as unknown[])[0] ?? {})
+      : ((refreshed?.raw ?? {}));
+    const rawObj = rawUnwrapped as Record<string, unknown>;
     const meta = (rawObj.messageMetadata ?? {}) as Record<string, unknown>;
     const partyName = (node: unknown): string | undefined => {
       if (!node) return undefined;
@@ -206,8 +230,26 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       const name = contrib?.companyName ?? contrib?.name;
       return typeof name === "string" ? name : undefined;
     };
+    const partyAddress = (node: unknown): string | undefined => {
+      if (!node) return undefined;
+      const one = Array.isArray(node) ? node[0] : node;
+      const o = one as Record<string, unknown>;
+      const a = o.eDeliveryAddress ?? o.edeliveryAddress ?? o.address;
+      return typeof a === "string" ? a : undefined;
+    };
     const fromName = partyName(meta.from);
     const toName = partyName(meta.to);
+    const subject =
+      (refreshed?.subject as string | undefined) ??
+      (meta.subject as string | undefined) ??
+      (rawObj.subject as string | undefined);
+    const rawTextBody =
+      (typeof rawObj.textBody === "string" ? (rawObj.textBody as string) : undefined) ??
+      (typeof rawObj.bodyText === "string" ? (rawObj.bodyText as string) : undefined);
+    const storedBody = refreshed?.body_text as string | undefined;
+    // Jeżeli w bazie mamy zapisane surowe JSON-y (starsze wiersze) — wolimy textBody z raw.
+    const looksLikeJson = !!storedBody && /^\s*[\[{]/.test(storedBody);
+    const bodyTextFallback = rawTextBody ?? (looksLikeJson ? undefined : storedBody);
     const evidencesRaw = Array.isArray(rawObj.evidences) ? (rawObj.evidences as Array<Record<string, unknown>>) : [];
     const evidences: AdeEvidence[] = evidencesRaw.map((e) => ({
       type: typeof e.type === "string" ? e.type : undefined,
@@ -221,13 +263,13 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       ok: true,
       id: refreshed?.id ?? delivery.id,
       adeMessageId: refreshed?.ade_message_id ?? "",
-      subject: refreshed?.subject ?? undefined,
-      from: refreshed?.from_address ?? undefined,
+      subject,
+      from: refreshed?.from_address ?? partyAddress(meta.from),
       fromName,
-      to: refreshed?.to_address ?? undefined,
+      to: refreshed?.to_address ?? partyAddress(meta.to),
       toName,
       receivedAt: refreshed?.received_at ?? undefined,
-      bodyText: refreshed?.body_text ?? undefined,
+      bodyText: bodyTextFallback,
       rawJson: refreshed?.raw ? JSON.stringify(refreshed.raw) : undefined,
       attachments,
       evidences,
