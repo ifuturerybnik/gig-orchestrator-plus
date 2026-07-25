@@ -19,6 +19,13 @@ export async function getAdeAccessToken(): Promise<string> {
   return parsed.access_token;
 }
 
+export async function requireEdoreczeniaAdmin(ctx: { supabase: any; userId: string }) {
+  const { data, error } = await ctx.supabase.from("user_roles").select("role").eq("user_id", ctx.userId);
+  if (error) throw new Error(`Nie udało się sprawdzić uprawnień: ${(error as Error).message ?? "błąd"}`);
+  const roles = ((data as { role: string }[] | null) ?? []).map((r) => r.role);
+  if (!roles.includes("super_admin") && !roles.includes("admin_staff")) throw new Error("Brak uprawnień administratora");
+}
+
 export async function adeApiCall(opts: {
   method: string;
   path: string;
@@ -173,12 +180,17 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
       const row = {
         direction: "inbound" as const,
         ade_message_id: n.id,
-        mailbox_address: cfg.mailboxAddress,
+        sender_address: n.from ?? null,
+        recipient_address: n.to ?? cfg.mailboxAddress,
         from_address: n.from ?? null,
         to_address: n.to ?? cfg.mailboxAddress,
         subject: n.subject ?? null,
         received_at: n.receivedAt ?? null,
         status: n.status ?? "new",
+        has_attachments: false,
+        attachment_count: 0,
+        fetched_at: new Date().toISOString(),
+        ade_metadata: raw,
         raw,
         updated_at: new Date().toISOString(),
       };
@@ -193,12 +205,14 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
 
     await admin.from("edoreczenia_sync_state").upsert(
       {
-        mailbox_address: cfg.mailboxAddress,
-        last_synced_at: new Date().toISOString(),
+        id: 1,
+        last_sync_at: new Date().toISOString(),
+        last_success_at: new Date().toISOString(),
         last_error: null,
+        messages_seen: summary.fetched,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "mailbox_address" },
+      { onConflict: "id" },
     );
     summary.ok = true;
     return summary;
@@ -208,11 +222,12 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
       const admin = await getAdmin();
       await admin.from("edoreczenia_sync_state").upsert(
         {
-          mailbox_address: cfg.mailboxAddress,
+          id: 1,
+          last_sync_at: new Date().toISOString(),
           last_error: summary.error,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "mailbox_address" },
+        { onConflict: "id" },
       );
     } catch {
       /* ignore */
@@ -260,7 +275,7 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
   const admin = await getAdmin();
   const { data: delivery, error: dErr } = await admin
     .from("edoreczenia_deliveries")
-    .select("id, ade_message_id, mailbox_address")
+    .select("id, ade_message_id")
     .eq("id", deliveryId)
     .maybeSingle();
   if (dErr || !delivery) return { ok: false, attachments: [], error: "Nie znaleziono wiadomości w bazie" };
@@ -307,7 +322,7 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
           delivery_id: delivery.id,
           ade_attachment_id: ref.id,
           filename: ref.filename,
-          mime_type: ref.mime ?? null,
+          content_type: ref.mime ?? null,
           size_bytes: ref.size ?? attRes.bodyBuffer.length,
           storage_path: storagePath,
         };
@@ -317,7 +332,7 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
         stored.push({
           id: ref.id,
           filename: ref.filename,
-          mime_type: row.mime_type ?? undefined,
+          mime_type: row.content_type ?? undefined,
           size_bytes: row.size_bytes,
           storage_path: storagePath,
         });
