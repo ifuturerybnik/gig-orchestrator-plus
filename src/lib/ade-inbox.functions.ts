@@ -46,20 +46,13 @@ export type AdeDeliveryDetail = {
   error?: string;
 };
 
-async function requireAdmin(ctx: { supabase: any; userId: string }) {
-  const { data, error } = await ctx.supabase.from("user_roles").select("role").eq("user_id", ctx.userId);
-  if (error) throw new Error(`Nie udało się sprawdzić uprawnień: ${(error as Error).message ?? "błąd"}`);
-  const roles = (data as { role: string }[] | null ?? []).map((r) => r.role);
-  if (!roles.includes("super_admin") && !roles.includes("admin_staff")) throw new Error("Brak uprawnień administratora");
-}
-
 /** Zsynchronizuj skrzynkę ADE do bazy (upsert). */
 export const syncAdeInbox = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { limit?: number } | undefined) => data ?? {})
   .handler(async ({ data, context }) => {
-    await requireAdmin(context);
-    const { syncInboxToDb } = await import("@/lib/ade-inbox.server");
+    const { requireEdoreczeniaAdmin, syncInboxToDb } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     return await syncInboxToDb({ limit: data.limit ?? 100 });
   });
 
@@ -68,7 +61,8 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { limit?: number } | undefined) => data ?? {})
   .handler(async ({ data, context }): Promise<AdeInboxResult> => {
-    await requireAdmin(context);
+    const { requireEdoreczeniaAdmin } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     const { loadAdeConfig } = await import("@/lib/ade-client.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const cfg = loadAdeConfig();
@@ -76,7 +70,6 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabaseAdmin
       .from("edoreczenia_deliveries")
       .select("id, ade_message_id, from_address, to_address, subject, received_at, status, read_at, body_text")
-      .eq("mailbox_address", cfg.mailboxAddress)
       .order("received_at", { ascending: false, nullsFirst: false })
       .limit(limit);
     if (error) return { ok: false, items: [], mailbox: cfg.mailboxAddress, fetchedAt: new Date().toISOString(), error: error.message };
@@ -94,15 +87,15 @@ export const listStoredDeliveries = createServerFn({ method: "POST" })
     }
     const { data: sync } = await supabaseAdmin
       .from("edoreczenia_sync_state")
-      .select("last_synced_at, last_error")
-      .eq("mailbox_address", cfg.mailboxAddress)
+      .select("last_success_at, last_sync_at, last_error")
+      .eq("id", 1)
       .maybeSingle();
 
     return {
       ok: true,
       mailbox: cfg.mailboxAddress,
       fetchedAt: new Date().toISOString(),
-      lastSyncedAt: sync?.last_synced_at ?? undefined,
+      lastSyncedAt: sync?.last_success_at ?? sync?.last_sync_at ?? undefined,
       lastSyncError: sync?.last_error ?? undefined,
       items: (rows ?? []).map((r) => ({
         id: r.id,
@@ -124,8 +117,8 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { id: string }) => data)
   .handler(async ({ data, context }): Promise<AdeDeliveryDetail> => {
-    await requireAdmin(context);
-    const { fetchAndStoreMessage, signedAttachmentUrl } = await import("@/lib/ade-inbox.server");
+    const { requireEdoreczeniaAdmin, fetchAndStoreMessage, signedAttachmentUrl } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: delivery } = await supabaseAdmin
@@ -162,7 +155,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
 
     const { data: atts } = await supabaseAdmin
       .from("edoreczenia_attachments")
-      .select("id, filename, mime_type, size_bytes, storage_path")
+      .select("id, filename, content_type, size_bytes, storage_path")
       .eq("delivery_id", data.id);
 
     const attachments: AdeAttachmentRow[] = [];
@@ -171,7 +164,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
       attachments.push({
         id: a.id,
         filename: a.filename,
-        mimeType: a.mime_type ?? undefined,
+        mimeType: a.content_type ?? undefined,
         sizeBytes: a.size_bytes ?? undefined,
         url,
       });
