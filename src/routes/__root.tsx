@@ -127,6 +127,30 @@ function AuthSync() {
   return null;
 }
 
+function ServiceWorkerCleanup() {
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const cleanup = async () => {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+
+        if ("caches" in window) {
+          const keys = await window.caches.keys();
+          await Promise.all(keys.map((key) => window.caches.delete(key)));
+        }
+      } catch {
+        // best-effort cleanup for old PWA builds
+      }
+    };
+
+    void cleanup();
+  }, []);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
@@ -134,6 +158,7 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <AuthSync />
+          <ServiceWorkerCleanup />
           <AppEventsBadge />
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
