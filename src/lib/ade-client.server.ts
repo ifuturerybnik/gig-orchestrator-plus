@@ -65,6 +65,7 @@ export type AdeRawResponse = {
   status: number;
   headers: Record<string, string>;
   body: string;
+  bodyBuffer?: Buffer;
   tlsPeerSubject?: string;
   tlsPeerIssuer?: string;
 };
@@ -76,6 +77,7 @@ type RawRequestOpts = {
   body?: string;
   timeoutMs?: number;
   useMtls?: boolean;                  // czy dołączać cert klienta
+  binary?: boolean;                   // zwróć też bodyBuffer
 };
 
 async function httpsRawRequest(opts: RawRequestOpts): Promise<AdeRawResponse> {
@@ -120,12 +122,14 @@ async function httpsRawRequest(opts: RawRequestOpts): Promise<AdeRawResponse> {
               } & object)
             | null;
           const peer = typeof socket?.getPeerCertificate === "function" ? socket.getPeerCertificate() : undefined;
+          const buffer = Buffer.concat(chunks);
           resolvePromise({
             status: res.statusCode ?? 0,
             headers: Object.fromEntries(
               Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : String(v ?? "")]),
             ),
-            body: Buffer.concat(chunks).toString("utf8"),
+            body: buffer.toString("utf8"),
+            bodyBuffer: opts.binary ? buffer : undefined,
             tlsPeerSubject: peer?.subject ? `${peer.subject.CN ?? ""} (${peer.subject.O ?? ""})` : undefined,
             tlsPeerIssuer: peer?.issuer ? `${peer.issuer.CN ?? ""} (${peer.issuer.O ?? ""})` : undefined,
           });
@@ -146,6 +150,7 @@ export async function adeRawRequest(opts: {
   headers?: Record<string, string>;
   body?: string;
   timeoutMs?: number;
+  binary?: boolean;
 }): Promise<AdeRawResponse> {
   const cfg = loadAdeConfig();
   return httpsRawRequest({
@@ -155,6 +160,7 @@ export async function adeRawRequest(opts: {
     body: opts.body,
     timeoutMs: opts.timeoutMs,
     useMtls: true,
+    binary: opts.binary,
   });
 }
 

@@ -4,43 +4,70 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, RefreshCw, Inbox, Mail as MailIcon, X } from "lucide-react";
-import { listAdeInbox, getAdeMessage, type AdeInboxResult, type AdeInboxRow } from "@/lib/ade-inbox.functions";
+import { Loader2, RefreshCw, Inbox, Mail as MailIcon, X, Paperclip, Download } from "lucide-react";
+import {
+  syncAdeInbox,
+  listStoredDeliveries,
+  openStoredDelivery,
+  type AdeInboxResult,
+  type AdeInboxRow,
+  type AdeDeliveryDetail,
+} from "@/lib/ade-inbox.functions";
 import { toast } from "sonner";
 
 export default function EdoreczeniaInboxTab() {
-  const load = useServerFn(listAdeInbox);
-  const openMsg = useServerFn(getAdeMessage);
+  const sync = useServerFn(syncAdeInbox);
+  const list = useServerFn(listStoredDeliveries);
+  const open = useServerFn(openStoredDelivery);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState<AdeInboxResult | null>(null);
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
-  const [detail, setDetail] = useState<{ loading: boolean; body: string; error?: string } | null>(null);
+  const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
 
-  const refresh = useCallback(async () => {
+  const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await load({ data: { limit: 50 } });
+      const res = await list({ data: { limit: 100 } });
       setResult(res);
-      if (!res.ok) toast.error(res.error ?? "Nie udało się pobrać wiadomości");
+      if (!res.ok) toast.error(res.error ?? "Nie udało się pobrać listy");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [load]);
+  }, [list]);
+
+  const refresh = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const s = await sync({ data: { limit: 100 } });
+      if (!s.ok) {
+        toast.error(s.error ?? "Sync nieudany");
+      } else {
+        toast.success(`Zsynchronizowano: ${s.fetched} (nowe: ${s.inserted}, aktualizacje: ${s.updated})`);
+      }
+      await reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [sync, reload]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void reload();
+  }, [reload]);
 
   async function openMessage(row: AdeInboxRow) {
     setSelected(row);
-    setDetail({ loading: true, body: "" });
+    setDetail({ loading: true });
     try {
-      const res = await openMsg({ data: { id: row.id } });
-      setDetail({ loading: false, body: res.body, error: res.error });
+      const res = await open({ data: { id: row.id } });
+      setDetail({ loading: false, data: res, error: res.ok ? undefined : res.error });
+      if (res.ok) void reload();
     } catch (err) {
-      setDetail({ loading: false, body: "", error: (err as Error).message });
+      setDetail({ loading: false, error: (err as Error).message });
     }
   }
 
@@ -54,18 +81,23 @@ export default function EdoreczeniaInboxTab() {
             </CardTitle>
             <CardDescription>
               {result?.mailbox ? <span className="font-mono">{result.mailbox}</span> : "Wiadomości z systemu ADE."}
+              {result?.lastSyncedAt && (
+                <span className="ml-2 text-xs">
+                  · ostatni sync: {new Date(result.lastSyncedAt).toLocaleString("pl-PL")}
+                </span>
+              )}
             </CardDescription>
           </div>
-          <Button onClick={refresh} disabled={loading} variant="outline" size="sm">
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Odśwież
+          <Button onClick={refresh} disabled={syncing || loading} variant="outline" size="sm">
+            {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Synchronizuj
           </Button>
         </CardHeader>
         <CardContent>
-          {result && !result.ok && (
+          {result?.lastSyncError && (
             <Alert variant="destructive" className="mb-3">
-              <AlertTitle>Błąd pobierania</AlertTitle>
-              <AlertDescription className="font-mono text-xs break-all">{result.error}</AlertDescription>
+              <AlertTitle>Ostatni sync z błędem</AlertTitle>
+              <AlertDescription className="font-mono text-xs break-all">{result.lastSyncError}</AlertDescription>
             </Alert>
           )}
           {loading && !result ? (
@@ -80,13 +112,27 @@ export default function EdoreczeniaInboxTab() {
                   onClick={() => openMessage(row)}
                   className="w-full text-left py-3 px-2 hover:bg-accent/50 rounded flex items-start gap-3"
                 >
-                  <MailIcon className="h-4 w-4 mt-1 text-muted-foreground shrink-0" />
+                  <MailIcon
+                    className={`h-4 w-4 mt-1 shrink-0 ${row.readAt ? "text-muted-foreground" : "text-primary"}`}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium truncate">{row.subject || "(bez tematu)"}</span>
-                      {row.status && <Badge variant="secondary" className="text-[10px]">{row.status}</Badge>}
+                      <span className={`truncate ${row.readAt ? "" : "font-semibold"}`}>
+                        {row.subject || "(bez tematu)"}
+                      </span>
+                      {row.status && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {row.status}
+                        </Badge>
+                      )}
+                      {row.attachmentCount > 0 && (
+                        <Badge variant="outline" className="text-[10px] gap-1">
+                          <Paperclip className="h-3 w-3" />
+                          {row.attachmentCount}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
+                    <div className="text-xs text-muted-foreground truncate font-mono">
                       {row.from || "?"} → {row.to || "?"}
                     </div>
                   </div>
@@ -98,7 +144,7 @@ export default function EdoreczeniaInboxTab() {
             </div>
           ) : (
             <div className="text-sm text-muted-foreground py-10 text-center">
-              Brak wiadomości w skrzynce.
+              Brak wiadomości. Kliknij <b>Synchronizuj</b>, aby pobrać z ADE.
             </div>
           )}
         </CardContent>
@@ -114,22 +160,57 @@ export default function EdoreczeniaInboxTab() {
                 {selected.receivedAt ? ` · ${new Date(selected.receivedAt).toLocaleString("pl-PL")}` : ""}
               </CardDescription>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => { setSelected(null); setDetail(null); }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setSelected(null);
+                setDetail(null);
+              }}
+            >
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             {detail?.loading ? (
               <div className="flex items-center text-muted-foreground text-sm">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Pobieranie wiadomości…
+                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Pobieranie treści z ADE…
               </div>
             ) : detail?.error ? (
-              <Alert variant="destructive"><AlertDescription className="font-mono text-xs break-all">{detail.error}</AlertDescription></Alert>
-            ) : (
-              <pre className="text-xs font-mono whitespace-pre-wrap break-words bg-muted p-3 rounded max-h-[500px] overflow-auto">
-                {formatJson(detail?.body ?? "")}
-              </pre>
-            )}
+              <Alert variant="destructive">
+                <AlertDescription className="font-mono text-xs break-all">{detail.error}</AlertDescription>
+              </Alert>
+            ) : detail?.data ? (
+              <>
+                {detail.data.attachments.length > 0 && (
+                  <div>
+                    <div className="text-xs font-medium mb-1 text-muted-foreground">Załączniki</div>
+                    <div className="flex flex-wrap gap-2">
+                      {detail.data.attachments.map((a) => (
+                        <a
+                          key={a.id}
+                          href={a.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded border px-2 py-1 text-xs hover:bg-accent"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span className="truncate max-w-[220px]">{a.filename}</span>
+                          {a.sizeBytes ? (
+                            <span className="text-muted-foreground">
+                              {Math.round(a.sizeBytes / 1024)} kB
+                            </span>
+                          ) : null}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <pre className="text-xs font-mono whitespace-pre-wrap break-words bg-muted p-3 rounded max-h-[500px] overflow-auto">
+                  {formatJson(detail.data.rawJson ?? detail.data.bodyText ?? "")}
+                </pre>
+              </>
+            ) : null}
           </CardContent>
         </Card>
       )}
