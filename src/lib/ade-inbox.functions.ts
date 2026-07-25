@@ -37,12 +37,14 @@ export const listAdeInbox = createServerFn({ method: "POST" })
     try {
       const res = await listAdeInboxRaw({ limit: data.limit ?? 50, page: data.page ?? 0 });
       if (res.status < 200 || res.status >= 300) {
+        const wwwAuth = (res as { headers?: Record<string, string> }).headers?.["www-authenticate"] ?? "";
+        const bodySnippet = res.body?.slice(0, 400) ?? "";
         return {
           ok: false,
           items: [],
           mailbox: cfg.mailboxAddress,
           fetchedAt: new Date().toISOString(),
-          error: `HTTP ${res.status}: ${res.body.slice(0, 300)}`,
+          error: `HTTP ${res.status}${wwwAuth ? ` — WWW-Authenticate: ${wwwAuth}` : ""}${bodySnippet ? ` — body: ${bodySnippet}` : " — body pusty"}`,
           rawStatus: res.status,
         };
       }
