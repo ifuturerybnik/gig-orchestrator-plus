@@ -362,3 +362,28 @@ export const downloadEvidenceZip = createServerFn({ method: "POST" })
     return { ok: true, url };
   });
 
+export type SendAdeMessagePayload = {
+  recipients: string[];
+  subject: string;
+  bodyText: string;
+  caseNumber?: string;
+  attachments?: Array<{ filename: string; mimeType?: string; contentBase64: string }>;
+};
+
+/** Wyślij nową wiadomość e-Doręczenia. */
+export const sendAdeMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: SendAdeMessagePayload) => {
+    if (!data || typeof data !== "object") throw new Error("Brak danych");
+    if (!Array.isArray(data.recipients) || data.recipients.length === 0)
+      throw new Error("Wymagany co najmniej jeden adresat");
+    if (!data.subject || !data.subject.trim()) throw new Error("Temat jest wymagany");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { requireEdoreczeniaAdmin, sendAdeMessage: send } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
+    return await send(data);
+  });
+
+
