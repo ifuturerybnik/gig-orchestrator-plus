@@ -34,6 +34,7 @@ type Props = {
 };
 
 const RECIPIENT_LABELS: Record<BaeRecipientType, string> = {
+  ALL: "Wszystkie",
   PUBLIC: "Podmiot publiczny",
   NON_PUBLIC: "Przedsiębiorca",
   KOMORNIK: "Komornik",
@@ -50,7 +51,7 @@ const IDENT_LABELS: Record<BaeIdentifierType, string> = {
 
 export default function EdoreczeniaBaeSearchDialog({ open, onOpenChange, onPick }: Props) {
   const run = useServerFn(searchBaeAddresses);
-  const [recipientType, setRecipientType] = useState<BaeRecipientType>("PUBLIC");
+  const [recipientType, setRecipientType] = useState<BaeRecipientType>("ALL");
   const [identifierType, setIdentifierType] = useState<BaeIdentifierType>("EDELIVERY_ADDRESS");
   const [value, setValue] = useState("");
   // Rozszerzone pola dla identyfikatora "Dane instytucji" (NAME)
