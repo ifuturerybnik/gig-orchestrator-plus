@@ -16,7 +16,10 @@ import {
   Send,
   FileEdit,
   Trash2,
+  PenSquare,
 } from "lucide-react";
+import EdoreczeniaComposeDialog from "./EdoreczeniaComposeDialog";
+
 import {
   syncAdeInbox,
   listStoredDeliveries,
