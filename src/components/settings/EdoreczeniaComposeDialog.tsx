@@ -17,6 +17,9 @@ type Props = {
   fromLabel?: string;
   fromAddress?: string;
   onSent?: () => void;
+  initialRecipients?: string[];
+  initialSubject?: string;
+  initialBody?: string;
 };
 
 const ADE_ADDRESS_RE = /^AE:PL-\d{5}-\d{5}-[A-Z0-9]+-\d{2}$/i;
