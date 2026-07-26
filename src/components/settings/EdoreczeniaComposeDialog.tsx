@@ -85,19 +85,21 @@ export default function EdoreczeniaComposeDialog({
     }
   }, [open, initialRecipients, initialSubject, initialBody]);
 
-  const addRecipient = useCallback(() => {
+  const addRecipient = useCallback((): string[] | null => {
     const v = recipientInput.trim().toUpperCase();
-    if (!v) return;
+    if (!v) return recipients;
     if (!ADE_ADDRESS_RE.test(v)) {
       toast.error("Nieprawidłowy format adresu (AE:PL-XXXXX-XXXXX-XXXXX-YY)");
-      return;
+      return null;
     }
     if (recipients.includes(v)) {
       setRecipientInput("");
-      return;
+      return recipients;
     }
-    setRecipients((r) => [...r, v]);
+    const next = [...recipients, v];
+    setRecipients(next);
     setRecipientInput("");
+    return next;
   }, [recipientInput, recipients]);
 
   const removeRecipient = (v: string) => setRecipients((r) => r.filter((x) => x !== v));
