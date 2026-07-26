@@ -56,6 +56,7 @@ export const ORG_MODULES: OrgModuleDef[] = [
   { id: "counterparties", labelKey: "organizations.sidebar.counterparties", configurable: true },
   { id: "mail", labelKey: "organizations.sidebar.mail", group: "correspondence", configurable: true },
   { id: "autokorespondencja", labelKey: "organizations.sidebar.autokorespondencja", group: "correspondence", configurable: true },
+  { id: "edoreczenia", labelKey: "organizations.sidebar.edoreczenia", group: "correspondence", configurable: true },
   { id: "ai_studio", labelKey: "organizations.sidebar.ai_studio", group: "media_web", configurable: true },
   { id: "social", labelKey: "organizations.sidebar.social", group: "media_web", configurable: true },
   { id: "web", labelKey: "organizations.sidebar.web", group: "media_web", configurable: true },
