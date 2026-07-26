@@ -285,9 +285,9 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
 
       let deliveryId: string;
       if (existing?.id) {
-        // Nie nadpisuj folderu — zachowaj ręczne przeniesienia użytkownika.
-        // Nie zerwij zapisanego subject/body, jeśli lista z API ich nie zwraca.
-        const patch: Record<string, unknown> = { ...baseRow };
+        // API zwróciło tę wiadomość jako Odebraną — resetuj folder do INBOX
+        // (naprawia stare wpisy zapisane błędnie w SENT/DRAFTS/TRASH przez poprzednie sync-e).
+        const patch: Record<string, unknown> = { ...baseRow, folder: "INBOX" };
         if (!n.subject && existing.subject) delete patch.subject;
         if (!bodyText && existing.body_text) delete patch.body_text;
         await admin.from("edoreczenia_deliveries").update(patch).eq("id", existing.id);
