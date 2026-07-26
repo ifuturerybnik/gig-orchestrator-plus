@@ -423,7 +423,7 @@ export const moveAdeDelivery = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-export type BaeRecipientType = "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
+export type BaeRecipientType = "ALL" | "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
 export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
 
 export type BaeAddressFields = {
