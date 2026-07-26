@@ -457,7 +457,7 @@ async function httpsRawRequestWithCfg(
 async function buildClientAssertionForCfg(
   cfg: AdeResolvedConfig,
   audience?: string,
-  variant: ClientAssertionVariant = CLIENT_ASSERTION_VARIANTS[0],
+  variant: ClientAssertionVariant = STABLE_CLIENT_ASSERTION_VARIANT,
 ): Promise<{ jwt: string; audience: string; variantLabel: string }> {
   const crypto = await import("node:crypto");
   const certBody = cfg.certPem
@@ -466,7 +466,7 @@ async function buildClientAssertionForCfg(
     .replace(/\s+/g, "");
   const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
-  const issuedAt = variant.includeNbf ? now - 60 : now;
+  const issuedAt = now - 60;
   const header: Record<string, string | string[]> = { alg: "RS256", typ: "JWT" };
   if (variant.includeX5c) header.x5c = [certBody];
   const payload: Record<string, string | number> = {
@@ -475,7 +475,7 @@ async function buildClientAssertionForCfg(
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: issuedAt,
-    exp: variant.includeNbf ? now + 600 : now + 60,
+    exp: now + 600,
   };
   if (variant.includeNbf) payload.nbf = issuedAt;
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
@@ -520,61 +520,52 @@ export async function adeSeRawRequestForMailbox(
   });
 }
 
-/** OAuth2 token dla konkretnej skrzynki. */
+/** OAuth2 token dla konkretnej skrzynki. Token endpoint wymaga mTLS. */
 export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
   const cfg = await loadAdeConfigForMailbox(mailboxId);
-  const tryHost = async (
-    base: string,
-    assertionAudience: string,
-    loginHint: string,
-    variant: ClientAssertionVariant,
-    includeClientId: boolean,
-    useMtls: boolean,
-  ) => {
-    const { jwt, audience, variantLabel } = await buildClientAssertionForCfg(cfg, assertionAudience, variant);
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string, assertionAudience: string) => {
+    const { jwt, audience, variantLabel } = await buildClientAssertionForCfg(cfg, assertionAudience);
     const params = new URLSearchParams({
       grant_type: "client_credentials",
+      client_id: cfg.clientId,
       client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
       client_assertion: jwt,
     });
-    if (includeClientId) params.set("client_id", cfg.clientId);
     const res = await httpsRawRequestWithCfg(cfg, {
       method: "POST",
-      url: base.replace(/\/+$/, "") + cfg.tokenPath + `?login_hint=${encodeURIComponent(loginHint)}`,
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "*/*", Connection: "close" },
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-      useMtls,
+      useMtls: true,
     });
     return {
       ...res,
       audience,
-      attempt: `host=${base}; aud=${audience}; login_hint=${loginHint}; ${variantLabel}; ${includeClientId ? "with" : "without"} client_id; ${useMtls ? "mTLS" : "no-mTLS"}`,
+      attempt: `host=${base}; aud=${audience}; login_hint=ADE.${cfg.mailboxAddress}; ${variantLabel}; with client_id; mTLS`,
     };
   };
 
   let last: (AdeRawResponse & { audience: string }) | null = null;
-  for (const base of tokenHostCandidates(cfg.oauthBase, cfg.adeEnv)) {
-    for (const loginHint of loginHintCandidates(cfg.mailboxAddress)) {
-      for (const assertionAudience of audienceCandidates(base, cfg.adeEnv)) {
-        for (const variant of CLIENT_ASSERTION_VARIANTS) {
-          for (const includeClientId of [true, false]) {
-            for (const useMtls of [false, true]) {
-              const res = await tryHost(base, assertionAudience, loginHint, variant, includeClientId, useMtls);
-              last = res;
-              if (res.status >= 200 && res.status < 300) return res;
-              if (res.status !== 401 && !(res.status >= 300 && res.status < 400)) break;
-            }
-            if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-          }
-          if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-        }
-        if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-      }
-      if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-    }
-    if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
+  for (const assertionAudience of audienceCandidates(cfg.oauthBase, cfg.adeEnv)) {
+    const res = await tryHost(cfg.oauthBase, assertionAudience);
+    last = res;
+    if (res.status >= 200 && res.status < 300) return res;
+    if (res.status !== 401) break;
   }
-  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase), loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], true, false));
+
+  if (last?.status && last.status >= 300 && last.status < 400) {
+    const legacy = legacyOauthBase(cfg.adeEnv);
+    if (legacy !== cfg.oauthBase) {
+      for (const assertionAudience of audienceCandidates(legacy, cfg.adeEnv)) {
+        const alt = await tryHost(legacy, assertionAudience);
+        last = alt;
+        if (alt.status >= 200 && alt.status < 300) return alt;
+        if (alt.status !== 401) break;
+      }
+    }
+  }
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
 }
 
 /** Test połączenia dla skrzynki z DB. */
