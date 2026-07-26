@@ -382,17 +382,17 @@ export default function EdoreczeniaInboxTab() {
               <CardDescription className="text-xs mt-1 space-y-0.5">
                 <div>
                   <span className="text-muted-foreground">Nadawca: </span>
-                  <span className="font-medium">{detail?.data?.fromName ?? "—"}</span>{" "}
-                  <span className="font-mono text-muted-foreground">
-                    {detail?.data?.from ?? selected.from ?? ""}
-                  </span>
+                  <AdeAddress
+                    address={detail?.data?.from ?? selected.from ?? undefined}
+                    name={detail?.data?.fromName ?? undefined}
+                  />
                 </div>
                 <div>
                   <span className="text-muted-foreground">Odbiorca: </span>
-                  <span className="font-medium">{detail?.data?.toName ?? "—"}</span>{" "}
-                  <span className="font-mono text-muted-foreground">
-                    {detail?.data?.to ?? selected.to ?? ""}
-                  </span>
+                  <AdeAddress
+                    address={detail?.data?.to ?? selected.to ?? undefined}
+                    name={detail?.data?.toName ?? undefined}
+                  />
                 </div>
                 <div>
                   <span className="text-muted-foreground">Data utworzenia: </span>
