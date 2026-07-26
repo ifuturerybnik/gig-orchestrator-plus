@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Mail, MessageCircle, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
 import { MailLayout } from "@/components/mail/MailLayout";
-import EdoreczeniaInboxTab from "@/components/settings/EdoreczeniaInboxTab";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/correspondence")({
