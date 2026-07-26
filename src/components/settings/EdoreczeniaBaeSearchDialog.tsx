@@ -53,21 +53,51 @@ export default function EdoreczeniaBaeSearchDialog({ open, onOpenChange, onPick 
   const [recipientType, setRecipientType] = useState<BaeRecipientType>("PUBLIC");
   const [identifierType, setIdentifierType] = useState<BaeIdentifierType>("EDELIVERY_ADDRESS");
   const [value, setValue] = useState("");
+  // Rozszerzone pola dla identyfikatora "Dane instytucji" (NAME)
+  const [entityName, setEntityName] = useState("");
+  const [countryCode, setCountryCode] = useState("PL");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [street, setStreet] = useState("");
+  const [buildingNumber, setBuildingNumber] = useState("");
+  const [flatNumber, setFlatNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BaeSearchResultRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tried, setTried] = useState<string[]>([]);
 
+  const isName = identifierType === "NAME";
+
   const handleSearch = async () => {
     setError(null);
     setResults(null);
-    if (!value.trim()) {
-      setError("Podaj wartość do wyszukania.");
-      return;
+    if (isName) {
+      if (!entityName.trim()) return setError("Podaj nazwę instytucji.");
+      if (!city.trim()) return setError("Podaj miejscowość.");
+      if (!buildingNumber.trim()) return setError("Podaj numer budynku.");
+    } else if (!value.trim()) {
+      return setError("Podaj wartość do wyszukania.");
     }
     setLoading(true);
     try {
-      const res = await run({ data: { recipientType, identifierType, value: value.trim() } });
+      const res = await run({
+        data: {
+          recipientType,
+          identifierType,
+          value: isName ? entityName.trim() : value.trim(),
+          address: isName
+            ? {
+                entityName: entityName.trim(),
+                countryCode: countryCode.trim() || "PL",
+                city: city.trim(),
+                postalCode: postalCode.trim() || undefined,
+                street: street.trim() || undefined,
+                buildingNumber: buildingNumber.trim(),
+                flatNumber: flatNumber.trim() || undefined,
+              }
+            : undefined,
+        },
+      });
       setTried(res.triedPaths);
       if (!res.ok) {
         setError(res.error ?? "Nie udało się przeszukać BAE");
@@ -138,27 +168,91 @@ export default function EdoreczeniaBaeSearchDialog({ open, onOpenChange, onPick 
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="bae-value">{IDENT_LABELS[identifierType]}</Label>
-            <Input
-              id="bae-value"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearch();
+          {isName ? (
+            <div className="space-y-3 rounded-md border p-3">
+              <div className="space-y-2">
+                <Label htmlFor="bae-name">
+                  Nazwa instytucji <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="bae-name"
+                  value={entityName}
+                  onChange={(e) => setEntityName(e.target.value)}
+                  placeholder="np. Sąd Rejonowy w Warszawie"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="bae-city">
+                    Miejscowość <span className="text-destructive">*</span>
+                  </Label>
+                  <Input id="bae-city" value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bae-zip">Kod pocztowy</Label>
+                  <Input
+                    id="bae-zip"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    placeholder="00-000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bae-country">Kraj</Label>
+                  <Input
+                    id="bae-country"
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                    maxLength={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bae-street">Ulica</Label>
+                  <Input
+                    id="bae-street"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bae-building">
+                    Numer budynku <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="bae-building"
+                    value={buildingNumber}
+                    onChange={(e) => setBuildingNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bae-flat">Numer lokalu</Label>
+                  <Input
+                    id="bae-flat"
+                    value={flatNumber}
+                    onChange={(e) => setFlatNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="bae-value">{IDENT_LABELS[identifierType]}</Label>
+              <Input
+                id="bae-value"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+                placeholder={
+                  identifierType === "EDELIVERY_ADDRESS" ? "AE:PL-XXXXX-XXXXX-XXXXX-YY" : ""
                 }
-              }}
-              placeholder={
-                identifierType === "EDELIVERY_ADDRESS"
-                  ? "AE:PL-XXXXX-XXXXX-XXXXX-YY"
-                  : identifierType === "NAME"
-                    ? "np. Sąd Rejonowy w Warszawie"
-                    : ""
-              }
-            />
-          </div>
+              />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button onClick={handleSearch} disabled={loading}>

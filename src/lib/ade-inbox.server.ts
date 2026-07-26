@@ -986,7 +986,7 @@ function extractBaeItems(raw: unknown): Record<string, unknown>[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw as Record<string, unknown>[];
   const r = raw as Record<string, unknown>;
-  for (const key of ["addresses", "items", "content", "results", "data", "entries"]) {
+  for (const key of ["baeSearchData", "edaSearchData", "addresses", "items", "content", "results", "data", "entries"]) {
     const v = r[key];
     if (Array.isArray(v)) return v as Record<string, unknown>[];
   }
@@ -994,109 +994,201 @@ function extractBaeItems(raw: unknown): Record<string, unknown>[] {
 }
 
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
-  const contrib = (o.contributor ?? o.entity ?? o.subject ?? {}) as Record<string, unknown>;
-  const addr = (o.eDeliveryAddress ??
+  const contrib = (o.contributor ??
+    o.subjectData ??
+    o.entity ??
+    o.subject ??
+    {}) as Record<string, unknown>;
+  const addr = (o.recipientEda ??
+    o.eDeliveryAddress ??
     o.edeliveryAddress ??
     o.address ??
     o.deliveryAddress) as string | undefined;
   const name =
+    (contrib.entityName as string | undefined) ??
     (contrib.companyName as string | undefined) ??
     (contrib.name as string | undefined) ??
     (o.name as string | undefined) ??
-    ([contrib.firstName, contrib.lastName].filter(Boolean).join(" ") || undefined);
+    ([contrib.firstName, contrib.surname, contrib.lastName].filter(Boolean).join(" ") || undefined);
   const type =
     (o.entityType as string | undefined) ??
     (o.type as string | undefined) ??
     (contrib.type as string | undefined);
-  const address = (o.addressDetails ?? contrib.address ?? {}) as Record<string, unknown>;
+  // SE API zwraca addressList (tablica) — bierzemy pierwszy adres MAIN, inaczej pierwszy.
+  const addressList = (o.addressList as Record<string, unknown>[] | undefined) ?? [];
+  const mainAddr =
+    addressList.find((a) => String(a.addressType).toUpperCase() === "MAIN") ?? addressList[0];
+  const address = (mainAddr ??
+    o.addressDetails ??
+    contrib.address ??
+    {}) as Record<string, unknown>;
+  const officialIds = (contrib.officialIds ?? {}) as Record<string, unknown>;
   return {
     address: String(addr ?? ""),
     name,
     type,
-    nip: (contrib.nip as string | undefined) ?? (o.nip as string | undefined),
-    regon: (contrib.regon as string | undefined) ?? (o.regon as string | undefined),
-    krs: (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
+    nip:
+      (officialIds.nip as string | undefined) ??
+      (contrib.nip as string | undefined) ??
+      (o.nip as string | undefined),
+    regon:
+      (officialIds.regon as string | undefined) ??
+      (contrib.regon as string | undefined) ??
+      (o.regon as string | undefined),
+    krs:
+      (officialIds.krs as string | undefined) ??
+      (contrib.krs as string | undefined) ??
+      (o.krs as string | undefined),
     city: (address.city as string | undefined) ?? (address.town as string | undefined),
-    street: (address.street as string | undefined) ?? (address.streetName as string | undefined),
+    street:
+      [address.street as string | undefined, address.buildingNumber as string | undefined]
+        .filter(Boolean)
+        .join(" ") ||
+      (address.streetName as string | undefined),
     postalCode: (address.postalCode as string | undefined) ?? (address.zipCode as string | undefined),
   };
 }
 
-/**
- * Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE).
- * UA API v3 nie publikuje jednej stabilnej ścieżki — próbujemy kilka kandydatów
- * (POST i GET), zgodnie z tym co udostępnia MC/PP.
- */
-export async function searchBae(input: {
+export type BaeAddressInput = {
+  entityName?: string;
+  countryCode?: string;
+  city?: string;
+  postalCode?: string;
+  street?: string;
+  buildingNumber?: string;
+  flatNumber?: string;
+};
+
+export type BaeSearchInputServer = {
   recipientType: BaeRecipientType;
   identifierType: BaeIdentifierType;
   value: string;
   limit?: number;
-}): Promise<BaeSearchResponse> {
+  address?: BaeAddressInput;
+};
+
+/** Mapa typu odbiorcy → searchCategory (SE API v3/v4). */
+function searchCategoriesFor(rt: BaeRecipientType): string[] {
+  switch (rt) {
+    case "PUBLIC":
+      return ["PUBLIC_INSTITUTION"];
+    case "NON_PUBLIC":
+      return ["COMPANY", "ORGANISATION"];
+    case "KOMORNIK":
+      return ["COURT_ENFORCEMENT_OFFICER"];
+    case "OSOBA_FIZYCZNA":
+      return ["INDIVIDUAL"];
+  }
+}
+
+/**
+ * Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE) przez SE API OW
+ * (Search Engine OW) — POST /api/se/v3/search/{bae_search|eda_search}.
+ * Bearer token (bez mTLS). Baza: ADE_SE_BASE lub oauthBase.
+ */
+export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchResponse> {
   const cfg = loadAdeConfig();
   const val = input.value.trim();
-  if (!val) return { ok: false, results: [], triedPaths: [], error: "Podaj wartość do wyszukania" };
+  if (!val && input.identifierType !== "NAME") {
+    return { ok: false, results: [], triedPaths: [], error: "Podaj wartość do wyszukania" };
+  }
 
-  const baseBody: Record<string, unknown> = {
-    recipientType: input.recipientType,
-    entityType: input.recipientType,
-    subjectType: input.recipientType,
-    identifierType: input.identifierType,
-    identifier: val,
-    value: val,
-    query: val,
-    limit: input.limit ?? 25,
-  };
-  if (input.identifierType === "EDELIVERY_ADDRESS") baseBody.eDeliveryAddress = val;
-  if (input.identifierType === "NIP") baseBody.nip = val;
-  if (input.identifierType === "REGON") baseBody.regon = val;
-  if (input.identifierType === "KRS") baseBody.krs = val;
-  if (input.identifierType === "NAME") baseBody.name = val;
+  const token = await getAdeAccessToken();
+  const { adeSeRawRequest } = await import("@/lib/ade-client.server");
+  const senderEda = cfg.mailboxAddress;
+  const limit = Math.min(Math.max(input.limit ?? 25, 1), 50);
 
-  const mb = encodeURIComponent(cfg.mailboxAddress);
-  const candidates: Array<{ method: "POST" | "GET"; path: string; useQuery?: boolean }> = [
-    { method: "POST", path: `/api/v3/${mb}/bae/search` },
-    { method: "POST", path: `/api/v3/bae/search` },
-    { method: "GET", path: `/api/v3/${mb}/bae/search`, useQuery: true },
-    { method: "GET", path: `/api/v3/bae/search`, useQuery: true },
-    { method: "GET", path: `/api/v3/${mb}/addresses/search`, useQuery: true },
-    { method: "GET", path: `/api/v3/addresses/search`, useQuery: true },
-  ];
+  // Wybór scenariusza:
+  //  - EDELIVERY_ADDRESS → scenariusz 3 (eda_search)
+  //  - reszta            → scenariusz 1 (bae_search) w trybie 1
+  const scenario: "eda" | "bae" = input.identifierType === "EDELIVERY_ADDRESS" ? "eda" : "bae";
 
+  const officialIds: Record<string, string> = {};
+  if (input.identifierType === "NIP") officialIds.nip = val;
+  if (input.identifierType === "REGON") officialIds.regon = val;
+  if (input.identifierType === "KRS") officialIds.krs = val;
+
+  const addr = input.address ?? {};
+  const address: Record<string, string> | undefined =
+    input.identifierType === "NAME"
+      ? {
+          countryCode: addr.countryCode?.trim() || "PL",
+          ...(addr.city?.trim() ? { city: addr.city.trim() } : {}),
+          ...(addr.postalCode?.trim() ? { postalCode: addr.postalCode.trim() } : {}),
+          ...(addr.street?.trim() ? { street: addr.street.trim() } : {}),
+          ...(addr.buildingNumber?.trim() ? { buildingNumber: addr.buildingNumber.trim() } : {}),
+          ...(addr.flatNumber?.trim() ? { flatNumber: addr.flatNumber.trim() } : {}),
+        }
+      : undefined;
+
+  const entityName =
+    input.identifierType === "NAME"
+      ? (addr.entityName?.trim() || val)
+      : undefined;
+
+  const body: Record<string, unknown> =
+    scenario === "eda"
+      ? { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit }
+      : {
+          senderEda,
+          recipientEdasOnly: false,
+          searchCategory: searchCategoriesFor(input.recipientType),
+          ...(entityName ? { entityName } : {}),
+          ...(Object.keys(officialIds).length ? { officialIds } : {}),
+          ...(address ? { address } : {}),
+          offset: 0,
+          limit,
+        };
+
+  const path =
+    scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
+  const candidates = [path, path.replace("/api/se/v3/", "/api/se/v4/")];
   const tried: string[] = [];
   let lastError: string | undefined;
 
-  for (const c of candidates) {
-    tried.push(`${c.method} ${c.path}`);
+  for (const p of candidates) {
+    tried.push(`POST ${p}`);
     try {
-      const res = await adeApiCall({
-        method: c.method,
-        path: c.path,
-        query: c.useQuery
-          ? {
-              recipientType: input.recipientType,
-              identifierType: input.identifierType,
-              value: val,
-              limit: input.limit ?? 25,
-            }
-          : undefined,
-        body: c.method === "POST" ? baseBody : undefined,
+      const res = await adeSeRawRequest({
+        method: "POST",
+        path: p,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+        timeoutMs: 20000,
       });
       if (res.status === 404 || res.status === 405) continue;
+      let json: unknown = null;
+      try {
+        json = res.body ? JSON.parse(res.body) : null;
+      } catch {
+        /* pusto */
+      }
       if (res.status >= 200 && res.status < 300) {
-        const items = extractBaeItems(res.json).map(mapBaeItem).filter((r) => !!r.address);
+        const arr = extractBaeItems(json);
+        const items = arr.map(mapBaeItem).filter((r) => !!r.address);
         return { ok: true, results: items, triedPaths: tried };
       }
-      lastError = `HTTP ${res.status}: ${res.body.slice(0, 240)}`;
+      // 404 z SEAPI-00010 (brak wyników) traktuj jako pustą listę
+      const bodyStr = res.body ?? "";
+      if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
+        return { ok: true, results: [], triedPaths: tried };
+      }
+      lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
     } catch (err) {
       lastError = (err as Error).message;
     }
   }
+
   return {
     ok: false,
     results: [],
     triedPaths: tried,
-    error: lastError ?? "Endpoint BAE nie odpowiada",
+    error: lastError ?? "Endpoint SE API (BAE) nie odpowiada",
   };
 }
+
 

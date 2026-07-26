@@ -164,6 +164,27 @@ export async function adeRawRequest(opts: {
   });
 }
 
+/** SE API (Search Engine OW) — bearer token, bez mTLS.
+ *  Base: ADE_SE_BASE lub oauthBase (np. https://ow.edoreczenia.gov.pl). */
+export async function adeSeRawRequest(opts: {
+  method: string;
+  path: string;
+  headers?: Record<string, string>;
+  body?: string;
+  timeoutMs?: number;
+}): Promise<AdeRawResponse> {
+  const cfg = loadAdeConfig();
+  const base = (process.env.ADE_SE_BASE || cfg.oauthBase).replace(/\/+$/, "");
+  return httpsRawRequest({
+    method: opts.method,
+    url: base + opts.path,
+    headers: opts.headers,
+    body: opts.body,
+    timeoutMs: opts.timeoutMs,
+    useMtls: false,
+  });
+}
+
 function base64url(input: Buffer | string): string {
   const buf = typeof input === "string" ? Buffer.from(input) : input;
   return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

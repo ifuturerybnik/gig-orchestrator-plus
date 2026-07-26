@@ -426,11 +426,22 @@ export const moveAdeDelivery = createServerFn({ method: "POST" })
 export type BaeRecipientType = "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
 export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
 
+export type BaeAddressFields = {
+  entityName?: string;
+  countryCode?: string;
+  city?: string;
+  postalCode?: string;
+  street?: string;
+  buildingNumber?: string;
+  flatNumber?: string;
+};
+
 export type BaeSearchInput = {
   recipientType: BaeRecipientType;
   identifierType: BaeIdentifierType;
   value: string;
   limit?: number;
+  address?: BaeAddressFields;
 };
 
 export type BaeSearchResultRow = {
@@ -456,9 +467,19 @@ export type BaeSearchResponsePayload = {
 export const searchBaeAddresses = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: BaeSearchInput) => {
-    if (!data?.value || !data.value.trim()) throw new Error("Podaj wartość do wyszukania");
-    if (!data.recipientType) throw new Error("Wybierz typ odbiorcy");
-    if (!data.identifierType) throw new Error("Wybierz typ identyfikatora");
+    if (!data?.recipientType) throw new Error("Wybierz typ odbiorcy");
+    if (!data?.identifierType) throw new Error("Wybierz typ identyfikatora");
+    if (data.identifierType === "NAME") {
+      const a = data.address ?? {};
+      const name = (a.entityName ?? data.value ?? "").trim();
+      const city = (a.city ?? "").trim();
+      const building = (a.buildingNumber ?? "").trim();
+      if (!name) throw new Error("Podaj nazwę instytucji");
+      if (!city) throw new Error("Podaj miejscowość");
+      if (!building) throw new Error("Podaj numer budynku");
+    } else {
+      if (!data?.value || !data.value.trim()) throw new Error("Podaj wartość do wyszukania");
+    }
     return data;
   })
   .handler(async ({ data, context }): Promise<BaeSearchResponsePayload> => {
