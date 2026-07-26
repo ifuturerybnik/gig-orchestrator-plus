@@ -994,7 +994,7 @@ function extractBaeItems(raw: unknown): Record<string, unknown>[] {
 }
 
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
-  const contrib = ((o.contributor ?? o.entity ?? o.subject ?? {}) as Record<string, unknown>) ?? {};
+  const contrib = (o.contributor ?? o.entity ?? o.subject ?? {}) as Record<string, unknown>;
   const addr = (o.eDeliveryAddress ??
     o.edeliveryAddress ??
     o.address ??
