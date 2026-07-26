@@ -258,6 +258,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
     const partyName = (node: unknown): string | undefined => {
       if (!node) return undefined;
       const one = Array.isArray(node) ? node[0] : node;
+      if (!one || typeof one !== "object") return undefined;
       const contrib = (one as { contributor?: Record<string, unknown> })?.contributor;
       const name = contrib?.companyName ?? contrib?.name;
       return typeof name === "string" ? name : undefined;
@@ -265,6 +266,7 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
     const partyAddress = (node: unknown): string | undefined => {
       if (!node) return undefined;
       const one = Array.isArray(node) ? node[0] : node;
+      if (!one || typeof one !== "object") return undefined;
       const o = one as Record<string, unknown>;
       const a = o.eDeliveryAddress ?? o.edeliveryAddress ?? o.address;
       return typeof a === "string" ? a : undefined;
