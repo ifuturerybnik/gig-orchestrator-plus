@@ -356,6 +356,9 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
         : typeof (raw as { bodyText?: unknown }).bodyText === "string"
           ? ((raw as { bodyText: string }).bodyText)
           : null;
+      // Wyprowadź kierunek per-wiadomość: gdy nadawcą jest nasza skrzynka → outbound.
+      const isOutboundByFrom = !!n.from && n.from === cfg.mailboxAddress;
+      const direction = isOutboundByFrom ? "outbound" : defaultDirection;
       const baseRow: Record<string, unknown> = {
         direction,
         ade_message_id: n.id,
