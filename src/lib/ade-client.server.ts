@@ -242,15 +242,19 @@ async function buildClientAssertion(audience?: string): Promise<{ jwt: string; a
 
   const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
+  // KSDE/Keycloak bywa wrażliwy na minimalne różnice czasu między hostami.
+  // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
+  // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
+  const issuedAt = now - 60;
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
     iss: cfg.clientId,
     sub: cfg.clientId,
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
-    iat: now,
-    nbf: now,
-    exp: now + 60,
+    iat: issuedAt,
+    nbf: issuedAt,
+    exp: now + 600,
   };
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
   const signer = crypto.createSign("RSA-SHA256");
@@ -435,15 +439,19 @@ async function buildClientAssertionForCfg(cfg: AdeResolvedConfig, audience?: str
     .replace(/\s+/g, "");
   const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
+  // KSDE/Keycloak bywa wrażliwy na minimalne różnice czasu między hostami.
+  // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
+  // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
+  const issuedAt = now - 60;
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
     iss: cfg.clientId,
     sub: cfg.clientId,
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
-    iat: now,
-    nbf: now,
-    exp: now + 60,
+    iat: issuedAt,
+    nbf: issuedAt,
+    exp: now + 600,
   };
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
   const signer = crypto.createSign("RSA-SHA256");
