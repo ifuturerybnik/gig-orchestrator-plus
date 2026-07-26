@@ -22,7 +22,12 @@ ALTER TABLE public.edoreczenia_deliveries
   ADD COLUMN IF NOT EXISTS to_address text,
   ADD COLUMN IF NOT EXISTS body_text text,
   ADD COLUMN IF NOT EXISTS raw jsonb,
-  ADD COLUMN IF NOT EXISTS read_at timestamptz;
+  ADD COLUMN IF NOT EXISTS read_at timestamptz,
+  ADD COLUMN IF NOT EXISTS folder text NOT NULL DEFAULT 'INBOX',
+  ADD COLUMN IF NOT EXISTS creation_date timestamptz,
+  ADD COLUMN IF NOT EXISTS sent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS evidence_storage_path text;
+CREATE INDEX IF NOT EXISTS idx_edor_deliveries_folder ON public.edoreczenia_deliveries (folder);
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.edoreczenia_deliveries TO authenticated;
 GRANT ALL ON public.edoreczenia_deliveries TO service_role;
 ALTER TABLE public.edoreczenia_deliveries ENABLE ROW LEVEL SECURITY;
