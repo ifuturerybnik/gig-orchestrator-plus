@@ -33,6 +33,7 @@ export async function adeApiCall(opts: {
   body?: unknown;
   timeoutMs?: number;
   binary?: boolean;
+  accept?: string;
 }): Promise<{ status: number; body: string; bodyBuffer?: Buffer; json: unknown; headers: Record<string, string> }> {
   const token = await getAdeAccessToken();
   const qs = opts.query
@@ -42,13 +43,15 @@ export async function adeApiCall(opts: {
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
         .join("&")
     : "";
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: opts.accept ?? "application/json",
+  };
+  if (opts.body) headers["Content-Type"] = "application/json";
   const res = await adeRawRequest({
     method: opts.method,
     path: opts.path + qs,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": opts.body ? "application/json" : "application/json",
-    },
+    headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
     timeoutMs: opts.timeoutMs ?? 20000,
     binary: opts.binary,
