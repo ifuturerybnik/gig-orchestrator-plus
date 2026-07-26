@@ -114,7 +114,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
           )}
           {!listQuery.isLoading && mailboxes.length === 0 && (
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-              Brak skonfigurowanych skrzynek. Kliknij „Dodaj skrzynkę", aby wgrać certyfikat QWAC i podać ClientId oraz adres AE:PL-…
+              Brak skonfigurowanych skrzynek. Kliknij „Dodaj skrzynkę", aby podać adres AE:PL-… oraz ClientId.
             </div>
           )}
           {mailboxes.map((mb) => (
