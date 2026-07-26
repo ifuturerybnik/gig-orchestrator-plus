@@ -927,7 +927,7 @@ export type SaveAdeDraftResult = {
 
 /** Zapisz wiadomość jako roboczą.
  *  Próbuje utworzyć/zaktualizować draft w UA API v3 (`/drafts`).
- *  Niezależnie od wyniku – zapisuje kopię lokalnie w folderze DRAFTS.
+ *  Lokalnie zapisujemy tylko draft potwierdzony przez biznes.gov, aby foldery były tożsame.
  */
 export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDraftResult> {
   const cfg = loadAdeConfig();
@@ -957,13 +957,12 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
   const toObjs = recipients.map((address) => ({ eDeliveryAddress: address }));
 
   // UA API v3: draft wymaga `shippingService` w messageMetadata (UAAPI0104).
+  // Ta instancja biznes.gov zwraca jawnie dozwolone wartości: commercial, hybrid, electronic.
   // `to`/`messageContent` na poziomie top-level są odrzucane jako "Redundant field".
-  // Próbujemy kolejno kilka nazw usługi – różne instancje ADE akceptują różne enumy.
   const shippingServices = [
-    "REGISTERED_ELECTRONIC_DELIVERY",         // PUH – biznes ↔ osoba fiz./firma
-    "PUBLIC_REGISTERED_ELECTRONIC_DELIVERY",  // PURDE – korespondencja publiczna
-    "REGULAR",
-    "PUBLIC_SERVICE_MESSAGE",
+    "electronic",
+    "commercial",
+    "hybrid",
   ];
 
   const payloads: Array<{ label: string; body: Record<string, unknown> }> = shippingServices.map((svc) => ({
