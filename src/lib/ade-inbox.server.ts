@@ -956,56 +956,28 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
   // instancje ADE mają różne konwencje.
   const toObjs = recipients.map((address) => ({ eDeliveryAddress: address }));
 
-  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
-    {
-      label: "v3-nested-min",
-      body: {
-        messageMetadata: {
-          to: toObjs,
-          subject,
-          ...(caseId ? { caseIdentifier: caseId } : {}),
-        },
-        textBody,
-      },
-    },
-    {
-      label: "v3-nested-with-from",
-      body: {
-        messageMetadata: {
-          from: [{ eDeliveryAddress: mailbox }],
-          to: toObjs,
-          subject,
-          ...(caseId ? { caseIdentifier: caseId } : {}),
-        },
-        textBody,
-      },
-    },
-    {
-      label: "v3-flat-min",
-      body: {
+  // UA API v3: draft wymaga `shippingService` w messageMetadata (UAAPI0104).
+  // `to`/`messageContent` na poziomie top-level są odrzucane jako "Redundant field".
+  // Próbujemy kolejno kilka nazw usługi – różne instancje ADE akceptują różne enumy.
+  const shippingServices = [
+    "REGISTERED_ELECTRONIC_DELIVERY",         // PUH – biznes ↔ osoba fiz./firma
+    "PUBLIC_REGISTERED_ELECTRONIC_DELIVERY",  // PURDE – korespondencja publiczna
+    "REGULAR",
+    "PUBLIC_SERVICE_MESSAGE",
+  ];
+
+  const payloads: Array<{ label: string; body: Record<string, unknown> }> = shippingServices.map((svc) => ({
+    label: `v3-nested-${svc}`,
+    body: {
+      messageMetadata: {
         to: toObjs,
         subject,
-        textBody,
+        shippingService: svc,
         ...(caseId ? { caseIdentifier: caseId } : {}),
       },
+      textBody,
     },
-    {
-      label: "v3-flat-strings",
-      body: {
-        to: recipients,
-        subject,
-        textBody,
-        ...(caseId ? { caseIdentifier: caseId } : {}),
-      },
-    },
-    {
-      label: "v3-messagecontent",
-      body: {
-        messageMetadata: { to: toObjs, subject },
-        messageContent: { textBody },
-      },
-    },
-  ];
+  }));
 
   const paths = input.draftId
     ? [`/api/v3/${encodeURIComponent(mailbox)}/drafts/${encodeURIComponent(input.draftId)}`]
