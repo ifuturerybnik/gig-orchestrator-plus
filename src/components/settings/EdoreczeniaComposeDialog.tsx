@@ -237,10 +237,13 @@ export default function EdoreczeniaComposeDialog({
 
         <div className="space-y-5 pt-2">
           <div>
-            <div className="text-sm mb-2">
+            <div className="text-sm mb-2 flex items-baseline gap-1 flex-wrap">
               <span className="text-muted-foreground">Od: </span>
-              <span className="font-medium">{fromLabel ?? "—"}</span>{" "}
-              {fromAddress && <span className="font-mono text-xs">&lt;{fromAddress}&gt;</span>}
+              {fromAddress ? (
+                <AdeAddress address={fromAddress} name={fromLabel} />
+              ) : (
+                <span className="font-medium">{fromLabel ?? "—"}</span>
+              )}
             </div>
           </div>
 
