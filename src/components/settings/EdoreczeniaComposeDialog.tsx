@@ -345,6 +345,12 @@ export default function EdoreczeniaComposeDialog({
           </div>
         </div>
       </DialogContent>
+      <EdoreczeniaBaeSearchDialog
+        open={baeOpen}
+        onOpenChange={setBaeOpen}
+        onPick={addRecipientAddress}
+      />
     </Dialog>
   );
+
 }
