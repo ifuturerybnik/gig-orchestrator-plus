@@ -914,6 +914,214 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
   };
 }
 
+// ────────────────────── Zapis roboczej (Draft) ──────────────────────
+
+export type SaveAdeDraftInput = SendAdeMessageInput & { draftId?: string };
+export type SaveAdeDraftResult = {
+  ok: boolean;
+  draftId?: string;
+  remote: boolean;
+  error?: string;
+  attempts?: Array<{ path: string; status: number; snippet: string }>;
+};
+
+/** Zapisz wiadomość jako roboczą.
+ *  Próbuje utworzyć/zaktualizować draft w UA API v3 (`/drafts`).
+ *  Niezależnie od wyniku – zapisuje kopię lokalnie w folderze DRAFTS.
+ */
+export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDraftResult> {
+  const cfg = loadAdeConfig();
+  const mailbox = cfg.mailboxAddress;
+  const recipients = (input.recipients ?? []).map((r) => r.trim()).filter(Boolean);
+  if (!input.subject?.trim() && !input.bodyText?.trim() && recipients.length === 0) {
+    return { ok: false, remote: false, error: "Pusta wiadomość" };
+  }
+
+  const attachments = (input.attachments ?? []).map((a) => ({
+    filename: a.filename,
+    mimeType: a.mimeType ?? "application/octet-stream",
+    content: a.contentBase64,
+  }));
+
+  const commonMeta = {
+    from: [{ eDeliveryAddress: mailbox }],
+    to: recipients.map((address) => ({ eDeliveryAddress: address })),
+    subject: input.subject?.trim() || "(bez tematu)",
+    caseIdentifier: input.caseNumber?.trim() || undefined,
+  };
+
+  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
+    { label: "v3-nested", body: { messageMetadata: commonMeta, textBody: input.bodyText ?? "", attachments } },
+    {
+      label: "v3-flat",
+      body: {
+        from: mailbox,
+        to: recipients,
+        subject: commonMeta.subject,
+        textBody: input.bodyText ?? "",
+        caseIdentifier: input.caseNumber?.trim() || undefined,
+        attachments,
+      },
+    },
+  ];
+
+  const paths = input.draftId
+    ? [`/api/v3/${encodeURIComponent(mailbox)}/drafts/${encodeURIComponent(input.draftId)}`]
+    : [
+        `/api/v3/${encodeURIComponent(mailbox)}/drafts`,
+        `/api/v3/${encodeURIComponent(mailbox)}/messages/drafts`,
+      ];
+
+  const attempts: Array<{ path: string; status: number; snippet: string }> = [];
+  let remoteDraftId: string | undefined;
+  let remoteOk = false;
+  for (const path of paths) {
+    for (const p of payloads) {
+      const res = await adeApiCall({
+        method: input.draftId ? "PUT" : "POST",
+        path,
+        body: p.body,
+        timeoutMs: 60000,
+      });
+      attempts.push({ path: `${path} [${p.label}]`, status: res.status, snippet: res.body.slice(0, 200) });
+      if (res.status >= 200 && res.status < 300) {
+        const j = (Array.isArray(res.json) ? res.json[0] : res.json) as Record<string, unknown> | null;
+        const meta = ((j?.messageMetadata ?? {}) as Record<string, unknown>) || {};
+        remoteDraftId =
+          (meta.messageId as string | undefined) ??
+          (j?.messageId as string | undefined) ??
+          (j?.id as string | undefined) ??
+          input.draftId;
+        remoteOk = true;
+        break;
+      }
+      if (res.status !== 400 && res.status !== 415 && res.status !== 422) break;
+    }
+    if (remoteOk) break;
+  }
+
+  const admin = await getAdmin();
+  const localAdeId = remoteDraftId ?? input.draftId ?? `local-draft-${Date.now()}`;
+  const rawSnap = {
+    messageMetadata: commonMeta,
+    textBody: input.bodyText ?? "",
+    _local: !remoteOk,
+    _savedAt: new Date().toISOString(),
+  };
+  const { error: upErr } = await admin
+    .from("edoreczenia_deliveries")
+    .upsert(
+      {
+        mailbox_address: mailbox,
+        ade_message_id: localAdeId,
+        folder: "DRAFTS",
+        from_address: mailbox,
+        to_address: recipients[0] ?? null,
+        subject: commonMeta.subject,
+        body_text: input.bodyText ?? "",
+        creation_date: new Date().toISOString(),
+        raw: rawSnap as unknown as Record<string, unknown>,
+      },
+      { onConflict: "mailbox_address,ade_message_id" },
+    );
+  if (upErr) return { ok: false, remote: remoteOk, draftId: remoteDraftId, error: upErr.message, attempts };
+  return { ok: true, remote: remoteOk, draftId: remoteDraftId, attempts };
+}
+
+// ────────────────────── Usunięcie wiadomości (ADE + lokalnie) ──────────────────────
+
+export type DeleteAdeResult = {
+  ok: boolean;
+  remote: boolean;
+  local: boolean;
+  hardDeleted: boolean;
+  error?: string;
+  attempts?: Array<{ path: string; method: string; status: number; snippet: string }>;
+};
+
+/** Usuń wiadomość w UA API (biznes.gov) i lokalnie.
+ *  INBOX/SENT/DRAFTS → przenieś do kosza (soft delete). TRASH lub hardDelete → usuń trwale.
+ */
+export async function deleteAdeDelivery(
+  deliveryId: string,
+  opts: { hardDelete?: boolean } = {},
+): Promise<DeleteAdeResult> {
+  const admin = await getAdmin();
+  const { data: row } = await admin
+    .from("edoreczenia_deliveries")
+    .select("id, ade_message_id, folder, mailbox_address")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  if (!row)
+    return { ok: false, remote: false, local: false, hardDeleted: false, error: "Nie znaleziono wiadomości" };
+
+  const cfg = loadAdeConfig();
+  const mailbox = row.mailbox_address ?? cfg.mailboxAddress;
+  const adeId = row.ade_message_id ?? "";
+  const folder = (row.folder as AdeFolder | null) ?? "INBOX";
+  const hardDelete = opts.hardDelete || folder === "TRASH";
+  const attempts: Array<{ path: string; method: string; status: number; snippet: string }> = [];
+  let remoteOk = false;
+
+  if (adeId && !adeId.startsWith("local-")) {
+    const base = `/api/v3/${encodeURIComponent(mailbox)}`;
+    const mid = encodeURIComponent(adeId);
+    const candidates: Array<{ method: string; path: string; body?: unknown }> = [];
+    if (folder === "DRAFTS") {
+      candidates.push({ method: "DELETE", path: `${base}/drafts/${mid}` });
+    }
+    if (hardDelete) {
+      candidates.push({ method: "DELETE", path: `${base}/trash/${mid}` });
+      candidates.push({ method: "DELETE", path: `${base}/messages/${mid}?permanent=true` });
+      candidates.push({ method: "DELETE", path: `${base}/messages/${mid}` });
+    } else {
+      candidates.push({ method: "DELETE", path: `${base}/messages/${mid}` });
+      candidates.push({ method: "POST", path: `${base}/messages/${mid}/trash` });
+      candidates.push({ method: "PUT", path: `${base}/messages/${mid}/label`, body: { label: "TRASH" } });
+    }
+    for (const c of candidates) {
+      const res = await adeApiCall({ method: c.method, path: c.path, body: c.body });
+      attempts.push({ method: c.method, path: c.path, status: res.status, snippet: res.body.slice(0, 200) });
+      if (res.status >= 200 && res.status < 300) {
+        remoteOk = true;
+        break;
+      }
+      if (res.status === 401 || res.status === 403) break;
+    }
+  } else {
+    remoteOk = true; // wpis tylko lokalny
+  }
+
+  let localOk = true;
+  if (hardDelete) {
+    const { data: atts } = await admin
+      .from("edoreczenia_attachments")
+      .select("id, storage_path")
+      .eq("delivery_id", row.id);
+    const paths = (atts ?? []).map((a) => a.storage_path).filter((v): v is string => !!v);
+    if (paths.length) await admin.storage.from(BUCKET).remove(paths).catch(() => undefined);
+    await admin.from("edoreczenia_attachments").delete().eq("delivery_id", row.id);
+    const { error } = await admin.from("edoreczenia_deliveries").delete().eq("id", row.id);
+    if (error) localOk = false;
+  } else {
+    const { error } = await admin.from("edoreczenia_deliveries").update({ folder: "TRASH" }).eq("id", row.id);
+    if (error) localOk = false;
+  }
+
+  return {
+    ok: remoteOk && localOk,
+    remote: remoteOk,
+    local: localOk,
+    hardDeleted: hardDelete,
+    error: !remoteOk
+      ? `Nie udało się usunąć w ADE (HTTP ${attempts[attempts.length - 1]?.status ?? "?"})`
+      : !localOk
+        ? "Nie udało się usunąć lokalnie"
+        : undefined,
+    attempts,
+  };
+}
+
 // ────────────────────── Archiwum wiadomości (jak biznes.gov) ──────────────────────
 
 /** Zwraca SHA3-512 (hex). Jeśli środowisko nie obsługuje SHA3, fallback do SHA-512. */
