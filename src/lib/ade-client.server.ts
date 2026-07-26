@@ -20,16 +20,26 @@ export type AdeConfig = {
 const DEFAULT_TOKEN_PATH = "/auth/realms/EDOR/protocol/openid-connect/token";
 
 function envDefaults(env: string | undefined) {
-  // env=prod|int — pozwala łatwo przełączyć środowisko
+  // env=prod|int — pozwala łatwo przełączyć środowisko.
+  // UWAGA: od ~lipca 2026 Poczta Polska przeniosła moduł uprawnień (Keycloak KSDE)
+  // pod ten sam host co UA API. Stary `ow.edoreczenia.gov.pl` przekierowuje 302
+  // do statycznej strony informacyjnej — token endpoint już tam nie odpowiada.
   const isInt = (env ?? "").toLowerCase() === "int";
+  const apiBase = isInt
+    ? "https://uaapi-int-ow.poczta-polska.pl"
+    : "https://uaapi-ow.poczta-polska.pl";
   return {
-    apiBase: isInt
-      ? "https://uaapi-int-ow.poczta-polska.pl"
-      : "https://uaapi-ow.poczta-polska.pl",
-    oauthBase: isInt
-      ? "https://int-ow.edoreczenia.gov.pl"
-      : "https://ow.edoreczenia.gov.pl",
+    apiBase,
+    // OAuth teraz na tym samym hoście co UA API (mTLS).
+    oauthBase: apiBase,
   };
+}
+
+// Alternatywny (poprzedni) host OAuth — używany tylko jako fallback, gdyby
+// operator wyznaczony ponownie rozdzielił punkty końcowe.
+function legacyOauthBase(env: string | undefined): string {
+  const isInt = (env ?? "").toLowerCase() === "int";
+  return isInt ? "https://int-ow.edoreczenia.gov.pl" : "https://ow.edoreczenia.gov.pl";
 }
 
 export function loadAdeConfig(): AdeConfig {
