@@ -249,6 +249,9 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     useMtls: false,
   });
   return { ...res, audience };
+}
+
+
 
 // ============================================================
 // Multi-tenant: warianty operujące na skrzynce z DB (ade_mailboxes)
