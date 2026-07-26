@@ -37,6 +37,7 @@ import { Route as ApiPublicGusScanTickRouteImport } from './routes/api/public/gu
 import { Route as ApiPublicEmailUnsubscribeRouteImport } from './routes/api/public/email-unsubscribe'
 import { Route as ApiPublicEmailTrackOpenRouteImport } from './routes/api/public/email-track-open'
 import { Route as ApiPublicEmailTrackClickRouteImport } from './routes/api/public/email-track-click'
+import { Route as ApiPublicConcertivoQwacDotcrtRouteImport } from './routes/api/public/concertivo-qwac[.]crt'
 import { Route as ApiPublicAutokorTickRouteImport } from './routes/api/public/autokor-tick'
 import { Route as AuthenticatedOrganizationsNewRouteImport } from './routes/_authenticated.organizations.new'
 import { Route as AuthenticatedOrganizationsOrgIdRouteImport } from './routes/_authenticated.organizations.$orgId'
@@ -232,6 +233,12 @@ const ApiPublicEmailTrackClickRoute =
   ApiPublicEmailTrackClickRouteImport.update({
     id: '/api/public/email-track-click',
     path: '/api/public/email-track-click',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicConcertivoQwacDotcrtRoute =
+  ApiPublicConcertivoQwacDotcrtRouteImport.update({
+    id: '/api/public/concertivo-qwac.crt',
+    path: '/api/public/concertivo-qwac.crt',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicAutokorTickRoute = ApiPublicAutokorTickRouteImport.update({
@@ -526,6 +533,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/concertivo-qwac.crt': typeof ApiPublicConcertivoQwacDotcrtRoute
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
@@ -597,6 +605,7 @@ export interface FileRoutesByTo {
   '/contacts/me': typeof AuthenticatedContactsMeRoute
   '/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/concertivo-qwac.crt': typeof ApiPublicConcertivoQwacDotcrtRoute
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
@@ -673,6 +682,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId': typeof AuthenticatedOrganizationsOrgIdRouteWithChildren
   '/_authenticated/organizations/new': typeof AuthenticatedOrganizationsNewRoute
   '/api/public/autokor-tick': typeof ApiPublicAutokorTickRoute
+  '/api/public/concertivo-qwac.crt': typeof ApiPublicConcertivoQwacDotcrtRoute
   '/api/public/email-track-click': typeof ApiPublicEmailTrackClickRoute
   '/api/public/email-track-open': typeof ApiPublicEmailTrackOpenRoute
   '/api/public/email-unsubscribe': typeof ApiPublicEmailUnsubscribeRoute
@@ -749,6 +759,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId'
     | '/organizations/new'
     | '/api/public/autokor-tick'
+    | '/api/public/concertivo-qwac.crt'
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
@@ -820,6 +831,7 @@ export interface FileRouteTypes {
     | '/contacts/me'
     | '/organizations/new'
     | '/api/public/autokor-tick'
+    | '/api/public/concertivo-qwac.crt'
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
@@ -895,6 +907,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId'
     | '/_authenticated/organizations/new'
     | '/api/public/autokor-tick'
+    | '/api/public/concertivo-qwac.crt'
     | '/api/public/email-track-click'
     | '/api/public/email-track-open'
     | '/api/public/email-unsubscribe'
@@ -954,6 +967,7 @@ export interface RootRouteChildren {
   DataDeletionCodeRoute: typeof DataDeletionCodeRoute
   InvitationsTokenRoute: typeof InvitationsTokenRoute
   ApiPublicAutokorTickRoute: typeof ApiPublicAutokorTickRoute
+  ApiPublicConcertivoQwacDotcrtRoute: typeof ApiPublicConcertivoQwacDotcrtRoute
   ApiPublicEmailTrackClickRoute: typeof ApiPublicEmailTrackClickRoute
   ApiPublicEmailTrackOpenRoute: typeof ApiPublicEmailTrackOpenRoute
   ApiPublicEmailUnsubscribeRoute: typeof ApiPublicEmailUnsubscribeRoute
@@ -1176,6 +1190,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/email-track-click'
       fullPath: '/api/public/email-track-click'
       preLoaderRoute: typeof ApiPublicEmailTrackClickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/concertivo-qwac.crt': {
+      id: '/api/public/concertivo-qwac.crt'
+      path: '/api/public/concertivo-qwac.crt'
+      fullPath: '/api/public/concertivo-qwac.crt'
+      preLoaderRoute: typeof ApiPublicConcertivoQwacDotcrtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/autokor-tick': {
@@ -1669,6 +1690,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataDeletionCodeRoute: DataDeletionCodeRoute,
   InvitationsTokenRoute: InvitationsTokenRoute,
   ApiPublicAutokorTickRoute: ApiPublicAutokorTickRoute,
+  ApiPublicConcertivoQwacDotcrtRoute: ApiPublicConcertivoQwacDotcrtRoute,
   ApiPublicEmailTrackClickRoute: ApiPublicEmailTrackClickRoute,
   ApiPublicEmailTrackOpenRoute: ApiPublicEmailTrackOpenRoute,
   ApiPublicEmailUnsubscribeRoute: ApiPublicEmailUnsubscribeRoute,
