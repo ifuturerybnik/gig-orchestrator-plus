@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Reply, Forward } from "lucide-react";
+import AdeAddress from "./AdeAddress";
 
 const FOLDERS: { id: AdeFolder; label: string; icon: typeof Inbox }[] = [
   { id: "INBOX", label: "Odebrane", icon: Inbox },
