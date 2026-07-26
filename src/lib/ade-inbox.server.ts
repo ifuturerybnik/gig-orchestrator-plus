@@ -1067,46 +1067,39 @@ export type BaeSearchInputServer = {
   address?: BaeAddressInput;
 };
 
-/** Mapa typu odbiorcy → lista kandydatów searchCategory.
- *  SE API v4 używa wartości z dokumentacji technicznej: PUBLIC_INSTITUTION, COMPANY,
- *  ORGANISATION, COURT_ENFORCEMENT_OFFICER, INDIVIDUAL. Starsze/pośrednie wartości
- *  zostawiamy wyłącznie jako fallback, bo bramki OW potrafią różnić się wersją kontraktu.
+type BaeCategorySet = { label: string; values: string[] };
+type BaePayloadVariant = { label: string; fields: Record<string, unknown> };
+
+/**
+ * SE API przyjmuje `searchCategory` jako tablicę enumów. Dla wyszukiwania po
+ * NIP/REGON/KRS/nazwie najstabilniejszy wariant to łączony zestaw
+ * COMPANY + ORGANISATION + PUBLIC_INSTITUTION (tak samo robią klienci WWW/BAE).
  */
-function searchCategoryCandidates(rt: BaeRecipientType): string[] {
+function searchCategorySets(rt: BaeRecipientType): BaeCategorySet[] {
+  const institutional = ["COMPANY", "ORGANISATION", "PUBLIC_INSTITUTION"];
   switch (rt) {
     case "PUBLIC":
       return [
-        "PUBLIC_INSTITUTION",
-        "PUBLIC",
-        "PUBLIC_ENTITY",
-        "PUBLIC_ADMINISTRATION_BODY",
+        { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
+        { label: "PUBLIC_INSTITUTION", values: ["PUBLIC_INSTITUTION"] },
+        { label: "ORGANISATION", values: ["ORGANISATION"] },
       ];
     case "NON_PUBLIC":
       return [
-        "COMPANY",
-        "ORGANISATION",
-        "NON_PUBLIC",
-        "NON_PUBLIC_ENTITY",
+        { label: "COMPANY+ORGANISATION", values: ["COMPANY", "ORGANISATION"] },
+        { label: "COMPANY", values: ["COMPANY"] },
+        { label: "ORGANISATION", values: ["ORGANISATION"] },
+        { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
       ];
     case "KOMORNIK":
-      return [
-        "COURT_ENFORCEMENT_OFFICER",
-        "TRUSTED_NON_PUBLIC",
-        "TRUSTED_NON_PUBLIC_ENTITY",
-        "KOMORNIK",
-      ];
+      return [{ label: "COURT_ENFORCEMENT_OFFICER", values: ["COURT_ENFORCEMENT_OFFICER"] }];
     case "OSOBA_FIZYCZNA":
-      return [
-        "INDIVIDUAL",
-        "NATURAL_PERSON",
-        "INDIVIDUAL_PERSON",
-        "PERSON",
-      ];
+      return [{ label: "INDIVIDUAL", values: ["INDIVIDUAL"] }];
   }
 }
 
-// In-memory cache: pierwsza wartość enuma, która nie zwraca 00003.
-const searchCategoryCache = new Map<BaeRecipientType, string>();
+// In-memory cache: pierwszy zestaw searchCategory, który nie zwraca 00003.
+const searchCategoryCache = new Map<BaeRecipientType, BaeCategorySet>();
 
 function isEnumError(bodyStr: string): boolean {
   return (
@@ -1116,6 +1109,57 @@ function isEnumError(bodyStr: string): boolean {
     /Incorrect enum value/i.test(bodyStr) ||
     /not one of the values accepted for Enum/i.test(bodyStr)
   );
+}
+
+function isRetryableBaeShapeError(bodyStr: string): boolean {
+  return (
+    isEnumError(bodyStr) ||
+    /SEAPI-?00008/i.test(bodyStr) ||
+    /Unexpected search arguments/i.test(bodyStr) ||
+    /not recognized or not expected/i.test(bodyStr) ||
+    /No mandatory search arguments/i.test(bodyStr) ||
+    /belong to different Search Sets/i.test(bodyStr) ||
+    /Redundant field/i.test(bodyStr)
+  );
+}
+
+function cleanOfficialId(idType: BaeIdentifierType, value: string): string {
+  return idType === "NIP" || idType === "REGON" || idType === "KRS"
+    ? value.replace(/\D/g, "")
+    : value;
+}
+
+function officialIdPayloadVariants(idType: BaeIdentifierType, value: string): BaePayloadVariant[] {
+  if (idType !== "NIP" && idType !== "REGON" && idType !== "KRS") return [{ label: "no-official-id", fields: {} }];
+  const registry = idType.toLowerCase();
+  const id = cleanOfficialId(idType, value);
+  return [
+    // Najczęściej spotykany kształt w kontraktach Java/OpenAPI: lista identyfikatorów z rejestrem.
+    { label: `officialIds:${registry}/id`, fields: { officialIds: [{ referenceRegistry: registry, id }] } },
+    { label: `officialIds:${registry}/value`, fields: { officialIds: [{ referenceRegistry: registry, value: id }] } },
+    // Starsze klienty spotykane w integracjach mapują officialIds na obiekt z kluczami nip/regon/krs.
+    { label: `officialIds.${registry}`, fields: { officialIds: { [registry]: id } } },
+    { label: registry, fields: { [registry]: id } },
+  ];
+}
+
+function addressPayloadVariants(address: BaeAddressInput, fallbackName: string): BaePayloadVariant[] {
+  const countryCode = address.countryCode?.trim().toUpperCase() || "PL";
+  const entityName = address.entityName?.trim() || fallbackName;
+  const addr = {
+    addressType: ["headquarters"],
+    countryCode,
+    country: countryCode,
+    ...(address.city?.trim() ? { city: address.city.trim() } : {}),
+    ...(address.postalCode?.trim() ? { postalCode: address.postalCode.trim() } : {}),
+    ...(address.street?.trim() ? { street: address.street.trim() } : {}),
+    ...(address.buildingNumber?.trim() ? { buildingNumber: address.buildingNumber.trim() } : {}),
+    ...(address.flatNumber?.trim() ? { flatNumber: address.flatNumber.trim() } : {}),
+  };
+  return [
+    { label: "entity+address[]", fields: { entityName, address: [addr] } },
+    { label: "entity+address", fields: { entityName, address: addr } },
+  ];
 }
 
 /**
