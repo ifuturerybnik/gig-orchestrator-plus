@@ -293,32 +293,21 @@ export default function EdoreczeniaInboxTab() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {detail.data.evidenceZipUrl ? (
-                    <a
-                      href={detail.data.evidenceZipUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs hover:bg-accent"
-                    >
-                      <FileArchive className="h-3.5 w-3.5" />
-                      Pobierz dowody techniczne (ZIP)
-                    </a>
-                  ) : (
-                    <Button
-                      onClick={handleDownloadEvidence}
-                      disabled={evidenceLoading}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {evidenceLoading ? (
-                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <FileArchive className="mr-2 h-3.5 w-3.5" />
-                      )}
-                      Pobierz dowody techniczne (ZIP)
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleDownloadEvidence}
+                    disabled={evidenceLoading}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {evidenceLoading ? (
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <FileArchive className="mr-2 h-3.5 w-3.5" />
+                    )}
+                    Pobierz dowody techniczne (ZIP)
+                  </Button>
                 </div>
+
 
                 {detail.data.attachments.length > 0 && (
                   <div>
