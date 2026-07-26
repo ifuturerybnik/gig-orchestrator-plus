@@ -384,9 +384,20 @@ export default function EdoreczeniaInboxTab() {
           </CardContent>
         </Card>
       )}
+
+      <EdoreczeniaComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        fromAddress={result?.mailbox}
+        onSent={() => {
+          setFolder("SENT");
+          void refresh();
+        }}
+      />
     </div>
   );
 }
+
 
 function formatJson(body: string): string {
   try {
