@@ -123,6 +123,14 @@ export default function EdoreczeniaComposeDialog({
 
   const handleSave = async () => {
     setError(null);
+    if (!recipients.length) {
+      setError("Dodaj przynajmniej jednego adresata — biznes.gov nie zapisuje roboczych bez odbiorcy.");
+      return;
+    }
+    if (!subject.trim()) {
+      setError("Temat jest wymagany także dla wiadomości roboczych.");
+      return;
+    }
     if (totalSize > 500 * 1024 * 1024) {
       setError("Sumaryczny rozmiar załączników przekracza 500 MB.");
       return;
