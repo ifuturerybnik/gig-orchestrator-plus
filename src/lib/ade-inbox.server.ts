@@ -1067,46 +1067,39 @@ export type BaeSearchInputServer = {
   address?: BaeAddressInput;
 };
 
-/** Mapa typu odbiorcy → lista kandydatów searchCategory.
- *  SE API v4 używa wartości z dokumentacji technicznej: PUBLIC_INSTITUTION, COMPANY,
- *  ORGANISATION, COURT_ENFORCEMENT_OFFICER, INDIVIDUAL. Starsze/pośrednie wartości
- *  zostawiamy wyłącznie jako fallback, bo bramki OW potrafią różnić się wersją kontraktu.
+type BaeCategorySet = { label: string; values: string[] };
+type BaePayloadVariant = { label: string; fields: Record<string, unknown> };
+
+/**
+ * SE API przyjmuje `searchCategory` jako tablicę enumów. Dla wyszukiwania po
+ * NIP/REGON/KRS/nazwie najstabilniejszy wariant to łączony zestaw
+ * COMPANY + ORGANISATION + PUBLIC_INSTITUTION (tak samo robią klienci WWW/BAE).
  */
-function searchCategoryCandidates(rt: BaeRecipientType): string[] {
+function searchCategorySets(rt: BaeRecipientType): BaeCategorySet[] {
+  const institutional = ["COMPANY", "ORGANISATION", "PUBLIC_INSTITUTION"];
   switch (rt) {
     case "PUBLIC":
       return [
-        "PUBLIC_INSTITUTION",
-        "PUBLIC",
-        "PUBLIC_ENTITY",
-        "PUBLIC_ADMINISTRATION_BODY",
+        { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
+        { label: "PUBLIC_INSTITUTION", values: ["PUBLIC_INSTITUTION"] },
+        { label: "ORGANISATION", values: ["ORGANISATION"] },
       ];
     case "NON_PUBLIC":
       return [
-        "COMPANY",
-        "ORGANISATION",
-        "NON_PUBLIC",
-        "NON_PUBLIC_ENTITY",
+        { label: "COMPANY+ORGANISATION", values: ["COMPANY", "ORGANISATION"] },
+        { label: "COMPANY", values: ["COMPANY"] },
+        { label: "ORGANISATION", values: ["ORGANISATION"] },
+        { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
       ];
     case "KOMORNIK":
-      return [
-        "COURT_ENFORCEMENT_OFFICER",
-        "TRUSTED_NON_PUBLIC",
-        "TRUSTED_NON_PUBLIC_ENTITY",
-        "KOMORNIK",
-      ];
+      return [{ label: "COURT_ENFORCEMENT_OFFICER", values: ["COURT_ENFORCEMENT_OFFICER"] }];
     case "OSOBA_FIZYCZNA":
-      return [
-        "INDIVIDUAL",
-        "NATURAL_PERSON",
-        "INDIVIDUAL_PERSON",
-        "PERSON",
-      ];
+      return [{ label: "INDIVIDUAL", values: ["INDIVIDUAL"] }];
   }
 }
 
-// In-memory cache: pierwsza wartość enuma, która nie zwraca 00003.
-const searchCategoryCache = new Map<BaeRecipientType, string>();
+// In-memory cache: pierwszy zestaw searchCategory, który nie zwraca 00003.
+const searchCategoryCache = new Map<BaeRecipientType, BaeCategorySet>();
 
 function isEnumError(bodyStr: string): boolean {
   return (
@@ -1116,6 +1109,57 @@ function isEnumError(bodyStr: string): boolean {
     /Incorrect enum value/i.test(bodyStr) ||
     /not one of the values accepted for Enum/i.test(bodyStr)
   );
+}
+
+function isRetryableBaeShapeError(bodyStr: string): boolean {
+  return (
+    isEnumError(bodyStr) ||
+    /SEAPI-?00008/i.test(bodyStr) ||
+    /Unexpected search arguments/i.test(bodyStr) ||
+    /not recognized or not expected/i.test(bodyStr) ||
+    /No mandatory search arguments/i.test(bodyStr) ||
+    /belong to different Search Sets/i.test(bodyStr) ||
+    /Redundant field/i.test(bodyStr)
+  );
+}
+
+function cleanOfficialId(idType: BaeIdentifierType, value: string): string {
+  return idType === "NIP" || idType === "REGON" || idType === "KRS"
+    ? value.replace(/\D/g, "")
+    : value;
+}
+
+function officialIdPayloadVariants(idType: BaeIdentifierType, value: string): BaePayloadVariant[] {
+  if (idType !== "NIP" && idType !== "REGON" && idType !== "KRS") return [{ label: "no-official-id", fields: {} }];
+  const registry = idType.toLowerCase();
+  const id = cleanOfficialId(idType, value);
+  return [
+    // Najczęściej spotykany kształt w kontraktach Java/OpenAPI: lista identyfikatorów z rejestrem.
+    { label: `officialIds:${registry}/id`, fields: { officialIds: [{ referenceRegistry: registry, id }] } },
+    { label: `officialIds:${registry}/value`, fields: { officialIds: [{ referenceRegistry: registry, value: id }] } },
+    // Starsze klienty spotykane w integracjach mapują officialIds na obiekt z kluczami nip/regon/krs.
+    { label: `officialIds.${registry}`, fields: { officialIds: { [registry]: id } } },
+    { label: registry, fields: { [registry]: id } },
+  ];
+}
+
+function addressPayloadVariants(address: BaeAddressInput, fallbackName: string): BaePayloadVariant[] {
+  const countryCode = address.countryCode?.trim().toUpperCase() || "PL";
+  const entityName = address.entityName?.trim() || fallbackName;
+  const addr = {
+    addressType: ["headquarters"],
+    countryCode,
+    country: countryCode,
+    ...(address.city?.trim() ? { city: address.city.trim() } : {}),
+    ...(address.postalCode?.trim() ? { postalCode: address.postalCode.trim() } : {}),
+    ...(address.street?.trim() ? { street: address.street.trim() } : {}),
+    ...(address.buildingNumber?.trim() ? { buildingNumber: address.buildingNumber.trim() } : {}),
+    ...(address.flatNumber?.trim() ? { flatNumber: address.flatNumber.trim() } : {}),
+  };
+  return [
+    { label: "entity+address[]", fields: { entityName, address: [addr] } },
+    { label: "entity+address", fields: { entityName, address: addr } },
+  ];
 }
 
 /**
@@ -1136,72 +1180,97 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
   const scenario: "eda" | "bae" = input.identifierType === "EDELIVERY_ADDRESS" ? "eda" : "bae";
 
-  const officialIds: Record<string, string> = {};
-  if (input.identifierType === "NIP") officialIds.nip = val;
-  if (input.identifierType === "REGON") officialIds.regon = val;
-  if (input.identifierType === "KRS") officialIds.krs = val;
-
   const addr = input.address ?? {};
-  const address: Record<string, string> | undefined =
+  const payloadVariants =
     input.identifierType === "NAME"
-      ? {
-          countryCode: addr.countryCode?.trim() || "PL",
-          ...(addr.city?.trim() ? { city: addr.city.trim() } : {}),
-          ...(addr.postalCode?.trim() ? { postalCode: addr.postalCode.trim() } : {}),
-          ...(addr.street?.trim() ? { street: addr.street.trim() } : {}),
-          ...(addr.buildingNumber?.trim() ? { buildingNumber: addr.buildingNumber.trim() } : {}),
-          ...(addr.flatNumber?.trim() ? { flatNumber: addr.flatNumber.trim() } : {}),
-        }
-      : undefined;
+      ? addressPayloadVariants(addr, val)
+      : officialIdPayloadVariants(input.identifierType, val);
 
-  const entityName =
-    input.identifierType === "NAME" ? (addr.entityName?.trim() || val) : undefined;
+  const buildEdaBody = (path: string): Record<string, unknown> =>
+    path.endsWith("/bae_search")
+      ? { senderEda, recipientEdasOnly: true, recipientEdas: [val.toUpperCase()], offset: 0, limit }
+      : { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit };
 
-  const buildBody = (category: string, categoryAsArray: boolean): Record<string, unknown> =>
-    scenario === "eda"
-      ? { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit }
-      : {
-          senderEda,
-          recipientEdasOnly: false,
-          searchCategory: categoryAsArray ? [category] : category,
-          ...(entityName ? { entityName } : {}),
-          ...(Object.keys(officialIds).length ? { officialIds } : {}),
-          ...(address ? { address } : {}),
-          offset: 0,
-          limit,
-        };
+  const buildBaeBody = (categorySet: BaeCategorySet, variant: BaePayloadVariant): Record<string, unknown> => ({
+    senderEda,
+    recipientEdasOnly: false,
+    searchCategory: categorySet.values,
+    ...variant.fields,
+    offset: 0,
+    limit,
+  });
 
-  const path =
-    scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
+  const path = scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
   const pathCandidates =
     scenario === "eda"
-      ? [path, path.replace("/api/se/v3/", "/api/se/v4/")]
+      ? [
+          path,
+          path.replace("/api/se/v3/", "/api/se/v4/"),
+          "/api/se/v3/search/bae_search",
+          "/api/se/v4/search/bae_search",
+        ]
       : [path.replace("/api/se/v3/", "/api/se/v4/"), path];
 
   const cached = searchCategoryCache.get(input.recipientType);
   const categoryCandidates =
     scenario === "eda"
-      ? [""]
+      ? []
       : cached
-        ? [cached, ...searchCategoryCandidates(input.recipientType).filter((c) => c !== cached)]
-        : searchCategoryCandidates(input.recipientType);
+        ? [cached, ...searchCategorySets(input.recipientType).filter((c) => c.label !== cached.label)]
+        : searchCategorySets(input.recipientType);
 
   const tried: string[] = [];
   let lastError: string | undefined;
 
   for (const p of pathCandidates) {
     let pathBroken = false;
-    let sawOnlyEnumErrors = false;
+    let sawOnlyRetryableErrors = false;
     let stopPath = false;
-    for (const category of categoryCandidates) {
+    if (scenario === "eda") {
+      const label = `POST ${p}`;
+      tried.push(label);
+      try {
+        const res = await adeSeRawRequest({
+          method: "POST",
+          path: p,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(buildEdaBody(p)),
+          timeoutMs: 20000,
+        });
+        const bodyStr = res.body ?? "";
+        if ((res.status === 404 && !/SEAPI-00010/i.test(bodyStr)) || res.status === 405) {
+          continue;
+        }
+        let json: unknown = null;
+        try {
+          json = bodyStr ? JSON.parse(bodyStr) : null;
+        } catch {
+          /* pusto */
+        }
+        if (res.status >= 200 && res.status < 300) {
+          const arr = extractBaeItems(json);
+          const items = arr.map(mapBaeItem).filter((r) => !!r.address);
+          return { ok: true, results: items, triedPaths: tried };
+        }
+        if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
+          return { ok: true, results: [], triedPaths: tried };
+        }
+        lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
+      } catch (err) {
+        lastError = (err as Error).message;
+      }
+      continue;
+    }
+
+    for (const categorySet of categoryCandidates) {
       if (pathBroken || stopPath) break;
-      const categoryShapes = scenario === "bae" ? [false, true] : [false];
-      for (const categoryAsArray of categoryShapes) {
+      for (const variant of payloadVariants) {
         if (pathBroken || stopPath) break;
-        const label =
-          scenario === "bae"
-            ? `POST ${p} [${category}${categoryAsArray ? "[]" : ""}]`
-            : `POST ${p}`;
+        const label = `POST ${p} [${categorySet.label}; ${variant.label}]`;
         tried.push(label);
         try {
           const res = await adeSeRawRequest({
@@ -1212,7 +1281,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
               "Content-Type": "application/json",
               Accept: "application/json",
             },
-            body: JSON.stringify(buildBody(category, categoryAsArray)),
+            body: JSON.stringify(buildBaeBody(categorySet, variant)),
             timeoutMs: 20000,
           });
           const bodyStr = res.body ?? "";
@@ -1227,8 +1296,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
             /* pusto */
           }
           if (res.status >= 200 && res.status < 300) {
-            if (scenario === "bae" && category)
-              searchCategoryCache.set(input.recipientType, category);
+            searchCategoryCache.set(input.recipientType, categorySet);
             const arr = extractBaeItems(json);
             const items = arr.map(mapBaeItem).filter((r) => !!r.address);
             return { ok: true, results: items, triedPaths: tried };
@@ -1236,9 +1304,9 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
           if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
             return { ok: true, results: [], triedPaths: tried };
           }
-          // Enum error → spróbuj kolejnego kandydata/formatu dla tej ścieżki
-          if (scenario === "bae" && isEnumError(bodyStr)) {
-            sawOnlyEnumErrors = true;
+          // Błąd enuma/kształtu → spróbuj kolejnego zestawu kategorii albo kształtu pól.
+          if (isRetryableBaeShapeError(bodyStr)) {
+            sawOnlyRetryableErrors = true;
             lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
             continue;
           }
@@ -1250,7 +1318,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
         }
       }
     }
-    if (!pathBroken && !sawOnlyEnumErrors) break; // ścieżka odpowiedziała czymś innym niż błąd enuma
+    if (!pathBroken && !sawOnlyRetryableErrors) break; // ścieżka odpowiedziała czymś innym niż błąd walidacji kształtu
   }
 
   return {
