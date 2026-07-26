@@ -143,23 +143,38 @@ export default function EdoreczeniaInboxTab() {
     }
   }
 
-  async function handleMoveToTrash() {
-    if (!selected) return;
-    setMoving(true);
+  async function handleDelete(row: AdeInboxRow, hardDelete: boolean) {
+    const confirmMsg = hardDelete
+      ? "Trwale usunąć tę wiadomość w biznes.gov i lokalnie? Tej operacji nie można cofnąć."
+      : "Przenieść wiadomość do folderu Usunięte (również w biznes.gov)?";
+    if (!window.confirm(confirmMsg)) return;
+    setDeleting(row.id);
     try {
-      const res = await move({ data: { id: selected.id, folder: "TRASH" } });
+      const res = await del({ data: { id: row.id, hardDelete } });
       if (!res.ok) {
-        toast.error(res.error ?? "Nie udało się przenieść wiadomości");
+        toast.error(res.error ?? "Nie udało się usunąć wiadomości");
+        // Nawet jeśli remote failed a local się udało — odśwież listę.
+        if (res.local) await reload(folder);
         return;
       }
-      toast.success("Wiadomość przeniesiona do folderu Usunięte");
-      setSelected(null);
-      setDetail(null);
+      toast.success(
+        res.hardDeleted
+          ? res.remote
+            ? "Wiadomość usunięta trwale (biznes.gov + lokalnie)"
+            : "Wiadomość usunięta lokalnie (biznes.gov nie odpowiedział)"
+          : res.remote
+            ? "Wiadomość przeniesiona do kosza (biznes.gov + lokalnie)"
+            : "Wiadomość przeniesiona do kosza lokalnie",
+      );
+      if (selected?.id === row.id) {
+        setSelected(null);
+        setDetail(null);
+      }
       await reload(folder);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
-      setMoving(false);
+      setDeleting(null);
     }
   }
 
