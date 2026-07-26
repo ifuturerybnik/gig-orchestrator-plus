@@ -449,3 +449,49 @@ export async function signedAttachmentUrl(storagePath: string): Promise<string |
   const { data } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 60 * 60);
   return data?.signedUrl ?? null;
 }
+
+/** Pobierz ZIP z dowodami technicznymi (evidence) i zapisz do Storage. */
+export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
+  { ok: true; storagePath: string; sizeBytes: number } | { ok: false; error: string }
+> {
+  const admin = await getAdmin();
+  const { data: delivery } = await admin
+    .from("edoreczenia_deliveries")
+    .select("id, ade_message_id, evidence_storage_path")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  if (!delivery) return { ok: false, error: "Nie znaleziono wiadomości w bazie" };
+  if (!delivery.ade_message_id) return { ok: false, error: "Brak ade_message_id" };
+
+  try {
+    await ensureEdoreczeniaBucket();
+    const cfg = loadAdeConfig();
+    const base = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(delivery.ade_message_id)}`;
+    // Znane warianty ścieżek UA API dla paczki dowodów technicznych — próbujemy po kolei.
+    const candidates = [`${base}/evidences`, `${base}/evidence`, `${base}/evidences/zip`, `${base}/technical-evidence`];
+    let ok: { buf: Buffer; ct: string } | null = null;
+    let lastErr = "";
+    for (const p of candidates) {
+      const r = await adeApiCall({ method: "GET", path: p, binary: true, timeoutMs: 60000 });
+      if (r.status >= 200 && r.status < 300 && r.bodyBuffer) {
+        ok = { buf: r.bodyBuffer, ct: r.headers["content-type"] ?? "application/zip" };
+        break;
+      }
+      lastErr = `HTTP ${r.status}: ${r.body.slice(0, 160)}`;
+    }
+    if (!ok) return { ok: false, error: lastErr || "Nie udało się pobrać dowodów technicznych" };
+
+    const storagePath = `${delivery.id}/evidences-${delivery.ade_message_id}.zip`;
+    const { error: upErr } = await admin.storage.from(BUCKET).upload(storagePath, ok.buf, {
+      contentType: ok.ct.includes("zip") ? "application/zip" : ok.ct,
+      upsert: true,
+    });
+    if (upErr) return { ok: false, error: upErr.message };
+
+    await admin.from("edoreczenia_deliveries").update({ evidence_storage_path: storagePath }).eq("id", delivery.id);
+    return { ok: true, storagePath, sizeBytes: ok.buf.length };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
