@@ -248,6 +248,16 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     body: params.toString(),
     useMtls: false,
   });
+  if (res.status >= 300 && res.status < 400) {
+    const retry = await httpsRawRequest({
+      method: "POST",
+      url: tokenUrl,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+      useMtls: true,
+    });
+    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+  }
   return { ...res, audience };
 }
 
@@ -443,6 +453,16 @@ export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRaw
     body: params.toString(),
     useMtls: false,
   });
+  if (res.status >= 300 && res.status < 400) {
+    const retry = await httpsRawRequestWithCfg(cfg, {
+      method: "POST",
+      url: tokenUrl,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+      useMtls: true,
+    });
+    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+  }
   return { ...res, audience };
 }
 
@@ -476,13 +496,18 @@ export async function testAdeConnectionForMailbox(mailboxId: string): Promise<{
     const res = await fetchAdeTokenForMailbox(mailboxId);
     const ok = res.status >= 200 && res.status < 300;
     let detail = `HTTP ${res.status}`;
-    try {
-      const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
-      if (parsed.access_token) detail += ` · token OK (${parsed.access_token.length} znaków)`;
-      else if (parsed.error) detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
-      else detail += ` · ${res.body.slice(0, 200)}`;
-    } catch {
-      detail += ` · ${res.body.slice(0, 200)}`;
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers?.location || res.headers?.Location || "(brak nagłówka Location)";
+      detail += ` → Location: ${loc}`;
+    } else {
+      try {
+        const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
+        if (parsed.access_token) detail += ` · token OK (${parsed.access_token.length} znaków)`;
+        else if (parsed.error) detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
+        else detail += ` · ${res.body.slice(0, 200)}`;
+      } catch {
+        detail += ` · ${res.body.slice(0, 200)}`;
+      }
     }
     steps.push({ name: "OAuth2 token", ok, detail });
   } catch (err) {
