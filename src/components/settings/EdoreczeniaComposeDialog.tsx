@@ -57,7 +57,9 @@ export default function EdoreczeniaComposeDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [baeOpen, setBaeOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const reset = useCallback(() => {
     setRecipients([]);
