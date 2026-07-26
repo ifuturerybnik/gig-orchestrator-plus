@@ -635,4 +635,104 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
   }
 }
 
+// ─────────────────────────────── Wysyłka ────────────────────────────────
+
+export type SendAdeMessageInput = {
+  recipients: string[];        // adresy AE:PL-...
+  subject: string;
+  bodyText: string;
+  caseNumber?: string;
+  attachments?: Array<{ filename: string; mimeType?: string; contentBase64: string }>;
+};
+
+export type SendAdeMessageResult = {
+  ok: boolean;
+  messageId?: string;
+  error?: string;
+  attempts?: Array<{ path: string; status: number; snippet: string }>;
+};
+
+/** Wyślij wiadomość przez UA API v3.
+ *  Próbujemy kilku wariantów payloadu/ścieżki, aby być zgodnym z produkcyjnym UA API PP.
+ */
+export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAdeMessageResult> {
+  const cfg = loadAdeConfig();
+  const mailbox = cfg.mailboxAddress;
+  const recipients = (input.recipients ?? []).map((r) => r.trim()).filter(Boolean);
+  if (!recipients.length) return { ok: false, error: "Brak adresatów" };
+  if (!input.subject?.trim()) return { ok: false, error: "Temat jest wymagany" };
+
+  const attachments = (input.attachments ?? []).map((a) => ({
+    filename: a.filename,
+    mimeType: a.mimeType ?? "application/octet-stream",
+    content: a.contentBase64,
+  }));
+
+  const commonMeta = {
+    from: [{ eDeliveryAddress: mailbox }],
+    to: recipients.map((address) => ({ eDeliveryAddress: address })),
+    subject: input.subject.trim(),
+    caseIdentifier: input.caseNumber?.trim() || undefined,
+  };
+
+  // Warianty payloadu wg różnych rewizji UA API v3.
+  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
+    {
+      label: "v3-nested",
+      body: {
+        messageMetadata: commonMeta,
+        textBody: input.bodyText ?? "",
+        attachments,
+      },
+    },
+    {
+      label: "v3-flat",
+      body: {
+        from: mailbox,
+        to: recipients,
+        subject: input.subject.trim(),
+        textBody: input.bodyText ?? "",
+        caseIdentifier: input.caseNumber?.trim() || undefined,
+        attachments,
+      },
+    },
+  ];
+
+  const paths = [
+    `/api/v3/${encodeURIComponent(mailbox)}/messages`,
+    `/api/v3/${encodeURIComponent(mailbox)}/messages/send`,
+  ];
+
+  const attempts: Array<{ path: string; status: number; snippet: string }> = [];
+  for (const path of paths) {
+    for (const p of payloads) {
+      const res = await adeApiCall({
+        method: "POST",
+        path,
+        body: p.body,
+        timeoutMs: 60000,
+      });
+      attempts.push({ path: `${path} [${p.label}]`, status: res.status, snippet: res.body.slice(0, 200) });
+      if (res.status >= 200 && res.status < 300) {
+        const j = (Array.isArray(res.json) ? res.json[0] : res.json) as Record<string, unknown> | null;
+        const meta = ((j?.messageMetadata ?? {}) as Record<string, unknown>) || {};
+        const messageId =
+          (meta.messageId as string | undefined) ??
+          (j?.messageId as string | undefined) ??
+          (j?.id as string | undefined);
+        return { ok: true, messageId, attempts };
+      }
+      // 400/415 – zmiana kształtu payloadu może pomóc; 404 – zmieniamy ścieżkę.
+      if (res.status !== 400 && res.status !== 415 && res.status !== 422) break;
+    }
+  }
+  const last = attempts[attempts.length - 1];
+  return {
+    ok: false,
+    error: last ? `HTTP ${last.status} @ ${last.path}: ${last.snippet}` : "Brak odpowiedzi z ADE",
+    attempts,
+  };
+}
+
+
 
