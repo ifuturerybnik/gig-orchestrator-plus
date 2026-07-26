@@ -54,6 +54,7 @@ export default function EdoreczeniaInboxTab() {
   const list = useServerFn(listStoredDeliveries);
   const open = useServerFn(openStoredDelivery);
   const fetchEvidence = useServerFn(downloadEvidenceZip);
+  const move = useServerFn(moveAdeDelivery);
   const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -61,7 +62,13 @@ export default function EdoreczeniaInboxTab() {
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeInitial, setComposeInitial] = useState<{
+    recipients?: string[];
+    subject?: string;
+    body?: string;
+  }>({});
 
 
   const reload = useCallback(
