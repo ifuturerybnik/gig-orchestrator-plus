@@ -1022,7 +1022,7 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
         creation_date: new Date().toISOString(),
         raw: rawSnap as unknown as Record<string, unknown>,
       },
-      { onConflict: "mailbox_address,ade_message_id" },
+      { onConflict: "ade_message_id" },
     );
   if (upErr) return { ok: false, remote: remoteOk, draftId: remoteDraftId, error: upErr.message, attempts };
   return { ok: true, remote: remoteOk, draftId: remoteDraftId, attempts };
