@@ -454,6 +454,8 @@ export type BaeSearchResultRow = {
   city?: string;
   street?: string;
   postalCode?: string;
+  headquartersAddress?: string;
+  correspondenceAddress?: string;
 };
 
 export type BaeSearchResponsePayload = {
