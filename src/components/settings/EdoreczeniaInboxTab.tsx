@@ -25,6 +25,7 @@ import {
   listStoredDeliveries,
   openStoredDelivery,
   downloadEvidenceZip,
+  downloadMessageArchive,
   moveAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
