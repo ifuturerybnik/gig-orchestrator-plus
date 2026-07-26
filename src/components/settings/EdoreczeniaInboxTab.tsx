@@ -16,7 +16,10 @@ import {
   Send,
   FileEdit,
   Trash2,
+  PenSquare,
 } from "lucide-react";
+import EdoreczeniaComposeDialog from "./EdoreczeniaComposeDialog";
+
 import {
   syncAdeInbox,
   listStoredDeliveries,
@@ -56,6 +59,8 @@ export default function EdoreczeniaInboxTab() {
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+
 
   const reload = useCallback(
     async (f: AdeFolder) => {
@@ -141,10 +146,17 @@ export default function EdoreczeniaInboxTab() {
               )}
             </CardDescription>
           </div>
-          <Button onClick={refresh} disabled={syncing || loading} variant="outline" size="sm">
-            {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Synchronizuj
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setComposeOpen(true)} size="sm">
+              <PenSquare className="mr-2 h-4 w-4" />
+              Nowa wiadomość
+            </Button>
+            <Button onClick={refresh} disabled={syncing || loading} variant="outline" size="sm">
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Synchronizuj
+            </Button>
+          </div>
+
         </CardHeader>
         <CardContent>
           {/* Foldery */}
@@ -372,9 +384,20 @@ export default function EdoreczeniaInboxTab() {
           </CardContent>
         </Card>
       )}
+
+      <EdoreczeniaComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        fromAddress={result?.mailbox}
+        onSent={() => {
+          setFolder("SENT");
+          void refresh();
+        }}
+      />
     </div>
   );
 }
+
 
 function formatJson(body: string): string {
   try {
