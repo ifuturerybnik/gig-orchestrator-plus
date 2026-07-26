@@ -65,6 +65,7 @@ export default function EdoreczeniaInboxTab() {
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeInitial, setComposeInitial] = useState<{
     recipients?: string[];
