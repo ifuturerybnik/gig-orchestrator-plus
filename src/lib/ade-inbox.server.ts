@@ -86,32 +86,41 @@ export type AdeFolder = "INBOX" | "SENT" | "DRAFTS" | "TRASH";
 export async function listAdeInboxRaw(params: { limit?: number; page?: number; folder?: AdeFolder } = {}) {
   const cfg = loadAdeConfig();
   const folder: AdeFolder = params.folder ?? "INBOX";
-  const base = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
+  const mailboxBase = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}`;
+  const messagesBase = `${mailboxBase}/messages`;
+  const draftsBase = `${mailboxBase}/drafts`;
   const limit = params.limit ?? 50;
   const page = params.page ?? 0;
+  const offset = page * limit;
 
   type Attempt = { path: string; query?: Record<string, string | number | undefined> };
   const attempts: Attempt[] = [];
   if (folder === "INBOX") {
-    attempts.push({ path: base, query: { limit, page, folder: "INBOX" } });
-    attempts.push({ path: `${base}/received`, query: { limit, page } });
-    attempts.push({ path: base, query: { limit, page } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "INBOX" } });
+    attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "INBOX" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "INBOX" } });
+    attempts.push({ path: `${messagesBase}/received`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata" } });
   } else if (folder === "SENT") {
-    attempts.push({ path: `${base}/sent`, query: { limit, page } });
-    attempts.push({ path: base, query: { limit, page, folder: "SENT" } });
-    attempts.push({ path: base, query: { limit, page, folder: "OUTBOX" } });
-    attempts.push({ path: base, query: { limit, page, box: "SENT" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "SENT" } });
+    attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "SENT" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "SENT" } });
+    attempts.push({ path: `${messagesBase}/sent`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", box: "SENT" } });
   } else if (folder === "DRAFTS") {
-    attempts.push({ path: `${base}/drafts`, query: { limit, page } });
-    attempts.push({ path: `${base}/draft`, query: { limit, page } });
-    attempts.push({ path: base, query: { limit, page, folder: "DRAFTS" } });
-    attempts.push({ path: base, query: { limit, page, folder: "DRAFT" } });
-    attempts.push({ path: base, query: { limit, page, box: "DRAFTS" } });
+    // UA API v3: DRAFTS nie wolno pobierać przez /messages; mają osobny endpoint /drafts.
+    attempts.push({ path: draftsBase, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: draftsBase, query: { limit, page, format: "metadata" } });
+    attempts.push({ path: draftsBase, query: { limit, offset } });
+    // Zostawiamy legacy fallbacki na wypadek starszych/proxy wdrożeń, ale dopiero po oficjalnym /drafts.
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "DRAFTS" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "DRAFTS" } });
   } else if (folder === "TRASH") {
-    attempts.push({ path: `${base}/trash`, query: { limit, page } });
-    attempts.push({ path: `${base}/deleted`, query: { limit, page } });
-    attempts.push({ path: base, query: { limit, page, folder: "TRASH" } });
-    attempts.push({ path: base, query: { limit, page, folder: "DELETED" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "TRASH" } });
+    attempts.push({ path: `${messagesBase}/trash`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: `${messagesBase}/deleted`, query: { limit, offset, format: "metadata" } });
   }
 
   let last: Awaited<ReturnType<typeof adeApiCall>> | null = null;
@@ -128,6 +137,12 @@ export async function getAdeMessageRaw(messageId: string) {
   const cfg = loadAdeConfig();
   const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(messageId)}`;
   return await adeApiCall({ method: "GET", path });
+}
+
+export async function getAdeDraftRaw(messageId: string) {
+  const cfg = loadAdeConfig();
+  const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/drafts/${encodeURIComponent(messageId)}`;
+  return await adeApiCall({ method: "GET", path, query: { format: "full" } });
 }
 
 
@@ -188,7 +203,9 @@ export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: 
     const creationDate =
       (meta.creationDate as string | undefined) ??
       (meta.createDate as string | undefined) ??
-      (o.creationDate as string | undefined);
+      (meta.timestamp as string | undefined) ??
+      (o.creationDate as string | undefined) ??
+      (o.timestamp as string | undefined);
     const sentAt =
       (meta.submissionDate as string | undefined) ??
       (meta.sendDate as string | undefined) ??
@@ -408,7 +425,7 @@ export async function fetchAndStoreMessage(deliveryId: string, markRead = true):
   const admin = await getAdmin();
   const { data: delivery, error: dErr } = await admin
     .from("edoreczenia_deliveries")
-    .select("id, ade_message_id, mailbox_address")
+      .select("id, ade_message_id, mailbox_address, folder")
     .eq("id", deliveryId)
     .maybeSingle();
   if (dErr || !delivery) return { ok: false, attachments: [], error: "Nie znaleziono wiadomości w bazie" };
@@ -417,8 +434,9 @@ export async function fetchAndStoreMessage(deliveryId: string, markRead = true):
   try {
     await ensureEdoreczeniaBucket();
     const cfg = loadAdeConfig();
-    const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(delivery.ade_message_id)}`;
-    const res = await adeApiCall({ method: "GET", path });
+    const messageKind = delivery.folder === "DRAFTS" ? "drafts" : "messages";
+    const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/${messageKind}/${encodeURIComponent(delivery.ade_message_id)}`;
+    const res = await adeApiCall({ method: "GET", path, query: { format: "full" } });
     if (res.status < 200 || res.status >= 300) {
       return { ok: false, attachments: [], error: `HTTP ${res.status}: ${res.body.slice(0, 200)}` };
     }
@@ -431,7 +449,9 @@ export async function fetchAndStoreMessage(deliveryId: string, markRead = true):
         ? ((payload as { textBody: string }).textBody)
         : typeof (payload as { bodyText?: unknown }).bodyText === "string"
           ? ((payload as { bodyText: string }).bodyText)
-          : res.body;
+          : typeof ((payload.messageContent as Record<string, unknown> | undefined)?.textBody) === "string"
+            ? (((payload.messageContent as Record<string, unknown>).textBody) as string)
+            : "";
     const fromParty = extractParty(meta.from);
     const toParty = extractParty(meta.to);
     const subject = (meta.subject as string | undefined) ?? (payload.subject as string | undefined);
