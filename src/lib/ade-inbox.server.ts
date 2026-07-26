@@ -1492,6 +1492,11 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
               emptySuccess ??= { ok: true, results: [], triedPaths: tried };
               continue;
             }
+            // Walidacja długości/znaków (SEAPI-00009) — traktujemy jako brak wyników.
+            if (isValidationEmptyResult(bodyStr)) {
+              emptySuccess ??= { ok: true, results: [], triedPaths: tried };
+              continue;
+            }
             // Błąd enuma/kształtu → spróbuj kolejnego zestawu kategorii albo kształtu pól.
             if (isRetryableBaeShapeError(bodyStr)) {
               sawOnlyRetryableErrors = true;
