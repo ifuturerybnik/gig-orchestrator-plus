@@ -427,6 +427,37 @@ export const moveAdeDelivery = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export type SaveAdeDraftPayload = SendAdeMessagePayload & { draftId?: string };
+
+/** Zapisz wiadomość jako roboczą (w biznes.gov i lokalnie). */
+export const saveAdeDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: SaveAdeDraftPayload) => {
+    if (!data || typeof data !== "object") throw new Error("Brak danych");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { requireEdoreczeniaAdmin, saveAdeDraft: save } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
+    return await save(data);
+  });
+
+/** Usuń wiadomość — najpierw w biznes.gov (ADE UA API), potem lokalnie.
+ *  Domyślnie: soft-delete (przenieś do kosza). Z TRASH lub `hardDelete:true` — trwałe.
+ */
+export const deleteAdeDelivery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; hardDelete?: boolean }) => {
+    if (!data?.id) throw new Error("Brak id");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { requireEdoreczeniaAdmin, deleteAdeDelivery: del } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
+    return await del(data.id, { hardDelete: data.hardDelete });
+  });
+
+
 export type BaeRecipientType = "ALL" | "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
 export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
 

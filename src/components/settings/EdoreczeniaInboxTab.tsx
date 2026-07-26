@@ -26,7 +26,7 @@ import {
   openStoredDelivery,
   downloadEvidenceZip,
   downloadMessageArchive,
-  moveAdeDelivery,
+  deleteAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
   type AdeDeliveryDetail,
@@ -55,7 +55,7 @@ export default function EdoreczeniaInboxTab() {
   const list = useServerFn(listStoredDeliveries);
   const open = useServerFn(openStoredDelivery);
   const fetchEvidence = useServerFn(downloadEvidenceZip);
-  const move = useServerFn(moveAdeDelivery);
+  const del = useServerFn(deleteAdeDelivery);
   const fetchArchive = useServerFn(downloadMessageArchive);
   const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ export default function EdoreczeniaInboxTab() {
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
-  const [moving, setMoving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeInitial, setComposeInitial] = useState<{
@@ -141,23 +141,38 @@ export default function EdoreczeniaInboxTab() {
     }
   }
 
-  async function handleMoveToTrash() {
-    if (!selected) return;
-    setMoving(true);
+  async function handleDelete(row: AdeInboxRow, hardDelete: boolean) {
+    const confirmMsg = hardDelete
+      ? "Trwale usunąć tę wiadomość w biznes.gov i lokalnie? Tej operacji nie można cofnąć."
+      : "Przenieść wiadomość do folderu Usunięte (również w biznes.gov)?";
+    if (!window.confirm(confirmMsg)) return;
+    setDeleting(row.id);
     try {
-      const res = await move({ data: { id: selected.id, folder: "TRASH" } });
+      const res = await del({ data: { id: row.id, hardDelete } });
       if (!res.ok) {
-        toast.error(res.error ?? "Nie udało się przenieść wiadomości");
+        toast.error(res.error ?? "Nie udało się usunąć wiadomości");
+        // Nawet jeśli remote failed a local się udało — odśwież listę.
+        if (res.local) await reload(folder);
         return;
       }
-      toast.success("Wiadomość przeniesiona do folderu Usunięte");
-      setSelected(null);
-      setDetail(null);
+      toast.success(
+        res.hardDeleted
+          ? res.remote
+            ? "Wiadomość usunięta trwale (biznes.gov + lokalnie)"
+            : "Wiadomość usunięta lokalnie (biznes.gov nie odpowiedział)"
+          : res.remote
+            ? "Wiadomość przeniesiona do kosza (biznes.gov + lokalnie)"
+            : "Wiadomość przeniesiona do kosza lokalnie",
+      );
+      if (selected?.id === row.id) {
+        setSelected(null);
+        setDetail(null);
+      }
       await reload(folder);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
-      setMoving(false);
+      setDeleting(null);
     }
   }
 
@@ -286,40 +301,63 @@ export default function EdoreczeniaInboxTab() {
           ) : result?.items.length ? (
             <div className="divide-y">
               {result.items.map((row) => (
-                <button
+                <div
                   key={row.id}
-                  onClick={() => openMessage(row)}
-                  className="w-full text-left py-3 px-2 hover:bg-accent/50 rounded flex items-start gap-3"
+                  className="flex items-start gap-1 py-1 px-1 hover:bg-accent/50 rounded"
                 >
-                  <MailIcon
-                    className={`h-4 w-4 mt-1 shrink-0 ${row.readAt ? "text-muted-foreground" : "text-primary"}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={`truncate ${row.readAt ? "" : "font-semibold"}`}>
-                        {row.subject || "(bez tematu)"}
-                      </span>
-                      {row.status && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {row.status}
-                        </Badge>
-                      )}
-                      {row.attachmentCount > 0 && (
-                        <Badge variant="outline" className="text-[10px] gap-1">
-                          <Paperclip className="h-3 w-3" />
-                          {row.attachmentCount}
-                        </Badge>
-                      )}
+                  <button
+                    type="button"
+                    onClick={() => openMessage(row)}
+                    className="flex-1 min-w-0 text-left py-2 px-2 flex items-start gap-3"
+                  >
+                    <MailIcon
+                      className={`h-4 w-4 mt-1 shrink-0 ${row.readAt ? "text-muted-foreground" : "text-primary"}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className={`truncate ${row.readAt ? "" : "font-semibold"}`}>
+                          {row.subject || "(bez tematu)"}
+                        </span>
+                        {row.status && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {row.status}
+                          </Badge>
+                        )}
+                        {row.attachmentCount > 0 && (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            <Paperclip className="h-3 w-3" />
+                            {row.attachmentCount}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
+                        <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
-                      <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground shrink-0">
-                    {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
-                  </div>
-                </button>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(row, folder === "TRASH");
+                    }}
+                    disabled={deleting === row.id}
+                    title={folder === "TRASH" ? "Usuń trwale (biznes.gov + lokalnie)" : "Usuń (przenieś do kosza w biznes.gov)"}
+                    aria-label="Usuń wiadomość"
+                  >
+                    {deleting === row.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               ))}
             </div>
           ) : (
@@ -395,19 +433,34 @@ export default function EdoreczeniaInboxTab() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {folder !== "TRASH" && (
+                  {selected && folder !== "TRASH" && (
                     <Button
-                      onClick={handleMoveToTrash}
-                      disabled={moving}
+                      onClick={() => handleDelete(selected, false)}
+                      disabled={deleting === selected.id}
                       variant="outline"
                       size="sm"
                     >
-                      {moving ? (
+                      {deleting === selected.id ? (
                         <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <Trash2 className="mr-2 h-3.5 w-3.5" />
                       )}
-                      Przenieś do folderu Usunięte
+                      Usuń (przenieś do kosza)
+                    </Button>
+                  )}
+                  {selected && folder === "TRASH" && (
+                    <Button
+                      onClick={() => handleDelete(selected, true)}
+                      disabled={deleting === selected.id}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      {deleting === selected.id ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Usuń trwale
                     </Button>
                   )}
                   <Button onClick={handleDownloadMessage} disabled={archiveLoading} variant="outline" size="sm">

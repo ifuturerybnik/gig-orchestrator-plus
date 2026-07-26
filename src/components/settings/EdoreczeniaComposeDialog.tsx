@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
-import { sendAdeMessage } from "@/lib/ade-inbox.functions";
+import { Loader2, Paperclip, Plus, Save, Search, Send, Trash2, X } from "lucide-react";
+import { sendAdeMessage, saveAdeDraft } from "@/lib/ade-inbox.functions";
 import EdoreczeniaBaeSearchDialog from "./EdoreczeniaBaeSearchDialog";
 import { toast } from "sonner";
 
@@ -49,6 +49,8 @@ export default function EdoreczeniaComposeDialog({
   initialBody,
 }: Props) {
   const send = useServerFn(sendAdeMessage);
+  const saveDraft = useServerFn(saveAdeDraft);
+  const [saving, setSaving] = useState(false);
   const [recipients, setRecipients] = useState<string[]>(initialRecipients ?? []);
   const [recipientInput, setRecipientInput] = useState("");
   const [subject, setSubject] = useState(initialSubject ?? "");
@@ -119,6 +121,49 @@ export default function EdoreczeniaComposeDialog({
 
   const totalSize = files.reduce((s, f) => s + f.size, 0);
 
+  const handleSave = async () => {
+    setError(null);
+    if (totalSize > 500 * 1024 * 1024) {
+      setError("Sumaryczny rozmiar załączników przekracza 500 MB.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const attachments = await Promise.all(
+        files.map(async (f) => ({
+          filename: f.name,
+          mimeType: f.type || "application/octet-stream",
+          contentBase64: await fileToBase64(f),
+        })),
+      );
+      const res = await saveDraft({
+        data: {
+          recipients,
+          subject: subject.trim() || "(bez tematu)",
+          bodyText: body,
+          caseNumber: caseNumber.trim() || undefined,
+          attachments,
+        },
+      });
+      if (!res.ok) {
+        setError(res.error ?? "Nie udało się zapisać roboczej");
+        return;
+      }
+      toast.success(
+        res.remote
+          ? "Wiadomość zapisana w Roboczych (biznes.gov + lokalnie)"
+          : "Wiadomość zapisana lokalnie w Roboczych (biznes.gov nie odpowiedział)",
+      );
+      reset();
+      onOpenChange(false);
+      onSent?.();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSend = async () => {
     setError(null);
     if (!recipients.length) {
@@ -170,7 +215,7 @@ export default function EdoreczeniaComposeDialog({
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (!o && !sending) reset();
+        if (!o && !sending && !saving) reset();
         onOpenChange(o);
       }}
     >
@@ -322,7 +367,7 @@ export default function EdoreczeniaComposeDialog({
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleSend} disabled={sending}>
+            <Button onClick={handleSend} disabled={sending || saving}>
               {sending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -330,15 +375,23 @@ export default function EdoreczeniaComposeDialog({
               )}
               Wyślij
             </Button>
+            <Button variant="secondary" onClick={handleSave} disabled={sending || saving}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Zapisz
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
-                if (!sending) {
+                if (!sending && !saving) {
                   reset();
                   onOpenChange(false);
                 }
               }}
-              disabled={sending}
+              disabled={sending || saving}
             >
               Anuluj
             </Button>
