@@ -134,7 +134,7 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
   }
 
   let last: Awaited<ReturnType<typeof adeApiCall>> | null = null;
-  let firstSuccessNonEmpty: typeof last = null;
+  let firstSuccessNonEmpty: Awaited<ReturnType<typeof adeApiCall>> | null = null;
   for (const a of attempts) {
     const res = await adeApiCall({ method: "GET", path: a.path, query: a.query });
     last = res;
