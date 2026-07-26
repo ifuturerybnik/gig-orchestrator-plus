@@ -1093,7 +1093,6 @@ function searchCategoryCandidates(rt: BaeRecipientType): string[] {
         "COURT_ENFORCEMENT_OFFICER",
         "TRUSTED_NON_PUBLIC",
         "TRUSTED_NON_PUBLIC_ENTITY",
-        "TRUSTED_NON_PUBLIC",
         "KOMORNIK",
       ];
     case "OSOBA_FIZYCZNA":
@@ -1193,59 +1192,62 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
   for (const p of pathCandidates) {
     let pathBroken = false;
     let sawOnlyEnumErrors = false;
+    let stopPath = false;
     for (const category of categoryCandidates) {
+      if (pathBroken || stopPath) break;
       const categoryShapes = scenario === "bae" ? [false, true] : [false];
       for (const categoryAsArray of categoryShapes) {
+        if (pathBroken || stopPath) break;
         const label =
           scenario === "bae"
             ? `POST ${p} [${category}${categoryAsArray ? "[]" : ""}]`
             : `POST ${p}`;
         tried.push(label);
         try {
-        const res = await adeSeRawRequest({
-          method: "POST",
-          path: p,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(buildBody(category, categoryAsArray)),
-          timeoutMs: 20000,
-        });
-        if (res.status === 404 || res.status === 405) {
-          pathBroken = true;
-          break;
-        }
-        const bodyStr = res.body ?? "";
-        let json: unknown = null;
-        try {
-          json = bodyStr ? JSON.parse(bodyStr) : null;
-        } catch {
-          /* pusto */
-        }
-        if (res.status >= 200 && res.status < 300) {
-          if (scenario === "bae" && category)
-            searchCategoryCache.set(input.recipientType, category);
-          const arr = extractBaeItems(json);
-          const items = arr.map(mapBaeItem).filter((r) => !!r.address);
-          return { ok: true, results: items, triedPaths: tried };
-        }
-        if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
-          return { ok: true, results: [], triedPaths: tried };
-        }
-        // Enum error → spróbuj kolejnego kandydata dla tej ścieżki
-        if (scenario === "bae" && isEnumError(bodyStr)) {
-          sawOnlyEnumErrors = true;
+          const res = await adeSeRawRequest({
+            method: "POST",
+            path: p,
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(buildBody(category, categoryAsArray)),
+            timeoutMs: 20000,
+          });
+          const bodyStr = res.body ?? "";
+          if ((res.status === 404 && !/SEAPI-00010/i.test(bodyStr)) || res.status === 405) {
+            pathBroken = true;
+            break;
+          }
+          let json: unknown = null;
+          try {
+            json = bodyStr ? JSON.parse(bodyStr) : null;
+          } catch {
+            /* pusto */
+          }
+          if (res.status >= 200 && res.status < 300) {
+            if (scenario === "bae" && category)
+              searchCategoryCache.set(input.recipientType, category);
+            const arr = extractBaeItems(json);
+            const items = arr.map(mapBaeItem).filter((r) => !!r.address);
+            return { ok: true, results: items, triedPaths: tried };
+          }
+          if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
+            return { ok: true, results: [], triedPaths: tried };
+          }
+          // Enum error → spróbuj kolejnego kandydata/formatu dla tej ścieżki
+          if (scenario === "bae" && isEnumError(bodyStr)) {
+            sawOnlyEnumErrors = true;
+            lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
+            continue;
+          }
           lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
-          continue;
+          stopPath = true;
+        } catch (err) {
+          lastError = (err as Error).message;
+          stopPath = true;
         }
-        lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
-        break;
-      } catch (err) {
-        lastError = (err as Error).message;
-        break;
-      }
       }
     }
     if (!pathBroken && !sawOnlyEnumErrors) break; // ścieżka odpowiedziała czymś innym niż błąd enuma
