@@ -946,41 +946,71 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
     content: a.contentBase64,
   }));
 
-  const commonMeta: Record<string, unknown> = {
-    from: [{ eDeliveryAddress: mailbox }],
-    to: recipients.map((address) => ({ eDeliveryAddress: address })),
-    subject: input.subject.trim(),
-  };
   const caseId = input.caseNumber?.trim();
-  if (caseId) commonMeta.caseIdentifier = caseId;
+  const subject = input.subject.trim();
+  const textBody = input.bodyText ?? "";
 
-  const nestedBody: Record<string, unknown> = {
-    messageMetadata: commonMeta,
-    textBody: input.bodyText ?? "",
-  };
-  if (attachments.length) nestedBody.attachments = attachments;
-
-  const flatBody: Record<string, unknown> = {
-    from: mailbox,
-    to: recipients,
-    subject: input.subject.trim(),
-    textBody: input.bodyText ?? "",
-  };
-  if (caseId) flatBody.caseIdentifier = caseId;
-  if (attachments.length) flatBody.attachments = attachments;
+  // Kandydaci payloadu — UA API v3 wg spec (UC008) wymaga tylko JEDNEGO z:
+  // MessageMetadata.to | MessageMetadata.subject | textBody. Draft NIE przyjmuje
+  // `from` (jest wyznaczany po stronie serwera na podstawie URL) ani `attachments`
+  // (te są dodawane osobno w UC024). Próbujemy kilka wariantów kluczy, bo różne
+  // instancje ADE mają różne konwencje.
+  const toObjs = recipients.map((address) => ({ eDeliveryAddress: address }));
 
   const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
-    { label: "v3-nested", body: nestedBody },
-    { label: "v3-flat", body: flatBody },
+    {
+      label: "v3-nested-min",
+      body: {
+        messageMetadata: {
+          to: toObjs,
+          subject,
+          ...(caseId ? { caseIdentifier: caseId } : {}),
+        },
+        textBody,
+      },
+    },
+    {
+      label: "v3-nested-with-from",
+      body: {
+        messageMetadata: {
+          from: [{ eDeliveryAddress: mailbox }],
+          to: toObjs,
+          subject,
+          ...(caseId ? { caseIdentifier: caseId } : {}),
+        },
+        textBody,
+      },
+    },
+    {
+      label: "v3-flat-min",
+      body: {
+        to: toObjs,
+        subject,
+        textBody,
+        ...(caseId ? { caseIdentifier: caseId } : {}),
+      },
+    },
+    {
+      label: "v3-flat-strings",
+      body: {
+        to: recipients,
+        subject,
+        textBody,
+        ...(caseId ? { caseIdentifier: caseId } : {}),
+      },
+    },
+    {
+      label: "v3-messagecontent",
+      body: {
+        messageMetadata: { to: toObjs, subject },
+        messageContent: { textBody },
+      },
+    },
   ];
 
   const paths = input.draftId
     ? [`/api/v3/${encodeURIComponent(mailbox)}/drafts/${encodeURIComponent(input.draftId)}`]
-    : [
-        `/api/v3/${encodeURIComponent(mailbox)}/drafts`,
-        `/api/v3/${encodeURIComponent(mailbox)}/messages/drafts`,
-      ];
-
+    : [`/api/v3/${encodeURIComponent(mailbox)}/drafts`];
 
   const attempts: Array<{ path: string; status: number; snippet: string }> = [];
   let remoteDraftId: string | undefined;
@@ -993,7 +1023,11 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
         body: p.body,
         timeoutMs: 60000,
       });
-      attempts.push({ path: `${path} [${p.label}]`, status: res.status, snippet: res.body.slice(0, 200) });
+      attempts.push({
+        path: `${path} [${p.label}]`,
+        status: res.status,
+        snippet: res.body.slice(0, 300),
+      });
       if (res.status >= 200 && res.status < 300) {
         const j = (Array.isArray(res.json) ? res.json[0] : res.json) as Record<string, unknown> | null;
         const meta = ((j?.messageMetadata ?? {}) as Record<string, unknown>) || {};
@@ -1003,19 +1037,25 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
           (j?.id as string | undefined) ??
           input.draftId;
         remoteOk = true;
+        // Załączniki dodajemy osobno przez UC024 – w tej wersji pomijamy (nie były w oknie).
         break;
       }
-      if (res.status !== 400 && res.status !== 415 && res.status !== 422) break;
+      // Dla 5xx/4xx próbujemy dalej — server może zwracać 500 UAAPI0001 przy złym kształcie.
     }
     if (remoteOk) break;
   }
 
   if (!remoteOk) {
-    const last = attempts[attempts.length - 1];
-    const msg = last
-      ? `Biznes.gov odrzucił zapis roboczej (HTTP ${last.status}): ${last.snippet}`
-      : "Biznes.gov nie odpowiedział na zapis roboczej";
-    return { ok: false, remote: false, error: msg, attempts };
+    // Zwracamy skrót WSZYSTKICH prób — łatwiej zdiagnozować którą konwencję instancja przyjmuje.
+    const summary = attempts
+      .map((a) => `• ${a.path.split(" ").pop()} → ${a.status}: ${a.snippet}`)
+      .join("\n");
+    return {
+      ok: false,
+      remote: false,
+      error: `Biznes.gov odrzucił wszystkie warianty zapisu roboczej:\n${summary}`,
+      attempts,
+    };
   }
 
   const admin = await getAdmin();
