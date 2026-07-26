@@ -445,7 +445,7 @@ export async function adeSeRawRequestForMailbox(
   });
 }
 
-/** OAuth2 token dla konkretnej skrzynki. */
+/** OAuth2 token dla konkretnej skrzynki. Token endpoint wymaga mTLS. */
 export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
   const cfg = await loadAdeConfigForMailbox(mailboxId);
   const { jwt, audience } = await buildClientAssertionForCfg(cfg);
@@ -455,23 +455,22 @@ export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRaw
     client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     client_assertion: jwt,
   });
-  const tokenUrl = cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const res = await httpsRawRequestWithCfg(cfg, {
-    method: "POST",
-    url: tokenUrl,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-    useMtls: false,
-  });
-  if (res.status >= 300 && res.status < 400) {
-    const retry = await httpsRawRequestWithCfg(cfg, {
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string) =>
+    httpsRawRequestWithCfg(cfg, {
       method: "POST",
-      url: tokenUrl,
+      url: base + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
       useMtls: true,
     });
-    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+  let res = await tryHost(cfg.oauthBase);
+  if (res.status >= 300 && res.status < 400) {
+    const legacy = legacyOauthBase(undefined);
+    if (legacy !== cfg.oauthBase) {
+      const alt = await tryHost(legacy);
+      if (alt.status < 300 || alt.status >= 400) res = alt;
+    }
   }
   return { ...res, audience };
 }
