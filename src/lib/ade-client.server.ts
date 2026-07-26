@@ -335,11 +335,11 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
           // 401 zwykle oznacza odrzucenie asercji JWT/formularza — sprawdzamy kolejny wariant.
           if (res.status !== 401) break;
         }
-        if (last.status !== 401) break;
+        if (last && last.status !== 401) break;
       }
-      if (last.status !== 401) break;
+      if (last && last.status !== 401) break;
     }
-    if (last.status !== 401) break;
+    if (last && last.status !== 401) break;
   }
 
   // Jeśli trafiliśmy jeszcze w host informacyjny, spróbuj starego hosta jako fallback.
@@ -585,11 +585,11 @@ export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRaw
           if (res.status >= 200 && res.status < 300) return res;
           if (res.status !== 401) break;
         }
-        if (last.status !== 401) break;
+        if (last && last.status !== 401) break;
       }
-      if (last.status !== 401) break;
+      if (last && last.status !== 401) break;
     }
-    if (last.status !== 401) break;
+    if (last && last.status !== 401) break;
   }
 
   if (last?.status && last.status >= 300 && last.status < 400) {
