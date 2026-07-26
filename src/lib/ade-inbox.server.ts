@@ -933,8 +933,11 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
   const cfg = loadAdeConfig();
   const mailbox = cfg.mailboxAddress;
   const recipients = (input.recipients ?? []).map((r) => r.trim()).filter(Boolean);
-  if (!input.subject?.trim() && !input.bodyText?.trim() && recipients.length === 0) {
-    return { ok: false, remote: false, error: "Pusta wiadomość" };
+  if (!recipients.length) {
+    return { ok: false, remote: false, error: "Biznes.gov wymaga co najmniej jednego adresata także dla wiadomości roboczych." };
+  }
+  if (!input.subject?.trim()) {
+    return { ok: false, remote: false, error: "Temat jest wymagany (biznes.gov nie zapisuje roboczych bez tematu)." };
   }
 
   const attachments = (input.attachments ?? []).map((a) => ({
@@ -943,26 +946,32 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
     content: a.contentBase64,
   }));
 
-  const commonMeta = {
+  const commonMeta: Record<string, unknown> = {
     from: [{ eDeliveryAddress: mailbox }],
     to: recipients.map((address) => ({ eDeliveryAddress: address })),
-    subject: input.subject?.trim() || "(bez tematu)",
-    caseIdentifier: input.caseNumber?.trim() || undefined,
+    subject: input.subject.trim(),
   };
+  const caseId = input.caseNumber?.trim();
+  if (caseId) commonMeta.caseIdentifier = caseId;
+
+  const nestedBody: Record<string, unknown> = {
+    messageMetadata: commonMeta,
+    textBody: input.bodyText ?? "",
+  };
+  if (attachments.length) nestedBody.attachments = attachments;
+
+  const flatBody: Record<string, unknown> = {
+    from: mailbox,
+    to: recipients,
+    subject: input.subject.trim(),
+    textBody: input.bodyText ?? "",
+  };
+  if (caseId) flatBody.caseIdentifier = caseId;
+  if (attachments.length) flatBody.attachments = attachments;
 
   const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
-    { label: "v3-nested", body: { messageMetadata: commonMeta, textBody: input.bodyText ?? "", attachments } },
-    {
-      label: "v3-flat",
-      body: {
-        from: mailbox,
-        to: recipients,
-        subject: commonMeta.subject,
-        textBody: input.bodyText ?? "",
-        caseIdentifier: input.caseNumber?.trim() || undefined,
-        attachments,
-      },
-    },
+    { label: "v3-nested", body: nestedBody },
+    { label: "v3-flat", body: flatBody },
   ];
 
   const paths = input.draftId
@@ -971,6 +980,7 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
         `/api/v3/${encodeURIComponent(mailbox)}/drafts`,
         `/api/v3/${encodeURIComponent(mailbox)}/messages/drafts`,
       ];
+
 
   const attempts: Array<{ path: string; status: number; snippet: string }> = [];
   let remoteDraftId: string | undefined;
