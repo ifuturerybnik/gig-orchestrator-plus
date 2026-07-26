@@ -960,7 +960,7 @@ export async function fetchAndBuildMessageArchive(
 
 // ─────────────────────────────── BAE search ──────────────────────────────────
 
-export type BaeRecipientType = "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
+export type BaeRecipientType = "ALL" | "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
 export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
 
 export type BaeSearchResult = {
@@ -982,15 +982,145 @@ export type BaeSearchResponse = {
   error?: string;
 };
 
-function extractBaeItems(raw: unknown): Record<string, unknown>[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
-  const r = raw as Record<string, unknown>;
-  for (const key of ["baeSearchData", "edaSearchData", "addresses", "items", "content", "results", "data", "entries"]) {
-    const v = r[key];
-    if (Array.isArray(v)) return v as Record<string, unknown>[];
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return undefined;
+}
+
+function pickString(o: unknown, keys: string[]): string | undefined {
+  if (!isRecord(o)) return undefined;
+  for (const key of keys) {
+    const value = firstString(o[key]);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function looksLikeEdeliveryAddress(value: string): boolean {
+  return /^AE:[A-Z]{2}[A-Z0-9._:-]+$/i.test(value.trim());
+}
+
+function findEdeliveryAddress(raw: unknown, depth = 0): string | undefined {
+  if (!raw || depth > 6) return undefined;
+  if (typeof raw === "string") {
+    const exact = raw.trim();
+    if (looksLikeEdeliveryAddress(exact)) return exact;
+    const match = exact.match(/AE:[A-Z]{2}[A-Z0-9._:-]+/i);
+    return match?.[0];
+  }
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const found = findEdeliveryAddress(item, depth + 1);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (!isRecord(raw)) return undefined;
+  const direct = pickString(raw, [
+    "recipientEda",
+    "recipientEDA",
+    "recipientEdaAddress",
+    "recipientAddress",
+    "eDeliveryAddress",
+    "eDeliveryAddressValue",
+    "edeliveryAddress",
+    "electronicDeliveryAddress",
+    "eda",
+    "ade",
+    "ADE",
+    "address",
+    "value",
+  ]);
+  if (direct && looksLikeEdeliveryAddress(direct)) return direct;
+  for (const key of [
+    "recipientEda",
+    "recipientEdas",
+    "recipientEdaList",
+    "eDeliveryAddresses",
+    "electronicDeliveryAddresses",
+    "addresses",
+    "deliveryAddress",
+    "edaData",
+    "edaSearchData",
+    "baeSearchData",
+  ]) {
+    const found = findEdeliveryAddress(raw[key], depth + 1);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function looksLikeBaeItem(o: Record<string, unknown>): boolean {
+  return !!(
+    findEdeliveryAddress(o) ||
+    o.contributor ||
+    o.subjectData ||
+    o.entityName ||
+    o.companyName ||
+    o.officialIds ||
+    o.addressList ||
+    o.recipientEda ||
+    o.eDeliveryAddress
+  );
+}
+
+function extractBaeItems(raw: unknown, depth = 0): Record<string, unknown>[] {
+  if (!raw || depth > 6) return [];
+  if (Array.isArray(raw)) {
+    const records = raw.filter(isRecord);
+    const hits = records.filter(looksLikeBaeItem);
+    if (hits.length) return hits;
+    return raw.flatMap((item) => extractBaeItems(item, depth + 1));
+  }
+  if (!isRecord(raw)) return [];
+  for (const key of [
+    "baeSearchData",
+    "edaSearchData",
+    "recipientEdaSearchData",
+    "recipientEdas",
+    "searchResults",
+    "addresses",
+    "items",
+    "content",
+    "results",
+    "data",
+    "entries",
+  ]) {
+    const items = extractBaeItems(raw[key], depth + 1);
+    if (items.length) return items;
+  }
+  if (looksLikeBaeItem(raw)) return [raw];
+  for (const value of Object.values(raw)) {
+    const items = extractBaeItems(value, depth + 1);
+    if (items.length) return items;
   }
   return [];
+}
+
+function findOfficialId(raw: unknown, registry: "nip" | "regon" | "krs"): string | undefined {
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (!isRecord(item)) continue;
+      const ref = firstString(item.referenceRegistry, item.registry, item.type, item.name)?.toLowerCase();
+      if (ref === registry) {
+        const id = pickString(item, ["id", "value", "identifier", "number"]);
+        if (id) return id;
+      }
+    }
+    return undefined;
+  }
+  if (!isRecord(raw)) return undefined;
+  const direct = pickString(raw, [registry, registry.toUpperCase()]);
+  if (direct) return direct;
+  return findOfficialId(raw.officialIds, registry);
 }
 
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
@@ -999,15 +1129,13 @@ function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
     o.entity ??
     o.subject ??
     {}) as Record<string, unknown>;
-  const addr = (o.recipientEda ??
-    o.eDeliveryAddress ??
-    o.edeliveryAddress ??
-    o.address ??
-    o.deliveryAddress) as string | undefined;
+  const addr = findEdeliveryAddress(o);
   const name =
     (contrib.entityName as string | undefined) ??
     (contrib.companyName as string | undefined) ??
     (contrib.name as string | undefined) ??
+    (o.entityName as string | undefined) ??
+    (o.companyName as string | undefined) ??
     (o.name as string | undefined) ??
     ([contrib.firstName, contrib.surname, contrib.lastName].filter(Boolean).join(" ") || undefined);
   const type =
@@ -1022,23 +1150,17 @@ function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
     o.addressDetails ??
     contrib.address ??
     {}) as Record<string, unknown>;
-  const officialIds = (contrib.officialIds ?? {}) as Record<string, unknown>;
+  const officialIds = contrib.officialIds ?? o.officialIds ?? o;
   return {
     address: String(addr ?? ""),
     name,
     type,
-    nip:
-      (officialIds.nip as string | undefined) ??
-      (contrib.nip as string | undefined) ??
-      (o.nip as string | undefined),
+    nip: findOfficialId(officialIds, "nip") ?? (contrib.nip as string | undefined) ?? (o.nip as string | undefined),
     regon:
-      (officialIds.regon as string | undefined) ??
+      findOfficialId(officialIds, "regon") ??
       (contrib.regon as string | undefined) ??
       (o.regon as string | undefined),
-    krs:
-      (officialIds.krs as string | undefined) ??
-      (contrib.krs as string | undefined) ??
-      (o.krs as string | undefined),
+    krs: findOfficialId(officialIds, "krs") ?? (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
     city: (address.city as string | undefined) ?? (address.town as string | undefined),
     street:
       [address.street as string | undefined, address.buildingNumber as string | undefined]
@@ -1078,6 +1200,16 @@ type BaePayloadVariant = { label: string; fields: Record<string, unknown> };
 function searchCategorySets(rt: BaeRecipientType): BaeCategorySet[] {
   const institutional = ["COMPANY", "ORGANISATION", "PUBLIC_INSTITUTION"];
   switch (rt) {
+    case "ALL":
+      return [
+        { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
+        { label: "COMPANY+ORGANISATION", values: ["COMPANY", "ORGANISATION"] },
+        { label: "PUBLIC_INSTITUTION", values: ["PUBLIC_INSTITUTION"] },
+        { label: "COMPANY", values: ["COMPANY"] },
+        { label: "ORGANISATION", values: ["ORGANISATION"] },
+        { label: "COURT_ENFORCEMENT_OFFICER", values: ["COURT_ENFORCEMENT_OFFICER"] },
+        { label: "INDIVIDUAL", values: ["INDIVIDUAL"] },
+      ];
     case "PUBLIC":
       return [
         { label: "COMPANY+ORGANISATION+PUBLIC_INSTITUTION", values: institutional },
@@ -1191,14 +1323,26 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
       ? { senderEda, recipientEdasOnly: true, recipientEdas: [val.toUpperCase()], offset: 0, limit }
       : { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit };
 
-  const buildBaeBody = (categorySet: BaeCategorySet, variant: BaePayloadVariant): Record<string, unknown> => ({
+  const buildBaeBody = (
+    categorySet: BaeCategorySet,
+    variant: BaePayloadVariant,
+    searchCategory: string | string[],
+  ): Record<string, unknown> => ({
     senderEda,
     recipientEdasOnly: false,
-    searchCategory: categorySet.values,
+    searchCategory,
     ...variant.fields,
     offset: 0,
     limit,
   });
+
+  const categoryPayloads = (categorySet: BaeCategorySet): { label: string; value: string | string[] }[] =>
+    categorySet.values.length === 1
+      ? [
+          { label: `${categorySet.label}[]`, value: categorySet.values },
+          { label: `${categorySet.label}:string`, value: categorySet.values[0] },
+        ]
+      : [{ label: `${categorySet.label}[]`, value: categorySet.values }];
 
   const path = scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
   const pathCandidates =
@@ -1221,6 +1365,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
   const tried: string[] = [];
   let lastError: string | undefined;
+  let emptySuccess: BaeSearchResponse | undefined;
 
   for (const p of pathCandidates) {
     let pathBroken = false;
@@ -1254,10 +1399,13 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
         if (res.status >= 200 && res.status < 300) {
           const arr = extractBaeItems(json);
           const items = arr.map(mapBaeItem).filter((r) => !!r.address);
-          return { ok: true, results: items, triedPaths: tried };
+          if (items.length) return { ok: true, results: items, triedPaths: tried };
+          emptySuccess ??= { ok: true, results: [], triedPaths: tried };
+          continue;
         }
         if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
-          return { ok: true, results: [], triedPaths: tried };
+          emptySuccess ??= { ok: true, results: [], triedPaths: tried };
+          continue;
         }
         lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
       } catch (err) {
@@ -1268,58 +1416,65 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
     for (const categorySet of categoryCandidates) {
       if (pathBroken || stopPath) break;
-      for (const variant of payloadVariants) {
+      for (const categoryPayload of categoryPayloads(categorySet)) {
         if (pathBroken || stopPath) break;
-        const label = `POST ${p} [${categorySet.label}; ${variant.label}]`;
-        tried.push(label);
-        try {
-          const res = await adeSeRawRequest({
-            method: "POST",
-            path: p,
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(buildBaeBody(categorySet, variant)),
-            timeoutMs: 20000,
-          });
-          const bodyStr = res.body ?? "";
-          if ((res.status === 404 && !/SEAPI-00010/i.test(bodyStr)) || res.status === 405) {
-            pathBroken = true;
-            break;
-          }
-          let json: unknown = null;
+        for (const variant of payloadVariants) {
+          if (pathBroken || stopPath) break;
+          const label = `POST ${p} [${categoryPayload.label}; ${variant.label}]`;
+          tried.push(label);
           try {
-            json = bodyStr ? JSON.parse(bodyStr) : null;
-          } catch {
-            /* pusto */
-          }
-          if (res.status >= 200 && res.status < 300) {
-            searchCategoryCache.set(input.recipientType, categorySet);
-            const arr = extractBaeItems(json);
-            const items = arr.map(mapBaeItem).filter((r) => !!r.address);
-            return { ok: true, results: items, triedPaths: tried };
-          }
-          if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
-            return { ok: true, results: [], triedPaths: tried };
-          }
-          // Błąd enuma/kształtu → spróbuj kolejnego zestawu kategorii albo kształtu pól.
-          if (isRetryableBaeShapeError(bodyStr)) {
-            sawOnlyRetryableErrors = true;
+            const res = await adeSeRawRequest({
+              method: "POST",
+              path: p,
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify(buildBaeBody(categorySet, variant, categoryPayload.value)),
+              timeoutMs: 20000,
+            });
+            const bodyStr = res.body ?? "";
+            if ((res.status === 404 && !/SEAPI-00010/i.test(bodyStr)) || res.status === 405) {
+              pathBroken = true;
+              break;
+            }
+            let json: unknown = null;
+            try {
+              json = bodyStr ? JSON.parse(bodyStr) : null;
+            } catch {
+              /* pusto */
+            }
+            if (res.status >= 200 && res.status < 300) {
+              searchCategoryCache.set(input.recipientType, categorySet);
+              const arr = extractBaeItems(json);
+              const items = arr.map(mapBaeItem).filter((r) => !!r.address);
+              if (items.length) return { ok: true, results: items, triedPaths: tried };
+              emptySuccess ??= { ok: true, results: [], triedPaths: tried };
+              continue;
+            }
+            if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
+              emptySuccess ??= { ok: true, results: [], triedPaths: tried };
+              continue;
+            }
+            // Błąd enuma/kształtu → spróbuj kolejnego zestawu kategorii albo kształtu pól.
+            if (isRetryableBaeShapeError(bodyStr)) {
+              sawOnlyRetryableErrors = true;
+              lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
+              continue;
+            }
             lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
-            continue;
+            stopPath = true;
+          } catch (err) {
+            lastError = (err as Error).message;
+            stopPath = true;
           }
-          lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
-          stopPath = true;
-        } catch (err) {
-          lastError = (err as Error).message;
-          stopPath = true;
         }
       }
     }
-    if (!pathBroken && !sawOnlyRetryableErrors) break; // ścieżka odpowiedziała czymś innym niż błąd walidacji kształtu
   }
+
+  if (emptySuccess) return { ...emptySuccess, triedPaths: tried };
 
   return {
     ok: false,
