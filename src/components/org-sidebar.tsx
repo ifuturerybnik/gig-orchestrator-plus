@@ -154,6 +154,13 @@ export function OrgSidebar({
           icon: Bot,
           moduleId: "autokorespondencja",
         },
+        {
+          kind: "leaf",
+          to: `${base}/edoreczenia`,
+          labelKey: "organizations.sidebar.edoreczenia",
+          icon: ShieldCheck,
+          moduleId: "edoreczenia",
+        },
       ],
     },
     {
