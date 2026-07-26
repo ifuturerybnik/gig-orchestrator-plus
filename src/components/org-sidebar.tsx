@@ -21,6 +21,7 @@ import {
   MessageCircle,
   ChevronDown,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Collapsible,
