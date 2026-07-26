@@ -25,6 +25,7 @@ import {
   listStoredDeliveries,
   openStoredDelivery,
   downloadEvidenceZip,
+  moveAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
   type AdeDeliveryDetail,
@@ -32,6 +33,7 @@ import {
 } from "@/lib/ade-inbox.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Reply, Forward } from "lucide-react";
 
 const FOLDERS: { id: AdeFolder; label: string; icon: typeof Inbox }[] = [
   { id: "INBOX", label: "Odebrane", icon: Inbox },
