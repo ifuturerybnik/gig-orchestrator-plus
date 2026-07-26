@@ -412,19 +412,34 @@ export default function EdoreczeniaInboxTab() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {folder !== "TRASH" && (
+                  {selected && folder !== "TRASH" && (
                     <Button
-                      onClick={handleMoveToTrash}
-                      disabled={moving}
+                      onClick={() => handleDelete(selected, false)}
+                      disabled={deleting === selected.id}
                       variant="outline"
                       size="sm"
                     >
-                      {moving ? (
+                      {deleting === selected.id ? (
                         <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <Trash2 className="mr-2 h-3.5 w-3.5" />
                       )}
-                      Przenieś do folderu Usunięte
+                      Usuń (przenieś do kosza)
+                    </Button>
+                  )}
+                  {selected && folder === "TRASH" && (
+                    <Button
+                      onClick={() => handleDelete(selected, true)}
+                      disabled={deleting === selected.id}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      {deleting === selected.id ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Usuń trwale
                     </Button>
                   )}
                   <Button onClick={handleDownloadMessage} disabled={archiveLoading} variant="outline" size="sm">
