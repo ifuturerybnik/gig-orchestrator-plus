@@ -209,8 +209,24 @@ function base64url(input: Buffer | string): string {
   return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function realmAudienceFromBase(base: string): string {
+  return `${base.replace(/\/+$/, "")}/auth/realms/EDOR`;
+}
+
+function audienceCandidates(base: string, env: string | undefined): string[] {
+  const legacy = legacyOauthBase(env);
+  return [
+    // Po przeniesieniu endpointu tokenowego na host UA API Keycloak może nadal
+    // walidować `aud` według publicznego issuer-a modułu uprawnień.
+    realmAudienceFromBase(legacy),
+    realmAudienceFromBase(base),
+    // Starsze instrukcje produkcyjne pokazywały issuer z http:// — tylko fallback.
+    realmAudienceFromBase(legacy).replace(/^https:/i, "http:"),
+  ].filter((value, index, values) => values.indexOf(value) === index);
+}
+
 /** Zbuduj client_assertion (JWT) podpisany kluczem prywatnym QWAC. */
-async function buildClientAssertion(): Promise<{ jwt: string; audience: string }> {
+async function buildClientAssertion(audience?: string): Promise<{ jwt: string; audience: string }> {
   const cfg = loadAdeConfig();
   const fs = await import("node:fs");
   const crypto = await import("node:crypto");
@@ -224,16 +240,16 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
     .replace(/-----END CERTIFICATE-----/g, "")
     .replace(/\s+/g, "");
 
-  // UA API / KSDE oczekuje audience = realmu (bez ścieżki /protocol/openid-connect/token)
-  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
+  const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
     iss: cfg.clientId,
     sub: cfg.clientId,
-    aud: audience,
+    aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: now,
+    nbf: now,
     exp: now + 60,
   };
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
@@ -244,40 +260,53 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
     key: keyPem,
     passphrase: cfg.keyPassphrase,
   });
-  return { jwt: `${signingInput}.${base64url(signature)}`, audience };
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience };
 }
 
 /** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
-  const { jwt, audience } = await buildClientAssertion();
-  const params = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: cfg.clientId,
-    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    client_assertion: jwt,
-  });
   const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const tryHost = async (base: string, useMtls: boolean) =>
-    httpsRawRequest({
+  const tryHost = async (base: string, assertionAudience: string) => {
+    const { jwt, audience } = await buildClientAssertion(assertionAudience);
+    const params = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: cfg.clientId,
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: jwt,
+    });
+    const res = await httpsRawRequest({
       method: "POST",
-      url: base + cfg.tokenPath + query,
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-      useMtls,
+      useMtls: true,
     });
+    return { ...res, audience };
+  };
 
-  // 1) Nowy host (mTLS).
-  let res = await tryHost(cfg.oauthBase, true);
-  // 2) Jeśli 3xx (host informacyjny) — spróbuj starego hosta z mTLS.
-  if (res.status >= 300 && res.status < 400) {
+  let last: (AdeRawResponse & { audience: string }) | null = null;
+  for (const assertionAudience of audienceCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
+    const res = await tryHost(cfg.oauthBase, assertionAudience);
+    last = res;
+    if (res.status >= 200 && res.status < 300) return res;
+    // 401 zwykle oznacza odrzucenie asercji JWT — sprawdzamy kolejny `aud`.
+    if (res.status !== 401) break;
+  }
+
+  // Jeśli trafiliśmy jeszcze w host informacyjny, spróbuj starego hosta jako fallback.
+  if (last?.status && last.status >= 300 && last.status < 400) {
     const legacy = legacyOauthBase(process.env.ADE_ENV);
     if (legacy !== cfg.oauthBase) {
-      const alt = await tryHost(legacy, true);
-      if (alt.status < 300 || alt.status >= 400) res = alt;
+      for (const assertionAudience of audienceCandidates(legacy, process.env.ADE_ENV)) {
+        const alt = await tryHost(legacy, assertionAudience);
+        last = alt;
+        if (alt.status >= 200 && alt.status < 300) return alt;
+        if (alt.status !== 401) break;
+      }
     }
   }
-  return { ...res, audience };
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
 }
 
 
@@ -295,6 +324,7 @@ export type AdeResolvedConfig = {
   certPem: string;
   keyPem: string;
   keyPassphrase?: string;
+  adeEnv?: string;
 };
 
 const configCache = new Map<string, AdeResolvedConfig>();
@@ -322,16 +352,18 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
   const passphrase = data.qwac_key_passphrase_encrypted
     ? decryptPii(data.qwac_key_passphrase_encrypted as string) ?? undefined
     : undefined;
-  const defaults = envDefaults(data.ade_env as string | undefined);
+  const adeEnv = data.ade_env as string | undefined;
+  const defaults = envDefaults(adeEnv);
   const resolved: AdeResolvedConfig = {
     apiBase: (data.api_base as string | null) || defaults.apiBase,
-    oauthBase: normalizeOauthBase((data.oauth_base as string | null) || defaults.oauthBase, data.ade_env as string | undefined),
+    oauthBase: normalizeOauthBase((data.oauth_base as string | null) || defaults.oauthBase, adeEnv),
     tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
     clientId: String(data.client_id),
     mailboxAddress: String(data.mailbox_address),
     certPem,
     keyPem,
     keyPassphrase: passphrase,
+    adeEnv,
   };
   configCache.set(mailboxId, resolved);
   return resolved;
