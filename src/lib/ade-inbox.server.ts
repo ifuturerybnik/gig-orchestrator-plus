@@ -994,30 +994,57 @@ function extractBaeItems(raw: unknown): Record<string, unknown>[] {
 }
 
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
-  const contrib = (o.contributor ?? o.entity ?? o.subject ?? {}) as Record<string, unknown>;
-  const addr = (o.eDeliveryAddress ??
+  const contrib = (o.contributor ??
+    o.subjectData ??
+    o.entity ??
+    o.subject ??
+    {}) as Record<string, unknown>;
+  const addr = (o.recipientEda ??
+    o.eDeliveryAddress ??
     o.edeliveryAddress ??
     o.address ??
     o.deliveryAddress) as string | undefined;
   const name =
+    (contrib.entityName as string | undefined) ??
     (contrib.companyName as string | undefined) ??
     (contrib.name as string | undefined) ??
     (o.name as string | undefined) ??
-    ([contrib.firstName, contrib.lastName].filter(Boolean).join(" ") || undefined);
+    ([contrib.firstName, contrib.surname, contrib.lastName].filter(Boolean).join(" ") || undefined);
   const type =
     (o.entityType as string | undefined) ??
     (o.type as string | undefined) ??
     (contrib.type as string | undefined);
-  const address = (o.addressDetails ?? contrib.address ?? {}) as Record<string, unknown>;
+  // SE API zwraca addressList (tablica) — bierzemy pierwszy adres MAIN, inaczej pierwszy.
+  const addressList = (o.addressList as Record<string, unknown>[] | undefined) ?? [];
+  const mainAddr =
+    addressList.find((a) => String(a.addressType).toUpperCase() === "MAIN") ?? addressList[0];
+  const address = (mainAddr ??
+    o.addressDetails ??
+    contrib.address ??
+    {}) as Record<string, unknown>;
+  const officialIds = (contrib.officialIds ?? {}) as Record<string, unknown>;
   return {
     address: String(addr ?? ""),
     name,
     type,
-    nip: (contrib.nip as string | undefined) ?? (o.nip as string | undefined),
-    regon: (contrib.regon as string | undefined) ?? (o.regon as string | undefined),
-    krs: (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
+    nip:
+      (officialIds.nip as string | undefined) ??
+      (contrib.nip as string | undefined) ??
+      (o.nip as string | undefined),
+    regon:
+      (officialIds.regon as string | undefined) ??
+      (contrib.regon as string | undefined) ??
+      (o.regon as string | undefined),
+    krs:
+      (officialIds.krs as string | undefined) ??
+      (contrib.krs as string | undefined) ??
+      (o.krs as string | undefined),
     city: (address.city as string | undefined) ?? (address.town as string | undefined),
-    street: (address.street as string | undefined) ?? (address.streetName as string | undefined),
+    street:
+      [address.street as string | undefined, address.buildingNumber as string | undefined]
+        .filter(Boolean)
+        .join(" ") ||
+      (address.streetName as string | undefined),
     postalCode: (address.postalCode as string | undefined) ?? (address.zipCode as string | undefined),
   };
 }
