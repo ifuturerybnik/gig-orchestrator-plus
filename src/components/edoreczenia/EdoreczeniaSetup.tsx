@@ -276,11 +276,6 @@ function MailboxDialog({
         });
         toast.success("Skrzynka zaktualizowana");
       } else {
-        if (!certPem || !keyPem) {
-          toast.error("Wybierz plik certyfikatu i klucza QWAC (PEM)");
-          setSubmitting(false);
-          return;
-        }
         await createFn({
           data: {
             scope,
@@ -291,8 +286,8 @@ function MailboxDialog({
             apiBase: apiBase || null,
             oauthBase: oauthBase || null,
             tokenPath: tokenPath || null,
-            qwacCertPem: certPem,
-            qwacKeyPem: keyPem,
+            qwacCertPem: certPem || null,
+            qwacKeyPem: keyPem || null,
             qwacKeyPassphrase: passphrase || null,
           },
         });
