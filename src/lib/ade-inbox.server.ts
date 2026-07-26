@@ -133,20 +133,61 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", type: "TRASH" } });
   }
 
+  // Etykiety oczekiwane dla danego folderu (używane do walidacji odpowiedzi).
+  const wantedLabels: Record<AdeFolder, string[]> = {
+    INBOX: ["INBOX", "RECEIVED", "IN"],
+    SENT: ["SENT", "OUTBOX", "OUT"],
+    DRAFTS: ["DRAFT", "DRAFTS"],
+    TRASH: ["TRASH", "DELETED", "BIN"],
+  };
+  const itemLabels = (o: Record<string, unknown>): string[] => {
+    const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
+    const single = String(
+      (meta.label ?? meta.folder ?? meta.box ?? meta.mailboxFolder ?? o.label ?? o.folder ?? "") as string,
+    ).toUpperCase();
+    const many = Array.isArray(meta.labels)
+      ? (meta.labels as unknown[]).map((x) => String(x).toUpperCase())
+      : [];
+    return [single, ...many].filter(Boolean);
+  };
+  const itemMatchesFolder = (o: Record<string, unknown>, f: AdeFolder): boolean => {
+    const labels = itemLabels(o);
+    if (labels.length === 0) return false;
+    return wantedLabels[f].some((w) => labels.includes(w));
+  };
+
   let last: Awaited<ReturnType<typeof adeApiCall>> | null = null;
-  let firstSuccessNonEmpty: Awaited<ReturnType<typeof adeApiCall>> | null = null;
+  let firstSuccessEmpty: Awaited<ReturnType<typeof adeApiCall>> | null = null;
   for (const a of attempts) {
     const res = await adeApiCall({ method: "GET", path: a.path, query: a.query });
     last = res;
     if (res.status >= 200 && res.status < 300) {
       const items = extractRawItems(res.json);
-      if (items.length > 0) return res;
-      if (!firstSuccessNonEmpty) firstSuccessNonEmpty = res;
-      // Pusta lista — może API zignorowało nieznany label; próbuj dalej.
+      if (items.length === 0) {
+        if (!firstSuccessEmpty) firstSuccessEmpty = res;
+        continue;
+      }
+      // Dla INBOX — brak filtra (domyślna odpowiedź).
+      // Dla dedykowanych ścieżek folderowych ufamy odpowiedzi bez sprawdzania etykiet.
+      const isDedicatedPath = /\/(sent|outbox|drafts|trash|deleted|bin)(\/|$)/i.test(a.path);
+      if (folder === "INBOX" || isDedicatedPath) return res;
+      // Dla ogólnego `/messages` z parametrem label/folder/box — zwaliduj etykiety,
+      // bo wiele wdrożeń UA API ignoruje nieznane parametry i zwraca INBOX.
+      const filtered = items.filter((o) => itemMatchesFolder(o, folder));
+      if (filtered.length > 0) {
+        return {
+          status: res.status,
+          body: JSON.stringify({ messages: filtered }),
+          bodyBuffer: undefined,
+          json: { messages: filtered } as unknown,
+          headers: res.headers,
+        };
+      }
+      if (!firstSuccessEmpty) firstSuccessEmpty = res;
     }
   }
   // Fallback dla SENT/TRASH: pobierz WSZYSTKIE wiadomości bez filtra i przefiltruj po metadanych.
-  if ((folder === "SENT" || folder === "TRASH")) {
+  if (folder === "SENT" || folder === "TRASH") {
     const all = await adeApiCall({
       method: "GET",
       path: messagesBase,
@@ -154,20 +195,7 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
     });
     if (all.status >= 200 && all.status < 300) {
       const items = extractRawItems(all.json);
-      const wanted = folder === "SENT"
-        ? ["SENT", "OUTBOX"]
-        : ["TRASH", "DELETED", "BIN"];
-      const filtered = items.filter((o) => {
-        const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
-        const label = String(
-          (meta.label ?? meta.folder ?? meta.box ?? o.label ?? o.folder ?? "") as string,
-        ).toUpperCase();
-        const labels = Array.isArray(meta.labels)
-          ? (meta.labels as unknown[]).map((x) => String(x).toUpperCase())
-          : [];
-        return wanted.some((w) => label === w || labels.includes(w));
-      });
-      // Zwróć strukturę zgodną z resztą kodu: pojedynczy obiekt { messages: [...] }.
+      const filtered = items.filter((o) => itemMatchesFolder(o, folder));
       return {
         status: 200,
         body: JSON.stringify({ messages: filtered }),
@@ -177,7 +205,17 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
       };
     }
   }
-  return (firstSuccessNonEmpty ?? last)!;
+  // Nic nie pasuje — zwróć pustą listę zamiast surowej (potencjalnie INBOX) odpowiedzi.
+  if (firstSuccessEmpty) {
+    return {
+      status: 200,
+      body: JSON.stringify({ messages: [] }),
+      bodyBuffer: undefined,
+      json: { messages: [] } as unknown,
+      headers: firstSuccessEmpty.headers,
+    };
+  }
+  return last!;
 }
 
 export async function getAdeMessageRaw(messageId: string) {
