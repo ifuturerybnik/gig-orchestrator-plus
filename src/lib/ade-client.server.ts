@@ -41,6 +41,15 @@ function legacyOauthBase(env: string | undefined): string {
   const isInt = (env ?? "").toLowerCase() === "int";
   return isInt ? "https://int-ow.edoreczenia.gov.pl" : "https://ow.edoreczenia.gov.pl";
 }
+// Automatycznie przemapuj wycofany host OAuth (ow.edoreczenia.gov.pl) na aktualny
+// (uaapi-ow.poczta-polska.pl) — nawet gdy jest zapisany w env lub w DB.
+function normalizeOauthBase(base: string, env: string | undefined): string {
+  const trimmed = base.replace(/\/+$/, "");
+  const isLegacyProd = /https?:\/\/ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  const isLegacyInt = /https?:\/\/int-ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  if (isLegacyProd || isLegacyInt) return envDefaults(env).oauthBase;
+  return trimmed;
+}
 
 export function loadAdeConfig(): AdeConfig {
   const {
@@ -61,7 +70,7 @@ export function loadAdeConfig(): AdeConfig {
   if (!ADE_QWAC_KEY_PATH) throw new Error("Brak ADE_QWAC_KEY_PATH w env");
   return {
     apiBase: (ADE_API_BASE || defaults.apiBase).replace(/\/+$/, ""),
-    oauthBase: (ADE_OAUTH_BASE || defaults.oauthBase).replace(/\/+$/, ""),
+    oauthBase: normalizeOauthBase(ADE_OAUTH_BASE || defaults.oauthBase, ADE_ENV),
     tokenPath: ADE_TOKEN_PATH || DEFAULT_TOKEN_PATH,
     clientId: ADE_CLIENT_ID,
     mailboxAddress: ADE_MAILBOX_ADDRESS,
