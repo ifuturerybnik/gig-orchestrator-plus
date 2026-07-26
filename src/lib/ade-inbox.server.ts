@@ -1061,8 +1061,8 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
   const admin = await getAdmin();
   const localAdeId = remoteDraftId ?? input.draftId ?? `remote-draft-${Date.now()}`;
   const rawSnap = {
-    messageMetadata: commonMeta,
-    textBody: input.bodyText ?? "",
+    messageMetadata: { from: [{ eDeliveryAddress: mailbox }], to: toObjs, subject, ...(caseId ? { caseIdentifier: caseId } : {}) },
+    textBody,
     _savedAt: new Date().toISOString(),
   };
   const { error: upErr } = await admin
@@ -1074,7 +1074,7 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
         folder: "DRAFTS",
         from_address: mailbox,
         to_address: recipients[0] ?? null,
-        subject: commonMeta.subject,
+        subject,
         body_text: input.bodyText ?? "",
         creation_date: new Date().toISOString(),
         raw: rawSnap as unknown as Record<string, unknown>,
