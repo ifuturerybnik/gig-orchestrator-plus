@@ -314,9 +314,19 @@ function MailboxDialog({
         {!editing && (
           <Alert>
             <AlertTitle>Jak podłączyć skrzynkę — 3 kroki</AlertTitle>
-            <AlertDescription className="text-xs space-y-1 mt-1">
-              <div>1. Zaloguj się na <span className="font-mono">biznes.gov.pl</span> → e-Doręczenia → Ustawienia skrzynki → Systemy zewnętrzne.</div>
-              <div>2. Dodaj Concertivo jako system zewnętrzny, wpisując ClientId Concertivo: <span className="font-mono">AE:PL-75293-86443-CJWRC-25.SYSTEM.CONCERTIVO</span> i nadaj wymagane uprawnienia (odczyt, wysyłka).</div>
+            <AlertDescription className="text-xs space-y-2 mt-1">
+              <div>
+                1. <b>Pobierz certyfikat QWAC Concertivo</b> (plik publiczny .crt):{" "}
+                <a
+                  href="/api/public/concertivo-qwac.crt"
+                  download="concertivo-qwac.crt"
+                  className="inline-flex items-center gap-1 underline font-medium"
+                >
+                  concertivo-qwac.crt
+                </a>
+                . Klucz prywatny pozostaje po naszej stronie — nie musisz nic kupować.
+              </div>
+              <div>2. Zaloguj się na <span className="font-mono">biznes.gov.pl</span> → e-Doręczenia → Ustawienia skrzynki → Systemy zewnętrzne. Dodaj Concertivo jako system zewnętrzny, wgraj pobrany plik <span className="font-mono">concertivo-qwac.crt</span>, wpisz ClientId Concertivo: <span className="font-mono">AE:PL-75293-86443-CJWRC-25.SYSTEM.CONCERTIVO</span> i nadaj uprawnienia (odczyt, wysyłka).</div>
               <div>3. Wróć tutaj i wypełnij pola poniżej: <b>Adres skrzynki</b> (AE:PL-… Twojej skrzynki) oraz <b>ClientId</b> (ten sam ClientId Concertivo).</div>
             </AlertDescription>
           </Alert>
