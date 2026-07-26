@@ -68,8 +68,11 @@ export type AdeInboxItem = {
   to?: string;
   subject?: string;
   receivedAt?: string;
+  creationDate?: string;
+  sentAt?: string;
   status?: string;
 };
+
 
 export type AdeFolder = "INBOX" | "SENT" | "DRAFTS" | "TRASH";
 
