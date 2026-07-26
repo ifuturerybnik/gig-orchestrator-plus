@@ -42,12 +42,15 @@ export default function EdoreczeniaComposeDialog({
   fromLabel,
   fromAddress,
   onSent,
+  initialRecipients,
+  initialSubject,
+  initialBody,
 }: Props) {
   const send = useServerFn(sendAdeMessage);
-  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipients, setRecipients] = useState<string[]>(initialRecipients ?? []);
   const [recipientInput, setRecipientInput] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [subject, setSubject] = useState(initialSubject ?? "");
+  const [body, setBody] = useState(initialBody ?? "");
   const [caseNumber, setCaseNumber] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
