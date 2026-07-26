@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Reply, Forward } from "lucide-react";
+import AdeAddress from "./AdeAddress";
 
 const FOLDERS: { id: AdeFolder; label: string; icon: typeof Inbox }[] = [
   { id: "INBOX", label: "Odebrane", icon: Inbox },
@@ -243,7 +244,7 @@ export default function EdoreczeniaInboxTab() {
               <Inbox className="h-5 w-5" /> Skrzynka e-Doręczeń
             </CardTitle>
             <CardDescription>
-              {result?.mailbox ? <span className="font-mono">{result.mailbox}</span> : "Wiadomości z systemu ADE."}
+              {result?.mailbox ? <AdeAddress address={result.mailbox} /> : "Wiadomości z systemu ADE."}
               {result?.lastSyncedAt && (
                 <span className="ml-2 text-xs">
                   · ostatni sync: {new Date(result.lastSyncedAt).toLocaleString("pl-PL")}
@@ -331,8 +332,11 @@ export default function EdoreczeniaInboxTab() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
-                        <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
-                        <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                        {row.from ? (
+                          <AdeAddress address={row.from} name={row.fromName} />
+                        ) : (
+                          <span>{row.fromName ?? "?"}</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground shrink-0">
@@ -378,17 +382,17 @@ export default function EdoreczeniaInboxTab() {
               <CardDescription className="text-xs mt-1 space-y-0.5">
                 <div>
                   <span className="text-muted-foreground">Nadawca: </span>
-                  <span className="font-medium">{detail?.data?.fromName ?? "—"}</span>{" "}
-                  <span className="font-mono text-muted-foreground">
-                    {detail?.data?.from ?? selected.from ?? ""}
-                  </span>
+                  <AdeAddress
+                    address={detail?.data?.from ?? selected.from ?? undefined}
+                    name={detail?.data?.fromName ?? undefined}
+                  />
                 </div>
                 <div>
                   <span className="text-muted-foreground">Odbiorca: </span>
-                  <span className="font-medium">{detail?.data?.toName ?? "—"}</span>{" "}
-                  <span className="font-mono text-muted-foreground">
-                    {detail?.data?.to ?? selected.to ?? ""}
-                  </span>
+                  <AdeAddress
+                    address={detail?.data?.to ?? selected.to ?? undefined}
+                    name={detail?.data?.toName ?? undefined}
+                  />
                 </div>
                 <div>
                   <span className="text-muted-foreground">Data utworzenia: </span>
