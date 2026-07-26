@@ -97,7 +97,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
                 Skrzynki e-Doręczeń
               </CardTitle>
               <CardDescription>
-                Wgraj certyfikat QWAC i dane skrzynki uzyskane po rejestracji Twojej organizacji lub konta w e-Doręczeniach.
+                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu własnego certyfikatu QWAC. Nie musisz kupować własnego certyfikatu.
               </CardDescription>
             </div>
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
