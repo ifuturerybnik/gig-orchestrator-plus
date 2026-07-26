@@ -560,6 +560,12 @@ function OrganizationProfilePage() {
       </div>
     )}
 
+    <div className="mt-12">
+      <EdoreczeniaSetup scope={{ kind: "org", orgId }} />
+    </div>
+
+
+
     <Dialog
       open={deleteOpen}
       onOpenChange={(o) => {
