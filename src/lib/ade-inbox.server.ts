@@ -1008,7 +1008,7 @@ function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
     (o.entityType as string | undefined) ??
     (o.type as string | undefined) ??
     (contrib.type as string | undefined);
-  const address = ((o.addressDetails ?? contrib.address ?? {}) as Record<string, unknown>) ?? {};
+  const address = (o.addressDetails ?? contrib.address ?? {}) as Record<string, unknown>;
   return {
     address: String(addr ?? ""),
     name,
