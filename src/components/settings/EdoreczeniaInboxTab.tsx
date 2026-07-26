@@ -56,6 +56,7 @@ export default function EdoreczeniaInboxTab() {
   const open = useServerFn(openStoredDelivery);
   const fetchEvidence = useServerFn(downloadEvidenceZip);
   const move = useServerFn(moveAdeDelivery);
+  const fetchArchive = useServerFn(downloadMessageArchive);
   const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
