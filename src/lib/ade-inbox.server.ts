@@ -475,9 +475,9 @@ export async function fetchAndStoreMessage(deliveryId: string, markRead = true):
     const update: Record<string, unknown> = {
       body_text: bodyText,
       raw: payload,
-      read_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    if (markRead) update.read_at = new Date().toISOString();
     if (subject) update.subject = subject;
     if (fromParty.address) update.from_address = fromParty.address;
     if (toParty.address) update.to_address = toParty.address;
