@@ -97,7 +97,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
                 Skrzynki e-Doręczeń
               </CardTitle>
               <CardDescription>
-                Wgraj certyfikat QWAC i dane skrzynki uzyskane po rejestracji Twojej organizacji lub konta w e-Doręczeniach.
+                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu własnego certyfikatu QWAC. Nie musisz kupować własnego certyfikatu.
               </CardDescription>
             </div>
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
@@ -114,7 +114,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
           )}
           {!listQuery.isLoading && mailboxes.length === 0 && (
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-              Brak skonfigurowanych skrzynek. Kliknij „Dodaj skrzynkę", aby wgrać certyfikat QWAC i podać ClientId oraz adres AE:PL-…
+              Brak skonfigurowanych skrzynek. Kliknij „Dodaj skrzynkę", aby podać adres AE:PL-… oraz ClientId.
             </div>
           )}
           {mailboxes.map((mb) => (
@@ -276,11 +276,6 @@ function MailboxDialog({
         });
         toast.success("Skrzynka zaktualizowana");
       } else {
-        if (!certPem || !keyPem) {
-          toast.error("Wybierz plik certyfikatu i klucza QWAC (PEM)");
-          setSubmitting(false);
-          return;
-        }
         await createFn({
           data: {
             scope,
@@ -291,8 +286,8 @@ function MailboxDialog({
             apiBase: apiBase || null,
             oauthBase: oauthBase || null,
             tokenPath: tokenPath || null,
-            qwacCertPem: certPem,
-            qwacKeyPem: keyPem,
+            qwacCertPem: certPem || null,
+            qwacKeyPem: keyPem || null,
             qwacKeyPassphrase: passphrase || null,
           },
         });
@@ -312,9 +307,21 @@ function MailboxDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edytuj skrzynkę e-Doręczeń" : "Nowa skrzynka e-Doręczeń"}</DialogTitle>
           <DialogDescription>
-            Wgraj certyfikat QWAC oraz odpowiadający mu klucz prywatny (pliki PEM). Certyfikat kupujesz w jednym z zaufanych centrów certyfikacji (CenCert, Sigillum).
+            Podaj adres skrzynki (AE:PL-…) oraz ClientId. Concertivo łączy się z e-Doręczeniami swoim certyfikatem QWAC — nie musisz go kupować ani wgrywać.
           </DialogDescription>
         </DialogHeader>
+
+        {!editing && (
+          <Alert>
+            <AlertTitle>Jak podłączyć skrzynkę — 3 kroki</AlertTitle>
+            <AlertDescription className="text-xs space-y-1 mt-1">
+              <div>1. Zaloguj się na <span className="font-mono">biznes.gov.pl</span> → e-Doręczenia → Ustawienia skrzynki → Systemy zewnętrzne.</div>
+              <div>2. Dodaj Concertivo jako system zewnętrzny, wpisując ClientId Concertivo: <span className="font-mono">AE:PL-75293-86443-CJWRC-25.SYSTEM.CONCERTIVO</span> i nadaj wymagane uprawnienia (odczyt, wysyłka).</div>
+              <div>3. Wróć tutaj i wypełnij pola poniżej: <b>Adres skrzynki</b> (AE:PL-… Twojej skrzynki) oraz <b>ClientId</b> (ten sam ClientId Concertivo).</div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1">
@@ -351,50 +358,56 @@ function MailboxDialog({
               placeholder="AE:PL-…"
               className="font-mono"
             />
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
-              <Label>Certyfikat QWAC (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-              <input
-                ref={certRef}
-                type="file"
-                accept=".pem,.crt,.cer,text/plain"
-                className="hidden"
-                onChange={(e) => handleCertFile(e.target.files?.[0])}
-              />
-              <Button type="button" variant="outline" onClick={() => certRef.current?.click()} className="w-full justify-start">
-                <UploadCloud className="h-4 w-4 mr-2" />
-                {certName ?? (editing ? "Wybierz plik (opcjonalnie)" : "Wybierz plik cert.pem")}
-              </Button>
-            </div>
-            <div className="space-y-1">
-              <Label>Klucz prywatny (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-              <input
-                ref={keyRef}
-                type="file"
-                accept=".pem,.key,text/plain"
-                className="hidden"
-                onChange={(e) => handleKeyFile(e.target.files?.[0])}
-              />
-              <Button type="button" variant="outline" onClick={() => keyRef.current?.click()} className="w-full justify-start">
-                <UploadCloud className="h-4 w-4 mr-2" />
-                {keyName ?? (editing ? "Wybierz plik (opcjonalnie)" : "Wybierz plik key.pem")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Passphrase klucza (opcjonalne)</Label>
-            <Input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder={editing?.hasPassphrase ? "•••• (ustawione — zostaw puste, by nie zmieniać)" : ""} />
+            <p className="text-xs text-muted-foreground">
+              Domyślnie: ClientId Concertivo autoryzowany w Twojej skrzynce. Podaj własny ClientId tylko jeśli masz zarejestrowany osobny system w KSDE.
+            </p>
           </div>
 
           <details className="rounded-md border border-border bg-muted/20 p-3 text-sm">
-            <summary className="cursor-pointer font-medium">Zaawansowane (URL-e nadpisujące defaulty)</summary>
-            <div className="mt-2 grid gap-2">
-              <div><Label>API base (mTLS)</Label><Input value={apiBase} onChange={(e) => setApiBase(e.target.value)} placeholder="https://uaapi-ow.poczta-polska.pl" className="font-mono" /></div>
-              <div><Label>OAuth base (KSDE)</Label><Input value={oauthBase} onChange={(e) => setOauthBase(e.target.value)} placeholder="https://ow.edoreczenia.gov.pl" className="font-mono" /></div>
-              <div><Label>Token path</Label><Input value={tokenPath} onChange={(e) => setTokenPath(e.target.value)} placeholder="/auth/realms/EDOR/protocol/openid-connect/token" className="font-mono" /></div>
+            <summary className="cursor-pointer font-medium">Zaawansowane — własny certyfikat QWAC / URL-e (opcjonalne)</summary>
+            <div className="mt-3 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Wypełnij tylko jeśli chcesz, aby ta skrzynka używała <b>własnego</b> certyfikatu QWAC zamiast systemowego Concertivo. W przeciwnym razie zostaw puste.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Certyfikat QWAC (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
+                  <input
+                    ref={certRef}
+                    type="file"
+                    accept=".pem,.crt,.cer,text/plain"
+                    className="hidden"
+                    onChange={(e) => handleCertFile(e.target.files?.[0])}
+                  />
+                  <Button type="button" variant="outline" onClick={() => certRef.current?.click()} className="w-full justify-start">
+                    <UploadCloud className="h-4 w-4 mr-2" />
+                    {certName ?? "Wybierz plik cert.pem (opcjonalnie)"}
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label>Klucz prywatny (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
+                  <input
+                    ref={keyRef}
+                    type="file"
+                    accept=".pem,.key,text/plain"
+                    className="hidden"
+                    onChange={(e) => handleKeyFile(e.target.files?.[0])}
+                  />
+                  <Button type="button" variant="outline" onClick={() => keyRef.current?.click()} className="w-full justify-start">
+                    <UploadCloud className="h-4 w-4 mr-2" />
+                    {keyName ?? "Wybierz plik key.pem (opcjonalnie)"}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Passphrase klucza (opcjonalne)</Label>
+                <Input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder={editing?.hasPassphrase ? "•••• (ustawione — zostaw puste, by nie zmieniać)" : ""} />
+              </div>
+              <div className="grid gap-2 pt-1">
+                <div><Label>API base (mTLS)</Label><Input value={apiBase} onChange={(e) => setApiBase(e.target.value)} placeholder="https://uaapi-ow.poczta-polska.pl" className="font-mono" /></div>
+                <div><Label>OAuth base (KSDE)</Label><Input value={oauthBase} onChange={(e) => setOauthBase(e.target.value)} placeholder="https://ow.edoreczenia.gov.pl" className="font-mono" /></div>
+                <div><Label>Token path</Label><Input value={tokenPath} onChange={(e) => setTokenPath(e.target.value)} placeholder="/auth/realms/EDOR/protocol/openid-connect/token" className="font-mono" /></div>
+              </div>
             </div>
           </details>
 

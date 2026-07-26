@@ -287,12 +287,28 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
     .maybeSingle();
   if (error) throw new Error(`Nie udało się pobrać skrzynki: ${error.message}`);
   if (!data) throw new Error(`Skrzynka ${mailboxId} nie istnieje`);
-  const certPem = decryptPii(data.qwac_cert_pem_encrypted as string);
-  const keyPem = decryptPii(data.qwac_key_pem_encrypted as string);
-  if (!certPem || !keyPem) throw new Error("Nie udało się odszyfrować certyfikatów QWAC (klucz EXT_PII_ENCRYPTION_KEY?)");
-  const passphrase = data.qwac_key_passphrase_encrypted
-    ? decryptPii(data.qwac_key_passphrase_encrypted as string) ?? undefined
-    : undefined;
+  let certPem: string | null = null;
+  let keyPem: string | null = null;
+  let passphrase: string | undefined;
+  if (data.qwac_cert_pem_encrypted && data.qwac_key_pem_encrypted) {
+    certPem = decryptPii(data.qwac_cert_pem_encrypted as string);
+    keyPem = decryptPii(data.qwac_key_pem_encrypted as string);
+    if (!certPem || !keyPem) throw new Error("Nie udało się odszyfrować certyfikatów QWAC (klucz EXT_PII_ENCRYPTION_KEY?)");
+    passphrase = data.qwac_key_passphrase_encrypted
+      ? decryptPii(data.qwac_key_passphrase_encrypted as string) ?? undefined
+      : undefined;
+  } else {
+    // Fallback: użyj systemowego QWAC Concertivo (z env)
+    const fs = await import("node:fs");
+    const certPath = process.env.ADE_QWAC_CERT_PATH;
+    const keyPath = process.env.ADE_QWAC_KEY_PATH;
+    if (!certPath || !keyPath) {
+      throw new Error("Skrzynka nie ma własnego QWAC, a systemowy QWAC nie jest skonfigurowany (ADE_QWAC_CERT_PATH/KEY_PATH)");
+    }
+    certPem = fs.readFileSync(certPath, "utf8");
+    keyPem = fs.readFileSync(keyPath, "utf8");
+    passphrase = process.env.ADE_QWAC_KEY_PASSPHRASE || undefined;
+  }
   const adeEnv = data.ade_env as string | undefined;
   const defaults = envDefaults(adeEnv);
   const resolved: AdeResolvedConfig = {
@@ -301,8 +317,8 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
     tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
     clientId: String(data.client_id),
     mailboxAddress: String(data.mailbox_address),
-    certPem,
-    keyPem,
+    certPem: certPem!,
+    keyPem: keyPem!,
     keyPassphrase: passphrase,
     adeEnv,
   };
