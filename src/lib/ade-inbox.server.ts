@@ -431,6 +431,9 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     if (fromParty.address) update.from_address = fromParty.address;
     if (toParty.address) update.to_address = toParty.address;
     if (receivedAt) update.received_at = receivedAt;
+    if (creationDate) update.creation_date = creationDate;
+    if (sentAt) update.sent_at = sentAt;
+
 
     await admin.from("edoreczenia_deliveries").update(update).eq("id", delivery.id);
 
