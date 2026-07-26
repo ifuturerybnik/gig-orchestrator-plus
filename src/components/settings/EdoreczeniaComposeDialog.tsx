@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
-import { sendAdeMessage } from "@/lib/ade-inbox.functions";
+import { sendAdeMessage, saveAdeDraft } from "@/lib/ade-inbox.functions";
 import EdoreczeniaBaeSearchDialog from "./EdoreczeniaBaeSearchDialog";
 import { toast } from "sonner";
 
