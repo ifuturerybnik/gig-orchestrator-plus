@@ -877,7 +877,7 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
             filename: a.filename.trim(),
             contentType: a.mimeType ?? "application/octet-stream",
             size,
-            alg: "SHA-256",
+            alg: "SHA-3",
             hash: null,
             description: a.filename.trim(),
           },
