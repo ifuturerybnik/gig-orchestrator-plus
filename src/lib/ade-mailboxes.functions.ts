@@ -182,8 +182,10 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
     const passEnc = data.qwacKeyPassphrase ? encryptPii(data.qwacKeyPassphrase) : null;
 
     const filter = scopeFilter(data.scope, context.userId);
-    const row = {
-      ...filter,
+    const row: Record<string, unknown> = {
+      owner_kind: filter.owner_kind,
+      owner_user_id: (filter as { owner_user_id?: string }).owner_user_id ?? null,
+      owner_org_id: (filter as { owner_org_id?: string }).owner_org_id ?? null,
       label: data.label ?? null,
       mailbox_address: data.mailboxAddress,
       client_id: data.clientId,
@@ -196,7 +198,13 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
       qwac_key_passphrase_encrypted: passEnc,
       is_active: true,
     };
-    const { data: created, error } = await context.supabase
+    const { data: created, error } = await (context.supabase as unknown as {
+      from: (t: string) => {
+        insert: (r: Record<string, unknown>) => {
+          select: (c: string) => { single: () => Promise<{ data: unknown; error: { message: string } | null }> };
+        };
+      };
+    })
       .from("ade_mailboxes")
       .insert(row)
       .select("*")
