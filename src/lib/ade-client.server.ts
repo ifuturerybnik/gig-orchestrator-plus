@@ -238,7 +238,7 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
   return { jwt: `${signingInput}.${base64url(signature)}`, audience };
 }
 
-/** OAuth2 token via private_key_jwt (bez client_secret). */
+/** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
   const { jwt, audience } = await buildClientAssertion();
@@ -248,25 +248,25 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     client_assertion: jwt,
   });
-  // Keycloak KSDE wymaga login_hint=ADE.<adres_skrzynki>, aby powiązać token z konkretną skrzynką ADE.
-  const tokenUrl =
-    cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const res = await httpsRawRequest({
-    method: "POST",
-    url: tokenUrl,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-    useMtls: false,
-  });
-  if (res.status >= 300 && res.status < 400) {
-    const retry = await httpsRawRequest({
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string, useMtls: boolean) =>
+    httpsRawRequest({
       method: "POST",
-      url: tokenUrl,
+      url: base + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-      useMtls: true,
+      useMtls,
     });
-    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+
+  // 1) Nowy host (mTLS).
+  let res = await tryHost(cfg.oauthBase, true);
+  // 2) Jeśli 3xx (host informacyjny) — spróbuj starego hosta z mTLS.
+  if (res.status >= 300 && res.status < 400) {
+    const legacy = legacyOauthBase(process.env.ADE_ENV);
+    if (legacy !== cfg.oauthBase) {
+      const alt = await tryHost(legacy, true);
+      if (alt.status < 300 || alt.status >= 400) res = alt;
+    }
   }
   return { ...res, audience };
 }
