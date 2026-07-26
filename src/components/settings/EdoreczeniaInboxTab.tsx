@@ -27,6 +27,7 @@ import {
   downloadEvidenceZip,
   downloadMessageArchive,
   moveAdeDelivery,
+  deleteAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
   type AdeDeliveryDetail,
