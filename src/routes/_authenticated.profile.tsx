@@ -28,6 +28,7 @@ import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
 import { listMyOrganizations } from "@/lib/organizations.functions";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { MyMailboxesSection } from "@/components/my-mailboxes-section";
+import EdoreczeniaSetup from "@/components/edoreczenia/EdoreczeniaSetup";
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
 import { LandingPreferenceField } from "@/components/profile-landing-field";
 import { supabase } from "@/integrations/supabase/client";
@@ -520,6 +521,11 @@ function ProfilePage() {
         <div className="mt-12">
           <MyMailboxesSection />
         </div>
+
+        <div className="mt-12">
+          <EdoreczeniaSetup scope={{ kind: "user" }} />
+        </div>
+
 
         <div className="mt-12">
           <StopkiManager scope={{ kind: "user" }} />

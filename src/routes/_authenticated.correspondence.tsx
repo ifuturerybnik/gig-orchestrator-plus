@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Mail, MessageCircle, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
 import { MailLayout } from "@/components/mail/MailLayout";
+import EdoreczeniaInbox from "@/components/edoreczenia/EdoreczeniaInbox";
 
 import { cn } from "@/lib/utils";
 
@@ -51,12 +52,7 @@ function CorrespondencePage() {
         <div className="mt-6">
           {tab === "mail" && <MailLayout scope={{ kind: "user" }} />}
           {tab === "edoreczenia" && (
-            <div className="rounded-md border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-              {t(
-                "correspondence.edoreczenia_placeholder",
-                "Integracja osobistej skrzynki e-Doręczeń pojawi się tutaj wkrótce.",
-              )}
-            </div>
+            <EdoreczeniaInbox scope={{ kind: "user" }} setupHref="/profile" />
           )}
           {tab === "messengers" && (
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">

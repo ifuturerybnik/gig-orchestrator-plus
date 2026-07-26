@@ -250,3 +250,244 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
   });
   return { ...res, audience };
 }
+
+
+
+// ============================================================
+// Multi-tenant: warianty operujące na skrzynce z DB (ade_mailboxes)
+// ============================================================
+
+export type AdeResolvedConfig = {
+  apiBase: string;
+  oauthBase: string;
+  tokenPath: string;
+  clientId: string;
+  mailboxAddress: string;
+  certPem: string;
+  keyPem: string;
+  keyPassphrase?: string;
+};
+
+const configCache = new Map<string, AdeResolvedConfig>();
+
+export function invalidateMailboxCache(mailboxId: string) {
+  configCache.delete(mailboxId);
+}
+
+/** Załaduj konfigurację skrzynki z DB (service_role) i odszyfruj PEM. */
+export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeResolvedConfig> {
+  const cached = configCache.get(mailboxId);
+  if (cached) return cached;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { decryptPii } = await import("@/lib/crypto.server");
+  const { data, error } = await supabaseAdmin
+    .from("ade_mailboxes")
+    .select("*")
+    .eq("id", mailboxId)
+    .maybeSingle();
+  if (error) throw new Error(`Nie udało się pobrać skrzynki: ${error.message}`);
+  if (!data) throw new Error(`Skrzynka ${mailboxId} nie istnieje`);
+  const certPem = decryptPii(data.qwac_cert_pem_encrypted as string);
+  const keyPem = decryptPii(data.qwac_key_pem_encrypted as string);
+  if (!certPem || !keyPem) throw new Error("Nie udało się odszyfrować certyfikatów QWAC (klucz EXT_PII_ENCRYPTION_KEY?)");
+  const passphrase = data.qwac_key_passphrase_encrypted
+    ? decryptPii(data.qwac_key_passphrase_encrypted as string) ?? undefined
+    : undefined;
+  const defaults = envDefaults(data.ade_env as string | undefined);
+  const resolved: AdeResolvedConfig = {
+    apiBase: (data.api_base as string | null) || defaults.apiBase,
+    oauthBase: (data.oauth_base as string | null) || defaults.oauthBase,
+    tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
+    clientId: String(data.client_id),
+    mailboxAddress: String(data.mailbox_address),
+    certPem,
+    keyPem,
+    keyPassphrase: passphrase,
+  };
+  configCache.set(mailboxId, resolved);
+  return resolved;
+}
+
+async function httpsRawRequestWithCfg(
+  cfg: AdeResolvedConfig,
+  opts: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    body?: string;
+    timeoutMs?: number;
+    useMtls?: boolean;
+    binary?: boolean;
+  },
+): Promise<AdeRawResponse> {
+  const https = await import("node:https");
+  const url = new URL(opts.url);
+  const cert = opts.useMtls ? Buffer.from(cfg.certPem) : undefined;
+  const key = opts.useMtls ? Buffer.from(cfg.keyPem) : undefined;
+  return await new Promise<AdeRawResponse>((resolvePromise, rejectPromise) => {
+    const req = https.request(
+      {
+        method: opts.method,
+        host: url.hostname,
+        port: url.port || 443,
+        path: url.pathname + url.search,
+        cert,
+        key,
+        passphrase: cfg.keyPassphrase,
+        headers: { Accept: "application/json", ...opts.headers },
+        timeout: opts.timeoutMs ?? 15000,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const socket = res.socket as
+            | ({ getPeerCertificate?: () => { subject?: { CN?: string; O?: string }; issuer?: { CN?: string; O?: string } } } & object)
+            | null;
+          const peer = typeof socket?.getPeerCertificate === "function" ? socket.getPeerCertificate() : undefined;
+          const buffer = Buffer.concat(chunks);
+          resolvePromise({
+            status: res.statusCode ?? 0,
+            headers: Object.fromEntries(
+              Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : String(v ?? "")]),
+            ),
+            body: buffer.toString("utf8"),
+            bodyBuffer: opts.binary ? buffer : undefined,
+            tlsPeerSubject: peer?.subject ? `${peer.subject.CN ?? ""} (${peer.subject.O ?? ""})` : undefined,
+            tlsPeerIssuer: peer?.issuer ? `${peer.issuer.CN ?? ""} (${peer.issuer.O ?? ""})` : undefined,
+          });
+        });
+      },
+    );
+    req.on("timeout", () => req.destroy(new Error("Timeout połączenia z ADE")));
+    req.on("error", (err) => rejectPromise(err));
+    if (opts.body) req.write(opts.body);
+    req.end();
+  });
+}
+
+async function buildClientAssertionForCfg(cfg: AdeResolvedConfig): Promise<{ jwt: string; audience: string }> {
+  const crypto = await import("node:crypto");
+  const certBody = cfg.certPem
+    .replace(/-----BEGIN CERTIFICATE-----/g, "")
+    .replace(/-----END CERTIFICATE-----/g, "")
+    .replace(/\s+/g, "");
+  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
+  const payload = {
+    iss: cfg.clientId,
+    sub: cfg.clientId,
+    aud: audience,
+    jti: crypto.randomUUID(),
+    iat: now,
+    exp: now + 60,
+  };
+  const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(signingInput);
+  signer.end();
+  const signature = signer.sign({ key: cfg.keyPem, passphrase: cfg.keyPassphrase });
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience };
+}
+
+/** mTLS request do UA API dla konkretnej skrzynki. */
+export async function adeRawRequestForMailbox(
+  mailboxId: string,
+  opts: { method: string; path: string; headers?: Record<string, string>; body?: string; timeoutMs?: number; binary?: boolean },
+): Promise<AdeRawResponse> {
+  const cfg = await loadAdeConfigForMailbox(mailboxId);
+  return httpsRawRequestWithCfg(cfg, {
+    method: opts.method,
+    url: cfg.apiBase + opts.path,
+    headers: opts.headers,
+    body: opts.body,
+    timeoutMs: opts.timeoutMs,
+    useMtls: true,
+    binary: opts.binary,
+  });
+}
+
+/** SE API (bez mTLS) dla konkretnej skrzynki. */
+export async function adeSeRawRequestForMailbox(
+  mailboxId: string,
+  opts: { method: string; path: string; headers?: Record<string, string>; body?: string; timeoutMs?: number },
+): Promise<AdeRawResponse> {
+  const cfg = await loadAdeConfigForMailbox(mailboxId);
+  const base = (process.env.ADE_SE_BASE || cfg.oauthBase).replace(/\/+$/, "");
+  return httpsRawRequestWithCfg(cfg, {
+    method: opts.method,
+    url: base + opts.path,
+    headers: opts.headers,
+    body: opts.body,
+    timeoutMs: opts.timeoutMs,
+    useMtls: false,
+  });
+}
+
+/** OAuth2 token dla konkretnej skrzynki. */
+export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
+  const cfg = await loadAdeConfigForMailbox(mailboxId);
+  const { jwt, audience } = await buildClientAssertionForCfg(cfg);
+  const params = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: cfg.clientId,
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: jwt,
+  });
+  const tokenUrl = cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const res = await httpsRawRequestWithCfg(cfg, {
+    method: "POST",
+    url: tokenUrl,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+    useMtls: false,
+  });
+  return { ...res, audience };
+}
+
+/** Test połączenia dla skrzynki z DB. */
+export async function testAdeConnectionForMailbox(mailboxId: string): Promise<{
+  ok: boolean;
+  steps: Array<{ name: string; ok: boolean; detail: string }>;
+}> {
+  const steps: Array<{ name: string; ok: boolean; detail: string }> = [];
+  let cfg: AdeResolvedConfig | null = null;
+  try {
+    cfg = await loadAdeConfigForMailbox(mailboxId);
+    steps.push({ name: "Konfiguracja", ok: true, detail: `mailbox=${cfg.mailboxAddress} clientId=${cfg.clientId}` });
+  } catch (err) {
+    steps.push({ name: "Konfiguracja", ok: false, detail: (err as Error).message });
+    return { ok: false, steps };
+  }
+  // mTLS handshake — GET /
+  try {
+    const res = await httpsRawRequestWithCfg(cfg, { method: "GET", url: cfg.apiBase + "/", useMtls: true, timeoutMs: 10000 });
+    steps.push({
+      name: "mTLS handshake",
+      ok: true,
+      detail: `HTTP ${res.status}${res.tlsPeerIssuer ? " · Peer issuer: " + res.tlsPeerIssuer : ""}`,
+    });
+  } catch (err) {
+    steps.push({ name: "mTLS handshake", ok: false, detail: (err as Error).message });
+  }
+  // OAuth2
+  try {
+    const res = await fetchAdeTokenForMailbox(mailboxId);
+    const ok = res.status >= 200 && res.status < 300;
+    let detail = `HTTP ${res.status}`;
+    try {
+      const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
+      if (parsed.access_token) detail += ` · token OK (${parsed.access_token.length} znaków)`;
+      else if (parsed.error) detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
+      else detail += ` · ${res.body.slice(0, 200)}`;
+    } catch {
+      detail += ` · ${res.body.slice(0, 200)}`;
+    }
+    steps.push({ name: "OAuth2 token", ok, detail });
+  } catch (err) {
+    steps.push({ name: "OAuth2 token", ok: false, detail: (err as Error).message });
+  }
+  return { ok: steps.every((s) => s.ok), steps };
+}
+

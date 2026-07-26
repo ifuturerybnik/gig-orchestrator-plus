@@ -616,6 +616,7 @@ export default
       "correspondence": "Correspondence",
       "mail": "Mail",
       "autokorespondencja": "Auto-correspondence",
+      "edoreczenia": "e-Delivery",
       "back_to_list": "← All organizations",
       "pending_expenses": "Pending expenses: {{count}}",
       "social": "Social Hub",

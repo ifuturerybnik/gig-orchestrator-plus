@@ -21,6 +21,7 @@ import {
   MessageCircle,
   ChevronDown,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Collapsible,
@@ -153,6 +154,13 @@ export function OrgSidebar({
           labelKey: "organizations.sidebar.autokorespondencja",
           icon: Bot,
           moduleId: "autokorespondencja",
+        },
+        {
+          kind: "leaf",
+          to: `${base}/edoreczenia`,
+          labelKey: "organizations.sidebar.edoreczenia",
+          icon: ShieldCheck,
+          moduleId: "edoreczenia",
         },
       ],
     },

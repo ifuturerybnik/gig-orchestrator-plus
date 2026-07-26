@@ -65,6 +65,7 @@ import { Route as AuthenticatedOrganizationsOrgIdProfileRouteImport } from './ro
 import { Route as AuthenticatedOrganizationsOrgIdMembersRouteImport } from './routes/_authenticated.organizations.$orgId.members'
 import { Route as AuthenticatedOrganizationsOrgIdMailRouteImport } from './routes/_authenticated.organizations.$orgId.mail'
 import { Route as AuthenticatedOrganizationsOrgIdEventsRouteImport } from './routes/_authenticated.organizations.$orgId.events'
+import { Route as AuthenticatedOrganizationsOrgIdEdoreczeniaRouteImport } from './routes/_authenticated.organizations.$orgId.edoreczenia'
 import { Route as AuthenticatedOrganizationsOrgIdDyskRouteImport } from './routes/_authenticated.organizations.$orgId.dysk'
 import { Route as AuthenticatedOrganizationsOrgIdCounterpartiesRouteImport } from './routes/_authenticated.organizations.$orgId.counterparties'
 import { Route as AuthenticatedOrganizationsOrgIdContactsRouteImport } from './routes/_authenticated.organizations.$orgId.contacts'
@@ -396,6 +397,12 @@ const AuthenticatedOrganizationsOrgIdEventsRoute =
     path: '/events',
     getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
   } as any)
+const AuthenticatedOrganizationsOrgIdEdoreczeniaRoute =
+  AuthenticatedOrganizationsOrgIdEdoreczeniaRouteImport.update({
+    id: '/edoreczenia',
+    path: '/edoreczenia',
+    getParentRoute: () => AuthenticatedOrganizationsOrgIdRoute,
+  } as any)
 const AuthenticatedOrganizationsOrgIdDyskRoute =
   AuthenticatedOrganizationsOrgIdDyskRouteImport.update({
     id: '/dysk',
@@ -541,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/dysk': typeof AuthenticatedOrganizationsOrgIdDyskRoute
+  '/organizations/$orgId/edoreczenia': typeof AuthenticatedOrganizationsOrgIdEdoreczeniaRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
@@ -611,6 +619,7 @@ export interface FileRoutesByTo {
   '/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/organizations/$orgId/dysk': typeof AuthenticatedOrganizationsOrgIdDyskRoute
+  '/organizations/$orgId/edoreczenia': typeof AuthenticatedOrganizationsOrgIdEdoreczeniaRoute
   '/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
@@ -686,6 +695,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$orgId/contacts': typeof AuthenticatedOrganizationsOrgIdContactsRoute
   '/_authenticated/organizations/$orgId/counterparties': typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   '/_authenticated/organizations/$orgId/dysk': typeof AuthenticatedOrganizationsOrgIdDyskRoute
+  '/_authenticated/organizations/$orgId/edoreczenia': typeof AuthenticatedOrganizationsOrgIdEdoreczeniaRoute
   '/_authenticated/organizations/$orgId/events': typeof AuthenticatedOrganizationsOrgIdEventsRoute
   '/_authenticated/organizations/$orgId/mail': typeof AuthenticatedOrganizationsOrgIdMailRoute
   '/_authenticated/organizations/$orgId/members': typeof AuthenticatedOrganizationsOrgIdMembersRoute
@@ -761,6 +771,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/contacts'
     | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/dysk'
+    | '/organizations/$orgId/edoreczenia'
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
@@ -831,6 +842,7 @@ export interface FileRouteTypes {
     | '/organizations/$orgId/contacts'
     | '/organizations/$orgId/counterparties'
     | '/organizations/$orgId/dysk'
+    | '/organizations/$orgId/edoreczenia'
     | '/organizations/$orgId/events'
     | '/organizations/$orgId/mail'
     | '/organizations/$orgId/members'
@@ -905,6 +917,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$orgId/contacts'
     | '/_authenticated/organizations/$orgId/counterparties'
     | '/_authenticated/organizations/$orgId/dysk'
+    | '/_authenticated/organizations/$orgId/edoreczenia'
     | '/_authenticated/organizations/$orgId/events'
     | '/_authenticated/organizations/$orgId/mail'
     | '/_authenticated/organizations/$orgId/members'
@@ -1361,6 +1374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdEventsRouteImport
       parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
     }
+    '/_authenticated/organizations/$orgId/edoreczenia': {
+      id: '/_authenticated/organizations/$orgId/edoreczenia'
+      path: '/edoreczenia'
+      fullPath: '/organizations/$orgId/edoreczenia'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrgIdEdoreczeniaRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrgIdRoute
+    }
     '/_authenticated/organizations/$orgId/dysk': {
       id: '/_authenticated/organizations/$orgId/dysk'
       path: '/dysk'
@@ -1530,6 +1550,7 @@ interface AuthenticatedOrganizationsOrgIdRouteChildren {
   AuthenticatedOrganizationsOrgIdContactsRoute: typeof AuthenticatedOrganizationsOrgIdContactsRoute
   AuthenticatedOrganizationsOrgIdCounterpartiesRoute: typeof AuthenticatedOrganizationsOrgIdCounterpartiesRoute
   AuthenticatedOrganizationsOrgIdDyskRoute: typeof AuthenticatedOrganizationsOrgIdDyskRoute
+  AuthenticatedOrganizationsOrgIdEdoreczeniaRoute: typeof AuthenticatedOrganizationsOrgIdEdoreczeniaRoute
   AuthenticatedOrganizationsOrgIdEventsRoute: typeof AuthenticatedOrganizationsOrgIdEventsRoute
   AuthenticatedOrganizationsOrgIdMailRoute: typeof AuthenticatedOrganizationsOrgIdMailRoute
   AuthenticatedOrganizationsOrgIdMembersRoute: typeof AuthenticatedOrganizationsOrgIdMembersRoute
@@ -1555,6 +1576,8 @@ const AuthenticatedOrganizationsOrgIdRouteChildren: AuthenticatedOrganizationsOr
       AuthenticatedOrganizationsOrgIdCounterpartiesRoute,
     AuthenticatedOrganizationsOrgIdDyskRoute:
       AuthenticatedOrganizationsOrgIdDyskRoute,
+    AuthenticatedOrganizationsOrgIdEdoreczeniaRoute:
+      AuthenticatedOrganizationsOrgIdEdoreczeniaRoute,
     AuthenticatedOrganizationsOrgIdEventsRoute:
       AuthenticatedOrganizationsOrgIdEventsRoute,
     AuthenticatedOrganizationsOrgIdMailRoute:
@@ -1674,13 +1697,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
