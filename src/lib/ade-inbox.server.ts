@@ -1075,7 +1075,7 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
         from_address: mailbox,
         to_address: recipients[0] ?? null,
         subject,
-        body_text: input.bodyText ?? "",
+        body_text: textBody,
         creation_date: new Date().toISOString(),
         raw: rawSnap as unknown as Record<string, unknown>,
       },
