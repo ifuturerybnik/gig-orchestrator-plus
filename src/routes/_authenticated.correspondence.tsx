@@ -50,7 +50,14 @@ function CorrespondencePage() {
 
         <div className="mt-6">
           {tab === "mail" && <MailLayout scope={{ kind: "user" }} />}
-          {tab === "edoreczenia" && <EdoreczeniaInboxTab />}
+          {tab === "edoreczenia" && (
+            <div className="rounded-md border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+              {t(
+                "correspondence.edoreczenia_placeholder",
+                "Integracja osobistej skrzynki e-Doręczeń pojawi się tutaj wkrótce.",
+              )}
+            </div>
+          )}
           {tab === "messengers" && (
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
               {t(
