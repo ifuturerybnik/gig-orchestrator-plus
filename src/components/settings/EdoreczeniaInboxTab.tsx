@@ -59,6 +59,8 @@ export default function EdoreczeniaInboxTab() {
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+
 
   const reload = useCallback(
     async (f: AdeFolder) => {
