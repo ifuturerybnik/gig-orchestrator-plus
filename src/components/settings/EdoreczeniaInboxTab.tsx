@@ -4,60 +4,94 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, RefreshCw, Inbox, Mail as MailIcon, X, Paperclip, Download } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  Inbox,
+  Mail as MailIcon,
+  X,
+  Paperclip,
+  Download,
+  FileArchive,
+  Send,
+  FileEdit,
+  Trash2,
+} from "lucide-react";
 import {
   syncAdeInbox,
   listStoredDeliveries,
   openStoredDelivery,
+  downloadEvidenceZip,
   type AdeInboxResult,
   type AdeInboxRow,
   type AdeDeliveryDetail,
+  type AdeFolder,
 } from "@/lib/ade-inbox.functions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const FOLDERS: { id: AdeFolder; label: string; icon: typeof Inbox }[] = [
+  { id: "INBOX", label: "Odebrane", icon: Inbox },
+  { id: "SENT", label: "Wysłane", icon: Send },
+  { id: "DRAFTS", label: "Robocze", icon: FileEdit },
+  { id: "TRASH", label: "Usunięte", icon: Trash2 },
+];
+
+function fmtDate(v?: string | null): string {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  return d.toLocaleString("pl-PL");
+}
 
 export default function EdoreczeniaInboxTab() {
   const sync = useServerFn(syncAdeInbox);
   const list = useServerFn(listStoredDeliveries);
   const open = useServerFn(openStoredDelivery);
+  const fetchEvidence = useServerFn(downloadEvidenceZip);
+  const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState<AdeInboxResult | null>(null);
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await list({ data: { limit: 100 } });
-      setResult(res);
-      if (!res.ok) toast.error(res.error ?? "Nie udało się pobrać listy");
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [list]);
+  const reload = useCallback(
+    async (f: AdeFolder) => {
+      setLoading(true);
+      try {
+        const res = await list({ data: { limit: 100, folder: f } });
+        setResult(res);
+        if (!res.ok) toast.error(res.error ?? "Nie udało się pobrać listy");
+      } catch (err) {
+        toast.error((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [list],
+  );
 
   const refresh = useCallback(async () => {
     setSyncing(true);
     try {
-      const s = await sync({ data: { limit: 100 } });
-      if (!s.ok) {
-        toast.error(s.error ?? "Sync nieudany");
-      } else {
-        toast.success(`Zsynchronizowano: ${s.fetched} (nowe: ${s.inserted}, aktualizacje: ${s.updated})`);
-      }
-      await reload();
+      const s = await sync({ data: { limit: 100, folder } });
+      if (!s.ok) toast.error(s.error ?? "Sync nieudany");
+      else toast.success(`Zsynchronizowano ${folder}: ${s.fetched} (nowe: ${s.inserted}, aktualizacje: ${s.updated})`);
+      await reload(folder);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setSyncing(false);
     }
-  }, [sync, reload]);
+  }, [sync, reload, folder]);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    void reload(folder);
+    setSelected(null);
+    setDetail(null);
+  }, [reload, folder]);
 
   async function openMessage(row: AdeInboxRow) {
     setSelected(row);
@@ -65,9 +99,28 @@ export default function EdoreczeniaInboxTab() {
     try {
       const res = await open({ data: { id: row.id } });
       setDetail({ loading: false, data: res, error: res.ok ? undefined : res.error });
-      if (res.ok) void reload();
+      if (res.ok) void reload(folder);
     } catch (err) {
       setDetail({ loading: false, error: (err as Error).message });
+    }
+  }
+
+  async function handleDownloadEvidence() {
+    if (!selected) return;
+    setEvidenceLoading(true);
+    try {
+      const res = await fetchEvidence({ data: { id: selected.id } });
+      if (!res.ok || !res.url) {
+        toast.error(res.error ?? "Nie udało się pobrać dowodów");
+        return;
+      }
+      window.open(res.url, "_blank", "noopener");
+      // odśwież detail, żeby zapisany URL był dostępny
+      await openMessage(selected);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setEvidenceLoading(false);
     }
   }
 
@@ -94,6 +147,30 @@ export default function EdoreczeniaInboxTab() {
           </Button>
         </CardHeader>
         <CardContent>
+          {/* Foldery */}
+          <div className="mb-4 inline-flex rounded-md border border-border bg-card p-1">
+            {FOLDERS.map((f) => {
+              const Icon = f.icon;
+              const active = f.id === folder;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFolder(f.id)}
+                  className={cn(
+                    "inline-flex items-center px-3 py-1.5 text-sm rounded transition",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                >
+                  <Icon className="h-4 w-4 mr-2" />
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+
           {result?.lastSyncError && (
             <Alert variant="destructive" className="mb-3">
               <AlertTitle>Ostatni sync z błędem</AlertTitle>
@@ -136,7 +213,6 @@ export default function EdoreczeniaInboxTab() {
                       <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
                       <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
                     </div>
-
                   </div>
                   <div className="text-xs text-muted-foreground shrink-0">
                     {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
@@ -146,7 +222,7 @@ export default function EdoreczeniaInboxTab() {
             </div>
           ) : (
             <div className="text-sm text-muted-foreground py-10 text-center">
-              Brak wiadomości. Kliknij <b>Synchronizuj</b>, aby pobrać z ADE.
+              Brak wiadomości w tym folderze. Kliknij <b>Synchronizuj</b>, aby pobrać z ADE.
             </div>
           )}
         </CardContent>
@@ -174,12 +250,18 @@ export default function EdoreczeniaInboxTab() {
                     {detail?.data?.to ?? selected.to ?? ""}
                   </span>
                 </div>
-                {(detail?.data?.receivedAt ?? selected.receivedAt) && (
-                  <div>
-                    <span className="text-muted-foreground">Data doręczenia: </span>
-                    {new Date(detail?.data?.receivedAt ?? selected.receivedAt!).toLocaleString("pl-PL")}
-                  </div>
-                )}
+                <div>
+                  <span className="text-muted-foreground">Data utworzenia: </span>
+                  {fmtDate(detail?.data?.creationDate ?? selected.creationDate)}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Data wysłania: </span>
+                  {fmtDate(detail?.data?.sentAt ?? selected.sentAt)}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Data otrzymania: </span>
+                  {fmtDate(detail?.data?.receivedAt ?? selected.receivedAt)}
+                </div>
               </CardDescription>
             </div>
             <Button
@@ -210,6 +292,34 @@ export default function EdoreczeniaInboxTab() {
                   </div>
                 )}
 
+                <div className="flex flex-wrap gap-2">
+                  {detail.data.evidenceZipUrl ? (
+                    <a
+                      href={detail.data.evidenceZipUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs hover:bg-accent"
+                    >
+                      <FileArchive className="h-3.5 w-3.5" />
+                      Pobierz dowody techniczne (ZIP)
+                    </a>
+                  ) : (
+                    <Button
+                      onClick={handleDownloadEvidence}
+                      disabled={evidenceLoading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {evidenceLoading ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <FileArchive className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Pobierz dowody techniczne (ZIP)
+                    </Button>
+                  )}
+                </div>
+
                 {detail.data.attachments.length > 0 && (
                   <div>
                     <div className="text-xs font-medium mb-1 text-muted-foreground">Załączniki</div>
@@ -225,9 +335,7 @@ export default function EdoreczeniaInboxTab() {
                           <Download className="h-3 w-3" />
                           <span className="truncate max-w-[220px]">{a.filename}</span>
                           {a.sizeBytes ? (
-                            <span className="text-muted-foreground">
-                              {Math.round(a.sizeBytes / 1024)} kB
-                            </span>
+                            <span className="text-muted-foreground">{Math.round(a.sizeBytes / 1024)} kB</span>
                           ) : null}
                         </a>
                       ))}

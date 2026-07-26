@@ -68,18 +68,28 @@ export type AdeInboxItem = {
   to?: string;
   subject?: string;
   receivedAt?: string;
+  creationDate?: string;
+  sentAt?: string;
   status?: string;
 };
 
+
+export type AdeFolder = "INBOX" | "SENT" | "DRAFTS" | "TRASH";
+
 /** Zwraca listę wiadomości ze skrzynki (limit ustawia klient). */
-export async function listAdeInboxRaw(params: { limit?: number; page?: number } = {}) {
+export async function listAdeInboxRaw(params: { limit?: number; page?: number; folder?: AdeFolder } = {}) {
   const cfg = loadAdeConfig();
   // UA API v3: GET /api/v3/{eDeliveryAddress}/messages
   const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
   const res = await adeApiCall({
     method: "GET",
     path,
-    query: { limit: params.limit ?? 50, page: params.page ?? 0 },
+    query: {
+      limit: params.limit ?? 50,
+      page: params.page ?? 0,
+      // Filtr folderu (jeśli API go zignoruje, dostaniemy Odebrane).
+      folder: params.folder ?? "INBOX",
+    },
   });
   return res;
 }
@@ -89,6 +99,7 @@ export async function getAdeMessageRaw(messageId: string) {
   const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(messageId)}`;
   return await adeApiCall({ method: "GET", path });
 }
+
 
 /** Zwraca surową listę elementów (zachowuje pełny obiekt) niezależnie od kształtu odpowiedzi. */
 export function extractRawItems(raw: unknown): Record<string, unknown>[] {
@@ -144,6 +155,14 @@ export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: 
       (meta.submissionDate as string | undefined) ??
       (o.receivedAt as string | undefined) ??
       (o.createdAt as string | undefined);
+    const creationDate =
+      (meta.creationDate as string | undefined) ??
+      (meta.createDate as string | undefined) ??
+      (o.creationDate as string | undefined);
+    const sentAt =
+      (meta.submissionDate as string | undefined) ??
+      (meta.sendDate as string | undefined) ??
+      (o.sentAt as string | undefined);
     const status =
       (meta.shippingService as string | undefined) ??
       (o.status as string | undefined) ??
@@ -156,10 +175,13 @@ export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: 
       toName: toParty.name,
       subject,
       receivedAt,
+      creationDate,
+      sentAt,
       status,
     };
   });
 }
+
 
 // ─────────────────────────────── Persystencja ────────────────────────────────
 
@@ -187,12 +209,13 @@ export type SyncSummary = {
   error?: string;
 };
 
-/** Pobierz listę wiadomości z ADE i upsertuj do public.edoreczenia_deliveries. */
-export async function syncInboxToDb(params: { limit?: number } = {}): Promise<SyncSummary> {
+/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries. */
+export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder } = {}): Promise<SyncSummary> {
   const cfg = loadAdeConfig();
+  const folder: AdeFolder = params.folder ?? "INBOX";
   const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
   try {
-    const res = await listAdeInboxRaw({ limit: params.limit ?? 100 });
+    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder });
     if (res.status < 200 || res.status >= 300) {
       summary.error = `HTTP ${res.status}`;
       return summary;
@@ -217,18 +240,22 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
           ? ((raw as { bodyText: string }).bodyText)
           : null;
       const row = {
-        direction: "inbound" as const,
+        direction: folder === "SENT" ? ("outbound" as const) : ("inbound" as const),
         ade_message_id: n.id,
         mailbox_address: cfg.mailboxAddress,
+        folder,
         from_address: n.from ?? null,
         to_address: n.to ?? cfg.mailboxAddress,
         subject: n.subject ?? null,
         received_at: n.receivedAt ?? null,
+        creation_date: (n as { creationDate?: string }).creationDate ?? null,
+        sent_at: (n as { sentAt?: string }).sentAt ?? null,
         status: n.status ?? "new",
         raw,
         body_text: bodyText,
         updated_at: new Date().toISOString(),
       };
+
       if (existing?.id) {
         await admin.from("edoreczenia_deliveries").update(row).eq("id", existing.id);
         summary.updated++;
@@ -336,8 +363,14 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     const subject = (meta.subject as string | undefined) ?? (payload.subject as string | undefined);
     const receivedAt =
       (meta.receiptDate as string | undefined) ??
-      (meta.timestamp as string | undefined) ??
-      (meta.submissionDate as string | undefined);
+      (meta.timestamp as string | undefined);
+    const creationDate =
+      (meta.creationDate as string | undefined) ??
+      (meta.createDate as string | undefined);
+    const sentAt =
+      (meta.submissionDate as string | undefined) ??
+      (meta.sendDate as string | undefined);
+
     const refs = extractAttachmentRefs(payload);
     const stored: Array<{
       id: string;
@@ -398,6 +431,9 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     if (fromParty.address) update.from_address = fromParty.address;
     if (toParty.address) update.to_address = toParty.address;
     if (receivedAt) update.received_at = receivedAt;
+    if (creationDate) update.creation_date = creationDate;
+    if (sentAt) update.sent_at = sentAt;
+
 
     await admin.from("edoreczenia_deliveries").update(update).eq("id", delivery.id);
 
@@ -413,3 +449,49 @@ export async function signedAttachmentUrl(storagePath: string): Promise<string |
   const { data } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 60 * 60);
   return data?.signedUrl ?? null;
 }
+
+/** Pobierz ZIP z dowodami technicznymi (evidence) i zapisz do Storage. */
+export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
+  { ok: true; storagePath: string; sizeBytes: number } | { ok: false; error: string }
+> {
+  const admin = await getAdmin();
+  const { data: delivery } = await admin
+    .from("edoreczenia_deliveries")
+    .select("id, ade_message_id, evidence_storage_path")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  if (!delivery) return { ok: false, error: "Nie znaleziono wiadomości w bazie" };
+  if (!delivery.ade_message_id) return { ok: false, error: "Brak ade_message_id" };
+
+  try {
+    await ensureEdoreczeniaBucket();
+    const cfg = loadAdeConfig();
+    const base = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(delivery.ade_message_id)}`;
+    // Znane warianty ścieżek UA API dla paczki dowodów technicznych — próbujemy po kolei.
+    const candidates = [`${base}/evidences`, `${base}/evidence`, `${base}/evidences/zip`, `${base}/technical-evidence`];
+    let ok: { buf: Buffer; ct: string } | null = null;
+    let lastErr = "";
+    for (const p of candidates) {
+      const r = await adeApiCall({ method: "GET", path: p, binary: true, timeoutMs: 60000 });
+      if (r.status >= 200 && r.status < 300 && r.bodyBuffer) {
+        ok = { buf: r.bodyBuffer, ct: r.headers["content-type"] ?? "application/zip" };
+        break;
+      }
+      lastErr = `HTTP ${r.status}: ${r.body.slice(0, 160)}`;
+    }
+    if (!ok) return { ok: false, error: lastErr || "Nie udało się pobrać dowodów technicznych" };
+
+    const storagePath = `${delivery.id}/evidences-${delivery.ade_message_id}.zip`;
+    const { error: upErr } = await admin.storage.from(BUCKET).upload(storagePath, ok.buf, {
+      contentType: ok.ct.includes("zip") ? "application/zip" : ok.ct,
+      upsert: true,
+    });
+    if (upErr) return { ok: false, error: upErr.message };
+
+    await admin.from("edoreczenia_deliveries").update({ evidence_storage_path: storagePath }).eq("id", delivery.id);
+    return { ok: true, storagePath, sizeBytes: ok.buf.length };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
