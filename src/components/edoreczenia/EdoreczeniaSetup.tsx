@@ -41,6 +41,7 @@ import {
   type AdeMailboxScope,
   type AdeMailboxTestResult,
 } from "@/lib/ade-mailboxes.functions";
+import EdoreczeniaSetupGuide from "./EdoreczeniaSetupGuide";
 
 type Props = { scope: AdeMailboxScope };
 
@@ -88,6 +89,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
 
   return (
     <div className="space-y-4">
+      <EdoreczeniaSetupGuide />
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
