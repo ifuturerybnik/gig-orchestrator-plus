@@ -351,6 +351,14 @@ export const downloadEvidenceZip = createServerFn({ method: "POST" })
     await requireEdoreczeniaAdmin(context);
     const res = await fetchAndStoreEvidenceZip(data.id);
     if (!res.ok) return { ok: false, error: res.error };
-    const url = (await signedAttachmentUrl(res.storagePath)) ?? undefined;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: d } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .select("ade_message_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    const dlName = `dowody-${d?.ade_message_id ?? "edoreczenia"}.zip`;
+    const url = (await signedAttachmentUrl(res.storagePath, dlName)) ?? undefined;
     return { ok: true, url };
   });
+
