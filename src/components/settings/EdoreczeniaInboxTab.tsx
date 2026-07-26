@@ -25,6 +25,7 @@ import {
   listStoredDeliveries,
   openStoredDelivery,
   downloadEvidenceZip,
+  moveAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
   type AdeDeliveryDetail,
@@ -32,6 +33,7 @@ import {
 } from "@/lib/ade-inbox.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Reply, Forward } from "lucide-react";
 
 const FOLDERS: { id: AdeFolder; label: string; icon: typeof Inbox }[] = [
   { id: "INBOX", label: "Odebrane", icon: Inbox },
@@ -52,6 +54,7 @@ export default function EdoreczeniaInboxTab() {
   const list = useServerFn(listStoredDeliveries);
   const open = useServerFn(openStoredDelivery);
   const fetchEvidence = useServerFn(downloadEvidenceZip);
+  const move = useServerFn(moveAdeDelivery);
   const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -59,7 +62,13 @@ export default function EdoreczeniaInboxTab() {
   const [selected, setSelected] = useState<AdeInboxRow | null>(null);
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeInitial, setComposeInitial] = useState<{
+    recipients?: string[];
+    subject?: string;
+    body?: string;
+  }>({});
 
 
   const reload = useCallback(
@@ -128,6 +137,91 @@ export default function EdoreczeniaInboxTab() {
       setEvidenceLoading(false);
     }
   }
+
+  async function handleMoveToTrash() {
+    if (!selected) return;
+    setMoving(true);
+    try {
+      const res = await move({ data: { id: selected.id, folder: "TRASH" } });
+      if (!res.ok) {
+        toast.error(res.error ?? "Nie udało się przenieść wiadomości");
+        return;
+      }
+      toast.success("Wiadomość przeniesiona do folderu Usunięte");
+      setSelected(null);
+      setDetail(null);
+      await reload(folder);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  function handleDownloadMessage() {
+    const d = detail?.data;
+    if (!d) return;
+    const lines = [
+      `Temat: ${d.subject ?? ""}`,
+      `Nadawca: ${d.fromName ?? ""} <${d.from ?? ""}>`,
+      `Odbiorca: ${d.toName ?? ""} <${d.to ?? ""}>`,
+      `Data utworzenia: ${d.creationDate ?? ""}`,
+      `Data wysłania: ${d.sentAt ?? ""}`,
+      `Data otrzymania: ${d.receivedAt ?? ""}`,
+      "",
+      d.bodyText ?? "",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wiadomosc-${d.adeMessageId || d.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function quoteBody(d: AdeDeliveryDetail): string {
+    const header = [
+      `--- Wiadomość oryginalna ---`,
+      `Od: ${d.fromName ?? ""} <${d.from ?? ""}>`,
+      `Data: ${d.sentAt ?? d.creationDate ?? ""}`,
+      `Temat: ${d.subject ?? ""}`,
+      "",
+    ].join("\n");
+    const quoted = (d.bodyText ?? "")
+      .split("\n")
+      .map((l) => `> ${l}`)
+      .join("\n");
+    return `\n\n${header}${quoted}\n`;
+  }
+
+  function handleReply() {
+    const d = detail?.data;
+    if (!d) return;
+    const subj = d.subject ?? "";
+    setComposeInitial({
+      recipients: d.from ? [d.from] : [],
+      subject: subj.toLowerCase().startsWith("odp:") ? subj : `Odp: ${subj}`,
+      body: quoteBody(d),
+    });
+    setComposeOpen(true);
+  }
+
+  function handleForward() {
+    const d = detail?.data;
+    if (!d) return;
+    const subj = d.subject ?? "";
+    setComposeInitial({
+      recipients: [],
+      subject: subj.toLowerCase().startsWith("fwd:") ? subj : `Fwd: ${subj}`,
+      body: quoteBody(d),
+    });
+    setComposeOpen(true);
+  }
+
+
 
   return (
     <div className="space-y-4">
@@ -305,6 +399,33 @@ export default function EdoreczeniaInboxTab() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
+                  {folder !== "TRASH" && (
+                    <Button
+                      onClick={handleMoveToTrash}
+                      disabled={moving}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {moving ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Przenieś do folderu Usunięte
+                    </Button>
+                  )}
+                  <Button onClick={handleDownloadMessage} variant="outline" size="sm">
+                    <Download className="mr-2 h-3.5 w-3.5" />
+                    Pobierz
+                  </Button>
+                  <Button onClick={handleForward} variant="outline" size="sm">
+                    <Forward className="mr-2 h-3.5 w-3.5" />
+                    Prześlij dalej
+                  </Button>
+                  <Button onClick={handleReply} variant="outline" size="sm">
+                    <Reply className="mr-2 h-3.5 w-3.5" />
+                    Odpowiedz
+                  </Button>
                   <Button
                     onClick={handleDownloadEvidence}
                     disabled={evidenceLoading}
@@ -319,6 +440,7 @@ export default function EdoreczeniaInboxTab() {
                     Pobierz dowody techniczne (ZIP)
                   </Button>
                 </div>
+
 
 
                 {detail.data.attachments.length > 0 && (
@@ -387,9 +509,16 @@ export default function EdoreczeniaInboxTab() {
 
       <EdoreczeniaComposeDialog
         open={composeOpen}
-        onOpenChange={setComposeOpen}
+        onOpenChange={(o) => {
+          setComposeOpen(o);
+          if (!o) setComposeInitial({});
+        }}
         fromAddress={result?.mailbox}
+        initialRecipients={composeInitial.recipients}
+        initialSubject={composeInitial.subject}
+        initialBody={composeInitial.body}
         onSent={() => {
+          setComposeInitial({});
           setFolder("SENT");
           void refresh();
         }}
