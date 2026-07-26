@@ -363,8 +363,14 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     const subject = (meta.subject as string | undefined) ?? (payload.subject as string | undefined);
     const receivedAt =
       (meta.receiptDate as string | undefined) ??
-      (meta.timestamp as string | undefined) ??
-      (meta.submissionDate as string | undefined);
+      (meta.timestamp as string | undefined);
+    const creationDate =
+      (meta.creationDate as string | undefined) ??
+      (meta.createDate as string | undefined);
+    const sentAt =
+      (meta.submissionDate as string | undefined) ??
+      (meta.sendDate as string | undefined);
+
     const refs = extractAttachmentRefs(payload);
     const stored: Array<{
       id: string;
