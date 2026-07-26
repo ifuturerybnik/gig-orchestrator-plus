@@ -325,7 +325,7 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
   const defaults = envDefaults(data.ade_env as string | undefined);
   const resolved: AdeResolvedConfig = {
     apiBase: (data.api_base as string | null) || defaults.apiBase,
-    oauthBase: (data.oauth_base as string | null) || defaults.oauthBase,
+    oauthBase: normalizeOauthBase((data.oauth_base as string | null) || defaults.oauthBase, data.ade_env as string | undefined),
     tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
     clientId: String(data.client_id),
     mailboxAddress: String(data.mailbox_address),
