@@ -399,6 +399,33 @@ export default function EdoreczeniaInboxTab() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
+                  {folder !== "TRASH" && (
+                    <Button
+                      onClick={handleMoveToTrash}
+                      disabled={moving}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {moving ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Przenieś do folderu Usunięte
+                    </Button>
+                  )}
+                  <Button onClick={handleDownloadMessage} variant="outline" size="sm">
+                    <Download className="mr-2 h-3.5 w-3.5" />
+                    Pobierz
+                  </Button>
+                  <Button onClick={handleForward} variant="outline" size="sm">
+                    <Forward className="mr-2 h-3.5 w-3.5" />
+                    Prześlij dalej
+                  </Button>
+                  <Button onClick={handleReply} variant="outline" size="sm">
+                    <Reply className="mr-2 h-3.5 w-3.5" />
+                    Odpowiedz
+                  </Button>
                   <Button
                     onClick={handleDownloadEvidence}
                     disabled={evidenceLoading}
@@ -413,6 +440,7 @@ export default function EdoreczeniaInboxTab() {
                     Pobierz dowody techniczne (ZIP)
                   </Button>
                 </div>
+
 
 
                 {detail.data.attachments.length > 0 && (
