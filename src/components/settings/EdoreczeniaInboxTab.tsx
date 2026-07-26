@@ -332,8 +332,11 @@ export default function EdoreczeniaInboxTab() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
-                        <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
-                        <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                        {row.from ? (
+                          <AdeAddress address={row.from} name={row.fromName} />
+                        ) : (
+                          <span>{row.fromName ?? "?"}</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground shrink-0">
