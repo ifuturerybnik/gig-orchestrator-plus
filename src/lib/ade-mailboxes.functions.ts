@@ -41,8 +41,9 @@ export type AdeMailboxInput = {
   apiBase?: string | null;
   oauthBase?: string | null;
   tokenPath?: string | null;
-  qwacCertPem: string;
-  qwacKeyPem: string;
+  // Opcjonalne — jeśli nie podane, użyjemy systemowego QWAC Concertivo
+  qwacCertPem?: string | null;
+  qwacKeyPem?: string | null;
   qwacKeyPassphrase?: string | null;
 };
 
