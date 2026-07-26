@@ -14,6 +14,62 @@
 import { createClient } from "@supabase/supabase-js";
 import { createCipheriv, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+
+const REQUIRED_ENV = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "EXT_PII_ENCRYPTION_KEY",
+  "ADE_CLIENT_ID",
+  "ADE_MAILBOX_ADDRESS",
+  "ADE_QWAC_CERT_PATH",
+  "ADE_QWAC_KEY_PATH",
+];
+
+function assignEnvLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) return;
+
+  const separatorIndex = trimmed.includes("=") ? trimmed.indexOf("=") : trimmed.indexOf(":");
+  if (separatorIndex <= 0) return;
+
+  const key = trimmed.slice(0, separatorIndex).trim();
+  if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) return;
+  if (!key.startsWith("ADE_") && !["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "EXT_PII_ENCRYPTION_KEY"].includes(key)) return;
+  if (process.env[key]) return;
+
+  let value = trimmed.slice(separatorIndex + 1).trim();
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
+  }
+  process.env[key] = value;
+}
+
+function hydrateEnvFromFile(path) {
+  try {
+    const text = readFileSync(path, "utf8");
+    text.split(/\r?\n/).forEach(assignEnvLine);
+  } catch {
+    // Plik env może nie istnieć w środowisku lokalnym — wtedy pomijamy.
+  }
+}
+
+function hydrateEnvFromPm2() {
+  try {
+    const output = execFileSync("pm2", ["env", process.env.PM2_PROCESS_ID || "0"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    output.split(/\r?\n/).forEach(assignEnvLine);
+  } catch {
+    // PM2 nie jest wymagany poza VPS-em.
+  }
+}
+
+function hydrateEnv() {
+  hydrateEnvFromFile(process.env.CONCERTIVO_ENV_FILE || "/etc/concertivo.env");
+  hydrateEnvFromPm2();
+}
 
 function encryptPii(plain) {
   if (!plain) return null;
@@ -29,15 +85,17 @@ function encryptPii(plain) {
 }
 
 async function main() {
+  hydrateEnv();
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Brak SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) throw new Error("Brak SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (sprawdź /etc/concertivo.env albo pm2 env 0)");
   const clientId = process.env.ADE_CLIENT_ID;
   const mailboxAddress = process.env.ADE_MAILBOX_ADDRESS;
   const certPath = process.env.ADE_QWAC_CERT_PATH;
   const keyPath = process.env.ADE_QWAC_KEY_PATH;
   if (!clientId || !mailboxAddress || !certPath || !keyPath) {
-    throw new Error("Brakuje ADE_CLIENT_ID / ADE_MAILBOX_ADDRESS / ADE_QWAC_CERT_PATH / ADE_QWAC_KEY_PATH");
+    const missing = REQUIRED_ENV.filter((name) => !process.env[name]);
+    throw new Error(`Brakuje zmiennych: ${missing.join(", ")} (skrypt czyta KEY=value z /etc/concertivo.env oraz KEY: value z pm2 env 0)`);
   }
 
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
