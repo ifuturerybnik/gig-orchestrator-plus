@@ -174,10 +174,13 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
       }
       // Dla INBOX — brak filtra (domyślna odpowiedź).
       // Dla dedykowanych ścieżek folderowych ufamy odpowiedzi bez sprawdzania etykiet.
-      const isDedicatedPath = /\/(sent|outbox|drafts|trash|deleted|bin)(\/|$)/i.test(a.path);
-      if (folder === "INBOX" || isDedicatedPath) return res;
-      // Dla ogólnego `/messages` z parametrem label/folder/box — zwaliduj etykiety,
-      // bo wiele wdrożeń UA API ignoruje nieznane parametry i zwraca INBOX.
+      const isDedicatedPath = /\/(sent|outbox|drafts|trash|deleted|bin|received)(\/|$)/i.test(a.path);
+      // Jeśli zapytaliśmy operatora o konkretną etykietę pasującą do folderu — ufamy odpowiedzi.
+      // Wiele wdrożeń UA API nie odsyła pola `label` w metadanych, mimo że filtruje poprawnie.
+      const askedLabel = String((a.query?.label ?? a.query?.folder ?? a.query?.box ?? a.query?.type ?? "") as string).toUpperCase();
+      const askedMatches = askedLabel && wantedLabels[folder].includes(askedLabel);
+      if (folder === "INBOX" || isDedicatedPath || askedMatches) return res;
+      // Dla ogólnego `/messages` bez znanego filtra — zwaliduj etykiety w odpowiedzi.
       const filtered = items.filter((o) => itemMatchesFolder(o, folder));
       if (filtered.length > 0) {
         return {
@@ -190,6 +193,7 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
       }
       if (!firstSuccessEmpty) firstSuccessEmpty = res;
     }
+
   }
   // Fallback dla SENT/TRASH: pobierz WSZYSTKIE wiadomości bez filtra i przefiltruj po metadanych.
   if (folder === "SENT" || folder === "TRASH") {
