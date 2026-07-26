@@ -1067,34 +1067,40 @@ export type BaeSearchInputServer = {
   address?: BaeAddressInput;
 };
 
-/** Mapa typu odbiorcy → lista kandydatów searchCategory (SE API zwraca 00003 przy złej wartości; próbujemy po kolei). */
+/** Mapa typu odbiorcy → lista kandydatów searchCategory.
+ *  SE API v4 używa wartości z dokumentacji technicznej: PUBLIC_INSTITUTION, COMPANY,
+ *  ORGANISATION, COURT_ENFORCEMENT_OFFICER, INDIVIDUAL. Starsze/pośrednie wartości
+ *  zostawiamy wyłącznie jako fallback, bo bramki OW potrafią różnić się wersją kontraktu.
+ */
 function searchCategoryCandidates(rt: BaeRecipientType): string[] {
   switch (rt) {
     case "PUBLIC":
       return [
-        "PUBLIC_ADMINISTRATION_BODY",
-        "PUBLIC_ENTITY",
         "PUBLIC_INSTITUTION",
         "PUBLIC",
+        "PUBLIC_ENTITY",
+        "PUBLIC_ADMINISTRATION_BODY",
       ];
     case "NON_PUBLIC":
       return [
-        "NON_PUBLIC_ENTITY",
-        "NON_PUBLIC",
         "COMPANY",
+        "ORGANISATION",
+        "NON_PUBLIC",
+        "NON_PUBLIC_ENTITY",
       ];
     case "KOMORNIK":
       return [
-        "TRUSTED_NON_PUBLIC_ENTITY",
         "COURT_ENFORCEMENT_OFFICER",
+        "TRUSTED_NON_PUBLIC",
+        "TRUSTED_NON_PUBLIC_ENTITY",
         "TRUSTED_NON_PUBLIC",
         "KOMORNIK",
       ];
     case "OSOBA_FIZYCZNA":
       return [
+        "INDIVIDUAL",
         "NATURAL_PERSON",
         "INDIVIDUAL_PERSON",
-        "INDIVIDUAL",
         "PERSON",
       ];
   }
@@ -1104,7 +1110,13 @@ function searchCategoryCandidates(rt: BaeRecipientType): string[] {
 const searchCategoryCache = new Map<BaeRecipientType, string>();
 
 function isEnumError(bodyStr: string): boolean {
-  return /"errorCode"\s*:\s*"?00003"?/i.test(bodyStr) || /Incorrect enum value/i.test(bodyStr);
+  return (
+    /"errorCode"\s*:\s*"?0*00003"?/i.test(bodyStr) ||
+    /SEAPI-?00003/i.test(bodyStr) ||
+    /Search Category provided is invalid/i.test(bodyStr) ||
+    /Incorrect enum value/i.test(bodyStr) ||
+    /not one of the values accepted for Enum/i.test(bodyStr)
+  );
 }
 
 /**
@@ -1146,13 +1158,13 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
   const entityName =
     input.identifierType === "NAME" ? (addr.entityName?.trim() || val) : undefined;
 
-  const buildBody = (category: string): Record<string, unknown> =>
+  const buildBody = (category: string, categoryAsArray: boolean): Record<string, unknown> =>
     scenario === "eda"
       ? { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit }
       : {
           senderEda,
           recipientEdasOnly: false,
-          searchCategory: [category],
+          searchCategory: categoryAsArray ? [category] : category,
           ...(entityName ? { entityName } : {}),
           ...(Object.keys(officialIds).length ? { officialIds } : {}),
           ...(address ? { address } : {}),
@@ -1162,7 +1174,10 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
   const path =
     scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
-  const pathCandidates = [path, path.replace("/api/se/v3/", "/api/se/v4/")];
+  const pathCandidates =
+    scenario === "eda"
+      ? [path, path.replace("/api/se/v3/", "/api/se/v4/")]
+      : [path.replace("/api/se/v3/", "/api/se/v4/"), path];
 
   const cached = searchCategoryCache.get(input.recipientType);
   const categoryCandidates =
@@ -1177,10 +1192,16 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
   for (const p of pathCandidates) {
     let pathBroken = false;
+    let sawOnlyEnumErrors = false;
     for (const category of categoryCandidates) {
-      const label = scenario === "bae" ? `POST ${p} [${category}]` : `POST ${p}`;
-      tried.push(label);
-      try {
+      const categoryShapes = scenario === "bae" ? [false, true] : [false];
+      for (const categoryAsArray of categoryShapes) {
+        const label =
+          scenario === "bae"
+            ? `POST ${p} [${category}${categoryAsArray ? "[]" : ""}]`
+            : `POST ${p}`;
+        tried.push(label);
+        try {
         const res = await adeSeRawRequest({
           method: "POST",
           path: p,
@@ -1189,7 +1210,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          body: JSON.stringify(buildBody(category)),
+          body: JSON.stringify(buildBody(category, categoryAsArray)),
           timeoutMs: 20000,
         });
         if (res.status === 404 || res.status === 405) {
@@ -1215,6 +1236,7 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
         }
         // Enum error → spróbuj kolejnego kandydata dla tej ścieżki
         if (scenario === "bae" && isEnumError(bodyStr)) {
+          sawOnlyEnumErrors = true;
           lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
           continue;
         }
@@ -1224,8 +1246,9 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
         lastError = (err as Error).message;
         break;
       }
+      }
     }
-    if (!pathBroken) break; // jedyna ścieżka odpowiedziała czymś sensownym
+    if (!pathBroken && !sawOnlyEnumErrors) break; // ścieżka odpowiedziała czymś innym niż błąd enuma
   }
 
   return {
