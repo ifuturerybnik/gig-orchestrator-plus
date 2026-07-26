@@ -21,13 +21,16 @@ const DEFAULT_TOKEN_PATH = "/auth/realms/EDOR/protocol/openid-connect/token";
 
 function envDefaults(env: string | undefined) {
   // env=prod|int — pozwala łatwo przełączyć środowisko.
+  // UWAGA: od ~lipca 2026 Poczta Polska przeniosła moduł uprawnień (Keycloak KSDE)
+  // pod ten sam host co UA API. Stary `ow.edoreczenia.gov.pl` przekierowuje 302
+  // do statycznej strony informacyjnej — token endpoint już tam nie odpowiada.
   const isInt = (env ?? "").toLowerCase() === "int";
   const apiBase = isInt
     ? "https://uaapi-int-ow.poczta-polska.pl"
     : "https://uaapi-ow.poczta-polska.pl";
   return {
     apiBase,
-    oauthBase: isInt ? "https://int-ow.edoreczenia.gov.pl" : "https://ow.edoreczenia.gov.pl",
+    oauthBase: apiBase,
   };
 }
 
@@ -41,6 +44,9 @@ function legacyOauthBase(env: string | undefined): string {
 // (uaapi-ow.poczta-polska.pl) — nawet gdy jest zapisany w env lub w DB.
 function normalizeOauthBase(base: string, env: string | undefined): string {
   const trimmed = base.replace(/\/+$/, "");
+  const isLegacyProd = /https?:\/\/ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  const isLegacyInt = /https?:\/\/int-ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  if (isLegacyProd || isLegacyInt) return envDefaults(env).oauthBase;
   return trimmed;
 }
 
@@ -230,26 +236,16 @@ type ClientAssertionVariant = {
   includeNbf: boolean;
 };
 
-const CLIENT_ASSERTION_VARIANTS: ClientAssertionVariant[] = [
-  // Ostatni działający wariant w tej instalacji: cert w x5c, bez nbf, krótki exp.
-  { label: "jwt:legacy-working-x5c-no-nbf", includeX5c: true, includeNbf: false },
-  // Wg aktualnych instrukcji przykład JWT ma tylko typ/alg w nagłówku i zawiera nbf.
-  { label: "jwt:doc-no-x5c", includeX5c: false, includeNbf: true },
-  // Dotychczasowy wariant używany przez aplikację — część instalacji akceptuje cert w x5c.
-  { label: "jwt:x5c", includeX5c: true, includeNbf: true },
-];
-
-function tokenHostCandidates(base: string, env: string | undefined): string[] {
-  const legacy = legacyOauthBase(env);
-  return [legacy, base, envDefaults(env).oauthBase, envDefaults(env).apiBase].filter(
-    (value, index, values) => value && values.indexOf(value) === index,
-  );
-}
+const STABLE_CLIENT_ASSERTION_VARIANT: ClientAssertionVariant = {
+  label: "jwt:a02-stable-x5c-nbf",
+  includeX5c: true,
+  includeNbf: true,
+};
 
 /** Zbuduj client_assertion (JWT) podpisany kluczem prywatnym QWAC. */
 async function buildClientAssertion(
   audience?: string,
-  variant: ClientAssertionVariant = CLIENT_ASSERTION_VARIANTS[0],
+  variant: ClientAssertionVariant = STABLE_CLIENT_ASSERTION_VARIANT,
 ): Promise<{ jwt: string; audience: string; variantLabel: string }> {
   const cfg = loadAdeConfig();
   const fs = await import("node:fs");
@@ -266,7 +262,10 @@ async function buildClientAssertion(
 
   const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
-  const issuedAt = variant.includeNbf ? now - 60 : now;
+  // KSDE/Keycloak bywa wrażliwy na minimalne różnice czasu między hostami.
+  // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
+  // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
+  const issuedAt = now - 60;
   const header: Record<string, string | string[]> = { alg: "RS256", typ: "JWT" };
   if (variant.includeX5c) header.x5c = [certBody];
   const payload: Record<string, string | number> = {
@@ -275,7 +274,7 @@ async function buildClientAssertion(
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: issuedAt,
-    exp: variant.includeNbf ? now + 600 : now + 60,
+    exp: now + 600,
   };
   if (variant.includeNbf) payload.nbf = issuedAt;
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
@@ -292,60 +291,51 @@ async function buildClientAssertion(
 /** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
-  const tryHost = async (
-    base: string,
-    assertionAudience: string,
-    loginHint: string,
-    variant: ClientAssertionVariant,
-    includeClientId: boolean,
-    useMtls: boolean,
-  ) => {
-    const { jwt, audience, variantLabel } = await buildClientAssertion(assertionAudience, variant);
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string, assertionAudience: string) => {
+    const { jwt, audience, variantLabel } = await buildClientAssertion(assertionAudience);
     const params = new URLSearchParams({
       grant_type: "client_credentials",
+      client_id: cfg.clientId,
       client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
       client_assertion: jwt,
     });
-    if (includeClientId) params.set("client_id", cfg.clientId);
     const res = await httpsRawRequest({
       method: "POST",
-      url: base.replace(/\/+$/, "") + cfg.tokenPath + `?login_hint=${encodeURIComponent(loginHint)}`,
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "*/*", Connection: "close" },
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-      useMtls,
+      useMtls: true,
     });
     return {
       ...res,
       audience,
-      attempt: `host=${base}; aud=${audience}; login_hint=${loginHint}; ${variantLabel}; ${includeClientId ? "with" : "without"} client_id; ${useMtls ? "mTLS" : "no-mTLS"}`,
+      attempt: `host=${base}; aud=${audience}; login_hint=ADE.${cfg.mailboxAddress}; ${variantLabel}; with client_id; mTLS`,
     };
   };
 
   let last: (AdeRawResponse & { audience: string }) | null = null;
-  for (const base of tokenHostCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
-    for (const loginHint of loginHintCandidates(cfg.mailboxAddress)) {
-      for (const assertionAudience of audienceCandidates(base, process.env.ADE_ENV)) {
-        for (const variant of CLIENT_ASSERTION_VARIANTS) {
-          for (const includeClientId of [true, false]) {
-            for (const useMtls of [false, true]) {
-              const res = await tryHost(base, assertionAudience, loginHint, variant, includeClientId, useMtls);
-              last = res;
-              if (res.status >= 200 && res.status < 300) return res;
-              // 401 zwykle oznacza odrzucenie asercji JWT/formularza — sprawdzamy kolejny wariant.
-              if (res.status !== 401 && !(res.status >= 300 && res.status < 400)) break;
-            }
-            if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-          }
-          if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-        }
-        if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-      }
-      if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
-    }
-    if (last && last.status !== 401 && !(last.status >= 300 && last.status < 400)) break;
+  for (const assertionAudience of audienceCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
+    const res = await tryHost(cfg.oauthBase, assertionAudience);
+    last = res;
+    if (res.status >= 200 && res.status < 300) return res;
+    // 401 zwykle oznacza odrzucenie asercji JWT — sprawdzamy kolejny `aud`.
+    if (res.status !== 401) break;
   }
 
-  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase), loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], true, false));
+  // Jeśli trafiliśmy jeszcze w host informacyjny, spróbuj starego hosta jako fallback.
+  if (last?.status && last.status >= 300 && last.status < 400) {
+    const legacy = legacyOauthBase(process.env.ADE_ENV);
+    if (legacy !== cfg.oauthBase) {
+      for (const assertionAudience of audienceCandidates(legacy, process.env.ADE_ENV)) {
+        const alt = await tryHost(legacy, assertionAudience);
+        last = alt;
+        if (alt.status >= 200 && alt.status < 300) return alt;
+        if (alt.status !== 401) break;
+      }
+    }
+  }
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
 }
 
 // ============================================================
