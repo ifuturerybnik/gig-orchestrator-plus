@@ -102,35 +102,82 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
     attempts.push({ path: `${messagesBase}/received`, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata" } });
   } else if (folder === "SENT") {
+    // Wariantów szukamy tak samo jak dla DRAFTS: najpierw dedykowana ścieżka, potem query label/folder/box.
+    attempts.push({ path: `${messagesBase}/sent`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: `${messagesBase}/outbox`, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "SENT" } });
     attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "SENT" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "OUTBOX" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "SENT" } });
-    attempts.push({ path: `${messagesBase}/sent`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "OUTBOX" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", box: "SENT" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", type: "SENT" } });
   } else if (folder === "DRAFTS") {
     // UA API v3: DRAFTS nie wolno pobierać przez /messages; mają osobny endpoint /drafts.
     attempts.push({ path: draftsBase, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: draftsBase, query: { limit, page, format: "metadata" } });
     attempts.push({ path: draftsBase, query: { limit, offset } });
-    // Zostawiamy legacy fallbacki na wypadek starszych/proxy wdrożeń, ale dopiero po oficjalnym /drafts.
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "DRAFTS" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "DRAFTS" } });
   } else if (folder === "TRASH") {
-    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "TRASH" } });
-    attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "TRASH" } });
-    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "TRASH" } });
     attempts.push({ path: `${messagesBase}/trash`, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: `${messagesBase}/deleted`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: `${messagesBase}/bin`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "DELETED" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "BIN" } });
+    attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "DELETED" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", box: "TRASH" } });
+    attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", type: "TRASH" } });
   }
 
   let last: Awaited<ReturnType<typeof adeApiCall>> | null = null;
+  let firstSuccessNonEmpty: Awaited<ReturnType<typeof adeApiCall>> | null = null;
   for (const a of attempts) {
     const res = await adeApiCall({ method: "GET", path: a.path, query: a.query });
     last = res;
-    if (res.status >= 200 && res.status < 300) return res;
-    // 4xx/5xx: spróbuj następnego wariantu
+    if (res.status >= 200 && res.status < 300) {
+      const items = extractRawItems(res.json);
+      if (items.length > 0) return res;
+      if (!firstSuccessNonEmpty) firstSuccessNonEmpty = res;
+      // Pusta lista — może API zignorowało nieznany label; próbuj dalej.
+    }
   }
-  return last!;
+  // Fallback dla SENT/TRASH: pobierz WSZYSTKIE wiadomości bez filtra i przefiltruj po metadanych.
+  if ((folder === "SENT" || folder === "TRASH")) {
+    const all = await adeApiCall({
+      method: "GET",
+      path: messagesBase,
+      query: { limit: Math.max(limit * 4, 200), offset: 0, format: "metadata" },
+    });
+    if (all.status >= 200 && all.status < 300) {
+      const items = extractRawItems(all.json);
+      const wanted = folder === "SENT"
+        ? ["SENT", "OUTBOX"]
+        : ["TRASH", "DELETED", "BIN"];
+      const filtered = items.filter((o) => {
+        const meta = (o.messageMetadata ?? o.metadata ?? {}) as Record<string, unknown>;
+        const label = String(
+          (meta.label ?? meta.folder ?? meta.box ?? o.label ?? o.folder ?? "") as string,
+        ).toUpperCase();
+        const labels = Array.isArray(meta.labels)
+          ? (meta.labels as unknown[]).map((x) => String(x).toUpperCase())
+          : [];
+        return wanted.some((w) => label === w || labels.includes(w));
+      });
+      // Zwróć strukturę zgodną z resztą kodu: pojedynczy obiekt { messages: [...] }.
+      return {
+        status: 200,
+        body: JSON.stringify({ messages: filtered }),
+        bodyBuffer: undefined,
+        json: { messages: filtered } as unknown,
+        headers: all.headers,
+      };
+    }
+  }
+  return (firstSuccessNonEmpty ?? last)!;
 }
 
 export async function getAdeMessageRaw(messageId: string) {
@@ -292,7 +339,7 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
     const normalized = normalizeInboxItems(res.json);
     summary.fetched = rawItems.length;
 
-    const direction = requestedFolder === "SENT" || requestedFolder === "DRAFTS" ? "outbound" : "inbound";
+    const defaultDirection = requestedFolder === "SENT" || requestedFolder === "DRAFTS" ? "outbound" : "inbound";
     const admin = await getAdmin();
     const missingDetails: string[] = [];
     for (let i = 0; i < rawItems.length; i++) {
@@ -309,6 +356,9 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
         : typeof (raw as { bodyText?: unknown }).bodyText === "string"
           ? ((raw as { bodyText: string }).bodyText)
           : null;
+      // Wyprowadź kierunek per-wiadomość: gdy nadawcą jest nasza skrzynka → outbound.
+      const isOutboundByFrom = !!n.from && n.from === cfg.mailboxAddress;
+      const direction = isOutboundByFrom ? "outbound" : defaultDirection;
       const baseRow: Record<string, unknown> = {
         direction,
         ade_message_id: n.id,
