@@ -1067,24 +1067,49 @@ export type BaeSearchInputServer = {
   address?: BaeAddressInput;
 };
 
-/** Mapa typu odbiorcy → searchCategory (SE API v3/v4). */
-function searchCategoriesFor(rt: BaeRecipientType): string[] {
+/** Mapa typu odbiorcy → lista kandydatów searchCategory (SE API zwraca 00003 przy złej wartości; próbujemy po kolei). */
+function searchCategoryCandidates(rt: BaeRecipientType): string[] {
   switch (rt) {
     case "PUBLIC":
-      return ["PUBLIC_INSTITUTION"];
+      return [
+        "PUBLIC_ADMINISTRATION_BODY",
+        "PUBLIC_ENTITY",
+        "PUBLIC_INSTITUTION",
+        "PUBLIC",
+      ];
     case "NON_PUBLIC":
-      return ["COMPANY", "ORGANISATION"];
+      return [
+        "NON_PUBLIC_ENTITY",
+        "NON_PUBLIC",
+        "COMPANY",
+      ];
     case "KOMORNIK":
-      return ["COURT_ENFORCEMENT_OFFICER"];
+      return [
+        "TRUSTED_NON_PUBLIC_ENTITY",
+        "COURT_ENFORCEMENT_OFFICER",
+        "TRUSTED_NON_PUBLIC",
+        "KOMORNIK",
+      ];
     case "OSOBA_FIZYCZNA":
-      return ["INDIVIDUAL"];
+      return [
+        "NATURAL_PERSON",
+        "INDIVIDUAL_PERSON",
+        "INDIVIDUAL",
+        "PERSON",
+      ];
   }
 }
 
+// In-memory cache: pierwsza wartość enuma, która nie zwraca 00003.
+const searchCategoryCache = new Map<BaeRecipientType, string>();
+
+function isEnumError(bodyStr: string): boolean {
+  return /"errorCode"\s*:\s*"?00003"?/i.test(bodyStr) || /Incorrect enum value/i.test(bodyStr);
+}
+
 /**
- * Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE) przez SE API OW
- * (Search Engine OW) — POST /api/se/v3/search/{bae_search|eda_search}.
- * Bearer token (bez mTLS). Baza: ADE_SE_BASE lub oauthBase.
+ * Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE) przez SE API OW.
+ * POST /api/se/v3/search/{bae_search|eda_search}, bearer token (bez mTLS).
  */
 export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchResponse> {
   const cfg = loadAdeConfig();
@@ -1098,9 +1123,6 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
   const senderEda = cfg.mailboxAddress;
   const limit = Math.min(Math.max(input.limit ?? 25, 1), 50);
 
-  // Wybór scenariusza:
-  //  - EDELIVERY_ADDRESS → scenariusz 3 (eda_search)
-  //  - reszta            → scenariusz 1 (bae_search) w trybie 1
   const scenario: "eda" | "bae" = input.identifierType === "EDELIVERY_ADDRESS" ? "eda" : "bae";
 
   const officialIds: Record<string, string> = {};
@@ -1122,17 +1144,15 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
       : undefined;
 
   const entityName =
-    input.identifierType === "NAME"
-      ? (addr.entityName?.trim() || val)
-      : undefined;
+    input.identifierType === "NAME" ? (addr.entityName?.trim() || val) : undefined;
 
-  const body: Record<string, unknown> =
+  const buildBody = (category: string): Record<string, unknown> =>
     scenario === "eda"
       ? { senderEda, recipientEdas: [val.toUpperCase()], offset: 0, limit }
       : {
           senderEda,
           recipientEdasOnly: false,
-          searchCategory: searchCategoriesFor(input.recipientType),
+          searchCategory: [category],
           ...(entityName ? { entityName } : {}),
           ...(Object.keys(officialIds).length ? { officialIds } : {}),
           ...(address ? { address } : {}),
@@ -1142,45 +1162,70 @@ export async function searchBae(input: BaeSearchInputServer): Promise<BaeSearchR
 
   const path =
     scenario === "eda" ? "/api/se/v3/search/eda_search" : "/api/se/v3/search/bae_search";
-  const candidates = [path, path.replace("/api/se/v3/", "/api/se/v4/")];
+  const pathCandidates = [path, path.replace("/api/se/v3/", "/api/se/v4/")];
+
+  const cached = searchCategoryCache.get(input.recipientType);
+  const categoryCandidates =
+    scenario === "eda"
+      ? [""]
+      : cached
+        ? [cached, ...searchCategoryCandidates(input.recipientType).filter((c) => c !== cached)]
+        : searchCategoryCandidates(input.recipientType);
+
   const tried: string[] = [];
   let lastError: string | undefined;
 
-  for (const p of candidates) {
-    tried.push(`POST ${p}`);
-    try {
-      const res = await adeSeRawRequest({
-        method: "POST",
-        path: p,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-        timeoutMs: 20000,
-      });
-      if (res.status === 404 || res.status === 405) continue;
-      let json: unknown = null;
+  for (const p of pathCandidates) {
+    let pathBroken = false;
+    for (const category of categoryCandidates) {
+      const label = scenario === "bae" ? `POST ${p} [${category}]` : `POST ${p}`;
+      tried.push(label);
       try {
-        json = res.body ? JSON.parse(res.body) : null;
-      } catch {
-        /* pusto */
+        const res = await adeSeRawRequest({
+          method: "POST",
+          path: p,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(buildBody(category)),
+          timeoutMs: 20000,
+        });
+        if (res.status === 404 || res.status === 405) {
+          pathBroken = true;
+          break;
+        }
+        const bodyStr = res.body ?? "";
+        let json: unknown = null;
+        try {
+          json = bodyStr ? JSON.parse(bodyStr) : null;
+        } catch {
+          /* pusto */
+        }
+        if (res.status >= 200 && res.status < 300) {
+          if (scenario === "bae" && category)
+            searchCategoryCache.set(input.recipientType, category);
+          const arr = extractBaeItems(json);
+          const items = arr.map(mapBaeItem).filter((r) => !!r.address);
+          return { ok: true, results: items, triedPaths: tried };
+        }
+        if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
+          return { ok: true, results: [], triedPaths: tried };
+        }
+        // Enum error → spróbuj kolejnego kandydata dla tej ścieżki
+        if (scenario === "bae" && isEnumError(bodyStr)) {
+          lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
+          continue;
+        }
+        lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
+        break;
+      } catch (err) {
+        lastError = (err as Error).message;
+        break;
       }
-      if (res.status >= 200 && res.status < 300) {
-        const arr = extractBaeItems(json);
-        const items = arr.map(mapBaeItem).filter((r) => !!r.address);
-        return { ok: true, results: items, triedPaths: tried };
-      }
-      // 404 z SEAPI-00010 (brak wyników) traktuj jako pustą listę
-      const bodyStr = res.body ?? "";
-      if (res.status === 404 && /SEAPI-00010/i.test(bodyStr)) {
-        return { ok: true, results: [], triedPaths: tried };
-      }
-      lastError = `HTTP ${res.status}: ${bodyStr.slice(0, 300)}`;
-    } catch (err) {
-      lastError = (err as Error).message;
     }
+    if (!pathBroken) break; // jedyna ścieżka odpowiedziała czymś sensownym
   }
 
   return {
