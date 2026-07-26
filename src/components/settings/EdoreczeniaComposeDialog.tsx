@@ -49,6 +49,8 @@ export default function EdoreczeniaComposeDialog({
   initialBody,
 }: Props) {
   const send = useServerFn(sendAdeMessage);
+  const saveDraft = useServerFn(saveAdeDraft);
+  const [saving, setSaving] = useState(false);
   const [recipients, setRecipients] = useState<string[]>(initialRecipients ?? []);
   const [recipientInput, setRecipientInput] = useState("");
   const [subject, setSubject] = useState(initialSubject ?? "");
