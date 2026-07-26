@@ -240,21 +240,6 @@ export type SyncSummary = {
 };
 
 /** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries.
- *  UA API v3 nie honoruje w naszej instancji parametru `folder` — realnie zwraca zawsze
- *  Odebrane (INBOX). Dlatego z API pobieramy tylko INBOX i:
- *   - nowe wiadomości wpadają do folderu INBOX,
- *   - istniejące wiersze NIE mają nadpisywanego pola `folder` (zachowujemy ręczne
- *     przeniesienia użytkownika np. do TRASH).
- *  Dla SENT/DRAFTS/TRASH sync jest no-op (folder jest zarządzany lokalnie przez akcje
- *  „Przenieś do...").
- */
-export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder } = {}): Promise<SyncSummary> {
-  const cfg = loadAdeConfig();
-  const requestedFolder: AdeFolder = params.folder ?? "INBOX";
-  const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
-  try {
-    // Sync z API tylko dla Odebranych. Inne foldery są utrzymywane lokalnie.
-/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries.
  *  Sync jest realizowany osobno per folder: INBOX / SENT / DRAFTS / TRASH.
  *  Dla folderów innych niż INBOX używamy alternatywnych ścieżek UA API (patrz listAdeInboxRaw).
  *  Wiersze upsertujemy z folderem = requestedFolder, żeby API było źródłem prawdy.
