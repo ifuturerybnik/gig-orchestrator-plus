@@ -281,38 +281,76 @@ export default function EdoreczeniaBaeSearchDialog({ open, onOpenChange, onPick 
             </Alert>
           )}
 
+          {results && results.length === 0 && !error && (
+            <Alert>
+              <AlertTitle>Brak wyników</AlertTitle>
+              <AlertDescription>
+                Nie znaleziono podmiotu w Bazie Adresów Elektronicznych (BAE) dla podanych danych.
+                Sprawdź poprawność wpisanych informacji i spróbuj ponownie.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {results && results.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">
                 Znaleziono {results.length} {results.length === 1 ? "wynik" : "wyników"}
               </div>
-              <ul className="divide-y rounded-md border">
+              <ul className="space-y-2">
                 {results.map((r, i) => (
                   <li
                     key={`${r.address}-${i}`}
-                    className="flex items-start justify-between gap-3 p-3"
+                    className="rounded-md border p-4 space-y-3"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{r.name ?? "—"}</div>
-                      <div className="font-mono text-xs text-muted-foreground break-all">
-                        {r.address}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1 space-x-2">
-                        {r.nip && <span>NIP: {r.nip}</span>}
-                        {r.regon && <span>REGON: {r.regon}</span>}
-                        {r.krs && <span>KRS: {r.krs}</span>}
-                        {(r.city || r.postalCode) && (
-                          <span>
-                            {[r.postalCode, r.city].filter(Boolean).join(" ")}
-                            {r.street ? `, ${r.street}` : ""}
-                          </span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="font-semibold text-base uppercase">{r.name ?? "—"}</div>
+                      <Button size="sm" onClick={() => handlePick(r)}>
+                        <UserPlus className="h-3.5 w-3.5 mr-1" />
+                        Dodaj
+                      </Button>
+                    </div>
+
+                    <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+                      <dt className="text-muted-foreground">Adres do eDoręczeń:</dt>
+                      <dd className="font-mono font-medium text-primary break-all">{r.address}</dd>
+
+                      {r.correspondenceAddress && (
+                        <>
+                          <dt className="text-muted-foreground">Adres korespondencyjny:</dt>
+                          <dd className="font-medium">{r.correspondenceAddress}</dd>
+                        </>
+                      )}
+
+                      {r.headquartersAddress && (
+                        <>
+                          <dt className="text-muted-foreground">Adres siedziby:</dt>
+                          <dd className="font-medium">{r.headquartersAddress}</dd>
+                        </>
+                      )}
+                    </dl>
+
+                    {(r.nip || r.regon || r.krs) && (
+                      <div className="border-t pt-3 grid grid-cols-3 gap-3 text-sm">
+                        {r.nip && (
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase">NIP</div>
+                            <div className="font-semibold">{r.nip}</div>
+                          </div>
+                        )}
+                        {r.regon && (
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase">REGON</div>
+                            <div className="font-semibold">{r.regon}</div>
+                          </div>
+                        )}
+                        {r.krs && (
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase">KRS</div>
+                            <div className="font-semibold">{r.krs}</div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <Button size="sm" onClick={() => handlePick(r)}>
-                      <UserPlus className="h-3.5 w-3.5 mr-1" />
-                      Dodaj
-                    </Button>
+                    )}
                   </li>
                 ))}
               </ul>
