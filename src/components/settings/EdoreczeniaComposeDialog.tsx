@@ -85,19 +85,21 @@ export default function EdoreczeniaComposeDialog({
     }
   }, [open, initialRecipients, initialSubject, initialBody]);
 
-  const addRecipient = useCallback(() => {
+  const addRecipient = useCallback((): string[] | null => {
     const v = recipientInput.trim().toUpperCase();
-    if (!v) return;
+    if (!v) return recipients;
     if (!ADE_ADDRESS_RE.test(v)) {
       toast.error("Nieprawidłowy format adresu (AE:PL-XXXXX-XXXXX-XXXXX-YY)");
-      return;
+      return null;
     }
     if (recipients.includes(v)) {
       setRecipientInput("");
-      return;
+      return recipients;
     }
-    setRecipients((r) => [...r, v]);
+    const next = [...recipients, v];
+    setRecipients(next);
     setRecipientInput("");
+    return next;
   }, [recipientInput, recipients]);
 
   const removeRecipient = (v: string) => setRecipients((r) => r.filter((x) => x !== v));
@@ -123,7 +125,9 @@ export default function EdoreczeniaComposeDialog({
 
   const handleSave = async () => {
     setError(null);
-    if (!recipients.length) {
+    const effectiveRecipients = recipientInput.trim() ? addRecipient() : recipients;
+    if (effectiveRecipients === null) return;
+    if (!effectiveRecipients.length) {
       setError("Dodaj przynajmniej jednego adresata — biznes.gov nie zapisuje roboczych bez odbiorcy.");
       return;
     }
@@ -146,7 +150,7 @@ export default function EdoreczeniaComposeDialog({
       );
       const res = await saveDraft({
         data: {
-          recipients,
+          recipients: effectiveRecipients,
           subject: subject.trim() || "(bez tematu)",
           bodyText: body,
           caseNumber: caseNumber.trim() || undefined,
@@ -170,7 +174,9 @@ export default function EdoreczeniaComposeDialog({
 
   const handleSend = async () => {
     setError(null);
-    if (!recipients.length) {
+    const effectiveRecipients = recipientInput.trim() ? addRecipient() : recipients;
+    if (effectiveRecipients === null) return;
+    if (!effectiveRecipients.length) {
       setError("Dodaj przynajmniej jednego adresata.");
       return;
     }
@@ -193,7 +199,7 @@ export default function EdoreczeniaComposeDialog({
       );
       const res = await send({
         data: {
-          recipients,
+          recipients: effectiveRecipients,
           subject: subject.trim(),
           bodyText: body,
           caseNumber: caseNumber.trim() || undefined,
