@@ -107,16 +107,18 @@ export async function listAdeInboxRaw(params: { limit?: number; page?: number; f
     attempts.push({ path: `${messagesBase}/received`, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata" } });
   } else if (folder === "SENT") {
-    // Wariantów szukamy tak samo jak dla DRAFTS: najpierw dedykowana ścieżka, potem query label/folder/box.
-    attempts.push({ path: `${messagesBase}/sent`, query: { limit, offset, format: "metadata" } });
-    attempts.push({ path: `${messagesBase}/outbox`, query: { limit, offset, format: "metadata" } });
+    // Wg spec UA API v3 (UC005): GET /messages?label=SENT — to jest kanoniczna metoda.
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "SENT" } });
     attempts.push({ path: messagesBase, query: { limit, page, format: "metadata", label: "SENT" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", label: "OUTBOX" } });
+    // Fallbacki — inne warianty spotykane u operatorów.
+    attempts.push({ path: `${messagesBase}/sent`, query: { limit, offset, format: "metadata" } });
+    attempts.push({ path: `${messagesBase}/outbox`, query: { limit, offset, format: "metadata" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "SENT" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", folder: "OUTBOX" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", box: "SENT" } });
     attempts.push({ path: messagesBase, query: { limit, offset, format: "metadata", type: "SENT" } });
+
   } else if (folder === "DRAFTS") {
     // UA API v3: DRAFTS nie wolno pobierać przez /messages; mają osobny endpoint /drafts.
     attempts.push({ path: draftsBase, query: { limit, offset, format: "metadata" } });
