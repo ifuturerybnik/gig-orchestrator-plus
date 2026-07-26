@@ -41,6 +41,7 @@ import {
   type AdeMailboxScope,
   type AdeMailboxTestResult,
 } from "@/lib/ade-mailboxes.functions";
+import EdoreczeniaSetupGuide from "./EdoreczeniaSetupGuide";
 
 type Props = { scope: AdeMailboxScope };
 
