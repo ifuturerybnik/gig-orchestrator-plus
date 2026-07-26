@@ -121,6 +121,49 @@ export default function EdoreczeniaComposeDialog({
 
   const totalSize = files.reduce((s, f) => s + f.size, 0);
 
+  const handleSave = async () => {
+    setError(null);
+    if (totalSize > 500 * 1024 * 1024) {
+      setError("Sumaryczny rozmiar załączników przekracza 500 MB.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const attachments = await Promise.all(
+        files.map(async (f) => ({
+          filename: f.name,
+          mimeType: f.type || "application/octet-stream",
+          contentBase64: await fileToBase64(f),
+        })),
+      );
+      const res = await saveDraft({
+        data: {
+          recipients,
+          subject: subject.trim() || "(bez tematu)",
+          bodyText: body,
+          caseNumber: caseNumber.trim() || undefined,
+          attachments,
+        },
+      });
+      if (!res.ok) {
+        setError(res.error ?? "Nie udało się zapisać roboczej");
+        return;
+      }
+      toast.success(
+        res.remote
+          ? "Wiadomość zapisana w Roboczych (biznes.gov + lokalnie)"
+          : "Wiadomość zapisana lokalnie w Roboczych (biznes.gov nie odpowiedział)",
+      );
+      reset();
+      onOpenChange(false);
+      onSent?.();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSend = async () => {
     setError(null);
     if (!recipients.length) {
