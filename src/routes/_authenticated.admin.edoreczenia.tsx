@@ -2,7 +2,8 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import IntegracjaEdoreczeniaTab from "@/components/settings/IntegracjaEdoreczeniaTab";
 import EdoreczeniaInboxTab from "@/components/settings/EdoreczeniaInboxTab";
-import { Inbox, PlugZap } from "lucide-react";
+import EdoreczeniaSetup from "@/components/edoreczenia/EdoreczeniaSetup";
+import { Inbox, PlugZap, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/edoreczenia")({
