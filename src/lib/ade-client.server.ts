@@ -87,6 +87,7 @@ export type AdeRawResponse = {
   bodyBuffer?: Buffer;
   tlsPeerSubject?: string;
   tlsPeerIssuer?: string;
+  attempt?: string;
 };
 
 type RawRequestOpts = {
@@ -225,8 +226,32 @@ function audienceCandidates(base: string, env: string | undefined): string[] {
   ].filter((value, index, values) => values.indexOf(value) === index);
 }
 
+function loginHintCandidates(mailboxAddress: string): string[] {
+  const trimmed = mailboxAddress.trim();
+  const withPrefix = trimmed.startsWith("ADE.") ? trimmed : `ADE.${trimmed}`;
+  return [withPrefix, trimmed].filter((value, index, values) => value && values.indexOf(value) === index);
+}
+
+type ClientAssertionVariant = {
+  label: string;
+  includeX5c: boolean;
+  includeNbf: boolean;
+};
+
+const CLIENT_ASSERTION_VARIANTS: ClientAssertionVariant[] = [
+  // Wg aktualnych instrukcji przykład JWT ma tylko typ/alg w nagłówku i zawiera nbf.
+  { label: "jwt:doc-no-x5c", includeX5c: false, includeNbf: true },
+  // Dotychczasowy wariant używany przez aplikację — część instalacji akceptuje cert w x5c.
+  { label: "jwt:x5c", includeX5c: true, includeNbf: true },
+  // Awaryjnie dla starszego Keycloaka, który potrafił odrzucać nbf przy rozjechanym zegarze.
+  { label: "jwt:no-x5c-no-nbf", includeX5c: false, includeNbf: false },
+];
+
 /** Zbuduj client_assertion (JWT) podpisany kluczem prywatnym QWAC. */
-async function buildClientAssertion(audience?: string): Promise<{ jwt: string; audience: string }> {
+async function buildClientAssertion(
+  audience?: string,
+  variant: ClientAssertionVariant = CLIENT_ASSERTION_VARIANTS[0],
+): Promise<{ jwt: string; audience: string; variantLabel: string }> {
   const cfg = loadAdeConfig();
   const fs = await import("node:fs");
   const crypto = await import("node:crypto");
@@ -246,16 +271,17 @@ async function buildClientAssertion(audience?: string): Promise<{ jwt: string; a
   // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
   // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
   const issuedAt = now - 60;
-  const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
-  const payload = {
+  const header: Record<string, string | string[]> = { alg: "RS256", typ: "JWT" };
+  if (variant.includeX5c) header.x5c = [certBody];
+  const payload: Record<string, string | number> = {
     iss: cfg.clientId,
     sub: cfg.clientId,
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: issuedAt,
-    nbf: issuedAt,
     exp: now + 600,
   };
+  if (variant.includeNbf) payload.nbf = issuedAt;
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
   const signer = crypto.createSign("RSA-SHA256");
   signer.update(signingInput);
@@ -264,38 +290,56 @@ async function buildClientAssertion(audience?: string): Promise<{ jwt: string; a
     key: keyPem,
     passphrase: cfg.keyPassphrase,
   });
-  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience };
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience, variantLabel: variant.label };
 }
 
 /** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
-  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const tryHost = async (base: string, assertionAudience: string) => {
-    const { jwt, audience } = await buildClientAssertion(assertionAudience);
+  const tryHost = async (
+    base: string,
+    assertionAudience: string,
+    loginHint: string,
+    variant: ClientAssertionVariant,
+    includeClientId: boolean,
+  ) => {
+    const { jwt, audience, variantLabel } = await buildClientAssertion(assertionAudience, variant);
     const params = new URLSearchParams({
       grant_type: "client_credentials",
-      client_id: cfg.clientId,
       client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
       client_assertion: jwt,
     });
+    if (includeClientId) params.set("client_id", cfg.clientId);
     const res = await httpsRawRequest({
       method: "POST",
-      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + `?login_hint=${encodeURIComponent(loginHint)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "*/*", Connection: "close" },
       body: params.toString(),
       useMtls: true,
     });
-    return { ...res, audience };
+    return {
+      ...res,
+      audience,
+      attempt: `host=${base}; aud=${audience}; login_hint=${loginHint}; ${variantLabel}; ${includeClientId ? "with" : "without"} client_id`,
+    };
   };
 
   let last: (AdeRawResponse & { audience: string }) | null = null;
-  for (const assertionAudience of audienceCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
-    const res = await tryHost(cfg.oauthBase, assertionAudience);
-    last = res;
-    if (res.status >= 200 && res.status < 300) return res;
-    // 401 zwykle oznacza odrzucenie asercji JWT — sprawdzamy kolejny `aud`.
-    if (res.status !== 401) break;
+  for (const loginHint of loginHintCandidates(cfg.mailboxAddress)) {
+    for (const assertionAudience of audienceCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
+      for (const variant of CLIENT_ASSERTION_VARIANTS) {
+        for (const includeClientId of [false, true]) {
+          const res = await tryHost(cfg.oauthBase, assertionAudience, loginHint, variant, includeClientId);
+          last = res;
+          if (res.status >= 200 && res.status < 300) return res;
+          // 401 zwykle oznacza odrzucenie asercji JWT/formularza — sprawdzamy kolejny wariant.
+          if (res.status !== 401) break;
+        }
+        if (last && last.status !== 401) break;
+      }
+      if (last && last.status !== 401) break;
+    }
+    if (last && last.status !== 401) break;
   }
 
   // Jeśli trafiliśmy jeszcze w host informacyjny, spróbuj starego hosta jako fallback.
@@ -303,14 +347,14 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     const legacy = legacyOauthBase(process.env.ADE_ENV);
     if (legacy !== cfg.oauthBase) {
       for (const assertionAudience of audienceCandidates(legacy, process.env.ADE_ENV)) {
-        const alt = await tryHost(legacy, assertionAudience);
+        const alt = await tryHost(legacy, assertionAudience, loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], false);
         last = alt;
         if (alt.status >= 200 && alt.status < 300) return alt;
         if (alt.status !== 401) break;
       }
     }
   }
-  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase), loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], false));
 }
 
 
@@ -431,7 +475,11 @@ async function httpsRawRequestWithCfg(
   });
 }
 
-async function buildClientAssertionForCfg(cfg: AdeResolvedConfig, audience?: string): Promise<{ jwt: string; audience: string }> {
+async function buildClientAssertionForCfg(
+  cfg: AdeResolvedConfig,
+  audience?: string,
+  variant: ClientAssertionVariant = CLIENT_ASSERTION_VARIANTS[0],
+): Promise<{ jwt: string; audience: string; variantLabel: string }> {
   const crypto = await import("node:crypto");
   const certBody = cfg.certPem
     .replace(/-----BEGIN CERTIFICATE-----/g, "")
@@ -443,22 +491,23 @@ async function buildClientAssertionForCfg(cfg: AdeResolvedConfig, audience?: str
   // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
   // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
   const issuedAt = now - 60;
-  const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
-  const payload = {
+  const header: Record<string, string | string[]> = { alg: "RS256", typ: "JWT" };
+  if (variant.includeX5c) header.x5c = [certBody];
+  const payload: Record<string, string | number> = {
     iss: cfg.clientId,
     sub: cfg.clientId,
     aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: issuedAt,
-    nbf: issuedAt,
     exp: now + 600,
   };
+  if (variant.includeNbf) payload.nbf = issuedAt;
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
   const signer = crypto.createSign("RSA-SHA256");
   signer.update(signingInput);
   signer.end();
   const signature = signer.sign({ key: cfg.keyPem, passphrase: cfg.keyPassphrase });
-  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience };
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience, variantLabel: variant.label };
 }
 
 /** mTLS request do UA API dla konkretnej skrzynki. */
@@ -498,45 +547,63 @@ export async function adeSeRawRequestForMailbox(
 /** OAuth2 token dla konkretnej skrzynki. Token endpoint wymaga mTLS. */
 export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
   const cfg = await loadAdeConfigForMailbox(mailboxId);
-  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const tryHost = async (base: string, assertionAudience: string) => {
-    const { jwt, audience } = await buildClientAssertionForCfg(cfg, assertionAudience);
+  const tryHost = async (
+    base: string,
+    assertionAudience: string,
+    loginHint: string,
+    variant: ClientAssertionVariant,
+    includeClientId: boolean,
+  ) => {
+    const { jwt, audience, variantLabel } = await buildClientAssertionForCfg(cfg, assertionAudience, variant);
     const params = new URLSearchParams({
       grant_type: "client_credentials",
-      client_id: cfg.clientId,
       client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
       client_assertion: jwt,
     });
+    if (includeClientId) params.set("client_id", cfg.clientId);
     const res = await httpsRawRequestWithCfg(cfg, {
       method: "POST",
-      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + `?login_hint=${encodeURIComponent(loginHint)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "*/*", Connection: "close" },
       body: params.toString(),
       useMtls: true,
     });
-    return { ...res, audience };
+    return {
+      ...res,
+      audience,
+      attempt: `host=${base}; aud=${audience}; login_hint=${loginHint}; ${variantLabel}; ${includeClientId ? "with" : "without"} client_id`,
+    };
   };
 
   let last: (AdeRawResponse & { audience: string }) | null = null;
-  for (const assertionAudience of audienceCandidates(cfg.oauthBase, cfg.adeEnv)) {
-    const res = await tryHost(cfg.oauthBase, assertionAudience);
-    last = res;
-    if (res.status >= 200 && res.status < 300) return res;
-    if (res.status !== 401) break;
+  for (const loginHint of loginHintCandidates(cfg.mailboxAddress)) {
+    for (const assertionAudience of audienceCandidates(cfg.oauthBase, cfg.adeEnv)) {
+      for (const variant of CLIENT_ASSERTION_VARIANTS) {
+        for (const includeClientId of [false, true]) {
+          const res = await tryHost(cfg.oauthBase, assertionAudience, loginHint, variant, includeClientId);
+          last = res;
+          if (res.status >= 200 && res.status < 300) return res;
+          if (res.status !== 401) break;
+        }
+        if (last && last.status !== 401) break;
+      }
+      if (last && last.status !== 401) break;
+    }
+    if (last && last.status !== 401) break;
   }
 
   if (last?.status && last.status >= 300 && last.status < 400) {
     const legacy = legacyOauthBase(cfg.adeEnv);
     if (legacy !== cfg.oauthBase) {
       for (const assertionAudience of audienceCandidates(legacy, cfg.adeEnv)) {
-        const alt = await tryHost(legacy, assertionAudience);
+        const alt = await tryHost(legacy, assertionAudience, loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], false);
         last = alt;
         if (alt.status >= 200 && alt.status < 300) return alt;
         if (alt.status !== 401) break;
       }
     }
   }
-  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase), loginHintCandidates(cfg.mailboxAddress)[0], CLIENT_ASSERTION_VARIANTS[0], false));
 }
 
 /** Test połączenia dla skrzynki z DB. */
@@ -568,7 +635,7 @@ export async function testAdeConnectionForMailbox(mailboxId: string): Promise<{
   try {
     const res = await fetchAdeTokenForMailbox(mailboxId);
     const ok = res.status >= 200 && res.status < 300;
-    let detail = `HTTP ${res.status}`;
+    let detail = `HTTP ${res.status}${res.attempt ? ` · ${res.attempt}` : ""}`;
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers?.location || res.headers?.Location || "(brak nagłówka Location)";
       detail += ` → Location: ${loc}`;

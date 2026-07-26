@@ -93,7 +93,7 @@ export const testAdeConnection = createServerFn({ method: "POST" })
     try {
       const res = await fetchAdeToken();
       const ok = res.status >= 200 && res.status < 300;
-      let detail = `HTTP ${res.status}`;
+      let detail = `HTTP ${res.status}${res.attempt ? ` · ${res.attempt}` : ""}`;
       // Redirecty (301/302/303/307/308) — pokaż nagłówek Location, żeby zdiagnozować dokąd przekierowuje KSDE
       if (res.status >= 300 && res.status < 400) {
         const loc = res.headers?.location || res.headers?.Location || "(brak nagłówka Location)";
