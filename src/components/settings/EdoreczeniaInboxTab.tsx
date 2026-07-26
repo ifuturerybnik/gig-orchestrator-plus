@@ -410,8 +410,12 @@ export default function EdoreczeniaInboxTab() {
                       Przenieś do folderu Usunięte
                     </Button>
                   )}
-                  <Button onClick={handleDownloadMessage} variant="outline" size="sm">
-                    <Download className="mr-2 h-3.5 w-3.5" />
+                  <Button onClick={handleDownloadMessage} disabled={archiveLoading} variant="outline" size="sm">
+                    {archiveLoading ? (
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3.5 w-3.5" />
+                    )}
                     Pobierz
                   </Button>
                   <Button onClick={handleForward} variant="outline" size="sm">
