@@ -244,7 +244,7 @@ export default function EdoreczeniaInboxTab() {
               <Inbox className="h-5 w-5" /> Skrzynka e-Doręczeń
             </CardTitle>
             <CardDescription>
-              {result?.mailbox ? <AdeAddress address={result.mailbox} name={result.mailboxName} /> : "Wiadomości z systemu ADE."}
+              {result?.mailbox ? <AdeAddress address={result.mailbox} /> : "Wiadomości z systemu ADE."}
               {result?.lastSyncedAt && (
                 <span className="ml-2 text-xs">
                   · ostatni sync: {new Date(result.lastSyncedAt).toLocaleString("pl-PL")}
