@@ -12,6 +12,7 @@ export type OrgModuleId =
   | "counterparties"
   | "mail"
   | "autokorespondencja"
+  | "edoreczenia"
   | "ai_studio"
   | "assistant"
   | "social"
