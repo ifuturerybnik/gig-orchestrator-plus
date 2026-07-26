@@ -71,15 +71,22 @@ export type AdeInboxItem = {
   status?: string;
 };
 
+export type AdeFolder = "INBOX" | "SENT" | "DRAFTS" | "TRASH";
+
 /** Zwraca listę wiadomości ze skrzynki (limit ustawia klient). */
-export async function listAdeInboxRaw(params: { limit?: number; page?: number } = {}) {
+export async function listAdeInboxRaw(params: { limit?: number; page?: number; folder?: AdeFolder } = {}) {
   const cfg = loadAdeConfig();
   // UA API v3: GET /api/v3/{eDeliveryAddress}/messages
   const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
   const res = await adeApiCall({
     method: "GET",
     path,
-    query: { limit: params.limit ?? 50, page: params.page ?? 0 },
+    query: {
+      limit: params.limit ?? 50,
+      page: params.page ?? 0,
+      // Filtr folderu (jeśli API go zignoruje, dostaniemy Odebrane).
+      folder: params.folder ?? "INBOX",
+    },
   });
   return res;
 }
@@ -89,6 +96,7 @@ export async function getAdeMessageRaw(messageId: string) {
   const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(messageId)}`;
   return await adeApiCall({ method: "GET", path });
 }
+
 
 /** Zwraca surową listę elementów (zachowuje pełny obiekt) niezależnie od kształtu odpowiedzi. */
 export function extractRawItems(raw: unknown): Record<string, unknown>[] {
