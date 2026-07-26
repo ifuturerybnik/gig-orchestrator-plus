@@ -100,6 +100,17 @@ export default function EdoreczeniaComposeDialog({
 
   const removeRecipient = (v: string) => setRecipients((r) => r.filter((x) => x !== v));
 
+  const addRecipientAddress = useCallback((raw: string) => {
+    const v = raw.trim().toUpperCase();
+    if (!v) return;
+    if (!ADE_ADDRESS_RE.test(v)) {
+      toast.error(`Nieprawidłowy adres: ${v}`);
+      return;
+    }
+    setRecipients((r) => (r.includes(v) ? r : [...r, v]));
+  }, []);
+
+
   const onFiles = (list: FileList | null) => {
     if (!list) return;
     setFiles((prev) => [...prev, ...Array.from(list)]);
