@@ -79,22 +79,49 @@ export type AdeInboxItem = {
 
 export type AdeFolder = "INBOX" | "SENT" | "DRAFTS" | "TRASH";
 
-/** Zwraca listę wiadomości ze skrzynki (limit ustawia klient). */
+/** Zwraca listę wiadomości ze skrzynki (limit ustawia klient).
+ *  Dla folderów innych niż INBOX próbuje kilku wariantów ścieżki/parametrów
+ *  UA API v3, bo różne wdrożenia obsługują je inaczej. Pierwszy 2xx wygrywa.
+ */
 export async function listAdeInboxRaw(params: { limit?: number; page?: number; folder?: AdeFolder } = {}) {
   const cfg = loadAdeConfig();
-  // UA API v3: GET /api/v3/{eDeliveryAddress}/messages
-  const path = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
-  const res = await adeApiCall({
-    method: "GET",
-    path,
-    query: {
-      limit: params.limit ?? 50,
-      page: params.page ?? 0,
-      // Filtr folderu (jeśli API go zignoruje, dostaniemy Odebrane).
-      folder: params.folder ?? "INBOX",
-    },
-  });
-  return res;
+  const folder: AdeFolder = params.folder ?? "INBOX";
+  const base = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages`;
+  const limit = params.limit ?? 50;
+  const page = params.page ?? 0;
+
+  type Attempt = { path: string; query?: Record<string, string | number | undefined> };
+  const attempts: Attempt[] = [];
+  if (folder === "INBOX") {
+    attempts.push({ path: base, query: { limit, page, folder: "INBOX" } });
+    attempts.push({ path: `${base}/received`, query: { limit, page } });
+    attempts.push({ path: base, query: { limit, page } });
+  } else if (folder === "SENT") {
+    attempts.push({ path: `${base}/sent`, query: { limit, page } });
+    attempts.push({ path: base, query: { limit, page, folder: "SENT" } });
+    attempts.push({ path: base, query: { limit, page, folder: "OUTBOX" } });
+    attempts.push({ path: base, query: { limit, page, box: "SENT" } });
+  } else if (folder === "DRAFTS") {
+    attempts.push({ path: `${base}/drafts`, query: { limit, page } });
+    attempts.push({ path: `${base}/draft`, query: { limit, page } });
+    attempts.push({ path: base, query: { limit, page, folder: "DRAFTS" } });
+    attempts.push({ path: base, query: { limit, page, folder: "DRAFT" } });
+    attempts.push({ path: base, query: { limit, page, box: "DRAFTS" } });
+  } else if (folder === "TRASH") {
+    attempts.push({ path: `${base}/trash`, query: { limit, page } });
+    attempts.push({ path: `${base}/deleted`, query: { limit, page } });
+    attempts.push({ path: base, query: { limit, page, folder: "TRASH" } });
+    attempts.push({ path: base, query: { limit, page, folder: "DELETED" } });
+  }
+
+  let last: Awaited<ReturnType<typeof adeApiCall>> | null = null;
+  for (const a of attempts) {
+    const res = await adeApiCall({ method: "GET", path: a.path, query: a.query });
+    last = res;
+    if (res.status >= 200 && res.status < 300) return res;
+    // 4xx/5xx: spróbuj następnego wariantu
+  }
+  return last!;
 }
 
 export async function getAdeMessageRaw(messageId: string) {
