@@ -986,7 +986,7 @@ function extractBaeItems(raw: unknown): Record<string, unknown>[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw as Record<string, unknown>[];
   const r = raw as Record<string, unknown>;
-  for (const key of ["addresses", "items", "content", "results", "data", "entries"]) {
+  for (const key of ["baeSearchData", "edaSearchData", "addresses", "items", "content", "results", "data", "entries"]) {
     const v = r[key];
     if (Array.isArray(v)) return v as Record<string, unknown>[];
   }
