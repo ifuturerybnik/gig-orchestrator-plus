@@ -457,6 +457,34 @@ export async function signedAttachmentUrl(
   return data?.signedUrl ?? null;
 }
 
+function isZipBuffer(buf?: Buffer | null): boolean {
+  if (!buf || buf.length < 4) return false;
+  const sig = buf.subarray(0, 4).toString("binary");
+  return sig === "PK\u0003\u0004" || sig === "PK\u0005\u0006" || sig === "PK\u0007\u0008";
+}
+
+function normalizeEvidenceList(input: unknown): Array<Record<string, unknown>> {
+  const root = Array.isArray(input) ? (input[0] ?? input) : input;
+  const obj = (root ?? {}) as Record<string, unknown>;
+  if (Array.isArray(obj.evidences)) return obj.evidences as Array<Record<string, unknown>>;
+  if (Array.isArray(obj.items)) return obj.items as Array<Record<string, unknown>>;
+  if (Array.isArray(obj.content)) return obj.content as Array<Record<string, unknown>>;
+  if (Array.isArray(input)) return input as Array<Record<string, unknown>>;
+  return [];
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function evidenceFileBase(evidence: Record<string, unknown>, fallbackId: string): string {
+  const type = firstString(evidence.type, evidence.evidenceType, evidence.code) ?? "dowod";
+  return `${type}_${fallbackId}`.replace(/[^\p{L}\p{N}._-]+/gu, "_");
+}
+
 /** Pobierz ZIP z dowodami technicznymi (evidence) i zapisz do Storage.
  *  UA API v3 nie zwraca gotowego ZIP-a — zwraca listę dowodów jako JSON,
  *  a pliki pobiera się per evidenceId. Budujemy ZIP po stronie serwera.
@@ -476,10 +504,16 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
   try {
     await ensureEdoreczeniaBucket();
     const cfg = loadAdeConfig();
-    const base = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}/messages/${encodeURIComponent(delivery.ade_message_id)}`;
+    const mailboxBase = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}`;
+    const messageId = encodeURIComponent(delivery.ade_message_id);
+    const base = `${mailboxBase}/messages/${messageId}`;
 
-    // 1) Preferuj gotową paczkę ZIP z UA API (jeśli w ogóle wystawiona).
+    // 1) Preferuj oficjalną paczkę ZIP z technicznymi dowodami wiadomości.
+    // Dokumentacja UA API: GET /{eDeliveryAddress}/evidences/{messageId}/technical-evidences-file
     const candidates = [
+      `${mailboxBase}/evidences/${messageId}/technical-evidences-file`,
+      `${mailboxBase}/evidences/${messageId}/technical-eevidences-file`,
+      `${base}/message-archive-file`,
       `${base}/evidences/package`,
       `${base}/evidences/archive`,
       `${base}/evidences/zip`,
@@ -488,13 +522,19 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
     let zipBuf: Buffer | null = null;
     let lastErr = "";
     for (const p of candidates) {
-      const r = await adeApiCall({ method: "GET", path: p, binary: true, timeoutMs: 60000 });
+      const r = await adeApiCall({
+        method: "GET",
+        path: p,
+        binary: true,
+        timeoutMs: 60000,
+        accept: "application/zip, application/octet-stream, */*",
+      });
       const ct = (r.headers["content-type"] ?? "").toLowerCase();
       if (
         r.status >= 200 &&
         r.status < 300 &&
         r.bodyBuffer &&
-        (ct.includes("zip") || ct.includes("octet-stream"))
+        (ct.includes("zip") || ct.includes("octet-stream") || isZipBuffer(r.bodyBuffer))
       ) {
         zipBuf = r.bodyBuffer;
         break;
@@ -508,15 +548,7 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
       if (listRes.status < 200 || listRes.status >= 300) {
         return { ok: false, error: `HTTP ${listRes.status} przy /evidences: ${listRes.body.slice(0, 160)}` };
       }
-      const listJson = listRes.json as unknown;
-      const outer = (Array.isArray(listJson) ? listJson[0] : listJson) as
-        | { evidences?: Array<Record<string, unknown>> }
-        | undefined;
-      const evList: Array<Record<string, unknown>> = Array.isArray(outer?.evidences)
-        ? (outer!.evidences as Array<Record<string, unknown>>)
-        : Array.isArray(listJson)
-          ? (listJson as Array<Record<string, unknown>>)
-          : [];
+      const evList = normalizeEvidenceList(listRes.json);
 
       if (!evList.length) return { ok: false, error: lastErr || "Brak dowodów do pobrania" };
 
@@ -525,16 +557,20 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
       let added = 0;
       const perEvidenceErrors: string[] = [];
       for (const e of evList) {
-        const evId = String(e.evidenceId ?? e.id ?? "");
-        const type = String(e.type ?? "evidence");
+        const evId = firstString(e.evidenceId, e.id, e.uuid);
         if (!evId) continue;
-        // UA API v3 zwraca dowód jako XML pod /evidences/{id} przy Accept: application/xml
-        const evCandidates = [
-          `${base}/evidences/${encodeURIComponent(evId)}`,
-          `${base}/evidences/${encodeURIComponent(evId)}/content`,
-          `${base}/evidences/${encodeURIComponent(evId)}/file`,
-          `${base}/evidences/${encodeURIComponent(evId)}/download`,
-        ];
+        const encodedEvId = encodeURIComponent(evId);
+        const messageTypes = [
+          firstString(e.messageType, e.message_type, e.serviceType, e.shippingService),
+          "Evidence",
+          "evidence",
+          "PURDE",
+          "PUH",
+        ].filter((v, idx, arr): v is string => !!v && arr.indexOf(v) === idx);
+        // UA API v3: binarny dowód jest pod /evidences/{messageType}/{evidenceId}.
+        const evCandidates = messageTypes.flatMap((messageType) => [
+          `${mailboxBase}/evidences/${encodeURIComponent(messageType)}/${encodedEvId}`,
+        ]);
         let payload: { buf: Buffer; ct: string } | null = null;
         for (const p of evCandidates) {
           const r = await adeApiCall({
@@ -547,9 +583,9 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
           if (r.status >= 200 && r.status < 300 && r.bodyBuffer && r.bodyBuffer.length > 0) {
             const ct = (r.headers["content-type"] ?? "").toLowerCase();
             const head = r.bodyBuffer.slice(0, 512).toString("utf8").trim();
-            // odrzuć wyłącznie odpowiedzi JSON, które są ewidentnym błędem (mają "error"/"code"/"status" na topie)
-            if (ct.includes("application/json") && /^\{[\s\S]*"(error|code|status|message)"\s*:/.test(head)) {
-              perEvidenceErrors.push(`${evId}: JSON error @ ${p} — ${head.slice(0, 160)}`);
+            // Endpoint metadanych zwraca JSON — nie zapisuj go jako dowodu; dowód ma być XML/PDF/binarny.
+            if (ct.includes("application/json") || /^[\[{]/.test(head)) {
+              perEvidenceErrors.push(`${evId}: JSON zamiast pliku @ ${p} — ${head.slice(0, 160)}`);
               continue;
             }
             payload = { buf: r.bodyBuffer, ct };
@@ -566,7 +602,7 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
             : payload.ct.includes("json")
               ? "json"
               : "bin";
-        zip.file(`${type}_${evId}.${ext}`, payload.buf);
+        zip.file(`${evidenceFileBase(e, evId)}.${ext}`, payload.buf);
         added++;
       }
       // metadane pomocnicze
