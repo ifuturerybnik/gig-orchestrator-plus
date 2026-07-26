@@ -958,5 +958,145 @@ export async function fetchAndBuildMessageArchive(
 }
 
 
+// ─────────────────────────────── BAE search ──────────────────────────────────
 
+export type BaeRecipientType = "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
+export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
+
+export type BaeSearchResult = {
+  address: string;
+  name?: string;
+  type?: string;
+  nip?: string;
+  regon?: string;
+  krs?: string;
+  city?: string;
+  street?: string;
+  postalCode?: string;
+};
+
+export type BaeSearchResponse = {
+  ok: boolean;
+  results: BaeSearchResult[];
+  triedPaths: string[];
+  error?: string;
+};
+
+function extractBaeItems(raw: unknown): Record<string, unknown>[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
+  const r = raw as Record<string, unknown>;
+  for (const key of ["addresses", "items", "content", "results", "data", "entries"]) {
+    const v = r[key];
+    if (Array.isArray(v)) return v as Record<string, unknown>[];
+  }
+  return [];
+}
+
+function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
+  const contrib = ((o.contributor ?? o.entity ?? o.subject ?? {}) as Record<string, unknown>) ?? {};
+  const addr = (o.eDeliveryAddress ??
+    o.edeliveryAddress ??
+    o.address ??
+    o.deliveryAddress) as string | undefined;
+  const name =
+    (contrib.companyName as string | undefined) ??
+    (contrib.name as string | undefined) ??
+    (o.name as string | undefined) ??
+    ([contrib.firstName, contrib.lastName].filter(Boolean).join(" ") || undefined);
+  const type =
+    (o.entityType as string | undefined) ??
+    (o.type as string | undefined) ??
+    (contrib.type as string | undefined);
+  const address = ((o.addressDetails ?? contrib.address ?? {}) as Record<string, unknown>) ?? {};
+  return {
+    address: String(addr ?? ""),
+    name,
+    type,
+    nip: (contrib.nip as string | undefined) ?? (o.nip as string | undefined),
+    regon: (contrib.regon as string | undefined) ?? (o.regon as string | undefined),
+    krs: (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
+    city: (address.city as string | undefined) ?? (address.town as string | undefined),
+    street: (address.street as string | undefined) ?? (address.streetName as string | undefined),
+    postalCode: (address.postalCode as string | undefined) ?? (address.zipCode as string | undefined),
+  };
+}
+
+/**
+ * Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE).
+ * UA API v3 nie publikuje jednej stabilnej ścieżki — próbujemy kilka kandydatów
+ * (POST i GET), zgodnie z tym co udostępnia MC/PP.
+ */
+export async function searchBae(input: {
+  recipientType: BaeRecipientType;
+  identifierType: BaeIdentifierType;
+  value: string;
+  limit?: number;
+}): Promise<BaeSearchResponse> {
+  const cfg = loadAdeConfig();
+  const val = input.value.trim();
+  if (!val) return { ok: false, results: [], triedPaths: [], error: "Podaj wartość do wyszukania" };
+
+  const baseBody: Record<string, unknown> = {
+    recipientType: input.recipientType,
+    entityType: input.recipientType,
+    subjectType: input.recipientType,
+    identifierType: input.identifierType,
+    identifier: val,
+    value: val,
+    query: val,
+    limit: input.limit ?? 25,
+  };
+  if (input.identifierType === "EDELIVERY_ADDRESS") baseBody.eDeliveryAddress = val;
+  if (input.identifierType === "NIP") baseBody.nip = val;
+  if (input.identifierType === "REGON") baseBody.regon = val;
+  if (input.identifierType === "KRS") baseBody.krs = val;
+  if (input.identifierType === "NAME") baseBody.name = val;
+
+  const mb = encodeURIComponent(cfg.mailboxAddress);
+  const candidates: Array<{ method: "POST" | "GET"; path: string; useQuery?: boolean }> = [
+    { method: "POST", path: `/api/v3/${mb}/bae/search` },
+    { method: "POST", path: `/api/v3/bae/search` },
+    { method: "GET", path: `/api/v3/${mb}/bae/search`, useQuery: true },
+    { method: "GET", path: `/api/v3/bae/search`, useQuery: true },
+    { method: "GET", path: `/api/v3/${mb}/addresses/search`, useQuery: true },
+    { method: "GET", path: `/api/v3/addresses/search`, useQuery: true },
+  ];
+
+  const tried: string[] = [];
+  let lastError: string | undefined;
+
+  for (const c of candidates) {
+    tried.push(`${c.method} ${c.path}`);
+    try {
+      const res = await adeApiCall({
+        method: c.method,
+        path: c.path,
+        query: c.useQuery
+          ? {
+              recipientType: input.recipientType,
+              identifierType: input.identifierType,
+              value: val,
+              limit: input.limit ?? 25,
+            }
+          : undefined,
+        body: c.method === "POST" ? baseBody : undefined,
+      });
+      if (res.status === 404 || res.status === 405) continue;
+      if (res.status >= 200 && res.status < 300) {
+        const items = extractBaeItems(res.json).map(mapBaeItem).filter((r) => !!r.address);
+        return { ok: true, results: items, triedPaths: tried };
+      }
+      lastError = `HTTP ${res.status}: ${res.body.slice(0, 240)}`;
+    } catch (err) {
+      lastError = (err as Error).message;
+    }
+  }
+  return {
+    ok: false,
+    results: [],
+    triedPaths: tried,
+    error: lastError ?? "Endpoint BAE nie odpowiada",
+  };
+}
 
