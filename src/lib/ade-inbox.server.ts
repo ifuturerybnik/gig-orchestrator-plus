@@ -523,29 +523,39 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
       const JSZipMod = (await import("jszip")).default;
       const zip = new JSZipMod();
       let added = 0;
+      const perEvidenceErrors: string[] = [];
       for (const e of evList) {
         const evId = String(e.evidenceId ?? e.id ?? "");
         const type = String(e.type ?? "evidence");
         if (!evId) continue;
+        // UA API v3 zwraca dowód jako XML pod /evidences/{id} przy Accept: application/xml
         const evCandidates = [
           `${base}/evidences/${encodeURIComponent(evId)}`,
+          `${base}/evidences/${encodeURIComponent(evId)}/content`,
           `${base}/evidences/${encodeURIComponent(evId)}/file`,
           `${base}/evidences/${encodeURIComponent(evId)}/download`,
         ];
         let payload: { buf: Buffer; ct: string } | null = null;
         for (const p of evCandidates) {
-          const r = await adeApiCall({ method: "GET", path: p, binary: true, timeoutMs: 60000 });
+          const r = await adeApiCall({
+            method: "GET",
+            path: p,
+            binary: true,
+            timeoutMs: 60000,
+            accept: "application/xml, application/pdf, application/octet-stream, */*",
+          });
           if (r.status >= 200 && r.status < 300 && r.bodyBuffer && r.bodyBuffer.length > 0) {
             const ct = (r.headers["content-type"] ?? "").toLowerCase();
-            // pomiń JSON error/opis
-            if (ct.includes("application/json") && r.bodyBuffer.length < 2048) {
-              lastErr = `JSON @ ${p}: ${r.body.slice(0, 120)}`;
+            const head = r.bodyBuffer.slice(0, 512).toString("utf8").trim();
+            // odrzuć wyłącznie odpowiedzi JSON, które są ewidentnym błędem (mają "error"/"code"/"status" na topie)
+            if (ct.includes("application/json") && /^\{[\s\S]*"(error|code|status|message)"\s*:/.test(head)) {
+              perEvidenceErrors.push(`${evId}: JSON error @ ${p} — ${head.slice(0, 160)}`);
               continue;
             }
             payload = { buf: r.bodyBuffer, ct };
             break;
           }
-          lastErr = `HTTP ${r.status} @ ${p}`;
+          perEvidenceErrors.push(`${evId}: HTTP ${r.status} @ ${p} — ${r.body.slice(0, 160)}`);
         }
         if (!payload) continue;
         const startsXml = payload.buf.slice(0, 5).toString("utf8").trim().startsWith("<");
@@ -556,14 +566,20 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
             : payload.ct.includes("json")
               ? "json"
               : "bin";
-        zip.file(`${type}-${evId}.${ext}`, payload.buf);
+        zip.file(`${type}_${evId}.${ext}`, payload.buf);
         added++;
       }
-      // zawsze dołącz index.json z metadanymi
+      // metadane pomocnicze
       zip.file("index.json", JSON.stringify(evList, null, 2));
       if (!added) {
-        // nie udało się pobrać binarnych plików — spakuj sam index jako minimum,
-        // żeby użytkownik dostał metadane dowodów.
+        // Nie udało się pobrać żadnego dowodu — zwróć błąd zamiast pustego ZIP-a,
+        // żeby użytkownik od razu wiedział co się stało.
+        return {
+          ok: false,
+          error:
+            "Nie udało się pobrać plików dowodów z UA API. Szczegóły: " +
+            perEvidenceErrors.slice(0, 5).join(" | "),
+        };
       }
       const out = await zip.generateAsync({ type: "nodebuffer" });
       zipBuf = out as Buffer;
