@@ -386,4 +386,26 @@ export const sendAdeMessage = createServerFn({ method: "POST" })
     return await send(data);
   });
 
+/** Przenieś wiadomość między folderami (lokalnie w bazie; UI aktualizuje się natychmiast). */
+export const moveAdeDelivery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; folder: AdeFolder }) => {
+    if (!data?.id) throw new Error("Brak id");
+    if (!data?.folder) throw new Error("Brak folderu docelowego");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { requireEdoreczeniaAdmin } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .update({ folder: data.folder })
+      .eq("id", data.id);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const };
+  });
+
+
+
 
