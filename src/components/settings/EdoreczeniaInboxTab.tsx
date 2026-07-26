@@ -138,6 +138,91 @@ export default function EdoreczeniaInboxTab() {
     }
   }
 
+  async function handleMoveToTrash() {
+    if (!selected) return;
+    setMoving(true);
+    try {
+      const res = await move({ data: { id: selected.id, folder: "TRASH" } });
+      if (!res.ok) {
+        toast.error(res.error ?? "Nie udało się przenieść wiadomości");
+        return;
+      }
+      toast.success("Wiadomość przeniesiona do folderu Usunięte");
+      setSelected(null);
+      setDetail(null);
+      await reload(folder);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  function handleDownloadMessage() {
+    const d = detail?.data;
+    if (!d) return;
+    const lines = [
+      `Temat: ${d.subject ?? ""}`,
+      `Nadawca: ${d.fromName ?? ""} <${d.from ?? ""}>`,
+      `Odbiorca: ${d.toName ?? ""} <${d.to ?? ""}>`,
+      `Data utworzenia: ${d.creationDate ?? ""}`,
+      `Data wysłania: ${d.sentAt ?? ""}`,
+      `Data otrzymania: ${d.receivedAt ?? ""}`,
+      "",
+      d.bodyText ?? "",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wiadomosc-${d.adeMessageId || d.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function quoteBody(d: AdeDeliveryDetail): string {
+    const header = [
+      `--- Wiadomość oryginalna ---`,
+      `Od: ${d.fromName ?? ""} <${d.from ?? ""}>`,
+      `Data: ${d.sentAt ?? d.creationDate ?? ""}`,
+      `Temat: ${d.subject ?? ""}`,
+      "",
+    ].join("\n");
+    const quoted = (d.bodyText ?? "")
+      .split("\n")
+      .map((l) => `> ${l}`)
+      .join("\n");
+    return `\n\n${header}${quoted}\n`;
+  }
+
+  function handleReply() {
+    const d = detail?.data;
+    if (!d) return;
+    const subj = d.subject ?? "";
+    setComposeInitial({
+      recipients: d.from ? [d.from] : [],
+      subject: subj.toLowerCase().startsWith("odp:") ? subj : `Odp: ${subj}`,
+      body: quoteBody(d),
+    });
+    setComposeOpen(true);
+  }
+
+  function handleForward() {
+    const d = detail?.data;
+    if (!d) return;
+    const subj = d.subject ?? "";
+    setComposeInitial({
+      recipients: [],
+      subject: subj.toLowerCase().startsWith("fwd:") ? subj : `Fwd: ${subj}`,
+      body: quoteBody(d),
+    });
+    setComposeOpen(true);
+  }
+
+
+
   return (
     <div className="space-y-4">
       <Card>
