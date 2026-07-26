@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Mail, MessageCircle, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
 import { MailLayout } from "@/components/mail/MailLayout";
+import EdoreczeniaInbox from "@/components/edoreczenia/EdoreczeniaInbox";
 
 import { cn } from "@/lib/utils";
 
