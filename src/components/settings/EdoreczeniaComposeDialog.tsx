@@ -125,7 +125,9 @@ export default function EdoreczeniaComposeDialog({
 
   const handleSave = async () => {
     setError(null);
-    if (!recipients.length) {
+    const effectiveRecipients = recipientInput.trim() ? addRecipient() : recipients;
+    if (effectiveRecipients === null) return;
+    if (!effectiveRecipients.length) {
       setError("Dodaj przynajmniej jednego adresata — biznes.gov nie zapisuje roboczych bez odbiorcy.");
       return;
     }
