@@ -443,6 +443,24 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
       await Promise.all(chunk.map((id) => fetchAndStoreMessage(id, false).catch(() => null)));
     }
 
+    // Prune: usuń lokalne wiersze w tym folderze, których API już nie zwraca
+    // (użytkownik skasował/przeniósł je w biznes.gov). API = źródło prawdy.
+    const remoteIds = normalized.map((x) => x.id).filter((x): x is string => !!x);
+    const { data: localRows } = await admin
+      .from("edoreczenia_deliveries")
+      .select("id, ade_message_id")
+      .eq("mailbox_address", cfg.mailboxAddress)
+      .eq("folder", requestedFolder);
+    const stale = (localRows ?? []).filter(
+      (r) => r.ade_message_id && !remoteIds.includes(r.ade_message_id as string),
+    );
+    if (stale.length > 0) {
+      await admin
+        .from("edoreczenia_deliveries")
+        .delete()
+        .in("id", stale.map((r) => r.id as string));
+    }
+
     await admin.from("edoreczenia_sync_state").upsert(
       {
         mailbox_address: cfg.mailboxAddress,
