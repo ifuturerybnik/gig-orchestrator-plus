@@ -635,7 +635,7 @@ export async function testAdeConnectionForMailbox(mailboxId: string): Promise<{
   try {
     const res = await fetchAdeTokenForMailbox(mailboxId);
     const ok = res.status >= 200 && res.status < 300;
-    let detail = `HTTP ${res.status}`;
+    let detail = `HTTP ${res.status}${res.attempt ? ` · ${res.attempt}` : ""}`;
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers?.location || res.headers?.Location || "(brak nagłówka Location)";
       detail += ` → Location: ${loc}`;
