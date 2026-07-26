@@ -317,8 +317,8 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
     tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
     clientId: String(data.client_id),
     mailboxAddress: String(data.mailbox_address),
-    certPem,
-    keyPem,
+    certPem: certPem!,
+    keyPem: keyPem!,
     keyPassphrase: passphrase,
     adeEnv,
   };
