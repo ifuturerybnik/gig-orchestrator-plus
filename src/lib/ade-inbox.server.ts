@@ -339,7 +339,7 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
     const normalized = normalizeInboxItems(res.json);
     summary.fetched = rawItems.length;
 
-    const direction = requestedFolder === "SENT" || requestedFolder === "DRAFTS" ? "outbound" : "inbound";
+    const defaultDirection = requestedFolder === "SENT" || requestedFolder === "DRAFTS" ? "outbound" : "inbound";
     const admin = await getAdmin();
     const missingDetails: string[] = [];
     for (let i = 0; i < rawItems.length; i++) {
