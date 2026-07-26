@@ -146,10 +146,17 @@ export default function EdoreczeniaInboxTab() {
               )}
             </CardDescription>
           </div>
-          <Button onClick={refresh} disabled={syncing || loading} variant="outline" size="sm">
-            {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Synchronizuj
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setComposeOpen(true)} size="sm">
+              <PenSquare className="mr-2 h-4 w-4" />
+              Nowa wiadomość
+            </Button>
+            <Button onClick={refresh} disabled={syncing || loading} variant="outline" size="sm">
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Synchronizuj
+            </Button>
+          </div>
+
         </CardHeader>
         <CardContent>
           {/* Foldery */}
