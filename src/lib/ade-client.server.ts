@@ -20,16 +20,35 @@ export type AdeConfig = {
 const DEFAULT_TOKEN_PATH = "/auth/realms/EDOR/protocol/openid-connect/token";
 
 function envDefaults(env: string | undefined) {
-  // env=prod|int — pozwala łatwo przełączyć środowisko
+  // env=prod|int — pozwala łatwo przełączyć środowisko.
+  // UWAGA: od ~lipca 2026 Poczta Polska przeniosła moduł uprawnień (Keycloak KSDE)
+  // pod ten sam host co UA API. Stary `ow.edoreczenia.gov.pl` przekierowuje 302
+  // do statycznej strony informacyjnej — token endpoint już tam nie odpowiada.
   const isInt = (env ?? "").toLowerCase() === "int";
+  const apiBase = isInt
+    ? "https://uaapi-int-ow.poczta-polska.pl"
+    : "https://uaapi-ow.poczta-polska.pl";
   return {
-    apiBase: isInt
-      ? "https://uaapi-int-ow.poczta-polska.pl"
-      : "https://uaapi-ow.poczta-polska.pl",
-    oauthBase: isInt
-      ? "https://int-ow.edoreczenia.gov.pl"
-      : "https://ow.edoreczenia.gov.pl",
+    apiBase,
+    // OAuth teraz na tym samym hoście co UA API (mTLS).
+    oauthBase: apiBase,
   };
+}
+
+// Alternatywny (poprzedni) host OAuth — używany tylko jako fallback, gdyby
+// operator wyznaczony ponownie rozdzielił punkty końcowe.
+function legacyOauthBase(env: string | undefined): string {
+  const isInt = (env ?? "").toLowerCase() === "int";
+  return isInt ? "https://int-ow.edoreczenia.gov.pl" : "https://ow.edoreczenia.gov.pl";
+}
+// Automatycznie przemapuj wycofany host OAuth (ow.edoreczenia.gov.pl) na aktualny
+// (uaapi-ow.poczta-polska.pl) — nawet gdy jest zapisany w env lub w DB.
+function normalizeOauthBase(base: string, env: string | undefined): string {
+  const trimmed = base.replace(/\/+$/, "");
+  const isLegacyProd = /https?:\/\/ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  const isLegacyInt = /https?:\/\/int-ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
+  if (isLegacyProd || isLegacyInt) return envDefaults(env).oauthBase;
+  return trimmed;
 }
 
 export function loadAdeConfig(): AdeConfig {
@@ -51,7 +70,7 @@ export function loadAdeConfig(): AdeConfig {
   if (!ADE_QWAC_KEY_PATH) throw new Error("Brak ADE_QWAC_KEY_PATH w env");
   return {
     apiBase: (ADE_API_BASE || defaults.apiBase).replace(/\/+$/, ""),
-    oauthBase: (ADE_OAUTH_BASE || defaults.oauthBase).replace(/\/+$/, ""),
+    oauthBase: normalizeOauthBase(ADE_OAUTH_BASE || defaults.oauthBase, ADE_ENV),
     tokenPath: ADE_TOKEN_PATH || DEFAULT_TOKEN_PATH,
     clientId: ADE_CLIENT_ID,
     mailboxAddress: ADE_MAILBOX_ADDRESS,
@@ -228,7 +247,7 @@ async function buildClientAssertion(): Promise<{ jwt: string; audience: string }
   return { jwt: `${signingInput}.${base64url(signature)}`, audience };
 }
 
-/** OAuth2 token via private_key_jwt (bez client_secret). */
+/** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
   const { jwt, audience } = await buildClientAssertion();
@@ -238,25 +257,25 @@ export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: stri
     client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     client_assertion: jwt,
   });
-  // Keycloak KSDE wymaga login_hint=ADE.<adres_skrzynki>, aby powiązać token z konkretną skrzynką ADE.
-  const tokenUrl =
-    cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const res = await httpsRawRequest({
-    method: "POST",
-    url: tokenUrl,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-    useMtls: false,
-  });
-  if (res.status >= 300 && res.status < 400) {
-    const retry = await httpsRawRequest({
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string, useMtls: boolean) =>
+    httpsRawRequest({
       method: "POST",
-      url: tokenUrl,
+      url: base + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-      useMtls: true,
+      useMtls,
     });
-    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+
+  // 1) Nowy host (mTLS).
+  let res = await tryHost(cfg.oauthBase, true);
+  // 2) Jeśli 3xx (host informacyjny) — spróbuj starego hosta z mTLS.
+  if (res.status >= 300 && res.status < 400) {
+    const legacy = legacyOauthBase(process.env.ADE_ENV);
+    if (legacy !== cfg.oauthBase) {
+      const alt = await tryHost(legacy, true);
+      if (alt.status < 300 || alt.status >= 400) res = alt;
+    }
   }
   return { ...res, audience };
 }
@@ -306,7 +325,7 @@ export async function loadAdeConfigForMailbox(mailboxId: string): Promise<AdeRes
   const defaults = envDefaults(data.ade_env as string | undefined);
   const resolved: AdeResolvedConfig = {
     apiBase: (data.api_base as string | null) || defaults.apiBase,
-    oauthBase: (data.oauth_base as string | null) || defaults.oauthBase,
+    oauthBase: normalizeOauthBase((data.oauth_base as string | null) || defaults.oauthBase, data.ade_env as string | undefined),
     tokenPath: (data.token_path as string | null) || DEFAULT_TOKEN_PATH,
     clientId: String(data.client_id),
     mailboxAddress: String(data.mailbox_address),
@@ -435,7 +454,7 @@ export async function adeSeRawRequestForMailbox(
   });
 }
 
-/** OAuth2 token dla konkretnej skrzynki. */
+/** OAuth2 token dla konkretnej skrzynki. Token endpoint wymaga mTLS. */
 export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
   const cfg = await loadAdeConfigForMailbox(mailboxId);
   const { jwt, audience } = await buildClientAssertionForCfg(cfg);
@@ -445,23 +464,22 @@ export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRaw
     client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     client_assertion: jwt,
   });
-  const tokenUrl = cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const res = await httpsRawRequestWithCfg(cfg, {
-    method: "POST",
-    url: tokenUrl,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-    useMtls: false,
-  });
-  if (res.status >= 300 && res.status < 400) {
-    const retry = await httpsRawRequestWithCfg(cfg, {
+  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const tryHost = async (base: string) =>
+    httpsRawRequestWithCfg(cfg, {
       method: "POST",
-      url: tokenUrl,
+      url: base + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
       useMtls: true,
     });
-    if (retry.status < 300 || retry.status >= 400) return { ...retry, audience };
+  let res = await tryHost(cfg.oauthBase);
+  if (res.status >= 300 && res.status < 400) {
+    const legacy = legacyOauthBase(undefined);
+    if (legacy !== cfg.oauthBase) {
+      const alt = await tryHost(legacy);
+      if (alt.status < 300 || alt.status >= 400) res = alt;
+    }
   }
   return { ...res, audience };
 }
