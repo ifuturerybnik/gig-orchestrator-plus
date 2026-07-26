@@ -1136,55 +1136,90 @@ function addressTypeTokens(a: Record<string, unknown>): string[] {
   return [];
 }
 
+function collectRecords(raw: unknown, depth = 0, acc: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (!raw || depth > 8) return acc;
+  if (Array.isArray(raw)) {
+    for (const item of raw) collectRecords(item, depth + 1, acc);
+    return acc;
+  }
+  if (isRecord(raw)) {
+    acc.push(raw);
+    for (const v of Object.values(raw)) collectRecords(v, depth + 1, acc);
+  }
+  return acc;
+}
+
+function findFirstStringByKeys(records: Record<string, unknown>[], keys: string[]): string | undefined {
+  for (const r of records) {
+    for (const k of keys) {
+      const v = r[k];
+      if (typeof v === "string" && v.trim()) return v.trim();
+      if (typeof v === "number") return String(v);
+    }
+  }
+  return undefined;
+}
+
+function collectAddressRecords(records: Record<string, unknown>[]): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  for (const r of records) {
+    for (const k of ["addressList", "addresses", "addressData", "addressesList"]) {
+      const v = r[k];
+      if (Array.isArray(v)) for (const x of v) if (isRecord(x)) out.push(x);
+    }
+    for (const k of ["address", "addressDetails", "correspondenceAddress", "headquartersAddress", "seatAddress"]) {
+      const v = r[k];
+      if (isRecord(v)) out.push({ ...v, addressType: v.addressType ?? v.type ?? k });
+    }
+  }
+  return out;
+}
+
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
-  const contrib = (o.contributor ??
-    o.subjectData ??
-    o.entity ??
-    o.subject ??
-    {}) as Record<string, unknown>;
+  const records = collectRecords(o);
   const addr = findEdeliveryAddress(o);
-  const name =
-    (contrib.entityName as string | undefined) ??
-    (contrib.companyName as string | undefined) ??
-    (contrib.name as string | undefined) ??
-    (o.entityName as string | undefined) ??
-    (o.companyName as string | undefined) ??
-    (o.name as string | undefined) ??
-    ([contrib.firstName, contrib.surname, contrib.lastName].filter(Boolean).join(" ") || undefined);
-  const type =
-    (o.entityType as string | undefined) ??
-    (o.type as string | undefined) ??
-    (contrib.type as string | undefined);
 
-  const addressList: Record<string, unknown>[] = [
-    ...((o.addressList as Record<string, unknown>[] | undefined) ?? []),
-    ...((contrib.addressList as Record<string, unknown>[] | undefined) ?? []),
-    ...(isRecord(o.addressDetails) ? [o.addressDetails as Record<string, unknown>] : []),
-    ...(isRecord(contrib.address) ? [contrib.address as Record<string, unknown>] : []),
-  ];
+  const name = findFirstStringByKeys(records, [
+    "entityName",
+    "companyName",
+    "institutionName",
+    "organizationName",
+    "subjectName",
+    "fullName",
+    "displayName",
+    "name",
+  ]) ?? (() => {
+    const first = findFirstStringByKeys(records, ["firstName", "givenName", "name"]);
+    const last = findFirstStringByKeys(records, ["surname", "lastName", "familyName"]);
+    const joined = [first, last].filter(Boolean).join(" ").trim();
+    return joined || undefined;
+  })();
 
-  const headquartersAddr = addressList.find((a) => {
-    const t = addressTypeTokens(a);
-    return t.some((x) => /HEADQUARTER|MAIN|SIEDZIB/i.test(x));
-  });
-  const correspondenceAddr = addressList.find((a) => {
-    const t = addressTypeTokens(a);
-    return t.some((x) => /CORRESPOND|KORESPOND/i.test(x));
-  });
+  const type = findFirstStringByKeys(records, ["entityType", "subjectType", "recipientType", "type"]);
+
+  const addressList = collectAddressRecords(records);
+  const headquartersAddr = addressList.find((a) => addressTypeTokens(a).some((x) => /HEADQUARTER|MAIN|SIEDZIB|SEAT/i.test(x)));
+  const correspondenceAddr = addressList.find((a) => addressTypeTokens(a).some((x) => /CORRESPOND|KORESPOND/i.test(x)));
   const fallback = addressList[0];
   const primary = headquartersAddr ?? fallback ?? {};
 
-  const officialIds = contrib.officialIds ?? o.officialIds ?? o;
+  let nip: string | undefined;
+  let regon: string | undefined;
+  let krs: string | undefined;
+  for (const r of records) {
+    nip ??= findOfficialId(r.officialIds, "nip") ?? pickString(r, ["nip", "NIP"]);
+    regon ??= findOfficialId(r.officialIds, "regon") ?? pickString(r, ["regon", "REGON"]);
+    krs ??= findOfficialId(r.officialIds, "krs") ?? pickString(r, ["krs", "KRS"]);
+    if (nip && regon && krs) break;
+  }
+
   return {
     address: String(addr ?? ""),
     name,
     type,
-    nip: findOfficialId(officialIds, "nip") ?? (contrib.nip as string | undefined) ?? (o.nip as string | undefined),
-    regon:
-      findOfficialId(officialIds, "regon") ??
-      (contrib.regon as string | undefined) ??
-      (o.regon as string | undefined),
-    krs: findOfficialId(officialIds, "krs") ?? (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
+    nip,
+    regon,
+    krs,
     city: firstString(primary.city, primary.town),
     street:
       [firstString(primary.street, primary.streetName), firstString(primary.buildingNumber, primary.houseNumber)]
