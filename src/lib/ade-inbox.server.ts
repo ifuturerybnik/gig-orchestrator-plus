@@ -152,6 +152,14 @@ export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: 
       (meta.submissionDate as string | undefined) ??
       (o.receivedAt as string | undefined) ??
       (o.createdAt as string | undefined);
+    const creationDate =
+      (meta.creationDate as string | undefined) ??
+      (meta.createDate as string | undefined) ??
+      (o.creationDate as string | undefined);
+    const sentAt =
+      (meta.submissionDate as string | undefined) ??
+      (meta.sendDate as string | undefined) ??
+      (o.sentAt as string | undefined);
     const status =
       (meta.shippingService as string | undefined) ??
       (o.status as string | undefined) ??
@@ -164,10 +172,13 @@ export function normalizeInboxItems(raw: unknown): (AdeInboxItem & { fromName?: 
       toName: toParty.name,
       subject,
       receivedAt,
+      creationDate,
+      sentAt,
       status,
     };
   });
 }
+
 
 // ─────────────────────────────── Persystencja ────────────────────────────────
 
