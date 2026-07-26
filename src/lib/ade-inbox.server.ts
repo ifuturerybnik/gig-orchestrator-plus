@@ -209,12 +209,13 @@ export type SyncSummary = {
   error?: string;
 };
 
-/** Pobierz listę wiadomości z ADE i upsertuj do public.edoreczenia_deliveries. */
-export async function syncInboxToDb(params: { limit?: number } = {}): Promise<SyncSummary> {
+/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries. */
+export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder } = {}): Promise<SyncSummary> {
   const cfg = loadAdeConfig();
+  const folder: AdeFolder = params.folder ?? "INBOX";
   const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
   try {
-    const res = await listAdeInboxRaw({ limit: params.limit ?? 100 });
+    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder });
     if (res.status < 200 || res.status >= 300) {
       summary.error = `HTTP ${res.status}`;
       return summary;
@@ -239,18 +240,22 @@ export async function syncInboxToDb(params: { limit?: number } = {}): Promise<Sy
           ? ((raw as { bodyText: string }).bodyText)
           : null;
       const row = {
-        direction: "inbound" as const,
+        direction: folder === "SENT" ? ("outbound" as const) : ("inbound" as const),
         ade_message_id: n.id,
         mailbox_address: cfg.mailboxAddress,
+        folder,
         from_address: n.from ?? null,
         to_address: n.to ?? cfg.mailboxAddress,
         subject: n.subject ?? null,
         received_at: n.receivedAt ?? null,
+        creation_date: (n as { creationDate?: string }).creationDate ?? null,
+        sent_at: (n as { sentAt?: string }).sentAt ?? null,
         status: n.status ?? "new",
         raw,
         body_text: bodyText,
         updated_at: new Date().toISOString(),
       };
+
       if (existing?.id) {
         await admin.from("edoreczenia_deliveries").update(row).eq("id", existing.id);
         summary.updated++;
