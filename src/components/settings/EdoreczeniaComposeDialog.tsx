@@ -150,7 +150,7 @@ export default function EdoreczeniaComposeDialog({
       );
       const res = await saveDraft({
         data: {
-          recipients,
+          recipients: effectiveRecipients,
           subject: subject.trim() || "(bez tematu)",
           bodyText: body,
           caseNumber: caseNumber.trim() || undefined,
