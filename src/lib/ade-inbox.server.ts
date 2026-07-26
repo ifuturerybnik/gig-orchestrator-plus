@@ -368,8 +368,9 @@ function extractAttachmentRefs(
     .filter((a) => a.id);
 }
 
-/** Pobierz treść wiadomości z ADE, zapisz body_text i załączniki do Storage/DB. */
-export async function fetchAndStoreMessage(deliveryId: string): Promise<{
+/** Pobierz treść wiadomości z ADE, zapisz body_text i załączniki do Storage/DB.
+ *  `markRead` — czy ustawić read_at (domyślnie true = otwarcie w UI). */
+export async function fetchAndStoreMessage(deliveryId: string, markRead = true): Promise<{
   ok: boolean;
   bodyText?: string;
   attachments: Array<{
