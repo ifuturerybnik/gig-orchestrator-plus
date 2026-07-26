@@ -174,7 +174,9 @@ export default function EdoreczeniaComposeDialog({
 
   const handleSend = async () => {
     setError(null);
-    if (!recipients.length) {
+    const effectiveRecipients = recipientInput.trim() ? addRecipient() : recipients;
+    if (effectiveRecipients === null) return;
+    if (!effectiveRecipients.length) {
       setError("Dodaj przynajmniej jednego adresata.");
       return;
     }
@@ -197,7 +199,7 @@ export default function EdoreczeniaComposeDialog({
       );
       const res = await send({
         data: {
-          recipients,
+          recipients: effectiveRecipients,
           subject: subject.trim(),
           bodyText: body,
           caseNumber: caseNumber.trim() || undefined,
