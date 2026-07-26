@@ -21,33 +21,15 @@ const DEFAULT_TOKEN_PATH = "/auth/realms/EDOR/protocol/openid-connect/token";
 
 function envDefaults(env: string | undefined) {
   // env=prod|int — pozwala łatwo przełączyć środowisko.
-  // UWAGA: od ~lipca 2026 Poczta Polska przeniosła moduł uprawnień (Keycloak KSDE)
-  // pod ten sam host co UA API. Stary `ow.edoreczenia.gov.pl` przekierowuje 302
-  // do statycznej strony informacyjnej — token endpoint już tam nie odpowiada.
   const isInt = (env ?? "").toLowerCase() === "int";
-  const apiBase = isInt
-    ? "https://uaapi-int-ow.poczta-polska.pl"
-    : "https://uaapi-ow.poczta-polska.pl";
   return {
-    apiBase,
-    oauthBase: apiBase,
+    apiBase: isInt
+      ? "https://uaapi-int-ow.poczta-polska.pl"
+      : "https://uaapi-ow.poczta-polska.pl",
+    oauthBase: isInt
+      ? "https://int-ow.edoreczenia.gov.pl"
+      : "https://ow.edoreczenia.gov.pl",
   };
-}
-
-// Alternatywny (poprzedni) host OAuth — używany tylko jako fallback, gdyby
-// operator wyznaczony ponownie rozdzielił punkty końcowe.
-function legacyOauthBase(env: string | undefined): string {
-  const isInt = (env ?? "").toLowerCase() === "int";
-  return isInt ? "https://int-ow.edoreczenia.gov.pl" : "https://ow.edoreczenia.gov.pl";
-}
-// Automatycznie przemapuj wycofany host OAuth (ow.edoreczenia.gov.pl) na aktualny
-// (uaapi-ow.poczta-polska.pl) — nawet gdy jest zapisany w env lub w DB.
-function normalizeOauthBase(base: string, env: string | undefined): string {
-  const trimmed = base.replace(/\/+$/, "");
-  const isLegacyProd = /https?:\/\/ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
-  const isLegacyInt = /https?:\/\/int-ow\.edoreczenia\.gov\.pl$/i.test(trimmed);
-  if (isLegacyProd || isLegacyInt) return envDefaults(env).oauthBase;
-  return trimmed;
 }
 
 export function loadAdeConfig(): AdeConfig {
@@ -69,7 +51,7 @@ export function loadAdeConfig(): AdeConfig {
   if (!ADE_QWAC_KEY_PATH) throw new Error("Brak ADE_QWAC_KEY_PATH w env");
   return {
     apiBase: (ADE_API_BASE || defaults.apiBase).replace(/\/+$/, ""),
-    oauthBase: normalizeOauthBase(ADE_OAUTH_BASE || defaults.oauthBase, ADE_ENV),
+    oauthBase: (ADE_OAUTH_BASE || defaults.oauthBase).replace(/\/+$/, ""),
     tokenPath: ADE_TOKEN_PATH || DEFAULT_TOKEN_PATH,
     clientId: ADE_CLIENT_ID,
     mailboxAddress: ADE_MAILBOX_ADDRESS,
@@ -209,44 +191,8 @@ function base64url(input: Buffer | string): string {
   return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function realmAudienceFromBase(base: string): string {
-  return `${base.replace(/\/+$/, "")}/auth/realms/EDOR`;
-}
-
-function audienceCandidates(base: string, env: string | undefined): string[] {
-  const legacy = legacyOauthBase(env);
-  return [
-    // Wersja produkcyjnie przetestowana: token endpoint i `aud` na hoście OW.
-    realmAudienceFromBase(legacy),
-    realmAudienceFromBase(base),
-    // Instrukcje KSDE pokazują `aud` z http:// — zostawiamy jako fallback.
-    realmAudienceFromBase(legacy).replace(/^https:/i, "http:"),
-  ].filter((value, index, values) => values.indexOf(value) === index);
-}
-
-function loginHintCandidates(mailboxAddress: string): string[] {
-  const trimmed = mailboxAddress.trim();
-  const withPrefix = trimmed.startsWith("ADE.") ? trimmed : `ADE.${trimmed}`;
-  return [withPrefix, trimmed].filter((value, index, values) => value && values.indexOf(value) === index);
-}
-
-type ClientAssertionVariant = {
-  label: string;
-  includeX5c: boolean;
-  includeNbf: boolean;
-};
-
-const STABLE_CLIENT_ASSERTION_VARIANT: ClientAssertionVariant = {
-  label: "jwt:a02-stable-x5c-nbf",
-  includeX5c: true,
-  includeNbf: true,
-};
-
 /** Zbuduj client_assertion (JWT) podpisany kluczem prywatnym QWAC. */
-async function buildClientAssertion(
-  audience?: string,
-  variant: ClientAssertionVariant = STABLE_CLIENT_ASSERTION_VARIANT,
-): Promise<{ jwt: string; audience: string; variantLabel: string }> {
+async function buildClientAssertion(): Promise<{ jwt: string; audience: string }> {
   const cfg = loadAdeConfig();
   const fs = await import("node:fs");
   const crypto = await import("node:crypto");
@@ -260,23 +206,18 @@ async function buildClientAssertion(
     .replace(/-----END CERTIFICATE-----/g, "")
     .replace(/\s+/g, "");
 
-  const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
+  // UA API / KSDE oczekuje audience = realmu (bez ścieżki /protocol/openid-connect/token)
+  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
   const now = Math.floor(Date.now() / 1000);
-  // KSDE/Keycloak bywa wrażliwy na minimalne różnice czasu między hostami.
-  // Cofamy iat/nbf o minutę i dajemy zgodne z instrukcją okno ~10 min,
-  // żeby token nie był odrzucony jako "not yet valid" przy drobnym skew NTP.
-  const issuedAt = now - 60;
-  const header: Record<string, string | string[]> = { alg: "RS256", typ: "JWT" };
-  if (variant.includeX5c) header.x5c = [certBody];
-  const payload: Record<string, string | number> = {
+  const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
+  const payload = {
     iss: cfg.clientId,
     sub: cfg.clientId,
-    aud: resolvedAudience,
+    aud: audience,
     jti: crypto.randomUUID(),
-    iat: issuedAt,
-    exp: now + 600,
+    iat: now,
+    exp: now + 60,
   };
-  if (variant.includeNbf) payload.nbf = issuedAt;
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
   const signer = crypto.createSign("RSA-SHA256");
   signer.update(signingInput);
@@ -285,57 +226,30 @@ async function buildClientAssertion(
     key: keyPem,
     passphrase: cfg.keyPassphrase,
   });
-  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience, variantLabel: variant.label };
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience };
 }
 
-/** OAuth2 token via private_key_jwt (bez client_secret). Token endpoint wymaga mTLS. */
+/** OAuth2 token via private_key_jwt (bez client_secret). */
 export async function fetchAdeToken(): Promise<AdeRawResponse & { audience: string }> {
   const cfg = loadAdeConfig();
-  const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const tryHost = async (base: string, assertionAudience: string) => {
-    const { jwt, audience, variantLabel } = await buildClientAssertion(assertionAudience);
-    const params = new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: cfg.clientId,
-      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-      client_assertion: jwt,
-    });
-    const res = await httpsRawRequest({
-      method: "POST",
-      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-      useMtls: true,
-    });
-    return {
-      ...res,
-      audience,
-      attempt: `host=${base}; aud=${audience}; login_hint=ADE.${cfg.mailboxAddress}; ${variantLabel}; with client_id; mTLS`,
-    };
-  };
-
-  let last: (AdeRawResponse & { audience: string }) | null = null;
-  for (const assertionAudience of audienceCandidates(cfg.oauthBase, process.env.ADE_ENV)) {
-    const res = await tryHost(cfg.oauthBase, assertionAudience);
-    last = res;
-    if (res.status >= 200 && res.status < 300) return res;
-    // 401 zwykle oznacza odrzucenie asercji JWT — sprawdzamy kolejny `aud`.
-    if (res.status !== 401) break;
-  }
-
-  // Jeśli trafiliśmy jeszcze w host informacyjny, spróbuj starego hosta jako fallback.
-  if (last?.status && last.status >= 300 && last.status < 400) {
-    const legacy = legacyOauthBase(process.env.ADE_ENV);
-    if (legacy !== cfg.oauthBase) {
-      for (const assertionAudience of audienceCandidates(legacy, process.env.ADE_ENV)) {
-        const alt = await tryHost(legacy, assertionAudience);
-        last = alt;
-        if (alt.status >= 200 && alt.status < 300) return alt;
-        if (alt.status !== 401) break;
-      }
-    }
-  }
-  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
+  const { jwt, audience } = await buildClientAssertion();
+  const params = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: cfg.clientId,
+    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+    client_assertion: jwt,
+  });
+  // Keycloak KSDE wymaga login_hint=ADE.<adres_skrzynki>, aby powiązać token z konkretną skrzynką ADE.
+  const tokenUrl =
+    cfg.oauthBase + cfg.tokenPath + `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
+  const res = await httpsRawRequest({
+    method: "POST",
+    url: tokenUrl,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+    useMtls: false,
+  });
+  return { ...res, audience };
 }
 
 // ============================================================
