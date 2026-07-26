@@ -865,53 +865,50 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
   if (!recipients.length) return { ok: false, error: "Brak adresatów" };
   if (!input.subject?.trim()) return { ok: false, error: "Temat jest wymagany" };
 
-  const attachments = (input.attachments ?? []).map((a) => ({
-    filename: a.filename,
-    mimeType: a.mimeType ?? "application/octet-stream",
-    content: a.contentBase64,
-  }));
+  const attachments = (input.attachments ?? [])
+    .filter((a) => a.filename.trim() && a.contentBase64.trim())
+    .map((a) => {
+      const size = Buffer.from(a.contentBase64, "base64").byteLength;
+      return {
+        attachmentId: null,
+        file: {
+          fileMetadata: {
+            fileId: crypto.randomUUID(),
+            filename: a.filename.trim(),
+            contentType: a.mimeType ?? "application/octet-stream",
+            size,
+            alg: "SHA-256",
+            hash: null,
+            description: a.filename.trim(),
+          },
+          file: a.contentBase64,
+        },
+      };
+    });
 
-  const commonMeta = {
-    from: [{ eDeliveryAddress: mailbox }],
+  const caseId = input.caseNumber?.trim();
+  const messageMetadata = {
+    from: { eDeliveryAddress: mailbox },
     to: recipients.map((address) => ({ eDeliveryAddress: address })),
     subject: input.subject.trim(),
-    caseIdentifier: input.caseNumber?.trim() || undefined,
+    shippingService: "electronic",
+    ...(caseId ? { caseId } : {}),
   };
 
-  // UA API v3 wymaga `shippingService` również dla wysyłki (analogicznie do draftów).
-  // Dozwolone wartości: electronic, commercial, hybrid. Próbujemy w tej kolejności.
-  const shippingServices = ["electronic", "commercial", "hybrid"];
-
-  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [];
-  for (const svc of shippingServices) {
-    payloads.push({
-      label: `v3-nested-${svc}`,
+  // Oficjalny kontrakt UA API dla wysyłki bez draftu to POST /{eDeliveryAddress}/messages.
+  // `messages/send` dotyczy starszych wariantów i na biznes.gov potrafi kończyć się UAAPI0001.
+  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
+    {
+      label: "uaapi-v3-message-electronic",
       body: {
-        messageMetadata: { ...commonMeta, shippingService: svc },
+        messageMetadata,
         textBody: input.bodyText ?? "",
-        attachments,
+        ...(attachments.length ? { attachments } : {}),
       },
-    });
-  }
-  for (const svc of shippingServices) {
-    payloads.push({
-      label: `v3-flat-${svc}`,
-      body: {
-        from: mailbox,
-        to: recipients,
-        subject: input.subject.trim(),
-        textBody: input.bodyText ?? "",
-        shippingService: svc,
-        caseIdentifier: input.caseNumber?.trim() || undefined,
-        attachments,
-      },
-    });
-  }
-
-  const paths = [
-    `/api/v3/${encodeURIComponent(mailbox)}/messages`,
-    `/api/v3/${encodeURIComponent(mailbox)}/messages/send`,
+    },
   ];
+
+  const paths = [`/api/v3/${encodeURIComponent(mailbox)}/messages`];
 
   const attempts: Array<{ path: string; status: number; snippet: string }> = [];
   for (const path of paths) {
@@ -925,15 +922,17 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
       attempts.push({ path: `${path} [${p.label}]`, status: res.status, snippet: res.body.slice(0, 200) });
       if (res.status >= 200 && res.status < 300) {
         const j = (Array.isArray(res.json) ? res.json[0] : res.json) as Record<string, unknown> | null;
+        const messages = Array.isArray(j?.Messages) ? (j.Messages as Record<string, unknown>[]) : [];
+        const firstMessage = messages[0];
         const meta = ((j?.messageMetadata ?? {}) as Record<string, unknown>) || {};
         const messageId =
+          (firstMessage?.MessageId as string | undefined) ??
+          (firstMessage?.messageId as string | undefined) ??
           (meta.messageId as string | undefined) ??
           (j?.messageId as string | undefined) ??
           (j?.id as string | undefined);
         return { ok: true, messageId, attempts };
       }
-      // 400/415/422 – zmiana kształtu payloadu może pomóc; 500/UAAPI0001 również (brakujący/nieznany parametr).
-      // 404 – zmieniamy ścieżkę.
       if (res.status !== 400 && res.status !== 415 && res.status !== 422 && res.status !== 500) break;
     }
   }
