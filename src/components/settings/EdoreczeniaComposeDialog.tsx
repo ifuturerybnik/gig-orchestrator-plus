@@ -367,7 +367,7 @@ export default function EdoreczeniaComposeDialog({
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleSend} disabled={sending}>
+            <Button onClick={handleSend} disabled={sending || saving}>
               {sending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -375,15 +375,23 @@ export default function EdoreczeniaComposeDialog({
               )}
               Wyślij
             </Button>
+            <Button variant="secondary" onClick={handleSave} disabled={sending || saving}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Zapisz
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
-                if (!sending) {
+                if (!sending && !saving) {
                   reset();
                   onOpenChange(false);
                 }
               }}
-              disabled={sending}
+              disabled={sending || saving}
             >
               Anuluj
             </Button>
