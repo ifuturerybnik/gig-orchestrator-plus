@@ -312,7 +312,7 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
     const CONCURRENCY = 3;
     for (let i = 0; i < missingDetails.length; i += CONCURRENCY) {
       const chunk = missingDetails.slice(i, i + CONCURRENCY);
-      await Promise.all(chunk.map((id) => fetchAndStoreMessage(id).catch(() => null)));
+      await Promise.all(chunk.map((id) => fetchAndStoreMessage(id, false).catch(() => null)));
     }
 
     await admin.from("edoreczenia_sync_state").upsert(
