@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Paperclip, Plus, Save, Search, Send, Trash2, X } from "lucide-react";
 import { sendAdeMessage, saveAdeDraft } from "@/lib/ade-inbox.functions";
 import EdoreczeniaBaeSearchDialog from "./EdoreczeniaBaeSearchDialog";
+import AdeAddress from "./AdeAddress";
 import { toast } from "sonner";
 
 
