@@ -291,19 +291,34 @@ export const openStoredDelivery = createServerFn({ method: "POST" })
           : undefined,
     }));
 
+    // Najwcześniejsza `createDate` z evidences = data utworzenia wiadomości (D.1).
+    const evidenceCreateDates = evidencesRaw
+      .map((e) => (typeof e.createDate === "string" ? (e.createDate as string) : undefined))
+      .filter((v): v is string => !!v)
+      .sort();
+    const evidenceEventDates = evidencesRaw
+      .map((e) => (typeof e.eventDate === "string" ? (e.eventDate as string) : undefined))
+      .filter((v): v is string => !!v)
+      .sort();
+
     let evidenceZipUrl: string | undefined;
     if (refreshed?.evidence_storage_path) {
-      evidenceZipUrl = (await signedAttachmentUrl(refreshed.evidence_storage_path)) ?? undefined;
+      const dlName = `dowody-${refreshed.ade_message_id ?? "edoreczenia"}.zip`;
+      evidenceZipUrl =
+        (await signedAttachmentUrl(refreshed.evidence_storage_path, dlName)) ?? undefined;
     }
 
     const creationDate =
       (refreshed?.creation_date as string | undefined) ??
       (meta.creationDate as string | undefined) ??
-      (meta.createDate as string | undefined);
+      (meta.createDate as string | undefined) ??
+      evidenceCreateDates[0] ??
+      evidenceEventDates[0];
     const sentAt =
       (refreshed?.sent_at as string | undefined) ??
       (meta.submissionDate as string | undefined) ??
       (meta.sendDate as string | undefined);
+
 
     return {
       ok: true,
@@ -336,6 +351,14 @@ export const downloadEvidenceZip = createServerFn({ method: "POST" })
     await requireEdoreczeniaAdmin(context);
     const res = await fetchAndStoreEvidenceZip(data.id);
     if (!res.ok) return { ok: false, error: res.error };
-    const url = (await signedAttachmentUrl(res.storagePath)) ?? undefined;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: d } = await supabaseAdmin
+      .from("edoreczenia_deliveries")
+      .select("ade_message_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    const dlName = `dowody-${d?.ade_message_id ?? "edoreczenia"}.zip`;
+    const url = (await signedAttachmentUrl(res.storagePath, dlName)) ?? undefined;
     return { ok: true, url };
   });
+
