@@ -25,6 +25,7 @@ import {
   listStoredDeliveries,
   openStoredDelivery,
   downloadEvidenceZip,
+  downloadMessageArchive,
   moveAdeDelivery,
   type AdeInboxResult,
   type AdeInboxRow,
@@ -55,6 +56,7 @@ export default function EdoreczeniaInboxTab() {
   const open = useServerFn(openStoredDelivery);
   const fetchEvidence = useServerFn(downloadEvidenceZip);
   const move = useServerFn(moveAdeDelivery);
+  const fetchArchive = useServerFn(downloadMessageArchive);
   const [folder, setFolder] = useState<AdeFolder>("INBOX");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -63,6 +65,7 @@ export default function EdoreczeniaInboxTab() {
   const [detail, setDetail] = useState<{ loading: boolean; data?: AdeDeliveryDetail; error?: string } | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeInitial, setComposeInitial] = useState<{
     recipients?: string[];
@@ -158,28 +161,21 @@ export default function EdoreczeniaInboxTab() {
     }
   }
 
-  function handleDownloadMessage() {
-    const d = detail?.data;
-    if (!d) return;
-    const lines = [
-      `Temat: ${d.subject ?? ""}`,
-      `Nadawca: ${d.fromName ?? ""} <${d.from ?? ""}>`,
-      `Odbiorca: ${d.toName ?? ""} <${d.to ?? ""}>`,
-      `Data utworzenia: ${d.creationDate ?? ""}`,
-      `Data wysłania: ${d.sentAt ?? ""}`,
-      `Data otrzymania: ${d.receivedAt ?? ""}`,
-      "",
-      d.bodyText ?? "",
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `wiadomosc-${d.adeMessageId || d.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  async function handleDownloadMessage() {
+    if (!selected) return;
+    setArchiveLoading(true);
+    try {
+      const res = await fetchArchive({ data: { id: selected.id } });
+      if (!res.ok || !res.url) {
+        toast.error(res.error ?? "Nie udało się pobrać archiwum wiadomości");
+        return;
+      }
+      window.open(res.url, "_blank", "noopener");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setArchiveLoading(false);
+    }
   }
 
   function quoteBody(d: AdeDeliveryDetail): string {
@@ -414,8 +410,12 @@ export default function EdoreczeniaInboxTab() {
                       Przenieś do folderu Usunięte
                     </Button>
                   )}
-                  <Button onClick={handleDownloadMessage} variant="outline" size="sm">
-                    <Download className="mr-2 h-3.5 w-3.5" />
+                  <Button onClick={handleDownloadMessage} disabled={archiveLoading} variant="outline" size="sm">
+                    {archiveLoading ? (
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3.5 w-3.5" />
+                    )}
                     Pobierz
                   </Button>
                   <Button onClick={handleForward} variant="outline" size="sm">

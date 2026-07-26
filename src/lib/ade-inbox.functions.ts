@@ -362,6 +362,23 @@ export const downloadEvidenceZip = createServerFn({ method: "POST" })
     return { ok: true, url };
   });
 
+/** Zbuduj i pobierz pełne archiwum wiadomości (ZIP w formacie zbliżonym do biznes.gov). */
+export const downloadMessageArchive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(
+    async ({ data, context }): Promise<{ ok: boolean; url?: string; filename?: string; error?: string }> => {
+      const { requireEdoreczeniaAdmin, fetchAndBuildMessageArchive, signedAttachmentUrl } = await import(
+        "@/lib/ade-inbox.server"
+      );
+      await requireEdoreczeniaAdmin(context);
+      const res = await fetchAndBuildMessageArchive(data.id);
+      if (!res.ok) return { ok: false, error: res.error };
+      const url = (await signedAttachmentUrl(res.storagePath, res.filename)) ?? undefined;
+      return { ok: true, url, filename: res.filename };
+    },
+  );
+
 export type SendAdeMessagePayload = {
   recipients: string[];
   subject: string;
