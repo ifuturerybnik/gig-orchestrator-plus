@@ -509,9 +509,16 @@ export default function EdoreczeniaInboxTab() {
 
       <EdoreczeniaComposeDialog
         open={composeOpen}
-        onOpenChange={setComposeOpen}
+        onOpenChange={(o) => {
+          setComposeOpen(o);
+          if (!o) setComposeInitial({});
+        }}
         fromAddress={result?.mailbox}
+        initialRecipients={composeInitial.recipients}
+        initialSubject={composeInitial.subject}
+        initialBody={composeInitial.body}
         onSent={() => {
+          setComposeInitial({});
           setFolder("SENT");
           void refresh();
         }}
