@@ -254,30 +254,43 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
   const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
   try {
     // Sync z API tylko dla Odebranych. Inne foldery są utrzymywane lokalnie.
-    if (requestedFolder !== "INBOX") {
-      const admin = await getAdmin();
-      await admin.from("edoreczenia_sync_state").upsert(
-        {
-          mailbox_address: cfg.mailboxAddress,
-          last_synced_at: new Date().toISOString(),
-          last_error: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "mailbox_address" },
-      );
-      summary.ok = true;
-      return summary;
-    }
-
-    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder: "INBOX" });
-    if (res.status < 200 || res.status >= 300) {
-      summary.error = `HTTP ${res.status}`;
+/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries.
+ *  Sync jest realizowany osobno per folder: INBOX / SENT / DRAFTS / TRASH.
+ *  Dla folderów innych niż INBOX używamy alternatywnych ścieżek UA API (patrz listAdeInboxRaw).
+ *  Wiersze upsertujemy z folderem = requestedFolder, żeby API było źródłem prawdy.
+ */
+export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder } = {}): Promise<SyncSummary> {
+  const cfg = loadAdeConfig();
+  const requestedFolder: AdeFolder = params.folder ?? "INBOX";
+  const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
+  try {
+    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder: requestedFolder });
+    if (!res || res.status < 200 || res.status >= 300) {
+      // Jeśli API nie wspiera danego folderu (np. DRAFTS w niektórych wdrożeniach),
+      // zwracamy ok=true bez zmian, żeby UI nie pokazywał błędu.
+      const status = res?.status ?? 0;
+      if (status === 404 || status === 400 || status === 405 || status === 501) {
+        const admin = await getAdmin();
+        await admin.from("edoreczenia_sync_state").upsert(
+          {
+            mailbox_address: cfg.mailboxAddress,
+            last_synced_at: new Date().toISOString(),
+            last_error: null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "mailbox_address" },
+        );
+        summary.ok = true;
+        return summary;
+      }
+      summary.error = `HTTP ${status}`;
       return summary;
     }
     const rawItems = extractRawItems(res.json);
     const normalized = normalizeInboxItems(res.json);
     summary.fetched = rawItems.length;
 
+    const direction = requestedFolder === "SENT" || requestedFolder === "DRAFTS" ? "outbound" : "inbound";
     const admin = await getAdmin();
     const missingDetails: string[] = [];
     for (let i = 0; i < rawItems.length; i++) {
@@ -295,11 +308,11 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
           ? ((raw as { bodyText: string }).bodyText)
           : null;
       const baseRow: Record<string, unknown> = {
-        direction: "inbound" as const,
+        direction,
         ade_message_id: n.id,
         mailbox_address: cfg.mailboxAddress,
-        from_address: n.from ?? null,
-        to_address: n.to ?? cfg.mailboxAddress,
+        from_address: n.from ?? (direction === "outbound" ? cfg.mailboxAddress : null),
+        to_address: n.to ?? (direction === "inbound" ? cfg.mailboxAddress : null),
         subject: n.subject ?? null,
         received_at: n.receivedAt ?? null,
         creation_date: (n as { creationDate?: string }).creationDate ?? null,
@@ -312,9 +325,8 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
 
       let deliveryId: string;
       if (existing?.id) {
-        // API zwróciło tę wiadomość jako Odebraną — resetuj folder do INBOX
-        // (naprawia stare wpisy zapisane błędnie w SENT/DRAFTS/TRASH przez poprzednie sync-e).
-        const patch: Record<string, unknown> = { ...baseRow, folder: "INBOX" };
+        // API zwróciło tę wiadomość w tym folderze — traktujemy API jako źródło prawdy.
+        const patch: Record<string, unknown> = { ...baseRow, folder: requestedFolder };
         if (!n.subject && existing.subject) delete patch.subject;
         if (!bodyText && existing.body_text) delete patch.body_text;
         await admin.from("edoreczenia_deliveries").update(patch).eq("id", existing.id);
@@ -323,19 +335,18 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
       } else {
         const { data: inserted } = await admin
           .from("edoreczenia_deliveries")
-          .insert({ ...baseRow, folder: "INBOX" })
+          .insert({ ...baseRow, folder: requestedFolder })
           .select("id")
           .maybeSingle();
         deliveryId = inserted?.id as string;
         summary.inserted++;
       }
 
-      // Doczytaj detal (temat/treść/daty), żeby były widoczne od razu bez klikania.
       const needsDetail = !n.subject || !bodyText;
       if (deliveryId && needsDetail) missingDetails.push(deliveryId);
     }
 
-    // Pobierz szczegóły równolegle, ale z małym limitem żeby nie zalać UA API.
+    // Doczytaj szczegóły równolegle, ale z małym limitem żeby nie zalać UA API.
     const CONCURRENCY = 3;
     for (let i = 0; i < missingDetails.length; i += CONCURRENCY) {
       const chunk = missingDetails.slice(i, i + CONCURRENCY);
