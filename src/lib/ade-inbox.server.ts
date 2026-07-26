@@ -878,28 +878,35 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
     caseIdentifier: input.caseNumber?.trim() || undefined,
   };
 
-  // Warianty payloadu wg różnych rewizji UA API v3.
-  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [
-    {
-      label: "v3-nested",
+  // UA API v3 wymaga `shippingService` również dla wysyłki (analogicznie do draftów).
+  // Dozwolone wartości: electronic, commercial, hybrid. Próbujemy w tej kolejności.
+  const shippingServices = ["electronic", "commercial", "hybrid"];
+
+  const payloads: Array<{ label: string; body: Record<string, unknown> }> = [];
+  for (const svc of shippingServices) {
+    payloads.push({
+      label: `v3-nested-${svc}`,
       body: {
-        messageMetadata: commonMeta,
+        messageMetadata: { ...commonMeta, shippingService: svc },
         textBody: input.bodyText ?? "",
         attachments,
       },
-    },
-    {
-      label: "v3-flat",
+    });
+  }
+  for (const svc of shippingServices) {
+    payloads.push({
+      label: `v3-flat-${svc}`,
       body: {
         from: mailbox,
         to: recipients,
         subject: input.subject.trim(),
         textBody: input.bodyText ?? "",
+        shippingService: svc,
         caseIdentifier: input.caseNumber?.trim() || undefined,
         attachments,
       },
-    },
-  ];
+    });
+  }
 
   const paths = [
     `/api/v3/${encodeURIComponent(mailbox)}/messages`,
@@ -925,8 +932,9 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
           (j?.id as string | undefined);
         return { ok: true, messageId, attempts };
       }
-      // 400/415 – zmiana kształtu payloadu może pomóc; 404 – zmieniamy ścieżkę.
-      if (res.status !== 400 && res.status !== 415 && res.status !== 422) break;
+      // 400/415/422 – zmiana kształtu payloadu może pomóc; 500/UAAPI0001 również (brakujący/nieznany parametr).
+      // 404 – zmieniamy ścieżkę.
+      if (res.status !== 400 && res.status !== 415 && res.status !== 422 && res.status !== 500) break;
     }
   }
   const last = attempts[attempts.length - 1];
