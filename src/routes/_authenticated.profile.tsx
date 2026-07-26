@@ -522,6 +522,11 @@ function ProfilePage() {
         </div>
 
         <div className="mt-12">
+          <EdoreczeniaSetup scope={{ kind: "user" }} />
+        </div>
+
+
+        <div className="mt-12">
           <StopkiManager scope={{ kind: "user" }} />
         </div>
 
