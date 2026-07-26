@@ -94,17 +94,23 @@ export const testAdeConnection = createServerFn({ method: "POST" })
       const res = await fetchAdeToken();
       const ok = res.status >= 200 && res.status < 300;
       let detail = `HTTP ${res.status}`;
-      try {
-        const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
-        if (parsed.access_token) {
-          detail += ` · token otrzymany (${parsed.access_token.length} znaków)`;
-        } else if (parsed.error) {
-          detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
-        } else {
+      // Redirecty (301/302/303/307/308) — pokaż nagłówek Location, żeby zdiagnozować dokąd przekierowuje KSDE
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers?.location || res.headers?.Location || "(brak nagłówka Location)";
+        detail += ` → Location: ${loc}`;
+      } else {
+        try {
+          const parsed = JSON.parse(res.body) as { access_token?: string; error?: string; error_description?: string };
+          if (parsed.access_token) {
+            detail += ` · token otrzymany (${parsed.access_token.length} znaków)`;
+          } else if (parsed.error) {
+            detail += ` · ${parsed.error}${parsed.error_description ? ": " + parsed.error_description : ""}`;
+          } else {
+            detail += ` · ${res.body.slice(0, 200)}`;
+          }
+        } catch {
           detail += ` · ${res.body.slice(0, 200)}`;
         }
-      } catch {
-        detail += ` · ${res.body.slice(0, 200)}`;
       }
       steps.push({ name: "OAuth2 token", ok, detail });
     } catch (err) {

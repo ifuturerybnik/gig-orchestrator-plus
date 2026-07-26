@@ -10,7 +10,12 @@ export async function getAdeAccessToken(): Promise<string> {
   if (tokenCache && tokenCache.expiresAt - 30_000 > now) return tokenCache.token;
   const res = await fetchAdeToken();
   if (res.status < 200 || res.status >= 300) {
-    throw new Error(`OAuth2 błąd HTTP ${res.status}: ${res.body.slice(0, 200)}`);
+    // Dorzuć nagłówek Location przy 3xx, żeby zobaczyć dokąd KSDE przekierowuje
+    const loc =
+      res.status >= 300 && res.status < 400
+        ? ` (Location: ${res.headers?.location || res.headers?.Location || "brak"})`
+        : "";
+    throw new Error(`OAuth2 błąd HTTP ${res.status}${loc}: ${res.body.slice(0, 200)}`);
   }
   const parsed = JSON.parse(res.body) as { access_token: string; expires_in?: number };
   if (!parsed.access_token) throw new Error("Brak access_token w odpowiedzi OAuth2");
