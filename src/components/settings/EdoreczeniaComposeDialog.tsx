@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Paperclip, Plus, Send, Trash2, X } from "lucide-react";
+import { Loader2, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { sendAdeMessage } from "@/lib/ade-inbox.functions";
+import EdoreczeniaBaeSearchDialog from "./EdoreczeniaBaeSearchDialog";
 import { toast } from "sonner";
+
 
 type Props = {
   open: boolean;
@@ -55,7 +57,9 @@ export default function EdoreczeniaComposeDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [baeOpen, setBaeOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const reset = useCallback(() => {
     setRecipients([]);
@@ -95,6 +99,17 @@ export default function EdoreczeniaComposeDialog({
   }, [recipientInput, recipients]);
 
   const removeRecipient = (v: string) => setRecipients((r) => r.filter((x) => x !== v));
+
+  const addRecipientAddress = useCallback((raw: string) => {
+    const v = raw.trim().toUpperCase();
+    if (!v) return;
+    if (!ADE_ADDRESS_RE.test(v)) {
+      toast.error(`Nieprawidłowy adres: ${v}`);
+      return;
+    }
+    setRecipients((r) => (r.includes(v) ? r : [...r, v]));
+  }, []);
+
 
   const onFiles = (list: FileList | null) => {
     if (!list) return;
@@ -205,6 +220,15 @@ export default function EdoreczeniaComposeDialog({
                 <Button type="button" size="sm" variant="outline" onClick={addRecipient}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Wpisz adresata
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBaeOpen(true)}
+                >
+                  <Search className="h-3.5 w-3.5 mr-1" /> Szukaj w BAE
+                </Button>
+
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
@@ -321,6 +345,12 @@ export default function EdoreczeniaComposeDialog({
           </div>
         </div>
       </DialogContent>
+      <EdoreczeniaBaeSearchDialog
+        open={baeOpen}
+        onOpenChange={setBaeOpen}
+        onPick={addRecipientAddress}
+      />
     </Dialog>
   );
+
 }

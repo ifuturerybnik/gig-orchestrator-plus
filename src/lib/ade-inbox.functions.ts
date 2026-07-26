@@ -423,6 +423,51 @@ export const moveAdeDelivery = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export type BaeRecipientType = "PUBLIC" | "NON_PUBLIC" | "KOMORNIK" | "OSOBA_FIZYCZNA";
+export type BaeIdentifierType = "EDELIVERY_ADDRESS" | "NIP" | "REGON" | "KRS" | "NAME";
+
+export type BaeSearchInput = {
+  recipientType: BaeRecipientType;
+  identifierType: BaeIdentifierType;
+  value: string;
+  limit?: number;
+};
+
+export type BaeSearchResultRow = {
+  address: string;
+  name?: string;
+  type?: string;
+  nip?: string;
+  regon?: string;
+  krs?: string;
+  city?: string;
+  street?: string;
+  postalCode?: string;
+};
+
+export type BaeSearchResponsePayload = {
+  ok: boolean;
+  results: BaeSearchResultRow[];
+  triedPaths: string[];
+  error?: string;
+};
+
+/** Wyszukaj adresata w Bazie Adresów Elektronicznych (BAE) — bez cache, zawsze on-line. */
+export const searchBaeAddresses = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: BaeSearchInput) => {
+    if (!data?.value || !data.value.trim()) throw new Error("Podaj wartość do wyszukania");
+    if (!data.recipientType) throw new Error("Wybierz typ odbiorcy");
+    if (!data.identifierType) throw new Error("Wybierz typ identyfikatora");
+    return data;
+  })
+  .handler(async ({ data, context }): Promise<BaeSearchResponsePayload> => {
+    const { requireEdoreczeniaAdmin, searchBae } = await import("@/lib/ade-inbox.server");
+    await requireEdoreczeniaAdmin(context);
+    return await searchBae(data);
+  });
+
+
 
 
 
