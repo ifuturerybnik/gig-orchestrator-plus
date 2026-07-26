@@ -220,6 +220,15 @@ export default function EdoreczeniaComposeDialog({
                 <Button type="button" size="sm" variant="outline" onClick={addRecipient}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Wpisz adresata
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBaeOpen(true)}
+                >
+                  <Search className="h-3.5 w-3.5 mr-1" /> Szukaj w BAE
+                </Button>
+
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
