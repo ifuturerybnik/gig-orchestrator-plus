@@ -149,11 +149,7 @@ export default function EdoreczeniaComposeDialog({
         setError(res.error ?? "Nie udało się zapisać roboczej");
         return;
       }
-      toast.success(
-        res.remote
-          ? "Wiadomość zapisana w Roboczych (biznes.gov + lokalnie)"
-          : "Wiadomość zapisana lokalnie w Roboczych (biznes.gov nie odpowiedział)",
-      );
+      toast.success("Wiadomość zapisana w Roboczych (biznes.gov)");
       reset();
       onOpenChange(false);
       onSent?.();

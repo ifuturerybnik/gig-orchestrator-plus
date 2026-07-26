@@ -1000,12 +1000,19 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
     if (remoteOk) break;
   }
 
+  if (!remoteOk) {
+    const last = attempts[attempts.length - 1];
+    const msg = last
+      ? `Biznes.gov odrzucił zapis roboczej (HTTP ${last.status}): ${last.snippet}`
+      : "Biznes.gov nie odpowiedział na zapis roboczej";
+    return { ok: false, remote: false, error: msg, attempts };
+  }
+
   const admin = await getAdmin();
-  const localAdeId = remoteDraftId ?? input.draftId ?? `local-draft-${Date.now()}`;
+  const localAdeId = remoteDraftId ?? input.draftId ?? `remote-draft-${Date.now()}`;
   const rawSnap = {
     messageMetadata: commonMeta,
     textBody: input.bodyText ?? "",
-    _local: !remoteOk,
     _savedAt: new Date().toISOString(),
   };
   const { error: upErr } = await admin
@@ -1024,8 +1031,8 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
       },
       { onConflict: "ade_message_id" },
     );
-  if (upErr) return { ok: false, remote: remoteOk, draftId: remoteDraftId, error: upErr.message, attempts };
-  return { ok: true, remote: remoteOk, draftId: remoteDraftId, attempts };
+  if (upErr) return { ok: false, remote: true, draftId: remoteDraftId, error: upErr.message, attempts };
+  return { ok: true, remote: true, draftId: remoteDraftId, attempts };
 }
 
 // ────────────────────── Usunięcie wiadomości (ADE + lokalnie) ──────────────────────
