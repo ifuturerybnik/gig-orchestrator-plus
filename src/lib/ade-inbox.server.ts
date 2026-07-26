@@ -1280,6 +1280,16 @@ function isRetryableBaeShapeError(bodyStr: string): boolean {
   );
 }
 
+/** SEAPI-00009: „invalid number of characters or illegal characters" — brak dopasowania,
+ * a nie prawdziwy błąd systemowy. Prezentujemy jako pusty wynik. */
+function isValidationEmptyResult(bodyStr: string): boolean {
+  return (
+    /SEAPI-?00009/i.test(bodyStr) ||
+    /invalid number of characters/i.test(bodyStr) ||
+    /illegal characters/i.test(bodyStr)
+  );
+}
+
 function cleanOfficialId(idType: BaeIdentifierType, value: string): string {
   return idType === "NIP" || idType === "REGON" || idType === "KRS"
     ? value.replace(/\D/g, "")
