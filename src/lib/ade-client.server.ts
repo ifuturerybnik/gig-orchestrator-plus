@@ -427,21 +427,22 @@ async function httpsRawRequestWithCfg(
   });
 }
 
-async function buildClientAssertionForCfg(cfg: AdeResolvedConfig): Promise<{ jwt: string; audience: string }> {
+async function buildClientAssertionForCfg(cfg: AdeResolvedConfig, audience?: string): Promise<{ jwt: string; audience: string }> {
   const crypto = await import("node:crypto");
   const certBody = cfg.certPem
     .replace(/-----BEGIN CERTIFICATE-----/g, "")
     .replace(/-----END CERTIFICATE-----/g, "")
     .replace(/\s+/g, "");
-  const audience = `${cfg.oauthBase}/auth/realms/EDOR`;
+  const resolvedAudience = audience ?? realmAudienceFromBase(cfg.oauthBase);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT", x5c: [certBody] };
   const payload = {
     iss: cfg.clientId,
     sub: cfg.clientId,
-    aud: audience,
+    aud: resolvedAudience,
     jti: crypto.randomUUID(),
     iat: now,
+    nbf: now,
     exp: now + 60,
   };
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
@@ -449,7 +450,7 @@ async function buildClientAssertionForCfg(cfg: AdeResolvedConfig): Promise<{ jwt
   signer.update(signingInput);
   signer.end();
   const signature = signer.sign({ key: cfg.keyPem, passphrase: cfg.keyPassphrase });
-  return { jwt: `${signingInput}.${base64url(signature)}`, audience };
+  return { jwt: `${signingInput}.${base64url(signature)}`, audience: resolvedAudience };
 }
 
 /** mTLS request do UA API dla konkretnej skrzynki. */
@@ -489,31 +490,45 @@ export async function adeSeRawRequestForMailbox(
 /** OAuth2 token dla konkretnej skrzynki. Token endpoint wymaga mTLS. */
 export async function fetchAdeTokenForMailbox(mailboxId: string): Promise<AdeRawResponse & { audience: string }> {
   const cfg = await loadAdeConfigForMailbox(mailboxId);
-  const { jwt, audience } = await buildClientAssertionForCfg(cfg);
-  const params = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: cfg.clientId,
-    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    client_assertion: jwt,
-  });
   const query = `?login_hint=${encodeURIComponent(`ADE.${cfg.mailboxAddress}`)}`;
-  const tryHost = async (base: string) =>
-    httpsRawRequestWithCfg(cfg, {
+  const tryHost = async (base: string, assertionAudience: string) => {
+    const { jwt, audience } = await buildClientAssertionForCfg(cfg, assertionAudience);
+    const params = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: cfg.clientId,
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: jwt,
+    });
+    const res = await httpsRawRequestWithCfg(cfg, {
       method: "POST",
-      url: base + cfg.tokenPath + query,
+      url: base.replace(/\/+$/, "") + cfg.tokenPath + query,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
       useMtls: true,
     });
-  let res = await tryHost(cfg.oauthBase);
-  if (res.status >= 300 && res.status < 400) {
-    const legacy = legacyOauthBase(undefined);
+    return { ...res, audience };
+  };
+
+  let last: (AdeRawResponse & { audience: string }) | null = null;
+  for (const assertionAudience of audienceCandidates(cfg.oauthBase, cfg.adeEnv)) {
+    const res = await tryHost(cfg.oauthBase, assertionAudience);
+    last = res;
+    if (res.status >= 200 && res.status < 300) return res;
+    if (res.status !== 401) break;
+  }
+
+  if (last?.status && last.status >= 300 && last.status < 400) {
+    const legacy = legacyOauthBase(cfg.adeEnv);
     if (legacy !== cfg.oauthBase) {
-      const alt = await tryHost(legacy);
-      if (alt.status < 300 || alt.status >= 400) res = alt;
+      for (const assertionAudience of audienceCandidates(legacy, cfg.adeEnv)) {
+        const alt = await tryHost(legacy, assertionAudience);
+        last = alt;
+        if (alt.status >= 200 && alt.status < 300) return alt;
+        if (alt.status !== 401) break;
+      }
     }
   }
-  return { ...res, audience };
+  return last ?? (await tryHost(cfg.oauthBase, realmAudienceFromBase(cfg.oauthBase)));
 }
 
 /** Test połączenia dla skrzynki z DB. */
