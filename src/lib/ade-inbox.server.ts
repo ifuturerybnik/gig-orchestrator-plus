@@ -212,13 +212,37 @@ export type SyncSummary = {
   error?: string;
 };
 
-/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries. */
+/** Pobierz listę wiadomości z ADE (per folder) i upsertuj do public.edoreczenia_deliveries.
+ *  UA API v3 nie honoruje w naszej instancji parametru `folder` — realnie zwraca zawsze
+ *  Odebrane (INBOX). Dlatego z API pobieramy tylko INBOX i:
+ *   - nowe wiadomości wpadają do folderu INBOX,
+ *   - istniejące wiersze NIE mają nadpisywanego pola `folder` (zachowujemy ręczne
+ *     przeniesienia użytkownika np. do TRASH).
+ *  Dla SENT/DRAFTS/TRASH sync jest no-op (folder jest zarządzany lokalnie przez akcje
+ *  „Przenieś do...").
+ */
 export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder } = {}): Promise<SyncSummary> {
   const cfg = loadAdeConfig();
-  const folder: AdeFolder = params.folder ?? "INBOX";
+  const requestedFolder: AdeFolder = params.folder ?? "INBOX";
   const summary: SyncSummary = { ok: false, mailbox: cfg.mailboxAddress, fetched: 0, inserted: 0, updated: 0 };
   try {
-    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder });
+    // Sync z API tylko dla Odebranych. Inne foldery są utrzymywane lokalnie.
+    if (requestedFolder !== "INBOX") {
+      const admin = await getAdmin();
+      await admin.from("edoreczenia_sync_state").upsert(
+        {
+          mailbox_address: cfg.mailboxAddress,
+          last_synced_at: new Date().toISOString(),
+          last_error: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "mailbox_address" },
+      );
+      summary.ok = true;
+      return summary;
+    }
+
+    const res = await listAdeInboxRaw({ limit: params.limit ?? 100, folder: "INBOX" });
     if (res.status < 200 || res.status >= 300) {
       summary.error = `HTTP ${res.status}`;
       return summary;
@@ -228,13 +252,14 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
     summary.fetched = rawItems.length;
 
     const admin = await getAdmin();
+    const missingDetails: string[] = [];
     for (let i = 0; i < rawItems.length; i++) {
       const raw = rawItems[i];
       const n = normalized[i];
       if (!n.id) continue;
       const { data: existing } = await admin
         .from("edoreczenia_deliveries")
-        .select("id")
+        .select("id, subject, body_text, folder")
         .eq("ade_message_id", n.id)
         .maybeSingle();
       const bodyText = typeof (raw as { textBody?: unknown }).textBody === "string"
@@ -242,11 +267,10 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
         : typeof (raw as { bodyText?: unknown }).bodyText === "string"
           ? ((raw as { bodyText: string }).bodyText)
           : null;
-      const row = {
-        direction: folder === "SENT" ? ("outbound" as const) : ("inbound" as const),
+      const baseRow: Record<string, unknown> = {
+        direction: "inbound" as const,
         ade_message_id: n.id,
         mailbox_address: cfg.mailboxAddress,
-        folder,
         from_address: n.from ?? null,
         to_address: n.to ?? cfg.mailboxAddress,
         subject: n.subject ?? null,
@@ -259,13 +283,36 @@ export async function syncInboxToDb(params: { limit?: number; folder?: AdeFolder
         updated_at: new Date().toISOString(),
       };
 
+      let deliveryId: string;
       if (existing?.id) {
-        await admin.from("edoreczenia_deliveries").update(row).eq("id", existing.id);
+        // API zwróciło tę wiadomość jako Odebraną — resetuj folder do INBOX
+        // (naprawia stare wpisy zapisane błędnie w SENT/DRAFTS/TRASH przez poprzednie sync-e).
+        const patch: Record<string, unknown> = { ...baseRow, folder: "INBOX" };
+        if (!n.subject && existing.subject) delete patch.subject;
+        if (!bodyText && existing.body_text) delete patch.body_text;
+        await admin.from("edoreczenia_deliveries").update(patch).eq("id", existing.id);
+        deliveryId = existing.id as string;
         summary.updated++;
       } else {
-        await admin.from("edoreczenia_deliveries").insert(row);
+        const { data: inserted } = await admin
+          .from("edoreczenia_deliveries")
+          .insert({ ...baseRow, folder: "INBOX" })
+          .select("id")
+          .maybeSingle();
+        deliveryId = inserted?.id as string;
         summary.inserted++;
       }
+
+      // Doczytaj detal (temat/treść/daty), żeby były widoczne od razu bez klikania.
+      const needsDetail = !n.subject || !bodyText;
+      if (deliveryId && needsDetail) missingDetails.push(deliveryId);
+    }
+
+    // Pobierz szczegóły równolegle, ale z małym limitem żeby nie zalać UA API.
+    const CONCURRENCY = 3;
+    for (let i = 0; i < missingDetails.length; i += CONCURRENCY) {
+      const chunk = missingDetails.slice(i, i + CONCURRENCY);
+      await Promise.all(chunk.map((id) => fetchAndStoreMessage(id, false).catch(() => null)));
     }
 
     await admin.from("edoreczenia_sync_state").upsert(
@@ -321,8 +368,9 @@ function extractAttachmentRefs(
     .filter((a) => a.id);
 }
 
-/** Pobierz treść wiadomości z ADE, zapisz body_text i załączniki do Storage/DB. */
-export async function fetchAndStoreMessage(deliveryId: string): Promise<{
+/** Pobierz treść wiadomości z ADE, zapisz body_text i załączniki do Storage/DB.
+ *  `markRead` — czy ustawić read_at (domyślnie true = otwarcie w UI). */
+export async function fetchAndStoreMessage(deliveryId: string, markRead = true): Promise<{
   ok: boolean;
   bodyText?: string;
   attachments: Array<{
@@ -427,9 +475,9 @@ export async function fetchAndStoreMessage(deliveryId: string): Promise<{
     const update: Record<string, unknown> = {
       body_text: bodyText,
       raw: payload,
-      read_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    if (markRead) update.read_at = new Date().toISOString();
     if (subject) update.subject = subject;
     if (fromParty.address) update.from_address = fromParty.address;
     if (toParty.address) update.to_address = toParty.address;
