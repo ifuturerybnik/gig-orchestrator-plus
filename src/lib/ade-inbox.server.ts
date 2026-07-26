@@ -1118,6 +1118,24 @@ function findOfficialId(raw: unknown, registry: "nip" | "regon" | "krs"): string
   return findOfficialId(raw.officialIds, registry);
 }
 
+function formatAddressLine(a: Record<string, unknown>): string {
+  const street = firstString(a.street, a.streetName);
+  const building = firstString(a.buildingNumber, a.houseNumber);
+  const flat = firstString(a.flatNumber, a.apartmentNumber);
+  const postal = firstString(a.postalCode, a.zipCode);
+  const city = firstString(a.city, a.town);
+  const streetPart = [street, [building, flat].filter(Boolean).join("/")].filter(Boolean).join(" ").trim();
+  const cityPart = [postal, city].filter(Boolean).join(" ").trim();
+  return [streetPart, cityPart].filter(Boolean).join(", ").toUpperCase();
+}
+
+function addressTypeTokens(a: Record<string, unknown>): string[] {
+  const t = a.addressType ?? a.type;
+  if (Array.isArray(t)) return t.map((x) => String(x).toUpperCase());
+  if (t) return [String(t).toUpperCase()];
+  return [];
+}
+
 function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
   const contrib = (o.contributor ??
     o.subjectData ??
@@ -1137,14 +1155,25 @@ function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
     (o.entityType as string | undefined) ??
     (o.type as string | undefined) ??
     (contrib.type as string | undefined);
-  // SE API zwraca addressList (tablica) — bierzemy pierwszy adres MAIN, inaczej pierwszy.
-  const addressList = (o.addressList as Record<string, unknown>[] | undefined) ?? [];
-  const mainAddr =
-    addressList.find((a) => String(a.addressType).toUpperCase() === "MAIN") ?? addressList[0];
-  const address = (mainAddr ??
-    o.addressDetails ??
-    contrib.address ??
-    {}) as Record<string, unknown>;
+
+  const addressList: Record<string, unknown>[] = [
+    ...((o.addressList as Record<string, unknown>[] | undefined) ?? []),
+    ...((contrib.addressList as Record<string, unknown>[] | undefined) ?? []),
+    ...(isRecord(o.addressDetails) ? [o.addressDetails as Record<string, unknown>] : []),
+    ...(isRecord(contrib.address) ? [contrib.address as Record<string, unknown>] : []),
+  ];
+
+  const headquartersAddr = addressList.find((a) => {
+    const t = addressTypeTokens(a);
+    return t.some((x) => /HEADQUARTER|MAIN|SIEDZIB/i.test(x));
+  });
+  const correspondenceAddr = addressList.find((a) => {
+    const t = addressTypeTokens(a);
+    return t.some((x) => /CORRESPOND|KORESPOND/i.test(x));
+  });
+  const fallback = addressList[0];
+  const primary = headquartersAddr ?? fallback ?? {};
+
   const officialIds = contrib.officialIds ?? o.officialIds ?? o;
   return {
     address: String(addr ?? ""),
@@ -1156,13 +1185,14 @@ function mapBaeItem(o: Record<string, unknown>): BaeSearchResult {
       (contrib.regon as string | undefined) ??
       (o.regon as string | undefined),
     krs: findOfficialId(officialIds, "krs") ?? (contrib.krs as string | undefined) ?? (o.krs as string | undefined),
-    city: (address.city as string | undefined) ?? (address.town as string | undefined),
+    city: firstString(primary.city, primary.town),
     street:
-      [address.street as string | undefined, address.buildingNumber as string | undefined]
+      [firstString(primary.street, primary.streetName), firstString(primary.buildingNumber, primary.houseNumber)]
         .filter(Boolean)
-        .join(" ") ||
-      (address.streetName as string | undefined),
-    postalCode: (address.postalCode as string | undefined) ?? (address.zipCode as string | undefined),
+        .join(" ") || undefined,
+    postalCode: firstString(primary.postalCode, primary.zipCode),
+    headquartersAddress: headquartersAddr ? formatAddressLine(headquartersAddr) : fallback ? formatAddressLine(fallback) : undefined,
+    correspondenceAddress: correspondenceAddr ? formatAddressLine(correspondenceAddr) : undefined,
   };
 }
 
