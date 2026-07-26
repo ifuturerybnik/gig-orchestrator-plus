@@ -67,6 +67,18 @@ export default function EdoreczeniaComposeDialog({
     setError(null);
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      setRecipients(initialRecipients ?? []);
+      setSubject(initialSubject ?? "");
+      setBody(initialBody ?? "");
+      setRecipientInput("");
+      setCaseNumber("");
+      setFiles([]);
+      setError(null);
+    }
+  }, [open, initialRecipients, initialSubject, initialBody]);
+
   const addRecipient = useCallback(() => {
     const v = recipientInput.trim().toUpperCase();
     if (!v) return;
