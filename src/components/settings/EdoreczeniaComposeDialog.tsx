@@ -215,7 +215,7 @@ export default function EdoreczeniaComposeDialog({
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (!o && !sending) reset();
+        if (!o && !sending && !saving) reset();
         onOpenChange(o);
       }}
     >
