@@ -301,40 +301,63 @@ export default function EdoreczeniaInboxTab() {
           ) : result?.items.length ? (
             <div className="divide-y">
               {result.items.map((row) => (
-                <button
+                <div
                   key={row.id}
-                  onClick={() => openMessage(row)}
-                  className="w-full text-left py-3 px-2 hover:bg-accent/50 rounded flex items-start gap-3"
+                  className="flex items-start gap-1 py-1 px-1 hover:bg-accent/50 rounded"
                 >
-                  <MailIcon
-                    className={`h-4 w-4 mt-1 shrink-0 ${row.readAt ? "text-muted-foreground" : "text-primary"}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={`truncate ${row.readAt ? "" : "font-semibold"}`}>
-                        {row.subject || "(bez tematu)"}
-                      </span>
-                      {row.status && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {row.status}
-                        </Badge>
-                      )}
-                      {row.attachmentCount > 0 && (
-                        <Badge variant="outline" className="text-[10px] gap-1">
-                          <Paperclip className="h-3 w-3" />
-                          {row.attachmentCount}
-                        </Badge>
-                      )}
+                  <button
+                    type="button"
+                    onClick={() => openMessage(row)}
+                    className="flex-1 min-w-0 text-left py-2 px-2 flex items-start gap-3"
+                  >
+                    <MailIcon
+                      className={`h-4 w-4 mt-1 shrink-0 ${row.readAt ? "text-muted-foreground" : "text-primary"}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className={`truncate ${row.readAt ? "" : "font-semibold"}`}>
+                          {row.subject || "(bez tematu)"}
+                        </span>
+                        {row.status && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {row.status}
+                          </Badge>
+                        )}
+                        {row.attachmentCount > 0 && (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            <Paperclip className="h-3 w-3" />
+                            {row.attachmentCount}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
+                        <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="font-medium">{row.fromName ?? row.from ?? "?"}</span>
-                      <span className="font-mono ml-1">{row.from ? `· ${row.from}` : ""}</span>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground shrink-0">
-                    {row.receivedAt ? new Date(row.receivedAt).toLocaleString("pl-PL") : ""}
-                  </div>
-                </button>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(row, folder === "TRASH");
+                    }}
+                    disabled={deleting === row.id}
+                    title={folder === "TRASH" ? "Usuń trwale (biznes.gov + lokalnie)" : "Usuń (przenieś do kosza w biznes.gov)"}
+                    aria-label="Usuń wiadomość"
+                  >
+                    {deleting === row.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               ))}
             </div>
           ) : (
