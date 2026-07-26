@@ -935,6 +935,7 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
       // 400/415/422 – zmiana kształtu payloadu może pomóc; 500/UAAPI0001 również (brakujący/nieznany parametr).
       // 404 – zmieniamy ścieżkę.
       if (res.status !== 400 && res.status !== 415 && res.status !== 422 && res.status !== 500) break;
+    }
   }
   const last = attempts[attempts.length - 1];
   return {
