@@ -534,7 +534,7 @@ export async function fetchAndStoreEvidenceZip(deliveryId: string): Promise<
         r.status >= 200 &&
         r.status < 300 &&
         r.bodyBuffer &&
-        (ct.includes("zip") || ct.includes("octet-stream") || isZipBuffer(r.bodyBuffer))
+        (ct.includes("zip") || isZipBuffer(r.bodyBuffer))
       ) {
         zipBuf = r.bodyBuffer;
         break;
