@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Paperclip, Plus, Send, Trash2, X } from "lucide-react";
+import { Loader2, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { sendAdeMessage } from "@/lib/ade-inbox.functions";
+import EdoreczeniaBaeSearchDialog from "./EdoreczeniaBaeSearchDialog";
 import { toast } from "sonner";
+
 
 type Props = {
   open: boolean;
