@@ -734,5 +734,229 @@ export async function sendAdeMessage(input: SendAdeMessageInput): Promise<SendAd
   };
 }
 
+// ────────────────────── Archiwum wiadomości (jak biznes.gov) ──────────────────────
+
+/** Zwraca SHA3-512 (hex). Jeśli środowisko nie obsługuje SHA3, fallback do SHA-512. */
+async function hashFile(buf: Buffer | Uint8Array): Promise<{ hash: string; algo: "SHA3-512" | "SHA-512" }> {
+  const nodeCrypto = await import("crypto");
+  try {
+    const h = nodeCrypto.createHash("sha3-512").update(buf).digest("hex");
+    return { hash: h, algo: "SHA3-512" };
+  } catch {
+    const h = nodeCrypto.createHash("sha512").update(buf).digest("hex");
+    return { hash: h, algo: "SHA-512" };
+  }
+}
+
+function xmlEscape(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/** Zbuduj (i zapisz w Storage) ZIP z pełnym archiwum wiadomości — analogicznie do pobierania z biznes.gov.
+ *  Struktura:
+ *   - MetrykaArchiwum.xml
+ *   - TrescWiadomosci.txt
+ *   - załączniki (oryginalne nazwy plików)
+ *   - dowody techniczne + potwierdzenia biznesowe (BPWP/BPOP) – pliki z evidence
+ */
+export async function fetchAndBuildMessageArchive(
+  deliveryId: string,
+): Promise<{ ok: true; storagePath: string; filename: string } | { ok: false; error: string }> {
+  const admin = await getAdmin();
+  const { data: delivery } = await admin
+    .from("edoreczenia_deliveries")
+    .select("id, ade_message_id, body_text, raw")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  if (!delivery) return { ok: false, error: "Nie znaleziono wiadomości" };
+  if (!delivery.ade_message_id) return { ok: false, error: "Brak ade_message_id" };
+
+  try {
+    await ensureEdoreczeniaBucket();
+    const cfg = loadAdeConfig();
+    const mailboxBase = `/api/v3/${encodeURIComponent(cfg.mailboxAddress)}`;
+    const messageId = encodeURIComponent(delivery.ade_message_id);
+    const base = `${mailboxBase}/messages/${messageId}`;
+
+    // 1) Preferuj oficjalny ZIP archiwum wiadomości (jeżeli UA API go udostępnia).
+    const archiveCandidates = [
+      `${base}/message-archive-file`,
+      `${base}/archive-file`,
+      `${base}/archive`,
+    ];
+    for (const p of archiveCandidates) {
+      const r = await adeApiCall({
+        method: "GET",
+        path: p,
+        binary: true,
+        timeoutMs: 60000,
+        accept: "application/zip, application/octet-stream, */*",
+      });
+      const ct = (r.headers["content-type"] ?? "").toLowerCase();
+      if (
+        r.status >= 200 &&
+        r.status < 300 &&
+        r.bodyBuffer &&
+        (ct.includes("zip") || isZipBuffer(r.bodyBuffer))
+      ) {
+        const filename = `wiadomosc-${delivery.ade_message_id}.zip`;
+        const storagePath = `${delivery.id}/archive-${delivery.ade_message_id}.zip`;
+        const { error: upErr } = await admin.storage
+          .from(BUCKET)
+          .upload(storagePath, r.bodyBuffer, { contentType: "application/zip", upsert: true });
+        if (upErr) return { ok: false, error: upErr.message };
+        return { ok: true, storagePath, filename };
+      }
+    }
+
+    // 2) Fallback — zbuduj archiwum lokalnie z tego, co mamy w bazie/Storage + z evidences UA API.
+    const JSZipMod = (await import("jszip")).default;
+    const zip = new JSZipMod();
+    const manifestFiles: Array<{ section: "attachment" | "evidence" | "confirmation" | "preview"; name: string; buf: Buffer }> = [];
+
+    // 2a) TrescWiadomosci.txt
+    const rawObj = (Array.isArray(delivery.raw) ? (delivery.raw as unknown[])[0] : delivery.raw ?? {}) as Record<string, unknown>;
+    const bodyFromRaw =
+      typeof rawObj.textBody === "string" ? (rawObj.textBody as string) :
+      typeof rawObj.bodyText === "string" ? (rawObj.bodyText as string) : undefined;
+    let body = bodyFromRaw ?? (delivery.body_text as string | null) ?? "";
+    if (/^\s*[\[{]/.test(body)) body = ""; // stored JSON is not real content
+    const bodyBuf = Buffer.from(body, "utf8");
+    zip.file("TrescWiadomosci.txt", bodyBuf);
+    const bodyHash = await hashFile(bodyBuf);
+
+    // 2b) Załączniki (użytkownika) – pobierz ze Storage.
+    const { data: atts } = await admin
+      .from("edoreczenia_attachments")
+      .select("filename, storage_path, mime_type")
+      .eq("delivery_id", delivery.id);
+    const attachmentEntries: Array<{ name: string; hash: string; algo: string }> = [];
+    for (const a of atts ?? []) {
+      if (!a.storage_path) continue;
+      const { data: file, error: dErr } = await admin.storage.from(BUCKET).download(a.storage_path);
+      if (dErr || !file) continue;
+      const buf = Buffer.from(await file.arrayBuffer());
+      // unikalna nazwa w ZIP (na wypadek duplikatów)
+      let name = a.filename || "zalacznik";
+      if (zip.file(name)) name = `${Date.now()}-${name}`;
+      zip.file(name, buf);
+      const h = await hashFile(buf);
+      attachmentEntries.push({ name, hash: h.hash, algo: h.algo });
+      manifestFiles.push({ section: "attachment", name, buf });
+    }
+
+    // 2c) Dowody techniczne + potwierdzenia biznesowe z UA API (BPWP/BPOP/UPD/UPP/PPSA-E-... .pdf)
+    const evidenceEntries: Array<{ name: string; hash: string; algo: string }> = [];
+    const confirmationEntries: Array<{ name: string; hash: string; algo: string }> = [];
+    const previewEntries: Array<{ name: string; hash: string; algo: string }> = [];
+    try {
+      const listRes = await adeApiCall({ method: "GET", path: `${base}/evidences` });
+      if (listRes.status >= 200 && listRes.status < 300) {
+        const evList = normalizeEvidenceList(listRes.json);
+        for (const e of evList) {
+          const evId = firstString(e.evidenceId, e.id, e.uuid);
+          if (!evId) continue;
+          const encodedEvId = encodeURIComponent(evId);
+          const messageTypes = [
+            firstString(e.messageType, e.message_type, e.serviceType, e.shippingService),
+            "Evidence",
+            "evidence",
+            "PURDE",
+            "PUH",
+          ].filter((v, idx, arr): v is string => !!v && arr.indexOf(v) === idx);
+          const evCandidates = messageTypes.map(
+            (mt) => `${mailboxBase}/evidences/${encodeURIComponent(mt)}/${encodedEvId}`,
+          );
+          for (const p of evCandidates) {
+            const r = await adeApiCall({
+              method: "GET",
+              path: p,
+              binary: true,
+              timeoutMs: 60000,
+              accept: "application/xml, application/pdf, application/octet-stream, */*",
+            });
+            if (!(r.status >= 200 && r.status < 300 && r.bodyBuffer && r.bodyBuffer.length > 0)) continue;
+            const ct = (r.headers["content-type"] ?? "").toLowerCase();
+            const head = r.bodyBuffer.slice(0, 8).toString("utf8").trim();
+            if (ct.includes("application/json") || /^[\[{]/.test(head)) continue;
+            const startsXml = head.startsWith("<");
+            const startsPdf = r.bodyBuffer.slice(0, 4).toString("binary") === "%PDF";
+            const ext = ct.includes("pdf") || startsPdf ? "pdf" : ct.includes("xml") || startsXml ? "xml" : "bin";
+            const type = firstString(e.type, e.evidenceType, e.code) ?? "Dowod";
+            // Nazwy plików spójne z biznes.gov (BPWP-/BPOP-/PPSA-E- prefiks + messageId).
+            let filename: string;
+            let section: "evidence" | "confirmation" | "preview" = "evidence";
+            const upperType = type.toUpperCase();
+            if (upperType.includes("BPWP") || upperType.includes("BPOP")) {
+              filename = `${upperType}-${delivery.ade_message_id}.${ext}`;
+              section = "confirmation";
+            } else if (upperType.includes("PODGLAD") || upperType.includes("PREVIEW") || upperType.includes("PPSA")) {
+              filename = `${delivery.ade_message_id}.${ext}`;
+              section = "preview";
+            } else {
+              filename = `${type}_${evId}.${ext}`.replace(/[^\p{L}\p{N}._-]+/gu, "_");
+              section = "evidence";
+            }
+            if (zip.file(filename)) filename = `${type}_${evId}.${ext}`.replace(/[^\p{L}\p{N}._-]+/gu, "_");
+            zip.file(filename, r.bodyBuffer);
+            const h = await hashFile(r.bodyBuffer);
+            const entry = { name: filename, hash: h.hash, algo: h.algo };
+            if (section === "confirmation") confirmationEntries.push(entry);
+            else if (section === "preview") previewEntries.push(entry);
+            else evidenceEntries.push(entry);
+            manifestFiles.push({ section, name: filename, buf: r.bodyBuffer as Buffer });
+            break;
+          }
+        }
+      }
+    } catch {
+      /* dowody opcjonalne */
+    }
+
+    // 2d) MetrykaArchiwum.xml
+    const nowIso = new Date().toISOString().replace(/\.(\d{3})Z$/, ".$1000Z");
+    const listXml = (entries: Array<{ name: string; hash: string; algo: string }>) =>
+      entries
+        .map(
+          (e) =>
+            `    <Plik>\n      <NazwaPliku>${xmlEscape(e.name)}</NazwaPliku>\n      <WartoscSkrotu>${e.hash}</WartoscSkrotu>\n      <FunkcjaSkrotu>${e.algo}</FunkcjaSkrotu>\n    </Plik>`,
+        )
+        .join("\n");
+    const metryka = `<?xml version="1.0" encoding="UTF-8" standalone="no"?><SpecyfikacjaArchiwum wersja="1.0">
+  <DataUtworzenia>${nowIso}</DataUtworzenia>
+  <IdentyfikatorWiadomosci>${xmlEscape(delivery.ade_message_id)}</IdentyfikatorWiadomosci>
+  <DaneZalaczniki>${attachmentEntries.length ? "\n" + listXml(attachmentEntries) + "\n  " : ""}</DaneZalaczniki>
+  <TrescWiadomosci>
+    <NazwaPliku>TrescWiadomosci.txt</NazwaPliku>
+    <WartoscSkrotu>${bodyHash.hash}</WartoscSkrotu>
+    <FunkcjaSkrotu>${bodyHash.algo}</FunkcjaSkrotu>
+  </TrescWiadomosci>
+  <DowodTechniczny>${evidenceEntries.length ? "\n" + listXml(evidenceEntries) + "\n  " : ""}</DowodTechniczny>
+  <PotwierdzeniaBiznesowe>${confirmationEntries.length ? "\n" + listXml(confirmationEntries) + "\n  " : ""}</PotwierdzeniaBiznesowe>
+  ${previewEntries.length ? `<PodgladWiadomosci>\n    <NazwaPliku>${xmlEscape(previewEntries[0].name)}</NazwaPliku>\n    <WartoscSkrotu>${previewEntries[0].hash}</WartoscSkrotu>\n    <FunkcjaSkrotu>${previewEntries[0].algo}</FunkcjaSkrotu>\n  </PodgladWiadomosci>` : `<PodgladWiadomosci/>`}
+</SpecyfikacjaArchiwum>`;
+    zip.file("MetrykaArchiwum.xml", metryka);
+
+    const out = (await zip.generateAsync({ type: "nodebuffer" })) as Buffer;
+    const filename = `wiadomosc-${delivery.ade_message_id}.zip`;
+    const storagePath = `${delivery.id}/archive-${delivery.ade_message_id}.zip`;
+    const { error: upErr } = await admin.storage
+      .from(BUCKET)
+      .upload(storagePath, out, { contentType: "application/zip", upsert: true });
+    if (upErr) return { ok: false, error: upErr.message };
+    // celowo NIE zapisuję do dedykowanej kolumny — używamy signed URL ad-hoc.
+    void manifestFiles;
+    return { ok: true, storagePath, filename };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+
 
 
