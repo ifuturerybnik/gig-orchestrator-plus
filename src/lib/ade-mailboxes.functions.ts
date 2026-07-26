@@ -165,12 +165,15 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<AdeMailboxPublic> => {
     await assertScopeAccess(context.supabase as never, context.userId, data.scope, "write");
 
-    // Walidacja PEM-ów: musi zawierać nagłówki
-    if (!/-----BEGIN CERTIFICATE-----/.test(data.qwacCertPem)) {
+    // Walidacja PEM-ów: opcjonalne. Jeśli podane — sprawdź format.
+    if (data.qwacCertPem && !/-----BEGIN CERTIFICATE-----/.test(data.qwacCertPem)) {
       throw new Error("Certyfikat QWAC musi być w formacie PEM (nagłówek BEGIN CERTIFICATE)");
     }
-    if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(data.qwacKeyPem)) {
+    if (data.qwacKeyPem && !/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(data.qwacKeyPem)) {
       throw new Error("Klucz prywatny QWAC musi być w formacie PEM (nagłówek BEGIN PRIVATE KEY)");
+    }
+    if ((data.qwacCertPem && !data.qwacKeyPem) || (data.qwacKeyPem && !data.qwacCertPem)) {
+      throw new Error("Podaj oba pliki: certyfikat QWAC i klucz prywatny, albo żaden (użyjemy systemowego).");
     }
     if (!data.mailboxAddress.startsWith("AE:PL-")) {
       throw new Error("Adres skrzynki powinien mieć format AE:PL-...");
@@ -178,8 +181,8 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
     if (!data.clientId) throw new Error("ClientId wymagany");
 
     const { encryptPii } = await import("@/lib/crypto.server");
-    const certEnc = encryptPii(data.qwacCertPem)!;
-    const keyEnc = encryptPii(data.qwacKeyPem)!;
+    const certEnc = data.qwacCertPem ? encryptPii(data.qwacCertPem) : null;
+    const keyEnc = data.qwacKeyPem ? encryptPii(data.qwacKeyPem) : null;
     const passEnc = data.qwacKeyPassphrase ? encryptPii(data.qwacKeyPassphrase) : null;
 
     const filter = scopeFilter(data.scope, context.userId);
