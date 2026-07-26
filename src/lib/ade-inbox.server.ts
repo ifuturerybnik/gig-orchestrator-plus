@@ -940,11 +940,10 @@ export async function saveAdeDraft(input: SaveAdeDraftInput): Promise<SaveAdeDra
     return { ok: false, remote: false, error: "Temat jest wymagany (biznes.gov nie zapisuje roboczych bez tematu)." };
   }
 
-  const attachments = (input.attachments ?? []).map((a) => ({
-    filename: a.filename,
-    mimeType: a.mimeType ?? "application/octet-stream",
-    content: a.contentBase64,
-  }));
+  // Uwaga: załączniki dla draftów dodaje się osobnym wywołaniem (UC024) — pomijamy je tutaj.
+  void input.attachments;
+
+
 
   const caseId = input.caseNumber?.trim();
   const subject = input.subject.trim();
