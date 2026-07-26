@@ -636,6 +636,7 @@ export default
       "correspondence": "Korespondencja",
       "mail": "Poczta",
       "autokorespondencja": "Autokorespondencja",
+      "edoreczenia": "e-Doręczenia",
       "back_to_list": "← Wszystkie organizacje",
       "pending_expenses": "Niezrealizowane wydatki: {{count}}",
       "social": "Organizacja SM",
