@@ -241,11 +241,10 @@ function ProfilePage() {
               </div>
             </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.address.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.address.optional")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.address.title")}
+              description={t("profile.address.optional")}
+            >
               <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
                 {t("profile.address.benefit_user")}
               </p>
