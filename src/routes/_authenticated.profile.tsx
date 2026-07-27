@@ -183,12 +183,16 @@ function ProfilePage() {
                 {t("nav.logout")}
               </Button>
             </div>
-            <LandingPreferenceField
-              currentPath={(profileQuery.data?.profile as { landing_path?: string | null } | null | undefined)?.landing_path ?? null}
-            />
-            <ProfileAvatarField
-              value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
-            />
+            <CollapsibleSection title={t("profile.landing.title")} bare>
+              <LandingPreferenceField
+                currentPath={(profileQuery.data?.profile as { landing_path?: string | null } | null | undefined)?.landing_path ?? null}
+              />
+            </CollapsibleSection>
+            <CollapsibleSection title={t("profile.avatar.title", { defaultValue: "Zdjęcie profilowe" })} bare>
+              <ProfileAvatarField
+                value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
+              />
+            </CollapsibleSection>
 
             <section className="space-y-4 rounded-md border border-border bg-card p-4">
               <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
