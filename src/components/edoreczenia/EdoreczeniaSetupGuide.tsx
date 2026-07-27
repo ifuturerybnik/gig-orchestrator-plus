@@ -70,8 +70,8 @@ export default function EdoreczeniaSetupGuide() {
               Jak podłączyć skrzynkę e-Doręczeń — instrukcja krok po kroku
             </CardTitle>
             <CardDescription>
-              Cała integracja zajmuje ~5 minut. Nie musisz kupować certyfikatu ani mieć wiedzy technicznej —
-              Concertivo używa własnego certyfikatu QWAC, Ty tylko autoryzujesz nas w swojej skrzynce w
+              Cała integracja zajmuje ~5 minut. Nie musisz kupować ani wgrywać własnego certyfikatu —
+              Concertivo używa certyfikatu QWAC znajdującego się po naszej stronie, Ty tylko autoryzujesz nas w swojej skrzynce w
               biznes.gov.pl.
             </CardDescription>
           </div>
@@ -92,7 +92,11 @@ export default function EdoreczeniaSetupGuide() {
           </AlertDescription>
         </Alert>
 
-        <Accordion type="multiple" defaultValue={["step-0","step-1","step-2","step-3","step-4"]} className="w-full">
+        <Accordion
+          type="multiple"
+          defaultValue={["step-0", "step-1", "step-2", "step-3", "step-4", "security", "faq"]}
+          className="w-full"
+        >
           {/* ==================== KROK 0 — Co to jest ==================== */}
           <AccordionItem value="step-0">
             <AccordionTrigger>
@@ -248,9 +252,8 @@ export default function EdoreczeniaSetupGuide() {
                 <Alert>
                   <KeyRound className="h-4 w-4" />
                   <AlertDescription className="text-xs">
-                    <b>ClientId Concertivo</b> — biznes.gov.pl <b>nie prosi</b> Cię o wpisanie żadnego
-                    identyfikatora w tym formularzu. Wystarczy sam certyfikat. Nasz ClientId, który wpiszesz
-                    później w formularzu Concertivo poniżej, to:
+                    <b>ClientId Concertivo</b> — biznes.gov.pl w tym miejscu potrzebuje tylko certyfikatu.
+                    Ten identyfikator wpiszesz dopiero w formularzu Concertivo poniżej:
                     <div className="mt-1 rounded-md border border-border bg-muted p-2 font-mono text-[11px] break-all select-all">
                       {CONCERTIVO_CLIENT_ID}
                     </div>
@@ -300,7 +303,7 @@ export default function EdoreczeniaSetupGuide() {
                   <b>Adres skrzynki</b> — wklej <span className="font-mono">AE:PL-…</span> z kroku 3.
                 </li>
                 <li>
-                  <b>ClientId</b> — wklej ClientId wygenerowany przez biznes.gov.pl w kroku 2, punkt 8.
+                  <b>ClientId</b> — wklej ClientId Concertivo pokazany w kroku 2.3.
                 </li>
                 <li>
                   <b>Środowisko</b> — pozostaw <b>Produkcja</b>, chyba że masz skrzynkę testową.
@@ -311,8 +314,7 @@ export default function EdoreczeniaSetupGuide() {
                   na zielono. Jeśli nie — patrz „FAQ / Diagnoza" poniżej.
                 </li>
                 <li>
-                  Gotowe. W panelu <b>Administracja → e-Doręczenia</b> (lub <b>Korespondencja → e-Doręczenia</b>{" "}
-                  dla skrzynek osobistych) możesz teraz synchronizować i wysyłać wiadomości.
+                  Gotowe. Dla skrzynki organizacji obsługa będzie dostępna w module e-Doręczeń tej organizacji.
                 </li>
               </ol>
             </AccordionContent>
