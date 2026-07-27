@@ -166,63 +166,98 @@ export default function EdoreczeniaSetupGuide() {
                 Krok 2 — Zarejestruj Concertivo jako system zewnętrzny w biznes.gov.pl
               </span>
             </AccordionTrigger>
-            <AccordionContent className="text-sm space-y-3">
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>
-                  Zaloguj się na{" "}
-                  <a
-                    href="https://www.biznes.gov.pl/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline font-medium inline-flex items-center gap-1"
-                  >
-                    biznes.gov.pl <ExternalLink className="h-3 w-3" />
-                  </a>{" "}
-                  (Profilem Zaufanym, mObywatelem lub kwalifikowanym podpisem).
-                </li>
-                <li>
-                  W menu wybierz <b>Moje konto → Skrzynka e-Doręczeń</b>, a następnie w sekcji{" "}
-                  <b>Ustawienia skrzynki</b> otwórz zakładkę <b>Systemy zewnętrzne</b> (bywa nazywana też{" "}
-                  <i>„Aplikacje zewnętrzne"</i> lub <i>„Integracje"</i>).
-                </li>
-                <li>
-                  Kliknij <b>Dodaj system</b> / <b>Dodaj aplikację</b>.
-                </li>
-                <li>
-                  W polu <b>Nazwa systemu</b> wpisz np. <span className="font-mono">Concertivo</span> (dowolna).
-                </li>
-                <li>
-                  W polu <b>ClientId</b> (albo <i>„Identyfikator systemu"</i>) wklej dokładnie:
-                  <div className="mt-1 rounded-md border border-border bg-muted p-2 font-mono text-xs break-all select-all">
-                    {CONCERTIVO_CLIENT_ID}
-                  </div>
-                </li>
-                <li>
-                  Załaduj certyfikat: <b>Wgraj plik</b> → wskaż pobrany w kroku 1{" "}
-                  <span className="font-mono">concertivo-qwac.crt</span>.
-                </li>
-                <li>
-                  <b>Uprawnienia</b> — zaznacz co Concertivo ma mieć wolno robić w Twojej skrzynce:
-                  <ul className="list-disc pl-5 mt-1 space-y-0.5 text-xs">
-                    <li>Odczyt wiadomości (odebrane, wysłane, robocze, usunięte)</li>
-                    <li>Wysyłka wiadomości</li>
-                    <li>Zarządzanie folderami / przenoszenie do kosza</li>
-                    <li>Pobieranie dowodów technicznych i UPO</li>
-                  </ul>
-                </li>
-                <li>
-                  Zapisz. Biznes.gov wygeneruje/wyświetli <b>Twój ClientId</b> — <b>zapisz go</b>, wróć tutaj
-                  i wklej w polu „ClientId" formularza poniżej.
-                </li>
-              </ol>
-              <Alert variant="default" className="mt-2">
+            <AccordionContent className="text-sm space-y-4">
+              <p>
+                Zaloguj się na{" "}
+                <a
+                  href="https://www.biznes.gov.pl/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline font-medium inline-flex items-center gap-1"
+                >
+                  biznes.gov.pl <ExternalLink className="h-3 w-3" />
+                </a>{" "}
+                (Profilem Zaufanym / mObywatelem / kwalifikowanym podpisem) i wejdź w{" "}
+                <b>Moje konto → e-Doręczenia</b>, a następnie w swoją <b>firmową</b> skrzynkę{" "}
+                <span className="font-mono">AE:PL-…</span>.
+              </p>
+
+              <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Screenshoty ekranów biznes.gov.pl dokumentujące ścieżkę są w przygotowaniu — układ menu
-                  bywa aktualizowany przez Pocztę Polską. Jeśli nazwy się różnią, szukaj sekcji o nazwie
-                  „System zewnętrzny", „Aplikacja integracyjna" lub „API".
+                  Uwaga: integracja działa tylko dla skrzynek <b>firmowych</b> („przedsiębiorca niebędący
+                  osobą fizyczną") — skrzynki obywatela w mObywatel nie mają zakładki „Systemy" i nie da się
+                  ich podpiąć pod CRM.
                 </AlertDescription>
               </Alert>
+
+              {/* 2.1 */}
+              <div className="space-y-2">
+                <div className="font-semibold">2.1 — W lewym menu skrzynki kliknij „Uprawnienia"</div>
+                <GuideScreenshot
+                  src={edorStep1Asset.url}
+                  alt="Boczne menu skrzynki e-Doręczeń z zaznaczoną pozycją Uprawnienia"
+                  caption="Widok skrzynki na biznes.gov.pl — w lewym menu odszukaj „Uprawnienia” (ikonka osoby z plusem). Otworzy się nowa zakładka „Uprawnienia w skrzynce do e-Doręczeń”."
+                />
+              </div>
+
+              {/* 2.2 */}
+              <div className="space-y-2">
+                <div className="font-semibold">
+                  2.2 — Przejdź do zakładki „Systemy" i kliknij „Dodaj system"
+                </div>
+                <GuideScreenshot
+                  src={edorStep2Asset.url}
+                  alt="Zakładka Systemy w Uprawnieniach z niebieskim przyciskiem Dodaj system"
+                  caption="W bocznym menu wybierz „Systemy” (ostatnia pozycja). W prawym górnym rogu pojawi się niebieski przycisk „Dodaj system” — kliknij go."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ta lista pokazuje wszystkie zewnętrzne aplikacje, które mają dostęp do Twojej skrzynki
+                  (np. system EZD, kancelaria elektroniczna). Właśnie tu dopiszesz Concertivo.
+                </p>
+              </div>
+
+              {/* 2.3 */}
+              <div className="space-y-2">
+                <div className="font-semibold">
+                  2.3 — Wypełnij formularz „Dodaj system" i wgraj certyfikat Concertivo
+                </div>
+                <GuideScreenshot
+                  src={edorStep3Asset.url}
+                  alt="Formularz Dodaj system: nazwa, opis, upload certyfikatu"
+                  caption="Formularz „Dodaj system” — nazwa, opis (opcjonalny) i pole „Dodaj kwalifikowany środek uwierzytelniający”."
+                />
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>
+                    <b>Nazwa systemu</b> — wpisz np. <span className="font-mono">Concertivo CRM</span>{" "}
+                    (dowolna, byś potem odróżnił go na liście).
+                  </li>
+                  <li>
+                    <b>Opis systemu (opcjonalnie)</b> — możesz zostawić puste albo wpisać np.{" "}
+                    <i>„Integracja e-Doręczeń z systemem Concertivo (i-Future sp. z o.o.)"</i>.
+                  </li>
+                  <li>
+                    W polu <b>„Kliknij tutaj, aby dodać plik"</b> wgraj pobrany w kroku 1 plik{" "}
+                    <span className="font-mono">concertivo-qwac.crt</span>. System zweryfikuje certyfikat i
+                    wyświetli informację, że jest akceptowalny.
+                  </li>
+                  <li>
+                    Kliknij <b>Zapisz</b>. Concertivo pojawi się na liście systemów i od tej chwili ma
+                    autoryzowany dostęp do Twojej skrzynki.
+                  </li>
+                </ol>
+                <Alert>
+                  <KeyRound className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <b>ClientId Concertivo</b> — biznes.gov.pl <b>nie prosi</b> Cię o wpisanie żadnego
+                    identyfikatora w tym formularzu. Wystarczy sam certyfikat. Nasz ClientId, który wpiszesz
+                    później w formularzu Concertivo poniżej, to:
+                    <div className="mt-1 rounded-md border border-border bg-muted p-2 font-mono text-[11px] break-all select-all">
+                      {CONCERTIVO_CLIENT_ID}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </div>
             </AccordionContent>
           </AccordionItem>
 
@@ -235,9 +270,14 @@ export default function EdoreczeniaSetupGuide() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="text-sm space-y-2">
-              <p>W biznes.gov.pl, w widoku skrzynki e-Doręczeń, na górze znajdziesz adres w formacie:</p>
+              <p>
+                W biznes.gov.pl, na górze widoku skrzynki, znajdziesz adres w formacie:
+              </p>
               <pre className="rounded-md bg-muted p-2 text-xs font-mono">AE:PL-XXXXX-XXXXX-XXXXX-XX</pre>
-              <p>Skopiuj tę wartość — będzie potrzebna w polu <b>Adres skrzynki</b> formularza poniżej.</p>
+              <p>
+                Skopiuj tę wartość — będzie potrzebna w polu <b>Adres skrzynki</b> w formularzu Concertivo
+                poniżej.
+              </p>
             </AccordionContent>
           </AccordionItem>
 
