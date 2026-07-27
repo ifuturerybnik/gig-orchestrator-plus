@@ -503,9 +503,17 @@ function OrganizationProfilePage() {
         </Button>
       </div>
     </form>
-    <OrgMailboxesSection orgId={orgId} />
-    <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
-    <OrgStorageSection orgId={orgId} />
+    <div className="space-y-4">
+      <CollapsibleSection title={t("skrzynki.title", { defaultValue: "Skrzynki e-mail organizacji" })} bare>
+        <OrgMailboxesSection orgId={orgId} />
+      </CollapsibleSection>
+      <CollapsibleSection title={t("stopki.title", { defaultValue: "Stopki e-mail" })} bare>
+        <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
+      </CollapsibleSection>
+      <CollapsibleSection title={t("organizations.storage.title", { defaultValue: "Storage organizacji (Cloudflare R2)" })} bare>
+        <OrgStorageSection orgId={orgId} />
+      </CollapsibleSection>
+    </div>
 
     {isOwner && (
       <div className="flex justify-end pt-4">
