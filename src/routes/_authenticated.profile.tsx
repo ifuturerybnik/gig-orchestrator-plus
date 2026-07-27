@@ -270,13 +270,12 @@ function ProfilePage() {
                   />
                 </div>
               </div>
-            </section>
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.settlement.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.settlement.help")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.settlement.title")}
+              description={t("profile.settlement.help")}
+            >
 
               <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground">
                 {t("profile.settlement.privacy_note")}
