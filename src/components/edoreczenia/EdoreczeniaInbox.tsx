@@ -41,7 +41,7 @@ export default function EdoreczeniaInbox({ scope, setupHref }: Props) {
           </CardTitle>
           <CardDescription>
             Nie masz jeszcze skonfigurowanej skrzynki e-Doręczeń dla tego kontekstu.
-            Wgraj certyfikat QWAC i podaj dane skrzynki w ustawieniach.
+            Pobierz publiczny certyfikat Concertivo, zarejestruj go w biznes.gov.pl i podaj dane skrzynki w ustawieniach.
           </CardDescription>
         </CardHeader>
         <CardContent>

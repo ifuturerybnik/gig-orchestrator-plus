@@ -1,7 +1,6 @@
-// Wspólny komponent konfiguracji skrzynek e-Doręczeń dla wszystkich scope
-// (user / org / system). Wgrywanie certyfikatu QWAC (PEM), client_id,
-// adresu skrzynki i test połączenia.
-import { useMemo, useRef, useState, type FormEvent } from "react";
+// Wspólny komponent konfiguracji skrzynek e-Doręczeń dla organizacji i administracji.
+// Użytkownik podaje tylko dane skrzynki; certyfikat QWAC Concertivo jest po stronie serwera.
+import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -99,7 +98,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
                 Skrzynki e-Doręczeń
               </CardTitle>
               <CardDescription>
-                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu własnego certyfikatu QWAC. Nie musisz kupować własnego certyfikatu.
+                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu certyfikatu QWAC Concertivo. Użytkownik nie kupuje certyfikatu i nie wgrywa go do aplikacji.
               </CardDescription>
             </div>
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
@@ -209,9 +208,6 @@ function MailboxDialog({
   const [apiBase, setApiBase] = useState(editing?.apiBase ?? "");
   const [oauthBase, setOauthBase] = useState(editing?.oauthBase ?? "");
   const [tokenPath, setTokenPath] = useState(editing?.tokenPath ?? "");
-  const [passphrase, setPassphrase] = useState("");
-  const certPem = "";
-  const keyPem = "";
   const [submitting, setSubmitting] = useState(false);
 
   // Re-inicjalizuj przy zmianie editing
@@ -223,7 +219,6 @@ function MailboxDialog({
     setApiBase(editing?.apiBase ?? "");
     setOauthBase(editing?.oauthBase ?? "");
     setTokenPath(editing?.tokenPath ?? "");
-    setPassphrase("");
   }, [editing]);
 
   async function handleSubmit(e: FormEvent) {
@@ -241,9 +236,6 @@ function MailboxDialog({
             apiBase: apiBase || null,
             oauthBase: oauthBase || null,
             tokenPath: tokenPath || null,
-            qwacCertPem: certPem || undefined,
-            qwacKeyPem: keyPem || undefined,
-            qwacKeyPassphrase: passphrase || null,
           },
         });
         toast.success("Skrzynka zaktualizowana");
@@ -258,9 +250,6 @@ function MailboxDialog({
             apiBase: apiBase || null,
             oauthBase: oauthBase || null,
             tokenPath: tokenPath || null,
-            qwacCertPem: certPem || null,
-            qwacKeyPem: keyPem || null,
-            qwacKeyPassphrase: passphrase || null,
           },
         });
         toast.success("Skrzynka dodana");
@@ -279,7 +268,7 @@ function MailboxDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edytuj skrzynkę e-Doręczeń" : "Nowa skrzynka e-Doręczeń"}</DialogTitle>
           <DialogDescription>
-            Podaj adres skrzynki (AE:PL-…) oraz ClientId. Concertivo łączy się z e-Doręczeniami swoim certyfikatem QWAC — nie musisz go kupować ani wgrywać.
+            Podaj adres skrzynki (AE:PL-…) oraz ClientId. Certyfikat QWAC jest już po stronie Concertivo — użytkownik pobiera tylko plik publiczny .crt i wgrywa go w biznes.gov.pl.
           </DialogDescription>
         </DialogHeader>
 
@@ -298,8 +287,8 @@ function MailboxDialog({
                 </a>
                 . Klucz prywatny pozostaje po naszej stronie — nie musisz nic kupować.
               </div>
-              <div>2. Zaloguj się na <span className="font-mono">biznes.gov.pl</span> → e-Doręczenia → Ustawienia skrzynki → Systemy zewnętrzne. Dodaj Concertivo jako system zewnętrzny, wgraj pobrany plik <span className="font-mono">concertivo-qwac.crt</span>, wpisz ClientId Concertivo: <span className="font-mono">AE:PL-75293-86443-CJWRC-25.SYSTEM.CONCERTIVO</span> i nadaj uprawnienia (odczyt, wysyłka).</div>
-              <div>3. Wróć tutaj i wypełnij pola poniżej: <b>Adres skrzynki</b> (AE:PL-… Twojej skrzynki) oraz <b>ClientId</b> (ten sam ClientId Concertivo).</div>
+              <div>2. Zaloguj się na <span className="font-mono">biznes.gov.pl</span> → e-Doręczenia → Uprawnienia → Systemy → Dodaj system. Dodaj Concertivo jako system zewnętrzny i wgraj pobrany plik <span className="font-mono">concertivo-qwac.crt</span>.</div>
+              <div>3. Wróć tutaj i wypełnij pola poniżej: <b>Adres skrzynki</b> (AE:PL-… Twojej skrzynki) oraz <b>ClientId Concertivo</b>.</div>
             </AlertDescription>
           </Alert>
         )}
@@ -341,7 +330,7 @@ function MailboxDialog({
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">
-              Domyślnie: ClientId Concertivo autoryzowany w Twojej skrzynce. Podaj własny ClientId tylko jeśli masz zarejestrowany osobny system w KSDE.
+              Wklej ClientId Concertivo pokazany w instrukcji powyżej. Nie podawaj żadnego prywatnego certyfikatu ani klucza.
             </p>
           </div>
 
