@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  UploadCloud,
+  
   Pencil,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -201,8 +201,6 @@ function MailboxDialog({
 }) {
   const createFn = useServerFn(createAdeMailbox);
   const updateFn = useServerFn(updateAdeMailbox);
-  const certRef = useRef<HTMLInputElement>(null);
-  const keyRef = useRef<HTMLInputElement>(null);
 
   const [label, setLabel] = useState(editing?.label ?? "");
   const [mailboxAddress, setMailboxAddress] = useState(editing?.mailboxAddress ?? "");
@@ -212,10 +210,8 @@ function MailboxDialog({
   const [oauthBase, setOauthBase] = useState(editing?.oauthBase ?? "");
   const [tokenPath, setTokenPath] = useState(editing?.tokenPath ?? "");
   const [passphrase, setPassphrase] = useState("");
-  const [certPem, setCertPem] = useState("");
-  const [keyPem, setKeyPem] = useState("");
-  const [certName, setCertName] = useState<string | null>(null);
-  const [keyName, setKeyName] = useState<string | null>(null);
+  const certPem = "";
+  const keyPem = "";
   const [submitting, setSubmitting] = useState(false);
 
   // Re-inicjalizuj przy zmianie editing
@@ -228,33 +224,7 @@ function MailboxDialog({
     setOauthBase(editing?.oauthBase ?? "");
     setTokenPath(editing?.tokenPath ?? "");
     setPassphrase("");
-    setCertPem("");
-    setKeyPem("");
-    setCertName(null);
-    setKeyName(null);
   }, [editing]);
-
-  async function readFile(f: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Błąd odczytu pliku"));
-      reader.readAsText(f);
-    });
-  }
-
-  async function handleCertFile(f: File | null | undefined) {
-    if (!f) return;
-    const text = await readFile(f);
-    setCertPem(text);
-    setCertName(f.name);
-  }
-  async function handleKeyFile(f: File | null | undefined) {
-    if (!f) return;
-    const text = await readFile(f);
-    setKeyPem(text);
-    setKeyName(f.name);
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -375,53 +345,6 @@ function MailboxDialog({
             </p>
           </div>
 
-          <details className="rounded-md border border-border bg-muted/20 p-3 text-sm">
-            <summary className="cursor-pointer font-medium">Zaawansowane — własny certyfikat QWAC / URL-e (opcjonalne)</summary>
-            <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Wypełnij tylko jeśli chcesz, aby ta skrzynka używała <b>własnego</b> certyfikatu QWAC zamiast systemowego Concertivo. W przeciwnym razie zostaw puste.
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Certyfikat QWAC (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-                  <input
-                    ref={certRef}
-                    type="file"
-                    accept=".pem,.crt,.cer,text/plain"
-                    className="hidden"
-                    onChange={(e) => handleCertFile(e.target.files?.[0])}
-                  />
-                  <Button type="button" variant="outline" onClick={() => certRef.current?.click()} className="w-full justify-start">
-                    <UploadCloud className="h-4 w-4 mr-2" />
-                    {certName ?? "Wybierz plik cert.pem (opcjonalnie)"}
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label>Klucz prywatny (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-                  <input
-                    ref={keyRef}
-                    type="file"
-                    accept=".pem,.key,text/plain"
-                    className="hidden"
-                    onChange={(e) => handleKeyFile(e.target.files?.[0])}
-                  />
-                  <Button type="button" variant="outline" onClick={() => keyRef.current?.click()} className="w-full justify-start">
-                    <UploadCloud className="h-4 w-4 mr-2" />
-                    {keyName ?? "Wybierz plik key.pem (opcjonalnie)"}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Passphrase klucza (opcjonalne)</Label>
-                <Input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder={editing?.hasPassphrase ? "•••• (ustawione — zostaw puste, by nie zmieniać)" : ""} />
-              </div>
-              <div className="grid gap-2 pt-1">
-                <div><Label>API base (mTLS)</Label><Input value={apiBase} onChange={(e) => setApiBase(e.target.value)} placeholder="https://uaapi-ow.poczta-polska.pl" className="font-mono" /></div>
-                <div><Label>OAuth base (KSDE)</Label><Input value={oauthBase} onChange={(e) => setOauthBase(e.target.value)} placeholder="https://ow.edoreczenia.gov.pl" className="font-mono" /></div>
-                <div><Label>Token path</Label><Input value={tokenPath} onChange={(e) => setTokenPath(e.target.value)} placeholder="/auth/realms/EDOR/protocol/openid-connect/token" className="font-mono" /></div>
-              </div>
-            </div>
-          </details>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Anuluj</Button>

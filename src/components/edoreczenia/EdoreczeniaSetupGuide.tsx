@@ -18,7 +18,6 @@ import {
   ExternalLink,
   KeyRound,
   Lock,
-  ShieldCheck,
   Sparkles,
   Info,
   CheckCircle2,
@@ -402,29 +401,6 @@ export default function EdoreczeniaSetupGuide() {
             </AccordionContent>
           </AccordionItem>
 
-          {/* ==================== BYO-cert (zaawansowane) ==================== */}
-          <AccordionItem value="byo">
-            <AccordionTrigger>
-              <span className="flex items-center gap-2 text-left">
-                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                Zaawansowane — własny certyfikat QWAC (BYO)
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="text-sm space-y-2">
-              <p>
-                Jeśli masz <b>własny kwalifikowany certyfikat QWAC</b> (np. wystawiony przez CenCert/DFT dla
-                Twojej organizacji), możesz zamiast używać certyfikatu Concertivo podłączyć własny. Wtedy w
-                biznes.gov.pl w kroku 2 wgrywasz swoją część publiczną, a w formularzu Concertivo — pod
-                sekcją „Zaawansowane" — wgrywasz odpowiadający klucz prywatny (PEM). Klucz jest szyfrowany
-                AES-256-GCM przed zapisaniem.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Ta ścieżka jest sensowna głównie dla organizacji, które i tak posiadają QWAC do własnych
-                systemów i chcą, aby ruch e-Doręczeń szedł „w ich imieniu" bez pośredniczącej tożsamości
-                Concertivo.
-              </p>
-            </AccordionContent>
-          </AccordionItem>
         </Accordion>
       </CardContent>
     </Card>
