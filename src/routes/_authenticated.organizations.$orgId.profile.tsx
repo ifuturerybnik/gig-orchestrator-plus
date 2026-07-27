@@ -551,8 +551,10 @@ function OrganizationProfilePage() {
       </div>
     )}
 
-    <div className="mt-12">
-      <EdoreczeniaSetup scope={{ kind: "org", orgId }} />
+    <div className="mt-4">
+      <CollapsibleSection title={t("edoreczenia.setup.title", { defaultValue: "e-Doręczenia" })} bare>
+        <EdoreczeniaSetup scope={{ kind: "org", orgId }} />
+      </CollapsibleSection>
     </div>
 
 
