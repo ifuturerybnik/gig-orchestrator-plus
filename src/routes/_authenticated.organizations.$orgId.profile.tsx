@@ -35,6 +35,7 @@ import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { OrgStorageSection } from "@/components/organizations/OrgStorageSection";
 import EdoreczeniaSetup from "@/components/edoreczenia/EdoreczeniaSetup";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 
 
 export const Route = createFileRoute(
