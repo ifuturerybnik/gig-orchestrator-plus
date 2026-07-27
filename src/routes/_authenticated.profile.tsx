@@ -522,9 +522,6 @@ function ProfilePage() {
           <MyMailboxesSection />
         </div>
 
-        <div className="mt-12">
-          <EdoreczeniaSetup scope={{ kind: "user" }} />
-        </div>
 
 
         <div className="mt-12">
