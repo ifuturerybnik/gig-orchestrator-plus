@@ -18,7 +18,6 @@ import {
   ExternalLink,
   KeyRound,
   Lock,
-  ShieldCheck,
   Sparkles,
   Info,
   CheckCircle2,

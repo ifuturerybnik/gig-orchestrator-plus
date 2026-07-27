@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  UploadCloud,
+  
   Pencil,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -201,8 +201,6 @@ function MailboxDialog({
 }) {
   const createFn = useServerFn(createAdeMailbox);
   const updateFn = useServerFn(updateAdeMailbox);
-  const certRef = useRef<HTMLInputElement>(null);
-  const keyRef = useRef<HTMLInputElement>(null);
 
   const [label, setLabel] = useState(editing?.label ?? "");
   const [mailboxAddress, setMailboxAddress] = useState(editing?.mailboxAddress ?? "");
@@ -212,10 +210,8 @@ function MailboxDialog({
   const [oauthBase, setOauthBase] = useState(editing?.oauthBase ?? "");
   const [tokenPath, setTokenPath] = useState(editing?.tokenPath ?? "");
   const [passphrase, setPassphrase] = useState("");
-  const [certPem, setCertPem] = useState("");
-  const [keyPem, setKeyPem] = useState("");
-  const [certName, setCertName] = useState<string | null>(null);
-  const [keyName, setKeyName] = useState<string | null>(null);
+  const certPem = "";
+  const keyPem = "";
   const [submitting, setSubmitting] = useState(false);
 
   // Re-inicjalizuj przy zmianie editing
@@ -228,33 +224,7 @@ function MailboxDialog({
     setOauthBase(editing?.oauthBase ?? "");
     setTokenPath(editing?.tokenPath ?? "");
     setPassphrase("");
-    setCertPem("");
-    setKeyPem("");
-    setCertName(null);
-    setKeyName(null);
   }, [editing]);
-
-  async function readFile(f: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Błąd odczytu pliku"));
-      reader.readAsText(f);
-    });
-  }
-
-  async function handleCertFile(f: File | null | undefined) {
-    if (!f) return;
-    const text = await readFile(f);
-    setCertPem(text);
-    setCertName(f.name);
-  }
-  async function handleKeyFile(f: File | null | undefined) {
-    if (!f) return;
-    const text = await readFile(f);
-    setKeyPem(text);
-    setKeyName(f.name);
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
