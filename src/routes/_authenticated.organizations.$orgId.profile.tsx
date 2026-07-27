@@ -448,17 +448,12 @@ function OrganizationProfilePage() {
             />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {t("organizations.detail.currency.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.detail.currency.help")}
-          </p>
-        </div>
+      <CollapsibleSection
+        title={t("organizations.detail.currency.title")}
+        description={t("organizations.detail.currency.help")}
+      >
         <div className="max-w-sm space-y-2">
           <Label htmlFor="currency">{t("organizations.detail.currency.label")}</Label>
           <CurrencySelect
@@ -467,18 +462,13 @@ function OrganizationProfilePage() {
             onChange={(v) => setForm((f) => ({ ...f, currency: v }))}
           />
         </div>
-      </section>
+      </CollapsibleSection>
 
       {Array.isArray(org.types) && (org.types as string[]).includes("artist") && (
-        <section className="space-y-4 rounded-md border border-border bg-card p-4">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {t("organizations.detail.genres.title")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t("organizations.detail.genres.help_single")}
-            </p>
-          </div>
+        <CollapsibleSection
+          title={t("organizations.detail.genres.title")}
+          description={t("organizations.detail.genres.help_single")}
+        >
           <RadioGroup
             value={form.genre}
             onValueChange={(v) => setForm((f) => ({ ...f, genre: v }))}
@@ -495,7 +485,7 @@ function OrganizationProfilePage() {
               </label>
             ))}
           </RadioGroup>
-        </section>
+        </CollapsibleSection>
       )}
 
       <div className="flex gap-2">
