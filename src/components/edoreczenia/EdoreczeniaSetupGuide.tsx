@@ -346,8 +346,7 @@ export default function EdoreczeniaSetupGuide() {
                 </li>
                 <li>
                   Operator z dostępem administracyjnym do naszej infrastruktury <b>technicznie</b> mógłby
-                  odszyfrować dane skrzynek — to standardowa architektura hostowanej integracji. Jeśli chcesz
-                  większej izolacji, zobacz sekcję „Zaawansowane" (BYO-cert).
+                  odszyfrować dane skrzynek — to standardowa architektura hostowanej integracji.
                 </li>
               </ul>
             </AccordionContent>
