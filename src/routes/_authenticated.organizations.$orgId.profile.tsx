@@ -312,17 +312,12 @@ function OrganizationProfilePage() {
             />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {t("organizations.detail.company.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.detail.company.help")}
-          </p>
-        </div>
+      <CollapsibleSection
+        title={t("organizations.detail.company.title")}
+        description={t("organizations.detail.company.help")}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="legal_name">
