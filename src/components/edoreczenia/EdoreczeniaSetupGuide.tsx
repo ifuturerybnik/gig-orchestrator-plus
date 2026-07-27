@@ -23,6 +23,33 @@ import {
   Info,
   CheckCircle2,
 } from "lucide-react";
+import edorStep1Asset from "@/assets/edoreczenia/edor-step1.asset.json";
+import edorStep2Asset from "@/assets/edoreczenia/edor-step2.asset.json";
+import edorStep3Asset from "@/assets/edoreczenia/edor-step3.asset.json";
+
+function GuideScreenshot({
+  src,
+  alt,
+  caption,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+}) {
+  return (
+    <figure className="rounded-md border border-border bg-muted/30 p-2">
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        className="mx-auto max-h-[420px] w-auto rounded-sm border border-border/60 bg-background object-contain"
+      />
+      <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+        {caption}
+      </figcaption>
+    </figure>
+  );
+}
 
 // ClientId Concertivo — wartość rejestrowana przez użytkownika w biznes.gov.pl
 const CONCERTIVO_CLIENT_ID = "AE:PL-75293-86443-CJWRC-25.SYSTEM.CONCERTIVO";
