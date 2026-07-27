@@ -1,6 +1,6 @@
 // CRUD skrzynek e-Doręczeń — multi-tenant.
-// Certyfikaty QWAC (PEM cert + PEM key + passphrase) szyfrowane symetrycznie
-// (AES-256-GCM, EXT_PII_ENCRYPTION_KEY) przed zapisem do DB.
+// Użytkownik nie wgrywa certyfikatów QWAC do aplikacji — używany jest systemowy
+// certyfikat Concertivo skonfigurowany po stronie serwera.
 //
 // Autoryzacja:
 // - kind='user'   → owner_user_id = context.userId
@@ -41,7 +41,7 @@ export type AdeMailboxInput = {
   apiBase?: string | null;
   oauthBase?: string | null;
   tokenPath?: string | null;
-  // Opcjonalne — jeśli nie podane, użyjemy systemowego QWAC Concertivo
+  // Pola pozostawione tylko dla zgodności starego klienta; nowe UI ich nie wysyła.
   qwacCertPem?: string | null;
   qwacKeyPem?: string | null;
   qwacKeyPassphrase?: string | null;
@@ -165,25 +165,13 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<AdeMailboxPublic> => {
     await assertScopeAccess(context.supabase as never, context.userId, data.scope, "write");
 
-    // Walidacja PEM-ów: opcjonalne. Jeśli podane — sprawdź format.
-    if (data.qwacCertPem && !/-----BEGIN CERTIFICATE-----/.test(data.qwacCertPem)) {
-      throw new Error("Certyfikat QWAC musi być w formacie PEM (nagłówek BEGIN CERTIFICATE)");
-    }
-    if (data.qwacKeyPem && !/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(data.qwacKeyPem)) {
-      throw new Error("Klucz prywatny QWAC musi być w formacie PEM (nagłówek BEGIN PRIVATE KEY)");
-    }
-    if ((data.qwacCertPem && !data.qwacKeyPem) || (data.qwacKeyPem && !data.qwacCertPem)) {
-      throw new Error("Podaj oba pliki: certyfikat QWAC i klucz prywatny, albo żaden (użyjemy systemowego).");
+    if (data.qwacCertPem || data.qwacKeyPem || data.qwacKeyPassphrase) {
+      throw new Error("Nie wgrywaj certyfikatu QWAC do aplikacji — używany jest certyfikat Concertivo skonfigurowany po stronie serwera.");
     }
     if (!data.mailboxAddress.startsWith("AE:PL-")) {
       throw new Error("Adres skrzynki powinien mieć format AE:PL-...");
     }
     if (!data.clientId) throw new Error("ClientId wymagany");
-
-    const { encryptPii } = await import("@/lib/crypto.server");
-    const certEnc = data.qwacCertPem ? encryptPii(data.qwacCertPem) : null;
-    const keyEnc = data.qwacKeyPem ? encryptPii(data.qwacKeyPem) : null;
-    const passEnc = data.qwacKeyPassphrase ? encryptPii(data.qwacKeyPassphrase) : null;
 
     const filter = scopeFilter(data.scope, context.userId);
     const row: Record<string, unknown> = {
@@ -197,9 +185,9 @@ export const createAdeMailbox = createServerFn({ method: "POST" })
       api_base: data.apiBase ?? null,
       oauth_base: data.oauthBase ?? null,
       token_path: data.tokenPath ?? null,
-      qwac_cert_pem_encrypted: certEnc,
-      qwac_key_pem_encrypted: keyEnc,
-      qwac_key_passphrase_encrypted: passEnc,
+      qwac_cert_pem_encrypted: null,
+      qwac_key_pem_encrypted: null,
+      qwac_key_passphrase_encrypted: null,
       is_active: true,
     };
     const { data: created, error } = await (context.supabase as unknown as {
@@ -244,7 +232,9 @@ export const updateAdeMailbox = createServerFn({ method: "POST" })
   .inputValidator((input: AdeMailboxPatch) => input)
   .handler(async ({ data, context }): Promise<AdeMailboxPublic> => {
     await fetchMailboxWithScopeCheck(context.supabase as never, context.userId, data.id, "write");
-    const { encryptPii } = await import("@/lib/crypto.server");
+    if (data.qwacCertPem || data.qwacKeyPem || data.qwacKeyPassphrase) {
+      throw new Error("Nie wgrywaj certyfikatu QWAC do aplikacji — używany jest certyfikat Concertivo skonfigurowany po stronie serwera.");
+    }
     const patch: Record<string, unknown> = {};
     if (data.label !== undefined) patch.label = data.label;
     if (data.mailboxAddress !== undefined) patch.mailbox_address = data.mailboxAddress;
@@ -254,17 +244,6 @@ export const updateAdeMailbox = createServerFn({ method: "POST" })
     if (data.oauthBase !== undefined) patch.oauth_base = data.oauthBase;
     if (data.tokenPath !== undefined) patch.token_path = data.tokenPath;
     if (data.isActive !== undefined) patch.is_active = data.isActive;
-    if (data.qwacCertPem) {
-      if (!/-----BEGIN CERTIFICATE-----/.test(data.qwacCertPem)) throw new Error("Nieprawidłowy PEM cert");
-      patch.qwac_cert_pem_encrypted = encryptPii(data.qwacCertPem);
-    }
-    if (data.qwacKeyPem) {
-      if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(data.qwacKeyPem)) throw new Error("Nieprawidłowy PEM key");
-      patch.qwac_key_pem_encrypted = encryptPii(data.qwacKeyPem);
-    }
-    if (data.qwacKeyPassphrase !== undefined) {
-      patch.qwac_key_passphrase_encrypted = data.qwacKeyPassphrase ? encryptPii(data.qwacKeyPassphrase) : null;
-    }
     const { data: updated, error } = await context.supabase
       .from("ade_mailboxes")
       .update(patch)
