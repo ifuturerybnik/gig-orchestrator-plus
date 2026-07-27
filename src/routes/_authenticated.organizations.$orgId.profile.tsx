@@ -232,11 +232,11 @@ function OrganizationProfilePage() {
         </div>
       )}
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <h2 className="text-lg font-semibold">{t("organizations.detail.basic")}</h2>
+      <CollapsibleSection title={t("organizations.detail.basic")}>
         <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
           {t("organizations.detail.moderated_fields_hint")}
         </p>
+        <div className="mt-4 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">{t("organizations.form.name")}</Label>
           <Input
@@ -258,7 +258,8 @@ function OrganizationProfilePage() {
             onChange={updateField("description")}
           />
         </div>
-      </section>
+        </div>
+      </CollapsibleSection>
 
 
       <section className="space-y-4 rounded-md border border-border bg-card p-4">
