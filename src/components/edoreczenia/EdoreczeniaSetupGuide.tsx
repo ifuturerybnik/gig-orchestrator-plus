@@ -92,7 +92,7 @@ export default function EdoreczeniaSetupGuide() {
           </AlertDescription>
         </Alert>
 
-        <Accordion type="single" collapsible defaultValue="step-1" className="w-full">
+        <Accordion type="multiple" defaultValue={["step-0","step-1","step-2","step-3","step-4"]} className="w-full">
           {/* ==================== KROK 0 — Co to jest ==================== */}
           <AccordionItem value="step-0">
             <AccordionTrigger>
