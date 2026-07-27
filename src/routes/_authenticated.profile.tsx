@@ -194,8 +194,7 @@ function ProfilePage() {
               />
             </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
+            <CollapsibleSection title={t("profile.basic")}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">{t("auth.register.first_name")}</Label>
@@ -215,13 +214,12 @@ function ProfilePage() {
                   />
                 </div>
               </div>
-            </section>
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.kinds.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.kinds.help")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.kinds.title")}
+              description={t("profile.kinds.help")}
+            >
               <div className="grid gap-2 sm:grid-cols-2">
                 {USER_KINDS.map((kind) => {
                   const id = `kind-${kind}`;
