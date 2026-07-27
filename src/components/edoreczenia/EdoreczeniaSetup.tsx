@@ -375,53 +375,6 @@ function MailboxDialog({
             </p>
           </div>
 
-          <details className="rounded-md border border-border bg-muted/20 p-3 text-sm">
-            <summary className="cursor-pointer font-medium">Zaawansowane — własny certyfikat QWAC / URL-e (opcjonalne)</summary>
-            <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Wypełnij tylko jeśli chcesz, aby ta skrzynka używała <b>własnego</b> certyfikatu QWAC zamiast systemowego Concertivo. W przeciwnym razie zostaw puste.
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Certyfikat QWAC (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-                  <input
-                    ref={certRef}
-                    type="file"
-                    accept=".pem,.crt,.cer,text/plain"
-                    className="hidden"
-                    onChange={(e) => handleCertFile(e.target.files?.[0])}
-                  />
-                  <Button type="button" variant="outline" onClick={() => certRef.current?.click()} className="w-full justify-start">
-                    <UploadCloud className="h-4 w-4 mr-2" />
-                    {certName ?? "Wybierz plik cert.pem (opcjonalnie)"}
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label>Klucz prywatny (PEM){editing ? " — zostaw puste, aby nie zmieniać" : ""}</Label>
-                  <input
-                    ref={keyRef}
-                    type="file"
-                    accept=".pem,.key,text/plain"
-                    className="hidden"
-                    onChange={(e) => handleKeyFile(e.target.files?.[0])}
-                  />
-                  <Button type="button" variant="outline" onClick={() => keyRef.current?.click()} className="w-full justify-start">
-                    <UploadCloud className="h-4 w-4 mr-2" />
-                    {keyName ?? "Wybierz plik key.pem (opcjonalnie)"}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Passphrase klucza (opcjonalne)</Label>
-                <Input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder={editing?.hasPassphrase ? "•••• (ustawione — zostaw puste, by nie zmieniać)" : ""} />
-              </div>
-              <div className="grid gap-2 pt-1">
-                <div><Label>API base (mTLS)</Label><Input value={apiBase} onChange={(e) => setApiBase(e.target.value)} placeholder="https://uaapi-ow.poczta-polska.pl" className="font-mono" /></div>
-                <div><Label>OAuth base (KSDE)</Label><Input value={oauthBase} onChange={(e) => setOauthBase(e.target.value)} placeholder="https://ow.edoreczenia.gov.pl" className="font-mono" /></div>
-                <div><Label>Token path</Label><Input value={tokenPath} onChange={(e) => setTokenPath(e.target.value)} placeholder="/auth/realms/EDOR/protocol/openid-connect/token" className="font-mono" /></div>
-              </div>
-            </div>
-          </details>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Anuluj</Button>
