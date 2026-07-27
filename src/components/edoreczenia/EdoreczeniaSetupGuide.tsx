@@ -70,7 +70,7 @@ export default function EdoreczeniaSetupGuide() {
               Jak podłączyć skrzynkę e-Doręczeń — instrukcja krok po kroku
             </CardTitle>
             <CardDescription>
-              Cała integracja zajmuje ~5 minut. Nie musisz kupować ani wgrywać własnego certyfikatu —
+              Cała integracja zajmuje ~5 minut. Nie musisz kupować certyfikatu QWAC —
               Concertivo używa certyfikatu QWAC znajdującego się po naszej stronie, Ty tylko autoryzujesz nas w swojej skrzynce w
               biznes.gov.pl.
             </CardDescription>

@@ -98,7 +98,7 @@ export default function EdoreczeniaSetup({ scope }: Props) {
                 Skrzynki e-Doręczeń
               </CardTitle>
               <CardDescription>
-                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu certyfikatu QWAC Concertivo. Użytkownik nie kupuje i nie wgrywa żadnego certyfikatu.
+                Wpisz adres skrzynki i ClientId — Concertivo połączy się z e-Doręczeniami przy użyciu certyfikatu QWAC Concertivo. Użytkownik nie kupuje certyfikatu i nie wgrywa go do aplikacji.
               </CardDescription>
             </div>
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
