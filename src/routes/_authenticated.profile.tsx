@@ -511,7 +511,7 @@ function ProfilePage() {
                   </div>
                 </div>
               )}
-            </section>
+            </CollapsibleSection>
 
             <Button type="submit" disabled={mutation.isPending}>
               {t("common.save")}
@@ -519,61 +519,63 @@ function ProfilePage() {
           </form>
         )}
 
-        <div className="mt-12">
-          <MyMailboxesSection />
-        </div>
+        <div className="mt-8 space-y-4">
+          <CollapsibleSection title={t("skrzynki.my_title", { defaultValue: "Moje skrzynki e-mail" })} bare>
+            <MyMailboxesSection />
+          </CollapsibleSection>
 
+          <CollapsibleSection title={t("stopki.title", { defaultValue: "Stopki e-mail" })} bare>
+            <StopkiManager scope={{ kind: "user" }} />
+          </CollapsibleSection>
 
+          <CollapsibleSection title={t("security.password.title", { defaultValue: "Bezpieczeństwo" })} bare>
+            <div className="space-y-8">
+              <SecuritySection />
+            </div>
+          </CollapsibleSection>
 
-        <div className="mt-12">
-          <StopkiManager scope={{ kind: "user" }} />
-        </div>
+          <CollapsibleSection title={t("privacy.title", { defaultValue: "Prywatność" })} bare>
+            <PrivacySection userEmail={profileQuery.data?.email} />
+          </CollapsibleSection>
 
-        <div className="mt-12 space-y-8">
-          <SecuritySection />
-          <PrivacySection userEmail={profileQuery.data?.email} />
-        </div>
-
-
-
-        <section className="mt-12">
-          <h2 className="text-xl font-semibold text-foreground">{t("profile.my_orgs.title")}</h2>
-          {orgsQuery.isLoading ? (
-            <p className="mt-3 text-sm text-muted-foreground">{t("common.loading")}</p>
-          ) : orgs.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">{t("profile.my_orgs.empty")}</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {orgs.map((org) => (
-                <li key={org.id}>
-                  <Link
-                    to="/organizations/$orgId"
-                    params={{ orgId: org.id }}
-                    className="flex items-center justify-between rounded-md border border-border bg-card p-3 hover:bg-accent"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{org.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        <OrgTypesText types={(org as { types?: string[] | null }).types} />
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        org.status === "approved"
-                          ? "default"
-                          : org.status === "pending"
-                            ? "secondary"
-                            : "destructive"
-                      }
+          <CollapsibleSection title={t("profile.my_orgs.title")} bare>
+            {orgsQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+            ) : orgs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("profile.my_orgs.empty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {orgs.map((org) => (
+                  <li key={org.id}>
+                    <Link
+                      to="/organizations/$orgId"
+                      params={{ orgId: org.id }}
+                      className="flex items-center justify-between rounded-md border border-border bg-card p-3 hover:bg-accent"
                     >
-                      {t(`organizations.status.${org.status}`)}
-                    </Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{org.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          <OrgTypesText types={(org as { types?: string[] | null }).types} />
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          org.status === "approved"
+                            ? "default"
+                            : org.status === "pending"
+                              ? "secondary"
+                              : "destructive"
+                        }
+                      >
+                        {t(`organizations.status.${org.status}`)}
+                      </Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleSection>
+        </div>
       </main>
     </div>
   );
