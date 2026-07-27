@@ -31,6 +31,7 @@ import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
 import { LandingPreferenceField } from "@/components/profile-landing-field";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -182,15 +183,18 @@ function ProfilePage() {
                 {t("nav.logout")}
               </Button>
             </div>
-            <LandingPreferenceField
-              currentPath={(profileQuery.data?.profile as { landing_path?: string | null } | null | undefined)?.landing_path ?? null}
-            />
-            <ProfileAvatarField
-              value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
-            />
+            <CollapsibleSection title={t("profile.landing.title")} bare>
+              <LandingPreferenceField
+                currentPath={(profileQuery.data?.profile as { landing_path?: string | null } | null | undefined)?.landing_path ?? null}
+              />
+            </CollapsibleSection>
+            <CollapsibleSection title={t("profile.avatar.title", { defaultValue: "Zdjęcie profilowe" })} bare>
+              <ProfileAvatarField
+                value={(profileQuery.data?.profile as { avatar_url?: string | null } | null | undefined)?.avatar_url ?? null}
+              />
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <h2 className="text-lg font-semibold">{t("profile.basic")}</h2>
+            <CollapsibleSection title={t("profile.basic")}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">{t("auth.register.first_name")}</Label>
@@ -210,13 +214,12 @@ function ProfilePage() {
                   />
                 </div>
               </div>
-            </section>
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.kinds.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.kinds.help")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.kinds.title")}
+              description={t("profile.kinds.help")}
+            >
               <div className="grid gap-2 sm:grid-cols-2">
                 {USER_KINDS.map((kind) => {
                   const id = `kind-${kind}`;
@@ -236,13 +239,12 @@ function ProfilePage() {
                   );
                 })}
               </div>
-            </section>
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.address.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.address.optional")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.address.title")}
+              description={t("profile.address.optional")}
+            >
               <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
                 {t("profile.address.benefit_user")}
               </p>
@@ -268,13 +270,12 @@ function ProfilePage() {
                   />
                 </div>
               </div>
-            </section>
+            </CollapsibleSection>
 
-            <section className="space-y-4 rounded-md border border-border bg-card p-4">
-              <div>
-                <h2 className="text-lg font-semibold">{t("profile.settlement.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t("profile.settlement.help")}</p>
-              </div>
+            <CollapsibleSection
+              title={t("profile.settlement.title")}
+              description={t("profile.settlement.help")}
+            >
 
               <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground">
                 {t("profile.settlement.privacy_note")}
@@ -510,7 +511,7 @@ function ProfilePage() {
                   </div>
                 </div>
               )}
-            </section>
+            </CollapsibleSection>
 
             <Button type="submit" disabled={mutation.isPending}>
               {t("common.save")}
@@ -518,61 +519,63 @@ function ProfilePage() {
           </form>
         )}
 
-        <div className="mt-12">
-          <MyMailboxesSection />
-        </div>
+        <div className="mt-8 space-y-4">
+          <CollapsibleSection title={t("skrzynki.my_title", { defaultValue: "Moje skrzynki e-mail" })} bare>
+            <MyMailboxesSection />
+          </CollapsibleSection>
 
+          <CollapsibleSection title={t("stopki.title", { defaultValue: "Stopki e-mail" })} bare>
+            <StopkiManager scope={{ kind: "user" }} />
+          </CollapsibleSection>
 
+          <CollapsibleSection title={t("security.password.title", { defaultValue: "Bezpieczeństwo" })} bare>
+            <div className="space-y-8">
+              <SecuritySection />
+            </div>
+          </CollapsibleSection>
 
-        <div className="mt-12">
-          <StopkiManager scope={{ kind: "user" }} />
-        </div>
+          <CollapsibleSection title={t("privacy.title", { defaultValue: "Prywatność" })} bare>
+            <PrivacySection userEmail={profileQuery.data?.email} />
+          </CollapsibleSection>
 
-        <div className="mt-12 space-y-8">
-          <SecuritySection />
-          <PrivacySection userEmail={profileQuery.data?.email} />
-        </div>
-
-
-
-        <section className="mt-12">
-          <h2 className="text-xl font-semibold text-foreground">{t("profile.my_orgs.title")}</h2>
-          {orgsQuery.isLoading ? (
-            <p className="mt-3 text-sm text-muted-foreground">{t("common.loading")}</p>
-          ) : orgs.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">{t("profile.my_orgs.empty")}</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {orgs.map((org) => (
-                <li key={org.id}>
-                  <Link
-                    to="/organizations/$orgId"
-                    params={{ orgId: org.id }}
-                    className="flex items-center justify-between rounded-md border border-border bg-card p-3 hover:bg-accent"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{org.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        <OrgTypesText types={(org as { types?: string[] | null }).types} />
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        org.status === "approved"
-                          ? "default"
-                          : org.status === "pending"
-                            ? "secondary"
-                            : "destructive"
-                      }
+          <CollapsibleSection title={t("profile.my_orgs.title")} bare>
+            {orgsQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+            ) : orgs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("profile.my_orgs.empty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {orgs.map((org) => (
+                  <li key={org.id}>
+                    <Link
+                      to="/organizations/$orgId"
+                      params={{ orgId: org.id }}
+                      className="flex items-center justify-between rounded-md border border-border bg-card p-3 hover:bg-accent"
                     >
-                      {t(`organizations.status.${org.status}`)}
-                    </Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{org.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          <OrgTypesText types={(org as { types?: string[] | null }).types} />
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          org.status === "approved"
+                            ? "default"
+                            : org.status === "pending"
+                              ? "secondary"
+                              : "destructive"
+                        }
+                      >
+                        {t(`organizations.status.${org.status}`)}
+                      </Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleSection>
+        </div>
       </main>
     </div>
   );

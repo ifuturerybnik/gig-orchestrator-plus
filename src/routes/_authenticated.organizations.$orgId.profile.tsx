@@ -35,6 +35,7 @@ import { OrgMailboxesSection } from "@/components/org-mailboxes-section";
 import { StopkiManager } from "@/components/email/StopkiManager";
 import { OrgStorageSection } from "@/components/organizations/OrgStorageSection";
 import EdoreczeniaSetup from "@/components/edoreczenia/EdoreczeniaSetup";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 
 
 export const Route = createFileRoute(
@@ -231,11 +232,11 @@ function OrganizationProfilePage() {
         </div>
       )}
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <h2 className="text-lg font-semibold">{t("organizations.detail.basic")}</h2>
+      <CollapsibleSection title={t("organizations.detail.basic")}>
         <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
           {t("organizations.detail.moderated_fields_hint")}
         </p>
+        <div className="mt-4 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">{t("organizations.form.name")}</Label>
           <Input
@@ -257,18 +258,14 @@ function OrganizationProfilePage() {
             onChange={updateField("description")}
           />
         </div>
-      </section>
-
-
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {t("organizations.detail.address.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.detail.address.optional")}
-          </p>
         </div>
+      </CollapsibleSection>
+
+
+      <CollapsibleSection
+        title={t("organizations.detail.address.title")}
+        description={t("organizations.detail.address.optional")}
+      >
         <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
           {t("organizations.detail.address.benefit")}
         </p>
@@ -315,17 +312,12 @@ function OrganizationProfilePage() {
             />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {t("organizations.detail.company.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.detail.company.help")}
-          </p>
-        </div>
+      <CollapsibleSection
+        title={t("organizations.detail.company.title")}
+        description={t("organizations.detail.company.help")}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="legal_name">
@@ -456,17 +448,12 @@ function OrganizationProfilePage() {
             />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4 rounded-md border border-border bg-card p-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {t("organizations.detail.currency.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("organizations.detail.currency.help")}
-          </p>
-        </div>
+      <CollapsibleSection
+        title={t("organizations.detail.currency.title")}
+        description={t("organizations.detail.currency.help")}
+      >
         <div className="max-w-sm space-y-2">
           <Label htmlFor="currency">{t("organizations.detail.currency.label")}</Label>
           <CurrencySelect
@@ -475,18 +462,13 @@ function OrganizationProfilePage() {
             onChange={(v) => setForm((f) => ({ ...f, currency: v }))}
           />
         </div>
-      </section>
+      </CollapsibleSection>
 
       {Array.isArray(org.types) && (org.types as string[]).includes("artist") && (
-        <section className="space-y-4 rounded-md border border-border bg-card p-4">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {t("organizations.detail.genres.title")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t("organizations.detail.genres.help_single")}
-            </p>
-          </div>
+        <CollapsibleSection
+          title={t("organizations.detail.genres.title")}
+          description={t("organizations.detail.genres.help_single")}
+        >
           <RadioGroup
             value={form.genre}
             onValueChange={(v) => setForm((f) => ({ ...f, genre: v }))}
@@ -503,7 +485,7 @@ function OrganizationProfilePage() {
               </label>
             ))}
           </RadioGroup>
-        </section>
+        </CollapsibleSection>
       )}
 
       <div className="flex gap-2">
@@ -521,9 +503,17 @@ function OrganizationProfilePage() {
         </Button>
       </div>
     </form>
-    <OrgMailboxesSection orgId={orgId} />
-    <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
-    <OrgStorageSection orgId={orgId} />
+    <div className="space-y-4">
+      <CollapsibleSection title={t("skrzynki.title", { defaultValue: "Skrzynki e-mail organizacji" })} bare>
+        <OrgMailboxesSection orgId={orgId} />
+      </CollapsibleSection>
+      <CollapsibleSection title={t("stopki.title", { defaultValue: "Stopki e-mail" })} bare>
+        <StopkiManager scope={{ kind: "org", organizationId: orgId }} />
+      </CollapsibleSection>
+      <CollapsibleSection title={t("organizations.storage.title", { defaultValue: "Storage organizacji (Cloudflare R2)" })} bare>
+        <OrgStorageSection orgId={orgId} />
+      </CollapsibleSection>
+    </div>
 
     {isOwner && (
       <div className="flex justify-end pt-4">
@@ -561,8 +551,10 @@ function OrganizationProfilePage() {
       </div>
     )}
 
-    <div className="mt-12">
-      <EdoreczeniaSetup scope={{ kind: "org", orgId }} />
+    <div className="mt-4">
+      <CollapsibleSection title={t("edoreczenia.setup.title", { defaultValue: "e-Doręczenia" })} bare>
+        <EdoreczeniaSetup scope={{ kind: "org", orgId }} />
+      </CollapsibleSection>
     </div>
 
 
