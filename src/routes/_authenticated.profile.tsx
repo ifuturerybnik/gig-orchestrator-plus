@@ -31,6 +31,7 @@ import { MyMailboxesSection } from "@/components/my-mailboxes-section";
 
 import { ProfileAvatarField } from "@/components/profile-avatar-field";
 import { LandingPreferenceField } from "@/components/profile-landing-field";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { supabase } from "@/integrations/supabase/client";
 
 
