@@ -81,7 +81,8 @@ export function Header() {
       <div className="flex h-14 w-full items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center">
-            <img src={logoUrl} alt={t("app.name")} className="h-8 w-auto" />
+            <img src={logoUrl} alt={t("app.name")} className="h-8 w-auto dark:hidden" />
+            <img src={logoDarkUrl} alt={t("app.name")} className="hidden h-8 w-auto dark:block" />
           </Link>
         </div>
 
