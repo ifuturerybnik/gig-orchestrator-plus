@@ -22,9 +22,9 @@ import {
   Info,
   CheckCircle2,
 } from "lucide-react";
-import edorStep1Asset from "@/assets/edoreczenia/edor-step1.asset.json";
-import edorStep2Asset from "@/assets/edoreczenia/edor-step2.asset.json";
-import edorStep3Asset from "@/assets/edoreczenia/edor-step3.asset.json";
+import edorStep1Url from "@/assets/edoreczenia/edor-step1-uprawnienia.png";
+import edorStep2Url from "@/assets/edoreczenia/edor-step2-systemy.png";
+import edorStep3Url from "@/assets/edoreczenia/edor-step3-dodaj-system.png";
 
 function GuideScreenshot({
   src,
@@ -198,7 +198,7 @@ export default function EdoreczeniaSetupGuide() {
               <div className="space-y-2">
                 <div className="font-semibold">2.1 — W lewym menu skrzynki kliknij „Uprawnienia"</div>
                 <GuideScreenshot
-                  src={edorStep1Asset.url}
+                  src={edorStep1Url}
                   alt="Boczne menu skrzynki e-Doręczeń z zaznaczoną pozycją Uprawnienia"
                   caption="Widok skrzynki na biznes.gov.pl — w lewym menu odszukaj „Uprawnienia” (ikonka osoby z plusem). Otworzy się nowa zakładka „Uprawnienia w skrzynce do e-Doręczeń”."
                 />
@@ -210,7 +210,7 @@ export default function EdoreczeniaSetupGuide() {
                   2.2 — Przejdź do zakładki „Systemy" i kliknij „Dodaj system"
                 </div>
                 <GuideScreenshot
-                  src={edorStep2Asset.url}
+                  src={edorStep2Url}
                   alt="Zakładka Systemy w Uprawnieniach z niebieskim przyciskiem Dodaj system"
                   caption="W bocznym menu wybierz „Systemy” (ostatnia pozycja). W prawym górnym rogu pojawi się niebieski przycisk „Dodaj system” — kliknij go."
                 />
@@ -226,7 +226,7 @@ export default function EdoreczeniaSetupGuide() {
                   2.3 — Wypełnij formularz „Dodaj system" i wgraj certyfikat Concertivo
                 </div>
                 <GuideScreenshot
-                  src={edorStep3Asset.url}
+                  src={edorStep3Url}
                   alt="Formularz Dodaj system: nazwa, opis, upload certyfikatu"
                   caption="Formularz „Dodaj system” — nazwa, opis (opcjonalny) i pole „Dodaj kwalifikowany środek uwierzytelniający”."
                 />
