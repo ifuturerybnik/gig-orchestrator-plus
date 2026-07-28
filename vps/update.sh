@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Concertivo — bezpieczna aktualizacja na VPS Hostinger
-# Użycie:  cd /var/www/concertivo && ./update.sh
-# Lub jako jedna komenda (patrz README poniżej skryptu)
+# Użycie:  cd /var/www/concertivo && bash update.sh
+# To jest jedyna zalecana komenda deployu VPS. Nie używaj `git pull` ani `bun run build` ręcznie.
 
 set -Eeuo pipefail
 
@@ -11,7 +11,9 @@ BRANCH="${BRANCH:-main}"
 CLI_PORT="${PORT:-}"
 PORT="${PORT:-3001}"
 ENV_FILE="$APP_DIR/.env.production"
-ENV_BACKUP="/tmp/concertivo.env.production.$(date +%Y%m%d-%H%M%S).bak"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+ENV_BACKUP="/tmp/concertivo.env.production.${STAMP}.bak"
+LOCAL_CHANGES_BACKUP="/tmp/concertivo-local-changes.${STAMP}.patch"
 
 log()  { printf "\033[1;34m[update]\033[0m %s\n" "$*"; }
 ok()   { printf "\033[1;32m[ ok ]\033[0m %s\n" "$*"; }
@@ -70,16 +72,19 @@ if [ -f "$ENV_FILE" ]; then
   cp "$ENV_FILE" "$ENV_BACKUP"
 fi
 
-# 1) Git: zabezpieczenie przed lokalnymi zmianami
+# 1) Git: deterministyczna synchronizacja z GitHub.
+# Celowo NIE używamy `git pull`, bo wcześniej blokował deploy przez lokalnie wygenerowany routeTree.gen.ts.
 log "Pobieram zmiany z GitHub (branch: $BRANCH)..."
 git fetch origin "$BRANCH"
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
-  warn "Wykryto lokalne zmiany — robię stash (auto-backup)"
-  git stash push -u -m "auto-update-$(date +%Y%m%d-%H%M%S)" || true
+  warn "Wykryto lokalne zmiany — zapisuję patch do $LOCAL_CHANGES_BACKUP i nadpisuję kod wersją z GitHub"
+  git diff > "$LOCAL_CHANGES_BACKUP" || true
+  git diff --cached >> "$LOCAL_CHANGES_BACKUP" || true
 fi
 
 git reset --hard "origin/$BRANCH"
+git clean -fd -e .env -e .env.production
 ok "Kod zsynchronizowany: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 
 if [ -f "$ENV_BACKUP" ]; then
@@ -141,13 +146,13 @@ if bun run | grep -q "build:vps"; then
 elif [ -f "vite.vps.config.ts" ]; then
   bunx vite build --config vite.vps.config.ts
 else
-  warn "Brak vite.vps.config.ts — używam domyślnego configa"
-  bun run build
+  err "Brak build:vps i vite.vps.config.ts — nie uruchamiam zwykłego builda, bo VPS serwuje wyłącznie build z dist/client + dist/server"
+  exit 1
 fi
 
-# Sanity check — czy build coś wyprodukował
-if [ ! -d "dist" ] && [ ! -d ".output" ]; then
-  err "Build nie utworzył katalogu dist/ ani .output/ — przerywam, NIE restartuję PM2"
+# Sanity check — VPS server.mjs serwuje dist/client i dist/server.
+if [ ! -d "dist/client" ] || [ ! -f "dist/server/server.js" ]; then
+  err "Build VPS nie utworzył dist/client albo dist/server/server.js — przerywam, NIE restartuję PM2"
   exit 1
 fi
 ok "Build OK"
