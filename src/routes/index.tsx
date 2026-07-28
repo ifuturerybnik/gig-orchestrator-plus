@@ -16,7 +16,7 @@ function LandingPage() {
     <div className="min-h-screen bg-background">
       <div className="relative w-full aspect-[16/9] overflow-hidden">
         <video
-          src={heroVideo.url}
+          src="/landing-hero.mp4"
           autoPlay
           muted
           loop
