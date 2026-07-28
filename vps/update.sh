@@ -146,8 +146,8 @@ if bun run | grep -q "build:vps"; then
 elif [ -f "vite.vps.config.ts" ]; then
   bunx vite build --config vite.vps.config.ts
 else
-  warn "Brak vite.vps.config.ts — używam domyślnego configa"
-  bun run build
+  err "Brak build:vps i vite.vps.config.ts — nie uruchamiam zwykłego builda, bo VPS serwuje wyłącznie build z dist/client + dist/server"
+  exit 1
 fi
 
 # Sanity check — VPS server.mjs serwuje dist/client i dist/server.
