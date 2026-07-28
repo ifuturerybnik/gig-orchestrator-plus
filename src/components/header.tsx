@@ -21,6 +21,7 @@ import {
 } from "@/lib/organizations.functions";
 import { listJoinRequests } from "@/lib/counterparties.functions";
 import logoUrl from "@/assets/logo.png";
+import logoDarkUrl from "@/assets/logo-dark.png";
 
 export function Header() {
   const { t } = useTranslation();
