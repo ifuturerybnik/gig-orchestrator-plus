@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useForceLightTheme } from "@/hooks/use-force-light-theme";
-import heroVideo from "@/assets/landing-hero.mp4.asset.json";
 import logoUrl from "@/assets/logo-concertivo-full.png";
 
 export const Route = createFileRoute("/")({
