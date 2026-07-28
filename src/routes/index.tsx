@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useForceLightTheme } from "@/hooks/use-force-light-theme";
-import heroVideo from "@/assets/landing-hero.mp4.asset.json";
 import logoUrl from "@/assets/logo-concertivo-full.png";
 
 export const Route = createFileRoute("/")({
@@ -17,7 +16,7 @@ function LandingPage() {
     <div className="min-h-screen bg-background">
       <div className="relative w-full aspect-[16/9] overflow-hidden">
         <video
-          src={heroVideo.url}
+          src="/landing-hero.mp4"
           autoPlay
           muted
           loop
@@ -38,7 +37,7 @@ function LandingPage() {
         <img
           src={logoUrl}
           alt="Concertivo"
-          className="absolute left-1/2 top-[10%] z-10 w-[28%] max-w-[360px] -translate-x-1/2 select-none"
+          className="absolute left-1/2 top-[10%] z-10 w-[22.4%] max-w-[288px] -translate-x-1/2 select-none"
         />
         <main className="absolute inset-x-0 top-1/2 bottom-0 flex items-start justify-center px-4">
           <div className="mt-4 max-w-2xl w-full rounded-xl bg-white/70 backdrop-blur-sm px-6 sm:px-10 py-6 text-center shadow-lg">
