@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useForceLightTheme } from "@/hooks/use-force-light-theme";
-import heroBg from "@/assets/landing-hero.jpg";
+import heroVideo from "@/assets/landing-hero.mp4.asset.json";
+import logoUrl from "@/assets/logo-concertivo-full.png";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -14,10 +15,15 @@ function LandingPage() {
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-background">
-      <div
-        className="relative w-full bg-cover bg-center bg-no-repeat aspect-[16/9]"
-        style={{ backgroundImage: `url(${heroBg})` }}
-      >
+      <div className="relative w-full aspect-[16/9] overflow-hidden">
+        <video
+          src={heroVideo.url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <LanguageSwitcher />
           <Link to="/login">
@@ -29,6 +35,11 @@ function LandingPage() {
             <Button size="sm">{t("nav.register")}</Button>
           </Link>
         </div>
+        <img
+          src={logoUrl}
+          alt="Concertivo"
+          className="absolute left-1/2 top-[10%] z-10 w-[28%] max-w-[360px] -translate-x-1/2 select-none"
+        />
         <main className="absolute inset-x-0 top-1/2 bottom-0 flex items-start justify-center px-4">
           <div className="mt-4 max-w-2xl w-full rounded-xl bg-white/70 backdrop-blur-sm px-6 sm:px-10 py-6 text-center shadow-lg">
             <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -43,4 +54,3 @@ function LandingPage() {
     </div>
   );
 }
-
