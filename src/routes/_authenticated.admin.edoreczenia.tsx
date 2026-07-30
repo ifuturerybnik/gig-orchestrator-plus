@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import IntegracjaEdoreczeniaTab from "@/components/settings/IntegracjaEdoreczeniaTab";
 import EdoreczeniaInboxTab from "@/components/settings/EdoreczeniaInboxTab";
 import EdoreczeniaSetup from "@/components/edoreczenia/EdoreczeniaSetup";
-import { Inbox, PlugZap, Settings2 } from "lucide-react";
+import EdoreczeniaAccessTab from "@/components/edoreczenia/EdoreczeniaAccessTab";
+import { Inbox, PlugZap, Settings2, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/edoreczenia")({
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin/edoreczenia")({
   component: EdoreczeniaAdminPage,
 });
 
-type Tab = "inbox" | "setup" | "legacy";
+type Tab = "inbox" | "setup" | "access" | "legacy";
 
 function EdoreczeniaAdminPage() {
   const [tab, setTab] = useState<Tab>("inbox");
@@ -27,7 +28,7 @@ function EdoreczeniaAdminPage() {
         Skrzynka systemowa e-Doręczeń oraz konfiguracja integracji z ADE.
       </p>
 
-      <div className="mt-4 inline-flex rounded-md border border-border bg-card p-1">
+      <div className="mt-4 inline-flex flex-wrap rounded-md border border-border bg-card p-1">
         <TabButton active={tab === "inbox"} onClick={() => setTab("inbox")}>
           <Inbox className="mr-2 h-4 w-4" />
           e-Doręczenia
@@ -35,6 +36,10 @@ function EdoreczeniaAdminPage() {
         <TabButton active={tab === "setup"} onClick={() => setTab("setup")}>
           <Settings2 className="mr-2 h-4 w-4" />
           Skrzynki systemowe
+        </TabButton>
+        <TabButton active={tab === "access"} onClick={() => setTab("access")}>
+          <KeyRound className="mr-2 h-4 w-4" />
+          Dostęp
         </TabButton>
         <TabButton active={tab === "legacy"} onClick={() => setTab("legacy")}>
           <PlugZap className="mr-2 h-4 w-4" />
@@ -45,11 +50,13 @@ function EdoreczeniaAdminPage() {
       <div className="mt-6">
         {tab === "inbox" && <EdoreczeniaInboxTab />}
         {tab === "setup" && <EdoreczeniaSetup scope={{ kind: "system" }} />}
+        {tab === "access" && <EdoreczeniaAccessTab />}
         {tab === "legacy" && <IntegracjaEdoreczeniaTab />}
       </div>
     </div>
   );
 }
+
 
 function TabButton({
   active,
